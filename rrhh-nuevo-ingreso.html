@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nuevo Ingreso · RRHH · Grupo del Sol</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#ffffff;
+      --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20; --red-bg:#fdf0eb;
+      --amber:#c87820; --amber-bg:#fdf6e3;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+
+    header { height:56px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; background:var(--bg); position:sticky; top:0; z-index:20; }
+    .nav-left { display:flex; align-items:center; gap:10px; }
+    .back-btn { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); transition:color .15s,border-color .15s; }
+    .back-btn:hover { color:var(--text); border-color:var(--border-h); }
+    .back-btn svg { width:13px; height:13px; }
+    .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
+    .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 10px; }
+
+    main { max-width:780px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .page-header { margin-bottom:2rem; }
+    .page-header h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+    .page-header p { font-size:13px; color:var(--muted); }
+
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; margin-bottom:1rem; }
+    .card-title { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:1.25rem; }
+
+    .field { margin-bottom:1.1rem; }
+    .field:last-child { margin-bottom:0; }
+    .field-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .field-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+
+    label { display:block; font-size:13px; font-weight:500; color:var(--text); margin-bottom:5px; }
+    .req { color:var(--red); margin-left:2px; }
+
+    input, select, textarea {
+      width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px;
+      color:var(--text); font-family:var(--font-b); font-size:14px; padding:9px 12px;
+      outline:none; appearance:none; transition:border-color .15s, box-shadow .15s;
+    }
+    input:focus, select:focus, textarea:focus { border-color:var(--green); box-shadow:0 0 0 3px rgba(26,122,74,.1); }
+    input::placeholder, textarea::placeholder { color:var(--subtle); }
+    select {
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat:no-repeat; background-position:right 12px center; padding-right:36px; cursor:pointer;
+    }
+    textarea { resize:vertical; min-height:70px; line-height:1.5; }
+
+    .computed-tag { display:inline-block; font-size:12px; font-weight:500; color:var(--green); background:var(--green-bg); border:1px solid var(--green-lt); border-radius:6px; padding:3px 10px; margin-top:5px; }
+
+    /* Checklist */
+    .checklist { display:flex; flex-direction:column; gap:8px; }
+    .check-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:9px; border:1px solid var(--border); background:var(--bg); cursor:pointer; transition:border-color .15s, background .15s; }
+    .check-item:hover { border-color:var(--border-h); background:var(--surface); }
+    .check-item input[type="checkbox"] { width:16px; height:16px; accent-color:var(--green); cursor:pointer; flex-shrink:0; padding:0; }
+    .check-item.checked { border-color:var(--green); background:var(--green-bg); }
+    .check-label { font-size:13px; font-weight:500; color:var(--text); flex:1; }
+    .check-sub { font-size:12px; color:var(--muted); margin-top:2px; }
+    .check-extra { margin-left:26px; margin-top:6px; display:none; }
+    .check-extra.visible { display:block; }
+    .check-extra input { font-size:13px; padding:7px 10px; }
+
+    /* Submit */
+    .submit-area { display:flex; align-items:center; gap:10px; margin-top:1.5rem; }
+    .btn-submit { flex:1; background:var(--green); color:#fff; border:none; border-radius:9px; font-family:var(--font-d); font-size:15px; font-weight:700; padding:12px 24px; cursor:pointer; transition:opacity .15s, transform .1s; }
+    .btn-submit:hover { opacity:.9; }
+    .btn-submit:active { transform:scale(.98); }
+    .btn-submit:disabled { opacity:.4; cursor:not-allowed; }
+    .btn-clear { padding:12px 16px; border-radius:9px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; cursor:pointer; transition:color .15s, border-color .15s; }
+    .btn-clear:hover { color:var(--text); border-color:var(--border-h); }
+
+    /* Status bar */
+    .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
+    .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); flex-shrink:0; }
+    .sdot.off { background:var(--subtle); }
+    .ssep { width:1px; height:14px; background:var(--border); }
+
+    /* Toast */
+    .toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px); background:var(--card); border:1px solid var(--border-h); border-radius:10px; padding:11px 18px; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:transform .3s cubic-bezier(.34,1.56,.64,1), opacity .3s; opacity:0; z-index:100; white-space:nowrap; box-shadow:0 4px 20px rgba(0,0,0,.08); }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+    .toast.success { border-color:var(--green); color:var(--green); }
+    .toast.error { border-color:var(--red); color:var(--red); }
+    .toast svg { width:16px; height:16px; flex-shrink:0; }
+
+    @media (max-width:600px) {
+      header { padding:0 1rem; } main { padding:1.5rem 1rem 3rem; }
+      .field-row, .field-row-3 { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Nuevo ingreso</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<main>
+  <div class="page-header">
+    <h1>Nuevo ingreso</h1>
+    <p>Completá el formulario para registrar un nuevo colaborador. Se guardará con estado <strong>ACTIVO</strong>.</p>
+  </div>
+
+  <form id="form-ingreso" novalidate>
+
+    <!-- Datos personales -->
+    <div class="card">
+      <p class="card-title">Datos personales</p>
+
+      <div class="field-row-3">
+        <div class="field">
+          <label for="cedula">Número de cédula <span class="req">*</span></label>
+          <input type="text" id="cedula" placeholder="0-0000-0000" required>
+        </div>
+        <div class="field">
+          <label for="nombre">Nombre <span class="req">*</span></label>
+          <input type="text" id="nombre" placeholder="Nombre" required>
+        </div>
+        <div class="field">
+          <label for="apellidos">Apellidos <span class="req">*</span></label>
+          <input type="text" id="apellidos" placeholder="Apellidos" required>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="fecha-nac">Fecha de nacimiento <span class="req">*</span></label>
+          <input type="date" id="fecha-nac" onchange="calcularEdad()" required>
+          <span class="computed-tag" id="edad-tag" style="display:none;"></span>
+        </div>
+        <div class="field">
+          <label for="nacionalidad">Nacionalidad <span class="req">*</span></label>
+          <select id="nacionalidad" required>
+            <option value="" disabled selected>Seleccioná un país…</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Datos laborales -->
+    <div class="card">
+      <p class="card-title">Datos laborales</p>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="departamento">Departamento <span class="req">*</span></label>
+          <select id="departamento" required>
+            <option value="" disabled selected>Seleccioná…</option>
+            <option>Administrativo</option>
+            <option>Cocina</option>
+            <option>Barra</option>
+            <option>Otro</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="puesto">Puesto <span class="req">*</span></label>
+          <input type="text" id="puesto" placeholder="Ej. Cocinero, Mesero…" required>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="salario">Salario base (₡) <span class="req">*</span></label>
+          <input type="number" id="salario" min="0" step="500" placeholder="0" required>
+        </div>
+        <div class="field">
+          <label for="fecha-ingreso">Fecha de ingreso <span class="req">*</span></label>
+          <input type="date" id="fecha-ingreso" onchange="calcularAntiguedad()" required>
+          <span class="computed-tag" id="antiguedad-tag" style="display:none;"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contacto -->
+    <div class="card">
+      <p class="card-title">Información de contacto</p>
+      <div class="field-row">
+        <div class="field">
+          <label for="telefono">Número de teléfono</label>
+          <input type="tel" id="telefono" placeholder="0000-0000">
+        </div>
+        <div class="field">
+          <label for="email">Correo electrónico</label>
+          <input type="email" id="email" placeholder="correo@ejemplo.com">
+        </div>
+      </div>
+    </div>
+
+    <!-- Datos bancarios -->
+    <div class="card">
+      <p class="card-title">Datos bancarios</p>
+      <div class="field-row">
+        <div class="field">
+          <label for="banco">Banco</label>
+          <select id="banco">
+            <option value="" disabled selected>Seleccioná banco…</option>
+            <option>BNCR</option>
+            <option>BCR</option>
+            <option>BAC</option>
+            <option>Davivienda</option>
+            <option>Popular</option>
+            <option>Scotiabank</option>
+            <option>Promerica</option>
+            <option>Otro</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="cuenta">Número de cuenta / IBAN</label>
+          <input type="text" id="cuenta" placeholder="CR00 0000 0000 0000 0000 00">
+        </div>
+      </div>
+    </div>
+
+    <!-- Documentos -->
+    <div class="card">
+      <p class="card-title">Documentos entregados</p>
+      <div class="checklist" id="checklist">
+
+        <label class="check-item" id="ci-contrato">
+          <input type="checkbox" id="chk-contrato" onchange="toggleCheck('ci-contrato','chk-contrato')">
+          <div>
+            <div class="check-label">Contrato</div>
+            <div class="check-sub">Contrato laboral firmado</div>
+          </div>
+        </label>
+
+        <label class="check-item" id="ci-ccss">
+          <input type="checkbox" id="chk-ccss" onchange="toggleCheck('ci-ccss','chk-ccss')">
+          <div>
+            <div class="check-label">CCSS</div>
+            <div class="check-sub">Asegurado a la Caja Costarricense de Seguro Social</div>
+          </div>
+        </label>
+
+        <label class="check-item" id="ci-ins">
+          <input type="checkbox" id="chk-ins" onchange="toggleCheck('ci-ins','chk-ins')">
+          <div>
+            <div class="check-label">INS RT</div>
+            <div class="check-sub">Seguro de riesgos del trabajo</div>
+          </div>
+        </label>
+
+        <div>
+          <label class="check-item" id="ci-carnet">
+            <input type="checkbox" id="chk-carnet" onchange="toggleCheck('ci-carnet','chk-carnet'); toggleCarnet()">
+            <div>
+              <div class="check-label">Carnet de manipulación de alimentos</div>
+              <div class="check-sub">Certificado vigente</div>
+            </div>
+          </label>
+          <div class="check-extra" id="extra-carnet">
+            <label for="carnet-vence" style="font-size:12px;color:var(--muted);margin-bottom:4px;">Fecha de vencimiento</label>
+            <input type="date" id="carnet-vence" style="max-width:220px;">
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="submit-area">
+      <button type="button" class="btn-clear" id="btn-clear">Limpiar</button>
+      <button type="submit" class="btn-submit" id="btn-submit">Registrar colaborador</button>
+    </div>
+  </form>
+
+  <div class="status-bar">
+    <div style="display:flex;align-items:center;gap:6px;"><span class="sdot" id="conn-dot"></span><span id="conn-label">Listo para guardar</span></div>
+    <span class="ssep"></span>
+    <span style="margin-left:auto;">v1.0 · RRHH · Grupo del Sol</span>
+  </div>
+</main>
+
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ─── CONFIGURACIÓN ─────────────────────────────────────────────
+const APPS_SCRIPT_URL = 'TODO_APPS_SCRIPT_RRHH_LORITO'; // Pegá tu URL de Apps Script aquí
+// ───────────────────────────────────────────────────────────────
+
+// Fecha
+const hoy = new Date();
+const pad = n => String(n).padStart(2,'0');
+document.getElementById('date-chip').textContent =
+  hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
+
+// Países
+const PAISES = [
+  'Costa Rica','Nicaragua','Honduras','El Salvador','Guatemala','Panamá','México',
+  'Colombia','Venezuela','Perú','Ecuador','Bolivia','Chile','Argentina','Brasil',
+  'República Dominicana','Cuba','Jamaica','Haití','Estados Unidos','España',
+  'Italia','Francia','Alemania','China','Corea del Sur','India','Otro'
+];
+const selPais = document.getElementById('nacionalidad');
+PAISES.forEach(p => {
+  const o = document.createElement('option');
+  o.value = o.textContent = p;
+  selPais.appendChild(o);
+});
+
+// Edad
+function calcularEdad() {
+  const val = document.getElementById('fecha-nac').value;
+  if (!val) return;
+  const nac = new Date(val);
+  let edad = hoy.getFullYear() - nac.getFullYear();
+  const m = hoy.getMonth() - nac.getMonth();
+  if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
+  const tag = document.getElementById('edad-tag');
+  tag.textContent = `${edad} años`;
+  tag.style.display = 'inline-block';
+}
+
+// Antigüedad
+function calcularAntiguedad() {
+  const val = document.getElementById('fecha-ingreso').value;
+  if (!val) return;
+  const ing = new Date(val);
+  let anios = hoy.getFullYear() - ing.getFullYear();
+  let meses = hoy.getMonth() - ing.getMonth();
+  if (meses < 0) { anios--; meses += 12; }
+  const tag = document.getElementById('antiguedad-tag');
+  tag.textContent = anios > 0
+    ? `${anios} año${anios>1?'s':''} y ${meses} mes${meses!==1?'es':''}`
+    : `${meses} mes${meses!==1?'es':''}`;
+  tag.style.display = 'inline-block';
+}
+
+// Checklist
+function toggleCheck(ciId, chkId) {
+  const ci  = document.getElementById(ciId);
+  const chk = document.getElementById(chkId);
+  ci.classList.toggle('checked', chk.checked);
+}
+
+function toggleCarnet() {
+  const chk   = document.getElementById('chk-carnet');
+  const extra = document.getElementById('extra-carnet');
+  extra.classList.toggle('visible', chk.checked);
+}
+
+// Toast
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').innerHTML = type === 'success'
+    ? '<polyline points="3 8 7 12 13 4"/>'
+    : '<line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = `toast ${type}`;
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+// Limpiar
+document.getElementById('btn-clear').addEventListener('click', () => {
+  document.getElementById('form-ingreso').reset();
+  document.getElementById('edad-tag').style.display = 'none';
+  document.getElementById('antiguedad-tag').style.display = 'none';
+  document.getElementById('extra-carnet').classList.remove('visible');
+  document.querySelectorAll('.check-item').forEach(c => c.classList.remove('checked'));
+  document.getElementById('conn-label').textContent = 'Listo para guardar';
+});
+
+// Submit
+document.getElementById('form-ingreso').addEventListener('submit', async e => {
+  e.preventDefault();
+
+  const cedula    = document.getElementById('cedula').value.trim();
+  const nombre    = document.getElementById('nombre').value.trim();
+  const apellidos = document.getElementById('apellidos').value.trim();
+  const fechaNac  = document.getElementById('fecha-nac').value;
+  const nac       = document.getElementById('nacionalidad').value;
+  const depto     = document.getElementById('departamento').value;
+  const puesto    = document.getElementById('puesto').value.trim();
+  const salario   = document.getElementById('salario').value;
+  const fechaIng  = document.getElementById('fecha-ingreso').value;
+  const telefono  = document.getElementById('telefono').value.trim();
+  const email     = document.getElementById('email').value.trim();
+  const banco     = document.getElementById('banco').value;
+  const cuenta    = document.getElementById('cuenta').value.trim();
+
+  if (!cedula || !nombre || !apellidos || !fechaNac || !nac || !depto || !puesto || !salario || !fechaIng) {
+    showToast('Completá todos los campos obligatorios.', 'error'); return;
+  }
+
+  const docs = {
+    contrato:  document.getElementById('chk-contrato').checked,
+    ccss:      document.getElementById('chk-ccss').checked,
+    ins_rt:    document.getElementById('chk-ins').checked,
+    carnet:    document.getElementById('chk-carnet').checked,
+    carnet_vence: document.getElementById('carnet-vence').value,
+  };
+
+  const edadEl = document.getElementById('edad-tag');
+  const antEl  = document.getElementById('antiguedad-tag');
+
+  const registro = {
+    modulo: 'nuevo_ingreso',
+    estado: 'ACTIVO',
+    cedula, nombre, apellidos,
+    fecha_nacimiento: fechaNac,
+    edad: edadEl.textContent || '',
+    nacionalidad: nac,
+    departamento: depto,
+    puesto, salario,
+    fecha_ingreso: fechaIng,
+    antiguedad: antEl.textContent || '',
+    telefono, email,
+    banco, cuenta,
+    documentos: docs,
+    registrado_en: new Date().toISOString(),
+  };
+
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.textContent = 'Guardando…';
+  document.getElementById('conn-label').textContent = 'Enviando…';
+
+  if (APPS_SCRIPT_URL) {
+    try {
+      // Usar formulario URL-encoded para evitar problemas de CORS con Apps Script
+      const formData = new FormData();
+      formData.append('data', JSON.stringify(registro));
+
+      const resp = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: new URLSearchParams({ data: JSON.stringify(registro) }),
+      });
+
+      if (resp.ok) {
+        const result = await resp.json().catch(() => ({ ok: true }));
+        if (result.ok !== false) {
+          document.getElementById('conn-dot').classList.remove('off');
+          document.getElementById('conn-label').textContent = 'Guardado en Google Sheets ✓';
+          showToast(`${nombre} ${apellidos} registrado correctamente`, 'success');
+        } else {
+          throw new Error(result.error || 'Error del servidor');
+        }
+      } else {
+        throw new Error('Error HTTP ' + resp.status);
+      }
+    } catch(err) {
+      console.error('Error Apps Script:', err);
+      document.getElementById('conn-dot').classList.add('off');
+      document.getElementById('conn-label').textContent = 'Error: ' + err.message;
+      showToast('Error al guardar: ' + err.message, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Registrar colaborador';
+      return;
+    }
+  } else {
+    showToast('Configurá la URL del Apps Script primero.', 'error');
+    btn.disabled = false;
+    btn.textContent = 'Registrar colaborador';
+    return;
+  }
+
+  document.getElementById('btn-clear').click();
+  btn.disabled = false;
+  btn.textContent = 'Registrar colaborador';
+});
+</script>
+</body>
+</html>

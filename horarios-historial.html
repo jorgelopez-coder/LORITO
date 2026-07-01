@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Historial de horarios · Grupo del Sol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#f7f6f3;--surface:#fff;--surface2:#f2f1ed;
+  --border:#e2e0d8;--border2:#ccc9be;
+  --text:#1a1917;--text2:#6b6860;--text3:#a09d96;
+  --accent:#2d6a4f;--accent-bg:#eaf4ef;--accent-text:#1b4332;
+  --warn-bg:#fef3c7;--warn-text:#78350f;--warn-border:#fcd34d;
+  --radius:8px;--radius-lg:12px;--shadow:0 1px 3px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.nav-left{display:flex;align-items:center;gap:10px}
+.back-btn{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text2);text-decoration:none;padding:5px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface2)}
+.back-btn:hover{color:var(--text);border-color:var(--border2)}
+.logo{font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+main{max-width:980px;margin:0 auto;padding:24px 20px}
+h1{font-size:20px;font-weight:600;margin-bottom:4px}
+.sub{font-size:13px;color:var(--text2);margin-bottom:20px}
+.btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-family:inherit;font-weight:500;padding:7px 14px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface);color:var(--text);cursor:pointer;transition:background .15s;white-space:nowrap}
+.btn:hover{background:var(--surface2)}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}.btn-primary:hover{background:#245a42}
+.tbl-wrap{overflow-x:auto;border-radius:var(--radius-lg);border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow)}
+table{width:100%;border-collapse:collapse}
+thead th{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+tbody td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:13px}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--surface2)}
+.semana-lbl{font-weight:600}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px}
+.badge-abierta{background:var(--accent-bg);color:var(--accent-text)}
+.badge-cerrada{background:var(--warn-bg);color:var(--warn-text);border:1px solid var(--warn-border)}
+.empty-state{text-align:center;padding:50px 20px;color:var(--text3)}
+.status-msg{font-size:12px;color:var(--text2);margin-bottom:14px}
+@media(max-width:640px){main{padding:14px 12px}header{padding:0 14px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="nav-left">
+    <a href="horarios.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Horarios
+    </a>
+    <div class="logo"><div class="logo-dot"></div>Historial de horarios</div>
+  </div>
+  <button class="btn" onclick="cargar()">&#8635; Actualizar</button>
+</header>
+<main>
+  <h1>Historial de horarios por semana</h1>
+  <p class="sub">Consolidado de todas las semanas guardadas. Las semanas cerradas requieren código de administrador para editarlas.</p>
+  <div class="status-msg" id="status-msg">Cargando…</div>
+  <div id="contenido"></div>
+</main>
+
+<script>
+const APPS_SCRIPT_URL='TODO_APPS_SCRIPT_RRHH_LORITO';
+const ADMIN_CODE='admin';
+
+function fmtShort(iso){
+  if(!iso)return'—';
+  const d=new Date(iso+'T00:00:00');
+  return d.toLocaleDateString('es-CR',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function semanaLabel(iso){
+  if(!iso)return'—';
+  const s=new Date(iso+'T00:00:00'),e=new Date(s);e.setDate(s.getDate()+6);
+  return s.toLocaleDateString('es-CR',{day:'2-digit',month:'2-digit'})+' – '+e.toLocaleDateString('es-CR',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function esc(s){return(s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+async function cargar(){
+  document.getElementById('status-msg').textContent='Cargando…';
+  try{
+    const [rH,rE]=await Promise.all([
+      fetch(APPS_SCRIPT_URL+'?modulo=horarios'),
+      fetch(APPS_SCRIPT_URL+'?modulo=horarios_estado')
+    ]);
+    const dH=await rH.json();
+    const dE=await rE.json();
+    if(!dH.ok) throw new Error(dH.error||'No se pudo leer Horarios');
+
+    const registros=dH.registros||[];
+    const estados={};
+    (dE.ok?dE.registros:[]).forEach(r=>{
+      estados[r['Semana inicio']]=(r['Cerrado']||'').toString().trim().toLowerCase()==='sí';
+    });
+
+    const porSemana={};
+    registros.forEach(r=>{
+      const semana=r['Semana inicio'];
+      if(!semana)return;
+      if(!porSemana[semana]) porSemana[semana]={colaboradores:new Set(),horas:0,dias:0};
+      porSemana[semana].colaboradores.add((r['Colaborador']||'').toString().trim());
+      porSemana[semana].horas+=parseFloat(r['Horas']||0)||0;
+      porSemana[semana].dias++;
+    });
+
+    const semanas=Object.keys(porSemana).sort().reverse();
+    renderTabla(semanas,porSemana,estados);
+    document.getElementById('status-msg').textContent=semanas.length+' semana'+(semanas.length!==1?'s':'')+' guardada'+(semanas.length!==1?'s':'');
+  }catch(e){
+    console.error(e);
+    document.getElementById('status-msg').textContent='Error al cargar el historial: '+e.message;
+    document.getElementById('contenido').innerHTML='<div class="empty-state">No se pudo conectar con RRHH. Probá "Actualizar".</div>';
+  }
+}
+
+function renderTabla(semanas,porSemana,estados){
+  const cont=document.getElementById('contenido');
+  if(!semanas.length){
+    cont.innerHTML='<div class="empty-state">Todavía no hay semanas guardadas.<br>Guardalas desde el botón "Guardar semana" en el módulo de Horarios.</div>';
+    return;
+  }
+  let html='<div class="tbl-wrap"><table><thead><tr><th>Semana</th><th>Colaboradores</th><th>Horas totales</th><th>Estado</th><th></th></tr></thead><tbody>';
+  semanas.forEach(semana=>{
+    const info=porSemana[semana];
+    const cerrada=!!estados[semana];
+    const badge=cerrada
+      ? '<span class="badge badge-cerrada">&#128274; Cerrada</span>'
+      : '<span class="badge badge-abierta">&#9999; Abierta</span>';
+    html+='<tr>'+
+      '<td><div class="semana-lbl">'+esc(semanaLabel(semana))+'</div></td>'+
+      '<td>'+info.colaboradores.size+'</td>'+
+      '<td>'+info.horas.toFixed(1)+'h</td>'+
+      '<td>'+badge+'</td>'+
+      '<td><button class="btn btn-primary" onclick="editar(\''+semana+'\','+cerrada+')">Editar</button></td>'+
+      '</tr>';
+  });
+  html+='</tbody></table></div>';
+  cont.innerHTML=html;
+}
+
+async function editar(semana,cerrada){
+  if(!cerrada){
+    location.href='horarios.html?semana='+encodeURIComponent(semana);
+    return;
+  }
+  const code=prompt('Esta semana está cerrada. Ingresá el código de administrador para editarla:');
+  if(code===null)return;
+  if(code.trim().toLowerCase()!==ADMIN_CODE){alert('Código incorrecto');return}
+  try{
+    await fetch(APPS_SCRIPT_URL,{
+      method:'POST',
+      body:new URLSearchParams({data:JSON.stringify({modulo:'reabrir_horario',semana_inicio:semana})})
+    });
+  }catch(e){ /* si falla, horarios.html la sigue mostrando cerrada y se puede reabrir ahí */ }
+  location.href='horarios.html?semana='+encodeURIComponent(semana);
+}
+
+cargar();
+</script>
+</body>
+</html>

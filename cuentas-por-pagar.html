@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cuentas por pagar · Lorito</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#ffffff;
+      --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
+      --amber:#c87820; --amber-bg:#fdf6e3; --amber-lt:#f0d890;
+      --blue:#185fa5; --blue-bg:#eef4fb; --blue-lt:#b8d0f0;
+      --purple:#6a3a9a; --purple-bg:#f3eefb;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+
+    header { height:56px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; background:var(--bg); position:sticky; top:0; z-index:20; }
+    .nav-left { display:flex; align-items:center; gap:10px; }
+    .back-btn { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); transition:color .15s,border-color .15s; }
+    .back-btn:hover { color:var(--text); border-color:var(--border-h); }
+    .back-btn svg { width:13px; height:13px; }
+    .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
+    .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 10px; }
+
+    main { max-width:1200px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .page-header { margin-bottom:1.5rem; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .page-header h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+    .page-header p { font-size:13px; color:var(--muted); }
+
+    /* KPIs */
+    .kpi-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:1.25rem; }
+    .kpi-box { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; }
+    .kpi-val { font-family:var(--font-d); font-size:22px; font-weight:700; letter-spacing:-.02em; color:var(--text); }
+    .kpi-lbl { font-size:11px; color:var(--muted); margin-top:2px; }
+    .kpi-val.verde { color:var(--green); }
+    .kpi-val.rojo  { color:var(--red); }
+    .kpi-val.ambar { color:var(--amber); }
+
+    /* Banner de alerta (duplicados / sin conexión) */
+    .banner { display:flex; align-items:flex-start; gap:10px; padding:.85rem 1.1rem; border-radius:var(--radius); font-size:12.5px; margin-bottom:1rem; border:1px solid; }
+    .banner-warn { background:var(--red-bg); border-color:var(--red-lt); color:var(--red); }
+    .banner svg { width:16px; height:16px; flex-shrink:0; margin-top:1px; }
+
+    /* Tabs */
+    .tabs { display:flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:4px; margin-bottom:1.25rem; width:fit-content; }
+    .tab { font-size:13px; font-weight:500; padding:6px 16px; border-radius:7px; border:none; cursor:pointer; background:transparent; color:var(--muted); transition:background .15s,color .15s; white-space:nowrap; }
+    .tab.active { background:var(--card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+
+    /* Toolbar */
+    .toolbar { display:flex; gap:8px; margin-bottom:1rem; flex-wrap:wrap; align-items:center; }
+    .search-wrap { position:relative; flex:1; min-width:200px; }
+    .search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--subtle); pointer-events:none; }
+    .search-input { width:100%; background:var(--card); border:1px solid var(--border); border-radius:9px; color:var(--text); font-family:var(--font-b); font-size:13px; padding:8px 12px 8px 32px; outline:none; transition:border-color .15s; }
+    .search-input:focus { border-color:var(--green); }
+    .search-input::placeholder { color:var(--subtle); }
+    .filter-sel { font-size:13px; padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--text); outline:none; cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:30px; }
+    input[type="date"] { background:var(--card); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--font-b); font-size:12.5px; padding:6px 8px; outline:none; }
+    input[type="date"]:focus { border-color:var(--green); }
+
+    /* Card */
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; }
+
+    /* Tabla */
+    .tabla-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th { text-align:left; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:10px 12px; border-bottom:1px solid var(--border); white-space:nowrap; background:var(--surface); }
+    td { padding:11px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:var(--surface); }
+    .num { text-align:right; font-variant-numeric:tabular-nums; }
+
+    /* Fila expandible */
+    .tr-main { cursor:pointer; }
+    .tr-detail { display:none; }
+    .tr-detail.open { display:table-row; }
+    .detail-cell { padding:0 !important; border-bottom:1px solid var(--border); }
+    .detail-inner { padding:12px 24px; background:var(--surface); }
+    .detail-table { width:100%; border-collapse:collapse; font-size:12px; }
+    .detail-table th { background:transparent; font-size:10px; padding:6px 8px; }
+    .detail-table td { padding:6px 8px; border-bottom:1px solid var(--border); }
+    .detail-table tr:last-child td { border-bottom:none; }
+
+    /* Badges de estado */
+    .badge { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; white-space:nowrap; }
+    .b-tiempo    { background:var(--green-bg); color:var(--green); }
+    .b-vencida   { background:var(--red-bg);   color:var(--red); }
+    .b-abono     { background:var(--amber-bg); color:var(--amber); }
+    .b-cancelada { background:var(--blue-bg);  color:var(--blue); }
+    .b-dup       { background:var(--red-bg);   color:var(--red); }
+    .b-dot { width:5px; height:5px; border-radius:50%; background:currentColor; }
+
+    /* Categoría / cuenta de gasto chips */
+    .cat-chip { display:inline-block; font-size:11px; padding:2px 7px; border-radius:20px; font-weight:500; margin:1px; }
+    .cat-frutas     { background:#eef8f2; color:#1a7a4a; }
+    .cat-bebidas    { background:#eef4fb; color:#185fa5; }
+    .cat-lacteos    { background:#fdf6e3; color:#c87820; }
+    .cat-granos     { background:#f3eefb; color:#6a3a9a; }
+    .cat-condimentos{ background:#fdf0eb; color:#c84a20; }
+    .cat-otro       { background:var(--surface); color:var(--muted); }
+
+    /* Botones de acción de fila */
+    .row-actions { display:flex; gap:6px; }
+    .btn-mini { font-size:11.5px; font-weight:600; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; white-space:nowrap; }
+    .btn-mini:hover { border-color:var(--border-h); color:var(--text); }
+    .btn-mini.pago  { border-color:var(--green-lt); background:var(--green-bg); color:var(--green); }
+    .btn-mini.pago:hover { background:var(--green); color:#fff; }
+    .btn-mini.abono { border-color:var(--amber-lt); background:var(--amber-bg); color:var(--amber); }
+    .btn-mini.abono:hover { background:var(--amber); color:#fff; }
+    .btn-mini:disabled { opacity:.4; cursor:default; }
+
+    #btn-toggle-filtros.activo { border-color:var(--green-lt); background:var(--green-bg); color:var(--green); }
+    .filtro-badge { display:inline-flex; align-items:center; justify-content:center; min-width:16px; height:16px; padding:0 4px; border-radius:20px; background:var(--green); color:#fff; font-size:10px; font-weight:700; }
+
+    .proj-input { width:130px; font-size:12px; padding:5px 7px; }
+
+    /* Arrow toggle */
+    .toggle-arrow { width:16px; height:16px; transition:transform .2s; color:var(--subtle); }
+    .toggle-arrow.open { transform:rotate(180deg); }
+
+    /* Paginación */
+    .pagination { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-top:1px solid var(--border); font-size:12px; color:var(--muted); }
+    .pag-btns { display:flex; gap:4px; }
+    .pag-btn { padding:4px 10px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:12px; cursor:pointer; transition:background .12s; }
+    .pag-btn:hover:not(:disabled) { background:var(--surface); color:var(--text); }
+    .pag-btn:disabled { opacity:.4; cursor:default; }
+    .pag-btn.active { background:var(--green); color:#fff; border-color:var(--green); }
+
+    /* Empty / Spinner */
+    .empty { text-align:center; padding:3rem; color:var(--subtle); font-size:13px; }
+    .spinner { display:inline-block; width:18px; height:18px; border:2px solid var(--border); border-top-color:var(--green); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* Status */
+    .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
+    .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+    .sdot.off { background:var(--subtle); }
+    .ssep { width:1px; height:14px; background:var(--border); }
+
+    /* MODAL */
+    .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:50; align-items:flex-start; justify-content:center; padding:1.5rem 1rem; overflow-y:auto; }
+    .modal-bg.open { display:flex; }
+    .modal { background:var(--card); border-radius:16px; width:100%; max-width:440px; margin:auto; }
+    .modal-head { padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .modal-title { font-family:var(--font-d); font-size:18px; font-weight:700; }
+    .modal-sub { font-size:12px; color:var(--muted); margin-top:2px; }
+    .close-btn { background:none; border:none; font-size:22px; cursor:pointer; color:var(--muted); line-height:1; }
+    .modal-body { padding:1.25rem 1.5rem; }
+    .field { margin-bottom:.9rem; }
+    .field label { font-size:13px; font-weight:500; display:block; margin-bottom:5px; }
+    .field input, .field select { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--font-b); font-size:13px; padding:8px 12px; outline:none; transition:border-color .15s; }
+    .field input:focus, .field select:focus { border-color:var(--green); }
+    .field-hint { font-size:11px; color:var(--muted); margin-top:3px; }
+    .modal-foot { padding:1rem 1.5rem; border-top:1px solid var(--border); display:flex; gap:8px; justify-content:flex-end; }
+    .btn-sec { padding:9px 16px; border-radius:9px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; cursor:pointer; }
+    .btn-sec:hover { color:var(--text); border-color:var(--border-h); }
+    .btn-save { padding:10px 22px; border-radius:9px; background:var(--green); color:#fff; border:none; font-family:var(--font-d); font-size:14px; font-weight:700; cursor:pointer; }
+    .btn-save:hover { opacity:.9; }
+
+    /* Toast */
+    .toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px); background:var(--card); border:1px solid var(--border); border-radius:10px; padding:11px 18px; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s; opacity:0; z-index:100; box-shadow:0 4px 20px rgba(0,0,0,.08); }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+    .toast.success { border-color:var(--green); color:var(--green); }
+    .toast.error   { border-color:var(--red);   color:var(--red); }
+    .toast svg { width:16px; height:16px; flex-shrink:0; }
+
+    @media (max-width:700px) {
+      header { padding:0 1rem; } main { padding:1.5rem 1rem 3rem; }
+      .kpi-strip { grid-template-columns:1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Cuentas por pagar</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<main>
+  <div class="page-header">
+    <div>
+      <h1>Cuentas por pagar</h1>
+      <p>Facturas de proveedores · vencimientos · proyección y registro de pagos</p>
+    </div>
+    <div id="status-carga" style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;">
+      <span class="spinner"></span> Cargando…
+    </div>
+  </div>
+
+  <!-- Banner de facturas duplicadas -->
+  <div class="banner banner-warn" id="banner-duplicados" style="display:none;align-items:center;justify-content:space-between;">
+    <div style="display:flex;align-items:flex-start;gap:10px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div>
+        <strong>Números de factura duplicados detectados.</strong>
+        <span id="banner-duplicados-msg"></span>
+      </div>
+    </div>
+    <button class="btn-mini" style="border-color:var(--red-lt);background:#fff;color:var(--red);white-space:nowrap;" onclick="irATabDuplicados()">Ver duplicados →</button>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-strip">
+    <div class="kpi-box">
+      <div class="kpi-val verde" id="kpi-total">₡—</div>
+      <div class="kpi-lbl">Total por pagar</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val rojo" id="kpi-vencidas">—</div>
+      <div class="kpi-lbl">Facturas vencidas</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val ambar" id="kpi-porvencer">—</div>
+      <div class="kpi-lbl">Vencen en 7 días</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val" id="kpi-pagado-mes">₡—</div>
+      <div class="kpi-lbl">Pagado este mes</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('facturas',this)">Facturas</button>
+    <button class="tab" onclick="switchTab('proyeccion',this)">Proyección de pagos</button>
+    <button class="tab" onclick="switchTab('historial',this)">Historial</button>
+    <button class="tab" id="tab-btn-duplicados" onclick="switchTab('duplicados',this)">Duplicados <span class="filtro-badge" id="dup-tab-count" style="display:none;background:var(--red);"></span></button>
+  </div>
+
+  <!-- ══ TAB FACTURAS ══════════════════════════════════════════════ -->
+  <div id="tab-facturas">
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="search-input" id="s-fact" placeholder="Buscar factura o proveedor…" oninput="renderFacturas()">
+      </div>
+      <button class="btn-mini" id="btn-toggle-filtros" onclick="toggleFiltros()" style="display:flex;align-items:center;gap:6px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Filtros
+        <span class="filtro-badge" id="filtro-count" style="display:none;">0</span>
+        <svg class="toggle-arrow" id="filtro-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><path d="M4 6l4 4 4-4"/></svg>
+      </button>
+    </div>
+
+    <div class="card" id="panel-filtros" style="display:none;padding:1rem 1.25rem;margin-bottom:1rem;">
+      <div class="toolbar" style="margin-bottom:.75rem;">
+        <select class="filter-sel" id="f-estado" onchange="renderFacturas()">
+          <option value="">Todos los estados</option>
+          <option value="A tiempo">A tiempo</option>
+          <option value="Vencida">Vencida</option>
+          <option value="Abono">Abono</option>
+          <option value="Cancelada">Cancelada</option>
+        </select>
+        <select class="filter-sel" id="f-cuenta" onchange="renderFacturas()">
+          <option value="">Todas las cuentas de gasto</option>
+        </select>
+        <select class="filter-sel" id="f-proveedor" onchange="renderFacturas()">
+          <option value="">Todos los proveedores</option>
+        </select>
+        <select class="filter-sel" id="f-anio" onchange="renderFacturas()">
+          <option value="">Todos los años</option>
+        </select>
+        <select class="filter-sel" id="f-mes" onchange="renderFacturas()">
+          <option value="">Todos los meses</option>
+          <option value="01">Enero</option><option value="02">Febrero</option><option value="03">Marzo</option>
+          <option value="04">Abril</option><option value="05">Mayo</option><option value="06">Junio</option>
+          <option value="07">Julio</option><option value="08">Agosto</option><option value="09">Septiembre</option>
+          <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+        </select>
+      </div>
+      <div class="toolbar" style="margin-bottom:0;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <label style="font-size:12px;color:var(--muted);">Desde</label>
+          <input type="date" id="f-desde" onchange="renderFacturas()">
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <label style="font-size:12px;color:var(--muted);">Hasta</label>
+          <input type="date" id="f-hasta" onchange="renderFacturas()">
+        </div>
+        <button class="btn-mini" onclick="limpiarFiltroFecha()">Limpiar fechas</button>
+        <button class="btn-mini" style="margin-left:auto;" onclick="limpiarTodosFiltros()">Limpiar todos los filtros</button>
+      </div>
+    </div>
+
+    <div class="card" id="seleccion-bar" style="display:none;padding:.75rem 1.25rem;margin-bottom:12px;background:var(--green-bg);border-color:var(--green-lt);align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <span style="font-size:13px;color:var(--green);"><strong id="sel-count">0</strong> factura(s) seleccionada(s)</span>
+      <span style="font-size:14px;font-weight:700;color:var(--green);font-family:var(--font-d);">Total: <span id="sel-total">₡0,00</span></span>
+      <button class="btn-mini" onclick="limpiarSeleccion()">Limpiar selección</button>
+    </div>
+
+    <div class="card">
+      <div class="tabla-wrap" id="tabla-facturas">
+        <div class="empty"><span class="spinner"></span></div>
+      </div>
+      <div class="pagination" id="pag-facturas" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- ══ TAB PROYECCIÓN ═══════════════════════════════════════════ -->
+  <div id="tab-proyeccion" style="display:none;">
+    <div class="card">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:1rem 1.25rem;border-bottom:1px solid var(--border);">
+        Proyección de pagos pendientes agrupada por fecha proyectada
+      </div>
+      <div class="tabla-wrap" id="tabla-proyeccion">
+        <div class="empty"><span class="spinner"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB HISTORIAL ════════════════════════════════════════════ -->
+  <div id="tab-historial" style="display:none;">
+    <div class="card">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:1rem 1.25rem;border-bottom:1px solid var(--border);">
+        Pagos y abonos registrados
+      </div>
+      <div class="tabla-wrap" id="tabla-historial">
+        <div class="empty"><span class="spinner"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB DUPLICADOS ═══════════════════════════════════════════ -->
+  <div id="tab-duplicados" style="display:none;">
+    <div class="banner banner-warn" style="align-items:flex-start;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div>
+        Estas facturas comparten el mismo número y probablemente se cargaron dos veces desde el archivo de Drive.
+        Revisá cada grupo y eliminá la copia que sobra directamente del origen (hojas <strong>Resumen</strong>, <strong>Facturas</strong> y <strong>Control</strong>).
+        Esta acción no se puede deshacer.
+      </div>
+    </div>
+    <div id="lista-duplicados">
+      <div class="empty"><span class="spinner"></span></div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div style="display:flex;align-items:center;gap:6px;"><span class="sdot" id="conn-dot"></span><span id="conn-label">Conectando…</span></div>
+    <span class="ssep"></span>
+    <span id="status-msg">—</span>
+    <span style="margin-left:auto;">v1.0 · Cuentas por pagar · Grupo del Sol</span>
+  </div>
+</main>
+
+<!-- MODAL REGISTRAR PAGO -->
+<div class="modal-bg" id="modal-pago">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Registrar pago</div>
+        <div class="modal-sub" id="pago-sub">Factura —</div>
+      </div>
+      <button class="close-btn" onclick="cerrarModal('modal-pago')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="pago-numero">
+      <div class="field">
+        <label for="pago-fecha">Fecha real de pago</label>
+        <input type="date" id="pago-fecha">
+      </div>
+      <div class="field">
+        <label for="pago-referencia">Referencia bancaria</label>
+        <input type="text" id="pago-referencia" placeholder="Nº de transferencia / comprobante">
+        <div class="field-hint">Al guardar, la factura pasa a estado <strong>Cancelada</strong>.</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="cerrarModal('modal-pago')">Cancelar</button>
+      <button class="btn-save" onclick="guardarPago()">Guardar pago</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ABONO PARCIAL -->
+<div class="modal-bg" id="modal-abono">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Abono parcial</div>
+        <div class="modal-sub" id="abono-sub">Factura —</div>
+      </div>
+      <button class="close-btn" onclick="cerrarModal('modal-abono')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="abono-numero">
+      <div class="field">
+        <label for="abono-fecha">Fecha del abono</label>
+        <input type="date" id="abono-fecha">
+      </div>
+      <div class="field">
+        <label for="abono-monto">Monto abonado</label>
+        <input type="number" step="0.01" id="abono-monto" placeholder="0.00">
+        <div class="field-hint" id="abono-saldo-hint"></div>
+      </div>
+      <div class="field">
+        <label for="abono-referencia">Referencia bancaria</label>
+        <input type="text" id="abono-referencia" placeholder="Nº de transferencia / comprobante">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="cerrarModal('modal-abono')">Cancelar</button>
+      <button class="btn-save" onclick="guardarAbono()">Guardar abono</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ─── CONFIGURACIÓN ────────────────────────────────────────────────
+// Mismo Sheet de "Datos de compras" (facturas-extractor).
+const COMPRAS_SHEET_ID = '1Hd1CuITuquWIhSmT5CHIDliymUN0GwKhI8hvRc5ZAIQ';
+// Pegá aquí la URL del Web App del Apps Script de facturas-extractor
+// (Implementar > Nueva implementación > Aplicación web > Acceso: Cualquiera).
+const APPS_SCRIPT_AP = 'TODO_APPS_SCRIPT_COMPRAS_LORITO';
+// ─────────────────────────────────────────────────────────────────
+
+const hoy = new Date();
+document.getElementById('date-chip').textContent =
+  hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
+const hoyISO = hoy.toISOString().slice(0,10);
+
+const fmt  = n => '₡' + Number(n||0).toLocaleString('es-CR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+
+let dataResumen  = [];   // hoja Resumen (una fila por factura)
+let dataFacturas = [];   // hoja Facturas (líneas, para cuenta de gasto)
+let dataAP       = [];   // hoja CuentasPorPagar (proyección / pago real / abonado)
+let dataAbonos   = [];   // hoja Abonos (historial de abonos)
+let proveedores  = [];   // localStorage 'proveedores'
+let facturasAP   = [];   // dataset ya unido y calculado
+let pagFacturas  = 1;
+const POR_PAGINA = 15;
+const seleccionadas = new Set(); // números de factura marcados con check
+
+// ── CATEGORÍA (cuenta de gasto) → CSS ─────────────────────────────
+function catClass(cat) {
+  const c = (cat||'').toLowerCase();
+  if (c.includes('fruta') || c.includes('verdura')) return 'cat-frutas';
+  if (c.includes('bebida')) return 'cat-bebidas';
+  if (c.includes('lácteo') || c.includes('lacteo')) return 'cat-lacteos';
+  if (c.includes('grano') || c.includes('cereal')) return 'cat-granos';
+  if (c.includes('condimento') || c.includes('especia')) return 'cat-condimentos';
+  return 'cat-otro';
+}
+
+// ── GVIZ: leer hoja pública del Sheet de compras ──────────────────
+// Nota: si la hoja solicitada no existe todavía (p.ej. "CuentasPorPagar"
+// o "Abonos" antes del primer guardado), el endpoint gviz de Google
+// hace fallback silencioso a la PRIMERA hoja del archivo en vez de dar
+// error. Por eso se valida con `expectedCol` que la hoja devuelta sea
+// realmente la que se pidió antes de aceptar los datos.
+function gvizLoad(hoja, expectedCol) {
+  return new Promise(function(resolve) {
+    var cb    = '_ap_' + Math.random().toString(36).slice(2,10);
+    var url   = 'https://docs.google.com/spreadsheets/d/' + COMPRAS_SHEET_ID
+              + '/gviz/tq?tqx=responseHandler:' + cb
+              + '&sheet=' + encodeURIComponent(hoja);
+    var timer = setTimeout(function() { cleanup(); resolve([]); }, 15000);
+    function cleanup() {
+      clearTimeout(timer);
+      try { delete window[cb]; } catch(e) {}
+      try { if (s && s.parentNode) document.body.removeChild(s); } catch(e) {}
+    }
+    window[cb] = function(data) {
+      cleanup();
+      try {
+        var cols = (data.table.cols||[]).map(function(c){ return c.label||c.id||''; });
+        if (expectedCol && cols.indexOf(expectedCol) === -1) { resolve([]); return; }
+        var rows = (data.table.rows||[]).filter(function(r){ return r&&r.c; }).map(function(row){
+          var obj = {};
+          cols.forEach(function(col,i){
+            var cell = row.c[i];
+            obj[col] = cell ? (cell.f!=null?cell.f:(cell.v!=null?cell.v:'')) : '';
+          });
+          return obj;
+        });
+        resolve(rows);
+      } catch(e2) { resolve([]); }
+    };
+    var s = document.createElement('script');
+    s.onerror = function(){ cleanup(); resolve([]); };
+    s.src = url;
+    document.body.appendChild(s);
+  });
+}
+
+function getProveedores() { try { return JSON.parse(localStorage.getItem('proveedores')||'[]'); } catch { return []; } }
+
+async function cargarDatos() {
+  document.getElementById('status-carga').innerHTML = '<span class="spinner"></span> Conectando con Google Sheets…';
+  try {
+    const [dR, dF, dAP, dAb] = await Promise.all([
+      gvizLoad('Resumen', 'Número de factura'),
+      gvizLoad('Facturas', 'Categoría'),
+      gvizLoad('CuentasPorPagar', 'Fecha proyectada de pago'),
+      gvizLoad('Abonos', 'Referencia bancaria')
+    ]);
+
+    if (!dR.length && !dF.length) throw new Error('Sin datos en la hoja de compras');
+
+    dataResumen  = dR;
+    dataFacturas = dF;
+    dataAP       = dAP;
+    dataAbonos   = dAb;
+    proveedores  = getProveedores();
+
+    document.getElementById('conn-dot').classList.remove('off');
+    document.getElementById('conn-label').textContent = 'Conectado · Google Sheets';
+    document.getElementById('status-carga').innerHTML =
+      '<span style="color:var(--green);">✓</span> ' + dataResumen.length + ' facturas cargadas';
+
+    construirFacturasAP();
+    inicializar();
+
+  } catch(e) {
+    console.error('Error cargando cuentas por pagar:', e.message);
+    document.getElementById('conn-dot').classList.add('off');
+    document.getElementById('conn-label').textContent = 'Error de conexión';
+    document.getElementById('status-carga').innerHTML =
+      '<span style="color:var(--red);">✕</span> ' + e.message;
+    ['tabla-facturas','tabla-proyeccion','tabla-historial'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.innerHTML = '<div class="empty">No se pudo conectar. Verificá que el Sheet sea público (Compartir → Cualquiera con el enlace).</div>';
+    });
+  }
+}
+
+function limpiarMonto(v) { return parseFloat(String(v||'0').replace(/[,₡\s]/g,'')) || 0; }
+
+function sumarDias(fechaISO, dias) {
+  if (!fechaISO) return null;
+  const f = String(fechaISO).substring(0,10);
+  const d = new Date(f + 'T00:00:00');
+  if (isNaN(d.getTime())) return null;
+  d.setDate(d.getDate() + (parseInt(dias)||0));
+  return d.toISOString().slice(0,10);
+}
+
+function buscarProveedor(nombreFactura) {
+  const nombre = (nombreFactura||'').trim().toLowerCase();
+  if (!nombre) return null;
+  return proveedores.find(p =>
+    (p.nombre_juridico||'').trim().toLowerCase() === nombre ||
+    (p.nombre_comercial||'').trim().toLowerCase() === nombre
+  ) || null;
+}
+
+// ── CONSTRUIR DATASET UNIDO: Resumen + Facturas(categoría) + CuentasPorPagar + proveedores ──
+function construirFacturasAP() {
+  // Cuenta de gasto por factura = categorías únicas de sus líneas
+  const cuentaGastoMap = {};
+  dataFacturas.forEach(f => {
+    const num = f['Número de factura'] || '';
+    const cat = f['Categoría'] || '';
+    if (!num) return;
+    if (!cuentaGastoMap[num]) cuentaGastoMap[num] = new Set();
+    if (cat) cuentaGastoMap[num].add(cat);
+  });
+
+  // Index de la hoja CuentasPorPagar por número de factura
+  const apMap = {};
+  dataAP.forEach(r => { apMap[r['Número de factura']] = r; });
+
+  // Conteo para detectar duplicados
+  const conteo = {};
+  dataResumen.forEach(r => {
+    const num = r['Número de factura'] || '';
+    if (!num) return;
+    conteo[num] = (conteo[num]||0) + 1;
+  });
+  const duplicados = Object.keys(conteo).filter(k => conteo[k] > 1);
+  const bannerDup = document.getElementById('banner-duplicados');
+  if (duplicados.length) {
+    bannerDup.style.display = 'flex';
+    document.getElementById('banner-duplicados-msg').textContent =
+      ' Revisá: ' + duplicados.slice(0,8).join(', ') + (duplicados.length>8 ? ' y ' + (duplicados.length-8) + ' más…' : '');
+  } else {
+    bannerDup.style.display = 'none';
+  }
+  const dupTabBadge = document.getElementById('dup-tab-count');
+  if (duplicados.length) {
+    dupTabBadge.textContent = duplicados.length;
+    dupTabBadge.style.display = 'inline-flex';
+  } else {
+    dupTabBadge.style.display = 'none';
+  }
+
+  facturasAP = dataResumen.filter(r => r['Número de factura']).map(r => {
+    const numero  = r['Número de factura'];
+    const proveedorNombre = r['Proveedor'] || '';
+    const fechaFactura = String(r['Fecha de factura']||'').substring(0,10);
+    const monto   = limpiarMonto(r['Total']);
+    const cuentas = [...(cuentaGastoMap[numero] || [])];
+    const apRow   = apMap[numero] || null;
+
+    const prov    = buscarProveedor(proveedorNombre);
+    const diasCredito = prov ? (parseInt(prov.condicion_pago)||0) : 0;
+    const sinProveedor = !prov;
+
+    const fechaVencimiento = sumarDias(fechaFactura, diasCredito);
+    const fechaProyectada  = apRow ? String(apRow['Fecha proyectada de pago']||'').substring(0,10) : '';
+    const fechaRealPago    = apRow ? String(apRow['Fecha real de pago']||'').substring(0,10) : '';
+    const referenciaPago   = apRow ? String(apRow['Referencia de pago']||'') : '';
+    const totalAbonado     = apRow ? (parseFloat(apRow['Total abonado'])||0) : 0;
+    const saldoPendiente   = Math.round((monto - totalAbonado) * 100) / 100;
+
+    let estado;
+    if (fechaRealPago) {
+      estado = 'Cancelada';
+    } else if (totalAbonado > 0 && saldoPendiente > 0.01) {
+      estado = 'Abono';
+    } else if (totalAbonado > 0 && saldoPendiente <= 0.01) {
+      estado = 'Cancelada';
+    } else if (fechaVencimiento && hoyISO > fechaVencimiento) {
+      estado = 'Vencida';
+    } else {
+      estado = 'A tiempo';
+    }
+
+    return {
+      numero, proveedor: proveedorNombre, fechaFactura, monto, cuentas,
+      diasCredito, sinProveedor, fechaVencimiento, fechaProyectada, fechaRealPago, referenciaPago,
+      totalAbonado, saldoPendiente, estado, duplicada: (conteo[numero]||0) > 1
+    };
+  });
+}
+
+function abonosDeFactura(numero) {
+  return dataAbonos.filter(a => a['Número de factura'] === numero);
+}
+
+// ── INICIALIZAR ───────────────────────────────────────────────────
+function inicializar() {
+  const pendientes = facturasAP.filter(f => f.estado !== 'Cancelada');
+  const totalPorPagar = pendientes.reduce((a,f) => a + f.saldoPendiente, 0);
+  const vencidas = facturasAP.filter(f => f.estado === 'Vencida').length;
+
+  const en7dias = facturasAP.filter(f => {
+    if (f.estado !== 'A tiempo' || !f.fechaVencimiento) return false;
+    const dias = (new Date(f.fechaVencimiento) - new Date(hoyISO)) / 86400000;
+    return dias >= 0 && dias <= 7;
+  }).length;
+
+  // Pagado este mes: pagos totales (fecha real) + abonos registrados en el mes en curso
+  const mesActual = hoyISO.substring(0,7);
+  const pagosCompletos = facturasAP
+    .filter(f => f.fechaRealPago && f.fechaRealPago.substring(0,7) === mesActual)
+    .reduce((a,f) => a + (f.monto - (f.totalAbonado||0)), 0);
+  const abonosDelMes = dataAbonos
+    .filter(a => String(a['Fecha de abono']||'').substring(0,7) === mesActual)
+    .reduce((a,r) => a + (parseFloat(r['Monto abonado'])||0), 0);
+  const pagadoMes = pagosCompletos + abonosDelMes;
+
+  document.getElementById('kpi-total').textContent     = fmt(totalPorPagar);
+  document.getElementById('kpi-vencidas').textContent  = vencidas;
+  document.getElementById('kpi-porvencer').textContent = en7dias;
+  document.getElementById('kpi-pagado-mes').textContent = fmt(pagadoMes);
+  document.getElementById('status-msg').textContent    = `${facturasAP.length} facturas · Por pagar: ${fmt(totalPorPagar)}`;
+
+  // Filtro de cuentas de gasto
+  const cuentas = [...new Set(facturasAP.flatMap(f => f.cuentas))].sort();
+  const selCuenta = document.getElementById('f-cuenta');
+  const valCuenta = selCuenta.value;
+  selCuenta.innerHTML = '<option value="">Todas las cuentas de gasto</option>' +
+    cuentas.map(c => `<option value="${c}"${c===valCuenta?' selected':''}>${c}</option>`).join('');
+
+  // Filtro de proveedores
+  const provsUnicos = [...new Set(facturasAP.map(f => f.proveedor).filter(Boolean))].sort();
+  const selProv = document.getElementById('f-proveedor');
+  const valProv = selProv.value;
+  selProv.innerHTML = '<option value="">Todos los proveedores</option>' +
+    provsUnicos.map(p => `<option value="${p}"${p===valProv?' selected':''}>${p}</option>`).join('');
+
+  // Filtro de años
+  const anios = [...new Set(facturasAP.map(f => (f.fechaFactura||'').substring(0,4)).filter(Boolean))].sort().reverse();
+  const selAnio = document.getElementById('f-anio');
+  const valAnio = selAnio.value;
+  selAnio.innerHTML = '<option value="">Todos los años</option>' +
+    anios.map(a => `<option value="${a}"${a===valAnio?' selected':''}>${a}</option>`).join('');
+
+  renderFacturas();
+  renderProyeccion();
+  renderHistorial();
+  renderDuplicados();
+  actualizarBarraSeleccion();
+}
+
+// ── RENDER FACTURAS ───────────────────────────────────────────────
+function renderFacturas() {
+  pagFacturas = 1;
+  _renderFacturas();
+}
+
+function badgeEstado(estado) {
+  const map = {
+    'A tiempo':  ['b-tiempo', '●'],
+    'Vencida':   ['b-vencida', '●'],
+    'Abono':     ['b-abono', '●'],
+    'Cancelada': ['b-cancelada', '✓']
+  };
+  const [cls, dot] = map[estado] || ['b-tiempo','●'];
+  return `<span class="badge ${cls}"><span class="b-dot"></span>${estado}</span>`;
+}
+
+function limpiarFiltroFecha() {
+  document.getElementById('f-desde').value = '';
+  document.getElementById('f-hasta').value = '';
+  renderFacturas();
+}
+
+// ── PANEL DE FILTROS (colapsable) ─────────────────────────────────
+function toggleFiltros(forzarAbierto) {
+  const panel = document.getElementById('panel-filtros');
+  const chevron = document.getElementById('filtro-chevron');
+  const abierto = forzarAbierto != null ? forzarAbierto : panel.style.display === 'none';
+  panel.style.display = abierto ? 'block' : 'none';
+  chevron.classList.toggle('open', abierto);
+}
+
+function limpiarTodosFiltros() {
+  document.getElementById('s-fact').value = '';
+  document.getElementById('f-estado').value = '';
+  document.getElementById('f-cuenta').value = '';
+  document.getElementById('f-proveedor').value = '';
+  document.getElementById('f-anio').value = '';
+  document.getElementById('f-mes').value = '';
+  document.getElementById('f-desde').value = '';
+  document.getElementById('f-hasta').value = '';
+  renderFacturas();
+}
+
+function actualizarContadorFiltros() {
+  const ids = ['f-estado','f-cuenta','f-proveedor','f-anio','f-mes','f-desde','f-hasta'];
+  const activos = ids.filter(id => document.getElementById(id).value).length;
+  const badge = document.getElementById('filtro-count');
+  const btn   = document.getElementById('btn-toggle-filtros');
+  if (activos) {
+    badge.textContent = activos;
+    badge.style.display = 'inline-flex';
+    btn.classList.add('activo');
+  } else {
+    badge.style.display = 'none';
+    btn.classList.remove('activo');
+  }
+}
+
+function _renderFacturas() {
+  const busq      = document.getElementById('s-fact').value.toLowerCase();
+  const estado    = document.getElementById('f-estado').value;
+  const cuenta    = document.getElementById('f-cuenta').value;
+  const proveedor = document.getElementById('f-proveedor').value;
+  const anio      = document.getElementById('f-anio').value;
+  const mes       = document.getElementById('f-mes').value;
+  const desde     = document.getElementById('f-desde').value;
+  const hasta     = document.getElementById('f-hasta').value;
+
+  actualizarContadorFiltros();
+
+  let lista = facturasAP.filter(f => {
+    const matchBusq      = !busq || f.numero.toLowerCase().includes(busq) || f.proveedor.toLowerCase().includes(busq);
+    const matchEstado    = !estado || f.estado === estado;
+    const matchCuenta    = !cuenta || f.cuentas.includes(cuenta);
+    const matchProveedor = !proveedor || f.proveedor === proveedor;
+    const matchAnio      = !anio || f.fechaFactura.substring(0,4) === anio;
+    const matchMes       = !mes || f.fechaFactura.substring(5,7) === mes;
+    const matchDesde     = !desde || (f.fechaFactura && f.fechaFactura >= desde);
+    const matchHasta     = !hasta || (f.fechaFactura && f.fechaFactura <= hasta);
+    return matchBusq && matchEstado && matchCuenta && matchProveedor && matchAnio && matchMes && matchDesde && matchHasta;
+  }).sort((a,b) => (b.fechaFactura||'').localeCompare(a.fechaFactura||''));
+
+  const total  = lista.length;
+  const inicio = (pagFacturas-1) * POR_PAGINA;
+  const pagina = lista.slice(inicio, inicio + POR_PAGINA);
+
+  if (!lista.length) {
+    document.getElementById('tabla-facturas').innerHTML = '<div class="empty">Sin resultados.</div>';
+    document.getElementById('pag-facturas').style.display = 'none';
+    return;
+  }
+
+  const filas = pagina.map((f, idx) => {
+    const rowId = 'frow-' + (inicio + idx);
+    const cuentaChips = f.cuentas.length
+      ? f.cuentas.map(c => `<span class="cat-chip ${catClass(c)}">${c}</span>`).join('')
+      : '<span class="cat-chip cat-otro">Sin categoría</span>';
+    const dupBadge = f.duplicada ? `<span class="badge b-dup" style="margin-left:6px;">⚠ Duplicada</span>` : '';
+    const sinProvBadge = f.sinProveedor ? `<span title="Proveedor sin registrar en la base de proveedores" style="font-size:10px;color:var(--red);margin-left:4px;">⚠</span>` : '';
+
+    const puedeAccionar = f.estado !== 'Cancelada';
+    const abonos = abonosDeFactura(f.numero);
+
+    const detalleHtml = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;">Fechas clave</div>
+          <div style="font-size:12px;color:var(--muted);line-height:2;">
+            Fecha factura: <strong style="color:var(--text);">${f.fechaFactura||'—'}</strong><br>
+            Días de crédito: <strong style="color:var(--text);">${f.diasCredito}</strong><br>
+            Vence: <strong style="color:var(--text);">${f.fechaVencimiento||'—'}</strong><br>
+            Fecha proyectada de pago: <strong style="color:var(--text);">${f.fechaProyectada||'Sin definir'}</strong><br>
+            Fecha real de pago: <strong style="color:var(--text);">${f.fechaRealPago||'—'}</strong><br>
+            ${f.fechaRealPago ? `Referencia bancaria: <strong style="color:var(--text);">${f.referenciaPago||'—'}</strong>` : ''}
+          </div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;">Abonos registrados</div>
+          ${abonos.length ? `
+            <table class="detail-table">
+              <thead><tr><th>Fecha</th><th>Referencia</th><th style="text-align:right;">Monto</th></tr></thead>
+              <tbody>
+                ${abonos.map(a => `<tr>
+                  <td>${String(a['Fecha de abono']||'').substring(0,10)}</td>
+                  <td style="color:var(--muted);">${a['Referencia bancaria']||'—'}</td>
+                  <td class="num">${fmt(a['Monto abonado'])}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>` : '<div style="font-size:12px;color:var(--subtle);">Sin abonos registrados.</div>'}
+        </div>
+      </div>`;
+
+    return `
+      <tr class="tr-main" onclick="toggleDetalle('${rowId}')">
+        <td onclick="event.stopPropagation()">
+          <input type="checkbox" class="chk-fila" data-numero="${f.numero}" ${seleccionadas.has(f.numero)?'checked':''}
+            onchange="toggleSeleccionFila('${f.numero}', this.checked)">
+        </td>
+        <td>
+          <svg class="toggle-arrow" id="${rowId}-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+        </td>
+        <td style="color:var(--muted);font-size:12px;">${f.fechaFactura||'—'}</td>
+        <td style="font-size:12px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.numero}${dupBadge}</td>
+        <td style="font-weight:500;">${f.proveedor}${sinProvBadge}</td>
+        <td>${cuentaChips}</td>
+        <td class="num" style="font-weight:600;">${fmt(f.monto)}</td>
+        <td class="num" style="color:var(--muted);">${f.diasCredito}d</td>
+        <td style="font-size:12px;color:${f.estado==='Vencida'?'var(--red)':'var(--muted)'};">${f.fechaVencimiento||'—'}</td>
+        <td>${badgeEstado(f.estado)}</td>
+        <td onclick="event.stopPropagation()">
+          <input type="date" class="proj-input" value="${f.fechaProyectada||''}" ${!puedeAccionar?'disabled':''}
+            onchange="guardarProyeccionFactura('${f.numero}', this.value)">
+        </td>
+        <td class="num" style="font-weight:600;">${fmt(f.saldoPendiente)}</td>
+        <td onclick="event.stopPropagation()">
+          <div class="row-actions">
+            <button class="btn-mini pago" ${!puedeAccionar?'disabled':''} onclick="abrirModalPago('${f.numero}')">Pago total</button>
+            <button class="btn-mini abono" ${!puedeAccionar?'disabled':''} onclick="abrirModalAbono('${f.numero}')">Abono</button>
+          </div>
+        </td>
+      </tr>
+      <tr class="tr-detail" id="${rowId}">
+        <td class="detail-cell" colspan="12">
+          <div class="detail-inner">${detalleHtml}</div>
+        </td>
+      </tr>`;
+  }).join('');
+
+  const todasMarcadasEnPagina = pagina.length > 0 && pagina.every(f => seleccionadas.has(f.numero));
+
+  document.getElementById('tabla-facturas').innerHTML = `
+    <table>
+      <thead><tr>
+        <th><input type="checkbox" id="chk-all" ${todasMarcadasEnPagina?'checked':''} onchange="toggleSeleccionarTodos(this.checked)"></th>
+        <th></th><th>Fecha</th><th>Factura</th><th>Proveedor</th><th>Cuenta de gasto</th>
+        <th style="text-align:right;">Monto</th><th>Crédito</th><th>Vence</th><th>Estado</th>
+        <th>Fecha proyectada</th><th style="text-align:right;">Saldo</th><th>Acciones</th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+
+  window._paginaActualNumeros = pagina.map(f => f.numero);
+
+  renderPaginacion('pag-facturas', total, pagFacturas, p => { pagFacturas = p; _renderFacturas(); });
+}
+
+function toggleDetalle(id) {
+  const el  = document.getElementById(id);
+  const ico = document.getElementById(id + '-ico');
+  const open = !el.classList.contains('open');
+  el.classList.toggle('open', open);
+  if (ico) ico.classList.toggle('open', open);
+}
+
+// ── SELECCIÓN DE FACTURAS (checkboxes) ────────────────────────────
+function toggleSeleccionFila(numero, marcado) {
+  if (marcado) seleccionadas.add(numero); else seleccionadas.delete(numero);
+  actualizarBarraSeleccion();
+}
+
+function toggleSeleccionarTodos(marcado) {
+  const numeros = window._paginaActualNumeros || [];
+  numeros.forEach(n => { if (marcado) seleccionadas.add(n); else seleccionadas.delete(n); });
+  document.querySelectorAll('.chk-fila').forEach(chk => { chk.checked = marcado; });
+  actualizarBarraSeleccion();
+}
+
+function limpiarSeleccion() {
+  seleccionadas.clear();
+  document.querySelectorAll('.chk-fila').forEach(chk => { chk.checked = false; });
+  const chkAll = document.getElementById('chk-all');
+  if (chkAll) chkAll.checked = false;
+  actualizarBarraSeleccion();
+}
+
+function actualizarBarraSeleccion() {
+  const bar = document.getElementById('seleccion-bar');
+  if (!bar) return;
+  if (!seleccionadas.size) { bar.style.display = 'none'; return; }
+  const total = facturasAP
+    .filter(f => seleccionadas.has(f.numero))
+    .reduce((a,f) => a + f.monto, 0);
+  document.getElementById('sel-count').textContent = seleccionadas.size;
+  document.getElementById('sel-total').textContent = fmt(total);
+  bar.style.display = 'flex';
+}
+
+// ── RENDER PROYECCIÓN (agrupada por fecha proyectada) ─────────────
+function renderProyeccion() {
+  const pendientes = facturasAP.filter(f => f.estado !== 'Cancelada');
+  const conFecha = pendientes.filter(f => f.fechaProyectada);
+  const sinFecha = pendientes.filter(f => !f.fechaProyectada);
+
+  const grupos = {};
+  conFecha.forEach(f => {
+    if (!grupos[f.fechaProyectada]) grupos[f.fechaProyectada] = [];
+    grupos[f.fechaProyectada].push(f);
+  });
+  const fechas = Object.keys(grupos).sort();
+
+  if (!fechas.length && !sinFecha.length) {
+    document.getElementById('tabla-proyeccion').innerHTML = '<div class="empty">No hay facturas pendientes de pago.</div>';
+    return;
+  }
+
+  let acumulado = 0;
+  const filasFechas = fechas.map(fecha => {
+    const grupo = grupos[fecha];
+    const totalGrupo = grupo.reduce((a,f) => a + f.saldoPendiente, 0);
+    acumulado += totalGrupo;
+    const rowId = 'proy-' + fecha;
+    const detalle = `
+      <table class="detail-table">
+        <thead><tr><th>Factura</th><th>Proveedor</th><th style="text-align:right;">Saldo</th></tr></thead>
+        <tbody>
+          ${grupo.map(f => `<tr>
+            <td style="color:var(--muted);">${f.numero}</td>
+            <td>${f.proveedor}</td>
+            <td class="num">${fmt(f.saldoPendiente)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+    return `
+      <tr class="tr-main" onclick="toggleDetalle('${rowId}')">
+        <td><svg class="toggle-arrow" id="${rowId}-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg></td>
+        <td style="font-weight:500;">${fecha}</td>
+        <td class="num">${grupo.length} factura${grupo.length!==1?'s':''}</td>
+        <td class="num" style="font-weight:700;color:var(--green);">${fmt(totalGrupo)}</td>
+        <td class="num" style="color:var(--muted);">${fmt(acumulado)}</td>
+      </tr>
+      <tr class="tr-detail" id="${rowId}">
+        <td class="detail-cell" colspan="5"><div class="detail-inner">${detalle}</div></td>
+      </tr>`;
+  }).join('');
+
+  const filaSinFecha = sinFecha.length ? `
+    <tr>
+      <td></td>
+      <td style="font-weight:500;color:var(--red);">Sin fecha proyectada</td>
+      <td class="num">${sinFecha.length} factura${sinFecha.length!==1?'s':''}</td>
+      <td class="num" style="font-weight:700;color:var(--red);">${fmt(sinFecha.reduce((a,f)=>a+f.saldoPendiente,0))}</td>
+      <td></td>
+    </tr>` : '';
+
+  document.getElementById('tabla-proyeccion').innerHTML = `
+    <table>
+      <thead><tr><th></th><th>Fecha proyectada</th><th style="text-align:right;">Facturas</th><th style="text-align:right;">Total del día</th><th style="text-align:right;">Acumulado</th></tr></thead>
+      <tbody>${filasFechas}${filaSinFecha}</tbody>
+    </table>`;
+}
+
+// ── RENDER HISTORIAL (pagos totales + abonos) ─────────────────────
+function renderHistorial() {
+  const pagos = facturasAP.filter(f => f.fechaRealPago).map(f => ({
+    fecha: f.fechaRealPago, tipo: 'Pago total', numero: f.numero, proveedor: f.proveedor,
+    monto: f.monto - (f.totalAbonado||0), referencia: f.referenciaPago || '—'
+  }));
+  const abonos = dataAbonos.map(a => ({
+    fecha: String(a['Fecha de abono']||'').substring(0,10), tipo: 'Abono', numero: a['Número de factura'],
+    proveedor: (facturasAP.find(f => f.numero === a['Número de factura'])||{}).proveedor || '—',
+    monto: parseFloat(a['Monto abonado'])||0, referencia: a['Referencia bancaria']||'—'
+  }));
+
+  const todos = [...pagos, ...abonos].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
+
+  if (!todos.length) {
+    document.getElementById('tabla-historial').innerHTML = '<div class="empty">Aún no se han registrado pagos ni abonos.</div>';
+    return;
+  }
+
+  const filas = todos.map(r => `
+    <tr>
+      <td style="color:var(--muted);font-size:12px;">${r.fecha||'—'}</td>
+      <td>${r.tipo === 'Pago total' ? '<span class="badge b-cancelada"><span class="b-dot"></span>Pago total</span>' : '<span class="badge b-abono"><span class="b-dot"></span>Abono</span>'}</td>
+      <td style="font-size:12px;color:var(--muted);">${r.numero}</td>
+      <td>${r.proveedor}</td>
+      <td style="color:var(--muted);">${r.referencia}</td>
+      <td class="num" style="font-weight:600;">${fmt(r.monto)}</td>
+    </tr>`).join('');
+
+  document.getElementById('tabla-historial').innerHTML = `
+    <table>
+      <thead><tr><th>Fecha</th><th>Tipo</th><th>Factura</th><th>Proveedor</th><th>Referencia</th><th style="text-align:right;">Monto</th></tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+}
+
+// ── DUPLICADOS ────────────────────────────────────────────────────
+// Agrupa por Número de factura los registros repetidos en la hoja Resumen
+// y calcula el "ordinal" (1ra, 2da... aparición) que identifica a cada
+// copia de forma estable, ya que el backend borra por posición y no por ID.
+function obtenerDuplicados() {
+  const conteo = {};
+  dataResumen.forEach(r => {
+    const num = r['Número de factura'] || '';
+    if (!num) return;
+    conteo[num] = (conteo[num]||0) + 1;
+  });
+  const numsDuplicados = new Set(Object.keys(conteo).filter(k => conteo[k] > 1));
+
+  const contadorOrdinal = {};
+  const grupos = {};
+  dataResumen.forEach(r => {
+    const num = r['Número de factura'] || '';
+    if (!num || !numsDuplicados.has(num)) return;
+    contadorOrdinal[num] = (contadorOrdinal[num]||0) + 1;
+    if (!grupos[num]) grupos[num] = [];
+    grupos[num].push({
+      ordinal: contadorOrdinal[num],
+      proveedor: r['Proveedor'] || '—',
+      cliente: r['Cliente'] || '—',
+      tipo: r['Tipo de documento'] || '—',
+      fechaFactura: String(r['Fecha de factura']||'').substring(0,10),
+      total: limpiarMonto(r['Total']),
+      fechaCarga: String(r['Fecha de carga']||'')
+    });
+  });
+  return grupos;
+}
+
+function renderDuplicados() {
+  const grupos = obtenerDuplicados();
+  const numeros = Object.keys(grupos);
+  const cont = document.getElementById('lista-duplicados');
+  if (!cont) return;
+
+  if (!numeros.length) {
+    cont.innerHTML = '<div class="empty">No hay facturas duplicadas. Todo en orden.</div>';
+    return;
+  }
+
+  cont.innerHTML = numeros.map(numero => {
+    const filas = grupos[numero].map(o => `
+      <tr>
+        <td style="font-size:12px;color:var(--muted);">Copia ${o.ordinal}</td>
+        <td style="color:var(--muted);">${o.fechaFactura||'—'}</td>
+        <td>${o.proveedor}</td>
+        <td style="color:var(--muted);">${o.cliente}</td>
+        <td style="color:var(--muted);font-size:12px;">${o.tipo}</td>
+        <td style="color:var(--muted);font-size:12px;">${o.fechaCarga||'—'}</td>
+        <td class="num" style="font-weight:600;">${fmt(o.total)}</td>
+        <td onclick="event.stopPropagation()">
+          <button class="btn-mini" style="border-color:var(--red-lt);background:var(--red-bg);color:var(--red);"
+            onclick="eliminarFacturaDuplicada('${numero}', ${o.ordinal})">Eliminar esta copia</button>
+        </td>
+      </tr>`).join('');
+
+    return `
+      <div class="card">
+        <div style="padding:.85rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+          <div>
+            <span style="font-family:var(--font-d);font-weight:700;font-size:14px;">${numero}</span>
+            <span class="badge b-dup" style="margin-left:8px;">${grupos[numero].length} copias</span>
+          </div>
+        </div>
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr>
+              <th></th><th>Fecha factura</th><th>Proveedor</th><th>Cliente</th><th>Tipo</th><th>Fecha de carga</th>
+              <th style="text-align:right;">Total</th><th>Acción</th>
+            </tr></thead>
+            <tbody>${filas}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function irATabDuplicados() {
+  const btn = document.getElementById('tab-btn-duplicados');
+  switchTab('duplicados', btn);
+}
+
+async function eliminarFacturaDuplicada(numero, ordinal) {
+  const grupo = obtenerDuplicados()[numero] || [];
+  const copia = grupo.find(o => o.ordinal === ordinal);
+  const detalle = copia ? `${copia.fechaFactura} · ${copia.proveedor} · ${fmt(copia.total)}` : numero;
+  if (!confirm(`¿Eliminar esta copia de la factura ${numero}?\n\n${detalle}\n\nSe borrará de las hojas Resumen, Facturas y Control en el archivo de Drive. Esta acción no se puede deshacer.`)) return;
+
+  try {
+    await postAP({ modulo: 'eliminar_factura', numero_factura: numero, ordinal: ordinal });
+    showToast('Copia eliminada. Actualizando datos…', 'success');
+    await cargarDatos();
+  } catch(e) {
+    showToast('No se pudo eliminar: ' + e.message, 'error');
+  }
+}
+
+// ── PAGINACIÓN ────────────────────────────────────────────────────
+function renderPaginacion(id, total, pag, cb) {
+  const pagEl   = document.getElementById(id);
+  const totalPag = Math.ceil(total / POR_PAGINA);
+  if (totalPag <= 1) { pagEl.style.display = 'none'; return; }
+
+  pagEl.style.display = 'flex';
+  const desde = (pag-1)*POR_PAGINA + 1;
+  const hasta = Math.min(pag*POR_PAGINA, total);
+
+  let btns = '';
+  for (let i = 1; i <= totalPag; i++) {
+    if (i === 1 || i === totalPag || Math.abs(i - pag) <= 1) {
+      btns += `<button class="pag-btn${i===pag?' active':''}" onclick="(${cb.toString()})(${i})">${i}</button>`;
+    } else if (Math.abs(i - pag) === 2) {
+      btns += `<span style="padding:4px;">…</span>`;
+    }
+  }
+
+  pagEl.innerHTML = `
+    <span>${desde}–${hasta} de ${total}</span>
+    <div class="pag-btns">
+      <button class="pag-btn" onclick="(${cb.toString()})(${pag-1})" ${pag<=1?'disabled':''}>← Anterior</button>
+      ${btns}
+      <button class="pag-btn" onclick="(${cb.toString()})(${pag+1})" ${pag>=totalPag?'disabled':''}>Siguiente →</button>
+    </div>`;
+}
+
+// ── TABS ──────────────────────────────────────────────────────────
+function switchTab(tab, el) {
+  ['facturas','proyeccion','historial','duplicados'].forEach(t =>
+    document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── ACCIONES: guardar en Apps Script ──────────────────────────────
+async function postAP(payload) {
+  const resp = await fetch(APPS_SCRIPT_AP, {
+    method: 'POST',
+    body: new URLSearchParams({ data: JSON.stringify(payload) })
+  });
+  const json = await resp.json();
+  if (!json.ok) throw new Error(json.error || 'Error al guardar');
+  return json.result;
+}
+
+function facturaPorNumero(numero) { return facturasAP.find(f => f.numero === numero); }
+
+async function guardarProyeccionFactura(numero, fecha) {
+  const f = facturaPorNumero(numero);
+  if (!f) return;
+  try {
+    await postAP({
+      modulo: 'guardar_proyeccion',
+      numero_factura: numero, proveedor: f.proveedor, fecha_factura: f.fechaFactura,
+      monto: f.monto, cuenta_gasto: f.cuentas.join(', '), fecha_proyectada: fecha
+    });
+    f.fechaProyectada = fecha;
+    showToast('Fecha proyectada guardada ✓', 'success');
+    renderProyeccion();
+  } catch(e) {
+    showToast('No se pudo guardar: ' + e.message, 'error');
+  }
+}
+
+// ── MODAL PAGO TOTAL ───────────────────────────────────────────────
+function abrirModalPago(numero) {
+  const f = facturaPorNumero(numero);
+  if (!f) return;
+  document.getElementById('pago-numero').value = numero;
+  document.getElementById('pago-sub').textContent = `${numero} · ${f.proveedor} · ${fmt(f.saldoPendiente)}`;
+  document.getElementById('pago-fecha').value = hoyISO;
+  document.getElementById('pago-referencia').value = '';
+  document.getElementById('modal-pago').classList.add('open');
+}
+
+async function guardarPago() {
+  const numero = document.getElementById('pago-numero').value;
+  const fecha  = document.getElementById('pago-fecha').value;
+  const referencia = document.getElementById('pago-referencia').value.trim();
+  if (!fecha) { showToast('Ingresá la fecha de pago.', 'error'); return; }
+  const f = facturaPorNumero(numero);
+  if (!f) return;
+  try {
+    await postAP({
+      modulo: 'registrar_pago',
+      numero_factura: numero, proveedor: f.proveedor, fecha_factura: f.fechaFactura,
+      monto: f.monto, cuenta_gasto: f.cuentas.join(', '), fecha_pago: fecha, referencia_pago: referencia
+    });
+    f.fechaRealPago = fecha;
+    f.referenciaPago = referencia;
+    f.estado = 'Cancelada';
+    f.saldoPendiente = 0;
+    cerrarModal('modal-pago');
+    showToast('Pago registrado. Factura marcada como Cancelada ✓', 'success');
+    inicializar();
+  } catch(e) {
+    showToast('No se pudo registrar el pago: ' + e.message, 'error');
+  }
+}
+
+// ── MODAL ABONO PARCIAL ────────────────────────────────────────────
+function abrirModalAbono(numero) {
+  const f = facturaPorNumero(numero);
+  if (!f) return;
+  document.getElementById('abono-numero').value = numero;
+  document.getElementById('abono-sub').textContent = `${numero} · ${f.proveedor}`;
+  document.getElementById('abono-fecha').value = hoyISO;
+  document.getElementById('abono-monto').value = '';
+  document.getElementById('abono-monto').max = f.saldoPendiente;
+  document.getElementById('abono-referencia').value = '';
+  document.getElementById('abono-saldo-hint').textContent = `Saldo pendiente: ${fmt(f.saldoPendiente)}`;
+  document.getElementById('modal-abono').classList.add('open');
+}
+
+async function guardarAbono() {
+  const numero = document.getElementById('abono-numero').value;
+  const fecha  = document.getElementById('abono-fecha').value;
+  const monto  = parseFloat(document.getElementById('abono-monto').value);
+  const referencia = document.getElementById('abono-referencia').value.trim();
+  if (!fecha) { showToast('Ingresá la fecha del abono.', 'error'); return; }
+  if (!monto || monto <= 0) { showToast('Ingresá un monto de abono válido.', 'error'); return; }
+
+  const f = facturaPorNumero(numero);
+  if (!f) return;
+  try {
+    const result = await postAP({
+      modulo: 'registrar_abono',
+      numero_factura: numero, proveedor: f.proveedor, fecha_factura: f.fechaFactura,
+      monto: f.monto, cuenta_gasto: f.cuentas.join(', '),
+      fecha_abono: fecha, monto_abono: monto, referencia: referencia
+    });
+    dataAbonos.push({ 'Número de factura': numero, 'Fecha de abono': fecha, 'Monto abonado': monto, 'Referencia bancaria': referencia });
+    f.totalAbonado = result.total_abonado != null ? result.total_abonado : (f.totalAbonado||0) + monto;
+    f.saldoPendiente = Math.round((f.monto - f.totalAbonado) * 100) / 100;
+    f.estado = f.saldoPendiente > 0.01 ? 'Abono' : 'Cancelada';
+    cerrarModal('modal-abono');
+    showToast('Abono registrado ✓', 'success');
+    inicializar();
+  } catch(e) {
+    showToast('No se pudo registrar el abono: ' + e.message, 'error');
+  }
+}
+
+function cerrarModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+document.querySelectorAll('.modal-bg').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// ── TOAST ─────────────────────────────────────────────────────────
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').innerHTML = type==='success'
+    ? '<polyline points="3 8 7 12 13 4"/>'
+    : '<line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = `toast ${type}`;
+  requestAnimationFrame(()=>t.classList.add('show'));
+  setTimeout(()=>t.classList.remove('show'), 3500);
+}
+
+cargarDatos();
+</script>
+</body>
+</html>

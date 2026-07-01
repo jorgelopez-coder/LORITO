@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cambio de Salario · RRHH · Grupo del Sol</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#ffffff;
+      --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
+      --amber:#c87820; --amber-bg:#fdf6e3; --amber-lt:#f0d890;
+      --blue:#185fa5; --blue-bg:#eef4fb;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+    header { height:56px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; background:var(--bg); position:sticky; top:0; z-index:20; }
+    .nav-left { display:flex; align-items:center; gap:10px; }
+    .back-btn { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); }
+    .back-btn svg { width:13px; height:13px; }
+    .back-btn:hover { color:var(--text); border-color:var(--border-h); }
+    .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
+    .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 10px; }
+    main { max-width:680px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .page-header { margin-bottom:2rem; }
+    .page-header h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+    .page-header p { font-size:13px; color:var(--muted); }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; margin-bottom:1rem; }
+    .card-title { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:1.25rem; }
+    .field { margin-bottom:1.1rem; }
+    .field:last-child { margin-bottom:0; }
+    .field-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    label { display:block; font-size:13px; font-weight:500; color:var(--text); margin-bottom:5px; }
+    .req { color:var(--red); margin-left:2px; }
+    input, select, textarea { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--font-b); font-size:14px; padding:9px 12px; outline:none; appearance:none; transition:border-color .15s,box-shadow .15s; }
+    input:focus, select:focus, textarea:focus { border-color:var(--green); box-shadow:0 0 0 3px rgba(26,122,74,.1); }
+    input::placeholder, textarea::placeholder { color:var(--subtle); }
+    select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:36px; cursor:pointer; }
+    input[type="number"] { font-variant-numeric:tabular-nums; }
+    textarea { resize:vertical; min-height:80px; line-height:1.5; }
+
+    /* Comparativo salario */
+    .salario-comp { display:grid; grid-template-columns:1fr auto 1fr; gap:12px; align-items:center; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem 1.5rem; margin-bottom:1rem; }
+    .sal-box { text-align:center; }
+    .sal-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px; }
+    .sal-valor { font-family:var(--font-d); font-size:22px; font-weight:700; letter-spacing:-.02em; }
+    .sal-actual .sal-valor { color:var(--text); }
+    .sal-nuevo .sal-valor { color:var(--green); }
+    .sal-arrow { color:var(--subtle); display:flex; align-items:center; justify-content:center; }
+    .sal-arrow svg { width:24px; height:24px; }
+    .sal-diferencia { text-align:center; margin-top:6px; }
+    .dif-tag { display:inline-block; font-size:12px; font-weight:600; padding:3px 10px; border-radius:20px; }
+    .dif-up   { background:var(--green-bg); color:var(--green); }
+    .dif-down { background:var(--red-bg); color:var(--red); }
+    .dif-same { background:var(--surface); color:var(--muted); }
+
+    .submit-area { display:flex; align-items:center; gap:10px; margin-top:1.5rem; }
+    .btn-submit { flex:1; background:var(--green); color:#fff; border:none; border-radius:9px; font-family:var(--font-d); font-size:15px; font-weight:700; padding:12px 24px; cursor:pointer; transition:opacity .15s; }
+    .btn-submit:hover { opacity:.9; }
+    .btn-submit:disabled { opacity:.4; cursor:not-allowed; }
+    .btn-clear { padding:12px 16px; border-radius:9px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; cursor:pointer; }
+    .btn-clear:hover { color:var(--text); border-color:var(--border-h); }
+    .status-bar { display:flex; align-items:center; gap:1rem; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
+    .toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px); background:var(--card); border:1px solid var(--border-h); border-radius:10px; padding:11px 18px; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s; opacity:0; z-index:100; white-space:nowrap; box-shadow:0 4px 20px rgba(0,0,0,.08); }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+    .toast.success { border-color:var(--green); color:var(--green); }
+    .toast.error { border-color:var(--red); color:var(--red); }
+    .toast svg { width:16px; height:16px; flex-shrink:0; }
+    @media (max-width:600px) { header{padding:0 1rem;} main{padding:1.5rem 1rem 3rem;} .field-row{grid-template-columns:1fr;} .salario-comp{grid-template-columns:1fr;} .sal-arrow{transform:rotate(90deg);} }
+  </style>
+</head>
+<body>
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Cambio de salario</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<main>
+  <div class="page-header">
+    <h1>Cambio de salario</h1>
+    <p>Actualizá el salario de un colaborador. El cambio se aplicará en la fecha efectiva indicada.</p>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Colaborador</p>
+    <div class="field">
+      <label for="colaborador">Nombre del colaborador <span class="req">*</span></label>
+      <select id="colaborador" onchange="cargarSalario()" required>
+        <option value="" disabled selected>Seleccioná un colaborador…</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="comparativo" style="display:none;">
+    <div class="salario-comp">
+      <div class="sal-box sal-actual">
+        <div class="sal-label">Salario actual</div>
+        <div class="sal-valor" id="sal-actual-val">₡0</div>
+      </div>
+      <div class="sal-arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </div>
+      <div class="sal-box sal-nuevo">
+        <div class="sal-label">Salario nuevo</div>
+        <div class="sal-valor" id="sal-nuevo-val">₡—</div>
+      </div>
+    </div>
+    <div class="sal-diferencia">
+      <span class="dif-tag dif-same" id="dif-tag">Ingresá el nuevo salario</span>
+    </div>
+  </div>
+
+  <div class="card" id="card-cambio" style="display:none;">
+    <p class="card-title">Detalles del cambio</p>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="salario-nuevo">Nuevo salario (₡) <span class="req">*</span></label>
+        <input type="number" id="salario-nuevo" min="0" step="500" placeholder="0" oninput="actualizarComparativo()" required>
+      </div>
+      <div class="field">
+        <label for="fecha-efectiva">Fecha efectiva <span class="req">*</span></label>
+        <input type="date" id="fecha-efectiva" required>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="registrado-por">Registrado por <span class="req">*</span></label>
+      <input type="text" id="registrado-por" placeholder="Tu nombre" required>
+    </div>
+
+    <div class="field">
+      <label for="motivo">Motivo del cambio <span class="req">*</span></label>
+      <textarea id="motivo" placeholder="Ej. Ajuste por desempeño, incremento anual, ascenso…" required></textarea>
+    </div>
+  </div>
+
+  <div class="submit-area" id="submit-area" style="display:none;">
+    <button type="button" class="btn-clear" onclick="limpiar()">Limpiar</button>
+    <button type="button" class="btn-submit" id="btn-submit" onclick="guardar()">Aplicar cambio</button>
+  </div>
+
+  <div class="status-bar">
+    <span id="status-msg">Listo</span>
+    <span style="margin-left:auto;">v1.0 · RRHH · Grupo del Sol</span>
+  </div>
+</main>
+
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+const APPS_SCRIPT_URL = 'TODO_APPS_SCRIPT_RRHH_LORITO';
+
+const hoy = new Date();
+const pad = n => String(n).padStart(2,'0');
+const fechaHoy = `${hoy.getFullYear()}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`;
+document.getElementById('date-chip').textContent =
+  hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
+document.getElementById('fecha-efectiva').value = fechaHoy;
+
+const fmt = n => '₡' + Number(n).toLocaleString('es-CR');
+
+// Cargar colaboradores desde Google Sheets
+async function cargarColaboradores() {
+  const sel = document.getElementById('colaborador');
+  sel.innerHTML = '<option value="" disabled selected>Cargando colaboradores…</option>';
+
+  try {
+    const resp = await fetch(APPS_SCRIPT_URL + '?modulo=personal');
+    const data = await resp.json();
+
+    sel.innerHTML = '<option value="" disabled selected>Seleccioná un colaborador…</option>';
+
+    if (data.ok && data.registros && data.registros.length > 0) {
+      const activos = data.registros.filter(p => {
+        const estado = (p['Estado'] || p.estado || 'ACTIVO').toString().toUpperCase();
+        return estado === 'ACTIVO';
+      });
+
+      activos.forEach(p => {
+        const nombre  = p['Nombre completo'] || ((p['Nombre'] || p.nombre || '') + ' ' + (p['Apellidos'] || p.apellidos || '')).trim();
+        const salario = p['Salario']           || p.salario           || 0;
+        const balance = p['Saldo vacaciones']  || p.balance_vacaciones || 0;
+        const puesto  = p['Puesto']            || p.puesto            || '';
+        const depto   = p['Departamento']      || p.departamento      || '';
+        const ingreso = p['Fecha ingreso']     || p.fecha_ingreso     || '';
+
+        if (nombre.trim()) {
+          const o = document.createElement('option');
+          o.value           = nombre;
+          o.dataset.salario = salario;
+          o.dataset.balance = balance;
+          o.dataset.puesto  = puesto;
+          o.dataset.depto   = depto;
+          o.dataset.ingreso = ingreso;
+          o.dataset.estado  = p['Estado'] || 'ACTIVO';
+          o.textContent     = nombre;
+          sel.appendChild(o);
+        }
+      });
+
+      if (activos.length === 0) {
+        sel.innerHTML = '<option value="" disabled selected>No hay colaboradores activos</option>';
+      }
+    } else {
+      sel.innerHTML = '<option value="" disabled selected>Sin colaboradores registrados</option>';
+    }
+  } catch(err) {
+    console.error('Error cargando colaboradores:', err);
+    sel.innerHTML = '<option value="" disabled selected>Error al cargar — verificá conexión</option>';
+  }
+}
+cargarColaboradores();
+
+function cargarSalario() {
+  const sel = document.getElementById('colaborador');
+  const opt = sel.options[sel.selectedIndex];
+  const sal = parseFloat(opt.dataset.salario || 0);
+  document.getElementById('sal-actual-val').textContent = fmt(sal);
+  document.getElementById('sal-nuevo-val').textContent  = '₡—';
+  document.getElementById('dif-tag').textContent = 'Ingresá el nuevo salario';
+  document.getElementById('dif-tag').className   = 'dif-tag dif-same';
+  document.getElementById('comparativo').style.display = 'grid';
+  document.getElementById('card-cambio').style.display = 'block';
+  document.getElementById('submit-area').style.display = 'flex';
+  document.getElementById('salario-nuevo').value = '';
+}
+
+function actualizarComparativo() {
+  const sel    = document.getElementById('colaborador');
+  const opt    = sel.options[sel.selectedIndex];
+  const actual = parseFloat(opt.dataset.salario || 0);
+  const nuevo  = parseFloat(document.getElementById('salario-nuevo').value || 0);
+
+  document.getElementById('sal-nuevo-val').textContent = nuevo ? fmt(nuevo) : '₡—';
+
+  if (!nuevo) {
+    document.getElementById('dif-tag').textContent = 'Ingresá el nuevo salario';
+    document.getElementById('dif-tag').className   = 'dif-tag dif-same';
+    return;
+  }
+
+  const diff = nuevo - actual;
+  const pct  = actual ? ((diff/actual)*100).toFixed(1) : 0;
+  const tag  = document.getElementById('dif-tag');
+
+  if (diff > 0) {
+    tag.textContent = `▲ ${fmt(diff)} (+${pct}%)`;
+    tag.className   = 'dif-tag dif-up';
+  } else if (diff < 0) {
+    tag.textContent = `▼ ${fmt(Math.abs(diff))} (${pct}%)`;
+    tag.className   = 'dif-tag dif-down';
+  } else {
+    tag.textContent = 'Sin cambio';
+    tag.className   = 'dif-tag dif-same';
+  }
+}
+
+function limpiar() {
+  document.getElementById('colaborador').value = '';
+  document.getElementById('salario-nuevo').value = '';
+  document.getElementById('fecha-efectiva').value = fechaHoy;
+  document.getElementById('registrado-por').value = '';
+  document.getElementById('motivo').value = '';
+  document.getElementById('comparativo').style.display = 'none';
+  document.getElementById('card-cambio').style.display = 'none';
+  document.getElementById('submit-area').style.display = 'none';
+}
+
+async function guardar() {
+  const sel          = document.getElementById('colaborador');
+  const colaborador  = sel.value;
+  const opt          = sel.options[sel.selectedIndex];
+  const salActual    = parseFloat(opt.dataset.salario || 0);
+  const salNuevo     = parseFloat(document.getElementById('salario-nuevo').value || 0);
+  const fechaEfec    = document.getElementById('fecha-efectiva').value;
+  const registradoPor= document.getElementById('registrado-por').value.trim();
+  const motivo       = document.getElementById('motivo').value.trim();
+
+  if (!colaborador)   { showToast('Seleccioná un colaborador.','error'); return; }
+  if (!salNuevo)      { showToast('Ingresá el nuevo salario.','error'); return; }
+  if (!fechaEfec)     { showToast('Seleccioná la fecha efectiva.','error'); return; }
+  if (!registradoPor) { showToast('Ingresá quién registra el cambio.','error'); return; }
+  if (!motivo)        { showToast('Ingresá el motivo del cambio.','error'); return; }
+
+  const registro = {
+    modulo:'cambio_salario', colaborador,
+    salario_actual:salActual, salario_nuevo:salNuevo,
+    diferencia: salNuevo - salActual,
+    fecha_efectiva:fechaEfec, registrado_por:registradoPor, motivo,
+    registrado_en: new Date().toISOString()
+  };
+
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true; btn.textContent = 'Guardando…';
+
+  if (APPS_SCRIPT_URL) {
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method:'POST', mode:'no-cors',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(registro)
+      });
+    } catch { showToast('Sin conexión — guardado localmente.','error'); }
+  }
+
+  const cambios = JSON.parse(localStorage.getItem('cambios_salario') || '[]');
+  cambios.unshift(registro);
+  localStorage.setItem('cambios_salario', JSON.stringify(cambios));
+
+  showToast(`Cambio aplicado — ${colaborador} · ${fmt(salNuevo)}`,'success');
+  document.getElementById('status-msg').textContent =
+    `Último cambio: ${colaborador} — ${fmt(salActual)} → ${fmt(salNuevo)}`;
+  limpiar();
+  btn.disabled = false; btn.textContent = 'Aplicar cambio';
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').innerHTML = type==='success'
+    ? '<polyline points="3 8 7 12 13 4"/>'
+    : '<line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = `toast ${type}`;
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+</script>
+</body>
+</html>

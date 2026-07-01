@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión de accesos · Lorito</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#fff; --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20;   --red-bg:#fdf0eb;   --red-lt:#f0c0a8;
+      --amber:#c87820; --amber-bg:#fdf6e3;
+      --blue:#185fa5;  --blue-bg:#eef4fb;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+    header { height:56px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; background:var(--bg); position:sticky; top:0; z-index:10; }
+    .nav-left { display:flex; align-items:center; gap:10px; }
+    .back-btn { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); }
+    .back-btn:hover { color:var(--text); }
+    .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
+    main { max-width:900px; margin:0 auto; padding:2rem 2rem 5rem; }
+    h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+    .sub { font-size:13px; color:var(--muted); margin-bottom:2rem; }
+    /* roles grid */
+    .roles-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; margin-bottom:1.5rem; }
+    .rol-card { background:var(--card); border:1.5px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+    .rol-card.admin-card { border-color:var(--green); }
+    .rol-head { padding:1rem 1.25rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .rol-nombre { font-size:15px; font-weight:600; }
+    .rol-id { font-size:11px; color:var(--muted); margin-top:2px; }
+    .rol-pin-display { font-size:12px; background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:3px 9px; font-family:monospace; color:var(--text); letter-spacing:.1em; }
+    .rol-body { padding:1rem 1.25rem; }
+    .modulos-lista { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:12px; }
+    .mod-badge { font-size:11px; padding:3px 8px; border-radius:20px; font-weight:500; }
+    .mod-on  { background:var(--green-bg); color:var(--green); }
+    .mod-off { background:var(--surface); color:var(--subtle); text-decoration:line-through; }
+    .rol-actions { display:flex; gap:6px; }
+    .btn-edit { padding:6px 14px; border-radius:7px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:12px; cursor:pointer; font-weight:500; }
+    .btn-edit:hover { border-color:var(--border-h); color:var(--text); }
+    .btn-del  { padding:6px 12px; border-radius:7px; border:1px solid var(--red-lt); background:var(--red-bg); color:var(--red); font-size:12px; cursor:pointer; font-weight:500; }
+    /* add card */
+    .add-card { background:var(--card); border:1.5px dashed var(--border); border-radius:var(--radius); display:flex; align-items:center; justify-content:center; min-height:160px; cursor:pointer; transition:border-color .15s; color:var(--subtle); font-size:13px; gap:8px; flex-direction:column; }
+    .add-card:hover { border-color:var(--border-h); color:var(--muted); }
+    .add-icon { font-size:28px; }
+    /* modal */
+    .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:50; align-items:center; justify-content:center; padding:1rem; }
+    .modal-bg.open { display:flex; }
+    .modal { background:var(--card); border-radius:16px; width:100%; max-width:520px; max-height:90vh; overflow-y:auto; }
+    .modal-head { padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .modal-title { font-family:var(--font-d); font-size:18px; font-weight:700; }
+    .close-btn { background:none; border:none; font-size:22px; cursor:pointer; color:var(--muted); line-height:1; }
+    .modal-body { padding:1.25rem 1.5rem; }
+    .field { margin-bottom:1rem; }
+    .field label { font-size:13px; font-weight:500; display:block; margin-bottom:6px; }
+    .field input[type="text"],
+    .field input[type="password"] {
+      width:100%; background:var(--surface); border:1px solid var(--border);
+      border-radius:8px; color:var(--text); font-family:var(--font-b);
+      font-size:14px; padding:9px 12px; outline:none; transition:border-color .15s;
+    }
+    .field input:focus { border-color:var(--green); }
+    .field-hint { font-size:11px; color:var(--muted); margin-top:4px; }
+    /* checkboxes de módulos */
+    .modulos-grid-form { display:grid; grid-template-columns:1fr 1fr; gap:0; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+    .area-section { border-bottom:1px solid var(--border); }
+    .area-section:last-child { border-bottom:none; }
+    .area-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); padding:8px 12px 6px; background:var(--surface); border-bottom:1px solid var(--border); grid-column:span 2; }
+    .mod-check { display:flex; align-items:center; gap:8px; padding:8px 12px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .1s; }
+    .mod-check:hover { background:var(--surface); }
+    .mod-check input[type="checkbox"] { width:15px; height:15px; accent-color:var(--green); cursor:pointer; flex-shrink:0; }
+    .mod-check-label { font-size:13px; cursor:pointer; }
+    .mod-check-sub { font-size:10px; color:var(--muted); }
+    .check-all-btn { font-size:12px; color:var(--blue); background:none; border:none; cursor:pointer; text-decoration:underline; margin-bottom:8px; }
+    .modal-foot { padding:1rem 1.5rem; border-top:1px solid var(--border); display:flex; gap:8px; justify-content:flex-end; }
+    .btn-cancel { padding:9px 16px; border-radius:9px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; cursor:pointer; }
+    .btn-save { padding:9px 20px; border-radius:9px; background:var(--green); color:#fff; border:none; font-family:var(--font-d); font-size:14px; font-weight:700; cursor:pointer; }
+    .btn-save:hover { opacity:.9; }
+    /* aviso */
+    .aviso { background:var(--amber-bg); border:1px solid #f0d890; border-radius:10px; padding:.9rem 1.1rem; font-size:13px; color:var(--amber); margin-bottom:1.5rem; display:flex; gap:8px; }
+    .aviso svg { width:16px; height:16px; flex-shrink:0; margin-top:2px; }
+    /* instrucciones */
+    .instrucciones { background:var(--blue-bg); border:1px solid #b8d0f0; border-radius:10px; padding:.9rem 1.1rem; font-size:13px; color:var(--blue); margin-bottom:1.5rem; }
+    .instrucciones h3 { font-size:13px; font-weight:600; margin-bottom:6px; }
+    .instrucciones ol { padding-left:1.2rem; }
+    .instrucciones li { margin-bottom:3px; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M10 4L6 8l4 4"/></svg>
+      Portal
+    </a>
+    <span class="page-title">Gestión de accesos</span>
+  </div>
+  <span style="font-size:11px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:3px 10px;" id="sesion-label"></span>
+</header>
+
+<main>
+  <h1>Gestión de accesos</h1>
+  <p class="sub">Creá roles con PIN y configurá qué módulos puede ver cada uno.</p>
+
+  <div class="aviso">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    Los PINs y la configuración se guardan en este navegador. Cualquier persona con acceso al computador y al inspector del navegador puede verlos. Para datos confidenciales, usá la opción 2 (Sheets).
+  </div>
+
+  <div class="instrucciones">
+    <h3>¿Cómo funciona?</h3>
+    <ol>
+      <li>Creá un rol (ej. "Cocina") y asignale un PIN y los módulos que puede ver.</li>
+      <li>El rol <strong>admin</strong> siempre tiene acceso a todo, incluyendo esta página.</li>
+      <li>Al entrar al portal, el sistema pide el PIN y muestra solo los módulos permitidos.</li>
+      <li>Cualquier cambio aquí aplica de inmediato.</li>
+    </ol>
+  </div>
+
+  <div class="roles-grid" id="roles-grid"></div>
+
+  <div style="margin-top:1rem;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+    <button onclick="exportarConfig()" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;">⬇ Exportar config</button>
+    <label style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;">
+      ⬆ Importar config
+      <input type="file" accept=".json" style="display:none;" onchange="importarConfig(event)">
+    </label>
+  </div>
+</main>
+
+<!-- MODAL EDITAR/CREAR ROL -->
+<div class="modal-bg" id="modal-rol">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" id="modal-titulo">Nuevo rol</span>
+      <button class="close-btn" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-rol-id">
+
+      <div class="field">
+        <label>Nombre del rol</label>
+        <input type="text" id="rol-nombre" placeholder="Ej. Cocina, Gerencia, Meseros…">
+      </div>
+      <div class="field">
+        <label>PIN de acceso</label>
+        <input type="text" id="rol-pin" placeholder="Ej. 1234, cocina2025…" maxlength="20" autocomplete="off">
+        <div class="field-hint">Mínimo 4 caracteres. No uses el mismo PIN en dos roles.</div>
+      </div>
+
+      <div class="field">
+        <label style="margin-bottom:8px;">Módulos habilitados</label>
+        <button class="check-all-btn" onclick="toggleTodos()">Seleccionar / deseleccionar todos</button>
+        <div class="modulos-grid-form" id="modulos-form"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-save" onclick="guardarRol()">Guardar rol</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── MÓDULOS DISPONIBLES ─────────────────────────────────────────
+const MODULOS = [
+  { id:'inventario',              nombre:'Inventario',        area:'Operaciones',      url:'inventario.html' },
+  { id:'ordenes-compra',          nombre:'Órdenes de compra', area:'Operaciones',      url:'ordenes-compra.html' },
+  { id:'compras',                 nombre:'Datos de compras',  area:'Operaciones',      url:'compras.html' },
+  { id:'cuentas-por-pagar',       nombre:'Cuentas por pagar', area:'Operaciones',      url:'cuentas-por-pagar.html' },
+  { id:'cierres',                 nombre:'Cierres de caja',   area:'Operaciones',      url:'cierres.html' },
+  { id:'mermas',                  nombre:'Mermas',            area:'Operaciones',      url:'mermas.html' },
+  { id:'depositos',               nombre:'Depósitos',         area:'Operaciones',      url:'depositos.html' },
+  { id:'costos-productos',        nombre:'Base de productos', area:'Costos',           url:'costos-productos.html' },
+  { id:'costos-recetas',          nombre:'Recetas',           area:'Costos',           url:'costos-recetas.html' },
+  { id:'costos-menu',             nombre:'Menú',              area:'Costos',           url:'costos-menu.html' },
+  { id:'rrhh-personal',           nombre:'Personal',          area:'RRHH',             url:'rrhh-personal.html' },
+  { id:'rrhh-acciones',           nombre:'Acciones RRHH',     area:'RRHH',             url:'rrhh-acciones.html' },
+  { id:'rrhh-vacaciones',         nombre:'Vacaciones',        area:'RRHH',             url:'rrhh-control-vacaciones.html' },
+  { id:'rrhh-liquidaciones',      nombre:'Liquidaciones',     area:'RRHH',             url:'rrhh-liquidaciones.html' },
+  { id:'rrhh-amonestaciones',     nombre:'Amonestaciones',    area:'RRHH',             url:'rrhh-amonestaciones.html' },
+  { id:'admin-accesos',           nombre:'Gestión de accesos',area:'Administración',   url:'admin-accesos.html' },
+];
+
+const AREAS = ['Operaciones','Costos','RRHH','Administración'];
+
+// ─── STORAGE ─────────────────────────────────────────────────────
+const DEFAULT_ROLES = [
+  { id:'admin', nombre:'Administrador', pin:'admin', modulos:'todos' },
+];
+
+function getRoles()       { try { return JSON.parse(localStorage.getItem('portal_roles')||'null')||DEFAULT_ROLES; } catch { return DEFAULT_ROLES; } }
+function saveRoles(roles) { localStorage.setItem('portal_roles', JSON.stringify(roles)); }
+
+// ─── RENDER ───────────────────────────────────────────────────────
+function render() {
+  const roles = getRoles();
+  const grid  = document.getElementById('roles-grid');
+
+  grid.innerHTML = roles.map(r => {
+    const esAdmin  = r.id === 'admin';
+    const modsHab  = r.modulos === 'todos' ? MODULOS : MODULOS.filter(m => (r.modulos||[]).includes(m.id));
+    const modsList = r.modulos === 'todos'
+      ? '<span class="mod-badge mod-on">Todos los módulos</span>'
+      : modsHab.map(m => `<span class="mod-badge mod-on">${m.nombre}</span>`).join('') ||
+        '<span class="mod-badge mod-off">Sin módulos</span>';
+
+    return `<div class="rol-card ${esAdmin?'admin-card':''}">
+      <div class="rol-head">
+        <div>
+          <div class="rol-nombre">${r.nombre}</div>
+          <div class="rol-id">${esAdmin ? 'Administrador del sistema' : `ID: ${r.id}`}</div>
+        </div>
+        <div class="rol-pin-display" title="PIN de acceso">${'•'.repeat(r.pin.length)}</div>
+      </div>
+      <div class="rol-body">
+        <div class="modulos-lista">${modsList}</div>
+        <div class="rol-actions">
+          <button class="btn-edit" onclick="abrirEditar('${r.id}')">Editar</button>
+          ${!esAdmin ? `<button class="btn-del" onclick="eliminarRol('${r.id}')">Eliminar</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('') +
+  `<div class="add-card" onclick="abrirNuevo()">
+    <div class="add-icon">＋</div>
+    <span>Nuevo rol</span>
+  </div>`;
+}
+
+// ─── MODAL ────────────────────────────────────────────────────────
+function abrirNuevo() {
+  document.getElementById('modal-titulo').textContent = 'Nuevo rol';
+  document.getElementById('edit-rol-id').value = '';
+  document.getElementById('rol-nombre').value  = '';
+  document.getElementById('rol-pin').value     = '';
+  renderModulosForm([]);
+  document.getElementById('modal-rol').classList.add('open');
+  document.getElementById('rol-nombre').focus();
+}
+
+function abrirEditar(id) {
+  const rol = getRoles().find(r => r.id === id);
+  if (!rol) return;
+  document.getElementById('modal-titulo').textContent = 'Editar rol';
+  document.getElementById('edit-rol-id').value = rol.id;
+  document.getElementById('rol-nombre').value  = rol.nombre;
+  document.getElementById('rol-pin').value     = rol.pin;
+  renderModulosForm(rol.modulos);
+  document.getElementById('modal-rol').classList.add('open');
+}
+
+function cerrarModal() {
+  document.getElementById('modal-rol').classList.remove('open');
+}
+
+function renderModulosForm(seleccionados) {
+  const todos = seleccionados === 'todos';
+  const cont  = document.getElementById('modulos-form');
+  cont.innerHTML = AREAS.map(area => {
+    const mods = MODULOS.filter(m => m.area === area);
+    return `<div style="grid-column:span 2;">
+      <div class="area-label">${area}</div>
+      ${mods.map(m => {
+        const on = todos || (Array.isArray(seleccionados) && seleccionados.includes(m.id));
+        return `<div class="mod-check">
+          <input type="checkbox" id="chk-${m.id}" value="${m.id}" ${on?'checked':''}>
+          <label for="chk-${m.id}" class="mod-check-label">${m.nombre}</label>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+
+function toggleTodos() {
+  const checkboxes = document.querySelectorAll('#modulos-form input[type="checkbox"]');
+  const alguno     = [...checkboxes].some(c => c.checked);
+  checkboxes.forEach(c => c.checked = !alguno);
+}
+
+function guardarRol() {
+  const nombre = document.getElementById('rol-nombre').value.trim();
+  const pin    = document.getElementById('rol-pin').value.trim();
+  const editId = document.getElementById('edit-rol-id').value;
+
+  if (!nombre) { alert('Ingresá el nombre del rol.'); return; }
+  if (pin.length < 4) { alert('El PIN debe tener mínimo 4 caracteres.'); return; }
+
+  const roles   = getRoles();
+  const checks  = [...document.querySelectorAll('#modulos-form input[type="checkbox"]:checked')].map(c => c.value);
+
+  // Verificar PIN duplicado
+  const dup = roles.find(r => r.pin === pin && r.id !== editId);
+  if (dup) { alert(`El PIN ya está en uso por el rol "${dup.nombre}".`); return; }
+
+  if (editId) {
+    const idx = roles.findIndex(r => r.id === editId);
+    if (idx > -1) roles[idx] = { ...roles[idx], nombre, pin, modulos: checks };
+  } else {
+    const id = nombre.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+    roles.push({ id: id + '_' + Date.now(), nombre, pin, modulos: checks });
+  }
+
+  saveRoles(roles);
+  cerrarModal();
+  render();
+}
+
+function eliminarRol(id) {
+  if (!confirm('¿Eliminar este rol? Los usuarios con este PIN no podrán ingresar.')) return;
+  saveRoles(getRoles().filter(r => r.id !== id));
+  render();
+}
+
+// ─── EXPORT / IMPORT ─────────────────────────────────────────────
+function exportarConfig() {
+  const data = JSON.stringify(getRoles(), null, 2);
+  const blob = new Blob([data], { type:'application/json' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = 'portal-accesos.json';
+  a.click();
+}
+
+function importarConfig(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const roles = JSON.parse(ev.target.result);
+      if (!Array.isArray(roles)) throw new Error('Formato inválido');
+      saveRoles(roles);
+      render();
+      alert('Configuración importada correctamente.');
+    } catch(err) {
+      alert('Error al importar: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// ─── SESIÓN ───────────────────────────────────────────────────────
+const sesion = JSON.parse(localStorage.getItem('portal_sesion')||'null');
+if (!sesion) { window.location.href = 'login.html'; }
+else if (sesion.rol_id !== 'admin' && sesion.modulos !== 'todos' && !sesion.modulos.includes('admin-accesos')) {
+  alert('No tenés acceso a esta página.');
+  window.location.href = 'index.html';
+}
+if (sesion) {
+  document.getElementById('sesion-label').textContent = sesion.nombre;
+}
+
+// Cerrar modal al hacer click fuera
+document.getElementById('modal-rol').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModal();
+});
+
+render();
+</script>
+</body>
+</html>

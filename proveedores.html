@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proveedores · Lorito</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#fff; --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
+      --amber:#c87820; --amber-bg:#fdf6e3; --amber-lt:#f0d890;
+      --blue:#185fa5; --blue-bg:#eef4fb; --blue-lt:#b8d0f0;
+      --purple:#6a3a9a; --purple-bg:#f3eefb; --purple-lt:#d4b8f0;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+    header { height:56px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; background:var(--bg); position:sticky; top:0; z-index:20; }
+    .nav-left { display:flex; align-items:center; gap:10px; }
+    .back-btn { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); }
+    .back-btn:hover { color:var(--text); border-color:var(--border-h); }
+    .back-btn svg { width:13px; height:13px; }
+    .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
+    main { max-width:1100px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .page-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:1.5rem; flex-wrap:wrap; }
+    .page-header h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+    .page-header p { font-size:13px; color:var(--muted); }
+    .btn-primary { background:var(--green); color:#fff; border:none; border-radius:9px; font-family:var(--font-d); font-size:14px; font-weight:700; padding:10px 20px; cursor:pointer; white-space:nowrap; display:inline-flex; align-items:center; gap:6px; }
+    .btn-primary:hover { opacity:.9; }
+    .btn-sec { padding:9px 16px; border-radius:9px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; cursor:pointer; }
+    .btn-sec:hover { color:var(--text); border-color:var(--border-h); }
+
+    /* TABS */
+    .tabs { display:flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:4px; margin-bottom:1.25rem; width:fit-content; }
+    .tab { font-size:13px; font-weight:500; padding:6px 16px; border-radius:7px; border:none; cursor:pointer; background:transparent; color:var(--muted); }
+    .tab.active { background:var(--card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+
+    /* TOOLBAR */
+    .toolbar { display:flex; gap:8px; margin-bottom:1.25rem; flex-wrap:wrap; }
+    .search-wrap { position:relative; flex:1; min-width:200px; }
+    .search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--subtle); pointer-events:none; }
+    .search-input { width:100%; background:var(--card); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--font-b); font-size:13px; padding:8px 12px 8px 32px; outline:none; }
+    .search-input:focus { border-color:var(--green); }
+    .filter-sel { font-size:13px; padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--text); outline:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:30px; }
+
+    /* GRID DE CARDS */
+    .provs-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+    .prov-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; transition:border-color .12s; cursor:pointer; }
+    .prov-card:hover { border-color:var(--border-h); }
+    .prov-card-head { padding:1rem 1.25rem; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; gap:12px; }
+    .prov-avatar { width:40px; height:40px; border-radius:10px; background:var(--green-bg); color:var(--green); display:flex; align-items:center; justify-content:center; font-family:var(--font-d); font-size:14px; font-weight:700; flex-shrink:0; }
+    .prov-nombre { font-size:14px; font-weight:600; margin-bottom:2px; }
+    .prov-comercial { font-size:12px; color:var(--muted); }
+    .prov-body { padding:.85rem 1.25rem; }
+    .prov-meta { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+    .prov-chip { font-size:11px; padding:3px 8px; border-radius:20px; font-weight:500; }
+    .chip-cat { background:var(--purple-bg); color:var(--purple); }
+    .chip-dia { background:var(--blue-bg); color:var(--blue); }
+    .chip-cred { background:var(--amber-bg); color:var(--amber); }
+    .chip-contado { background:var(--green-bg); color:var(--green); }
+    .prov-contacto { font-size:12px; color:var(--muted); display:flex; align-items:center; gap:5px; margin-bottom:3px; }
+    .prov-contacto svg { width:12px; height:12px; flex-shrink:0; }
+    .prov-actions { display:flex; gap:6px; margin-top:10px; }
+    .btn-edit { padding:5px 12px; border-radius:7px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:12px; cursor:pointer; }
+    .btn-edit:hover { border-color:var(--border-h); color:var(--text); }
+    .btn-del { padding:5px 10px; border-radius:7px; border:1px solid var(--red-lt); background:var(--red-bg); color:var(--red); font-size:12px; cursor:pointer; }
+    .empty-state { text-align:center; padding:4rem 2rem; color:var(--subtle); }
+    .empty-icon { font-size:40px; margin-bottom:12px; }
+
+    /* MODAL */
+    .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:50; align-items:flex-start; justify-content:center; padding:1.5rem 1rem; overflow-y:auto; }
+    .modal-bg.open { display:flex; }
+    .modal { background:var(--card); border-radius:16px; width:100%; max-width:560px; margin:auto; }
+    .modal-head { padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .modal-title { font-family:var(--font-d); font-size:18px; font-weight:700; }
+    .close-btn { background:none; border:none; font-size:22px; cursor:pointer; color:var(--muted); line-height:1; }
+    .modal-body { padding:1.25rem 1.5rem; }
+    .section-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:1.25rem 0 .75rem; padding-bottom:.5rem; border-bottom:1px solid var(--border); }
+    .section-label:first-child { margin-top:0; }
+    .field-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:.75rem; }
+    .field { margin-bottom:.75rem; }
+    .field label { font-size:13px; font-weight:500; display:block; margin-bottom:5px; }
+    .field input, .field select { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--font-b); font-size:13px; padding:8px 12px; outline:none; transition:border-color .15s; appearance:none; }
+    .field select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:30px; }
+    .field input:focus, .field select:focus { border-color:var(--green); }
+    .field-hint { font-size:11px; color:var(--muted); margin-top:3px; }
+    /* sugerencias datalist */
+    .modal-foot { padding:1rem 1.5rem; border-top:1px solid var(--border); display:flex; gap:8px; justify-content:flex-end; }
+    .btn-save { padding:10px 22px; border-radius:9px; background:var(--green); color:#fff; border:none; font-family:var(--font-d); font-size:14px; font-weight:700; cursor:pointer; }
+    .btn-save:hover { opacity:.9; }
+    /* status */
+    .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
+    .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+    /* toast */
+    .toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px); background:var(--card); border:1px solid var(--border); border-radius:10px; padding:11px 18px; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s; opacity:0; z-index:100; box-shadow:0 4px 20px rgba(0,0,0,.08); }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+    .toast.success { border-color:var(--green); color:var(--green); }
+    .toast.error   { border-color:var(--red);   color:var(--red); }
+    .dia-check { display:inline-flex; align-items:center; justify-content:center; }
+    .dia-check input[type="checkbox"] { display:none; }
+    .dia-check span {
+      display:inline-flex; align-items:center; justify-content:center;
+      width:36px; height:36px; border-radius:50%; border:1.5px solid var(--border);
+      font-size:12px; font-weight:600; cursor:pointer; color:var(--muted);
+      transition:background .12s, border-color .12s, color .12s;
+      user-select:none;
+    }
+    .dia-check input:checked + span {
+      background:var(--green); border-color:var(--green); color:#fff;
+    }
+    .dia-check span:hover { border-color:var(--green); color:var(--green); }
+
+    @media(max-width:700px){ main{padding:1.25rem 1rem 3rem;} .field-row{grid-template-columns:1fr;} .provs-grid{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Proveedores</span>
+  </div>
+  <span style="font-size:11px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:3px 10px;" id="status-count"></span>
+</header>
+
+<main>
+  <div class="page-header">
+    <div>
+      <h1>Base de proveedores</h1>
+      <p>Información de contacto, condiciones de pago y días de pedido</p>
+    </div>
+    <button class="btn-primary" onclick="abrirNuevo()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
+      Nuevo proveedor
+    </button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('lista',this)">Proveedores</button>
+    <button class="tab" onclick="switchTab('nuevo',this)">+ Nuevo</button>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="search-input" id="buscar" placeholder="Buscar proveedor…" oninput="renderLista()">
+    </div>
+    <select class="filter-sel" id="f-cat" onchange="renderLista()">
+      <option value="">Todas las categorías</option>
+    </select>
+    <select class="filter-sel" id="f-dia" onchange="renderLista()">
+      <option value="">Todos los días</option>
+      <option>Lunes</option><option>Martes</option><option>Miércoles</option>
+      <option>Jueves</option><option>Viernes</option><option>Sábado</option><option>Domingo</option>
+    </select>
+  </div>
+
+  <!-- Lista -->
+  <div id="tab-lista">
+    <div class="provs-grid" id="grid-proveedores">
+      <div class="empty-state" style="grid-column:1/-1;">
+        <div class="empty-icon">🏢</div>
+        <p>Sin proveedores registrados aún.<br>Hacé clic en <strong>Nuevo proveedor</strong> para empezar.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <span class="sdot"></span>
+    <span id="status-msg">Listo</span>
+    <span style="margin-left:auto;color:var(--subtle);">v1.0 · Proveedores · Lorito</span>
+  </div>
+</main>
+
+<!-- MODAL NUEVO / EDITAR -->
+<div class="modal-bg" id="modal-prov">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" id="modal-titulo">Nuevo proveedor</span>
+      <button class="close-btn" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id">
+
+      <!-- SECCIÓN 1: Info general -->
+      <div class="section-label">Info general</div>
+      <div class="field">
+        <label for="p-nombre-juridico">Nombre jurídico <span style="color:var(--red);">*</span></label>
+        <input type="text" id="p-nombre-juridico" list="sugerencias-proveedores"
+          placeholder="Escribí o seleccioná de facturas…" autocomplete="off">
+        <datalist id="sugerencias-proveedores">
+          <option value="Auto Mercado S.A. (GUACHIPELÍN)">
+          <option value="Auto Mercado S.A. (YOSES)">
+          <option value="Blue Flame Fuel Technology Corporation S A">
+          <option value="COCA-COLA FEMSA DE COSTA RICA">
+          <option value="COMPANIA NACIONAL DE FUERZA Y LUZ">
+          <option value="CORPORACION SUPERMERCADOS UNIDOS S.R.L.">
+          <option value="Compañía Nacional de Fuerza y Luz, S.A.">
+          <option value="DEL FRUTO SRL">
+          <option value="Distribuidora Isleña de Alimentos, S.A.">
+          <option value="Distribuidora Kasoca">
+          <option value="Distribuidora La Florida S.A.">
+          <option value="El Lugar de la Carne SA">
+          <option value="EXPORTADORA PMT S.A.">
+          <option value="Gracia Bebidas SA">
+          <option value="INVERSIONES AM PM SOCIEDAD ANONIMA">
+          <option value="Industrias del Maiz S.A.">
+          <option value="JOHNNATAN ELIECER RAMIREZ ARIAS DELICARNES">
+          <option value="Jean Franco Aguilar">
+          <option value="Locoto Imports">
+          <option value="Mayca Auto Servicio S.A.">
+          <option value="Mayca Distribuidores, S.A.">
+          <option value="Mayca Food Service">
+          <option value="Mayca Foodservice">
+          <option value="PEDRO ALEXIS HERRERA SOLIS">
+          <option value="Prismar de Costa Rica S.A.">
+          <option value="Randall Carlo Sudasassi Chacon">
+        </datalist>
+        <div class="field-hint">Sugerencias basadas en facturas registradas</div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="p-nombre-comercial">Nombre comercial</label>
+          <input type="text" id="p-nombre-comercial" placeholder="Nombre con que se conoce">
+        </div>
+        <div class="field">
+          <label for="p-categoria">Categoría <span style="color:var(--red);">*</span></label>
+          <select id="p-categoria">
+            <option value="" disabled selected>Seleccioná…</option>
+            <option>Frutas y Verduras</option>
+            <option>Carnes y Aves</option>
+            <option>Mariscos</option>
+            <option>Lácteos y Huevos</option>
+            <option>Bebidas</option>
+            <option>Abarrotes</option>
+            <option>Limpieza e Higiene</option>
+            <option>Empaques y Desechables</option>
+            <option>Panadería y Repostería</option>
+            <option>Aceites y Grasas</option>
+            <option>Condimentos y Especias</option>
+            <option>Servicios</option>
+            <option>Otro</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 2: Info de contacto -->
+      <div class="section-label">Info de contacto</div>
+      <div class="field-row">
+        <div class="field">
+          <label for="p-contacto">Nombre de contacto</label>
+          <input type="text" id="p-contacto" placeholder="Nombre del vendedor o encargado">
+        </div>
+        <div class="field">
+          <label for="p-telefono">Teléfono</label>
+          <input type="text" id="p-telefono" placeholder="8888-8888">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="p-correo">Correo electrónico</label>
+          <input type="email" id="p-correo" placeholder="correo@proveedor.com">
+        </div>
+        <div class="field">
+          <label>Días de pedidos</label>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;" id="dias-pedido-wrap">
+            <label class="dia-check"><input type="checkbox" name="dia-pedido" value="Lunes"><span>Lu</span></label>
+            <label class="dia-check"><input type="checkbox" name="dia-pedido" value="Martes"><span>Ma</span></label>
+            <label class="dia-check"><input type="checkbox" name="dia-pedido" value="Miércoles"><span>Mi</span></label>
+            <label class="dia-check"><input type="checkbox" name="dia-pedido" value="Jueves"><span>Ju</span></label>
+            <label class="dia-check"><input type="checkbox" name="dia-pedido" value="Viernes"><span>Vi</span></label>
+            <label class="dia-check"><input type="checkbox" name="dia-pedido" value="Sábado"><span>Sá</span></label>
+            <label class="dia-check"><input type="checkbox" name="dia-pedido" value="Domingo"><span>Do</span></label>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Podés seleccionar varios días</div>
+        </div>
+      </div>
+      <div class="field">
+        <label for="p-notas-contacto">Observaciones de contacto</label>
+        <input type="text" id="p-notas-contacto" placeholder="Horario de atención, datos adicionales…">
+      </div>
+
+      <!-- SECCIÓN 3: Info de pago -->
+      <div class="section-label">Info de pago</div>
+      <div class="field-row">
+        <div class="field">
+          <label for="p-cuenta">Número de cuenta / IBAN</label>
+          <input type="text" id="p-cuenta" placeholder="CR21 0152 0200 1026 2840 66">
+        </div>
+        <div class="field">
+          <label for="p-condicion-pago">Condición de pago</label>
+          <select id="p-condicion-pago">
+            <option value="0">Contado (0 días)</option>
+            <option value="7">7 días</option>
+            <option value="8">8 días</option>
+            <option value="10">10 días</option>
+            <option value="15">15 días</option>
+            <option value="20">20 días</option>
+            <option value="21">21 días</option>
+            <option value="28">28 días</option>
+            <option value="30">30 días</option>
+          </select>
+          <div class="field-hint">Días de crédito desde la fecha de factura</div>
+        </div>
+      </div>
+      <div class="field">
+        <label for="p-notas-pago">Observaciones de pago</label>
+        <input type="text" id="p-notas-pago" placeholder="Banco, tipo de cuenta, datos adicionales…">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-save" onclick="guardar()">Guardar proveedor</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ── CONFIG ───────────────────────────────────────────────────────
+const APPS_SCRIPT_COSTOS = 'TODO_APPS_SCRIPT_COSTOS_LORITO';
+
+// ── STORAGE ───────────────────────────────────────────────────────
+function getProveedores()   { try { return JSON.parse(localStorage.getItem('proveedores')||'[]'); } catch { return []; } }
+function saveProveedores(d) { localStorage.setItem('proveedores', JSON.stringify(d)); }
+
+const DIAS_COLORES = {
+  'Lunes':'var(--blue)', 'Martes':'var(--blue)', 'Miércoles':'var(--blue)',
+  'Jueves':'var(--blue)', 'Viernes':'var(--blue)',
+  'Sábado':'var(--amber)', 'Domingo':'var(--amber)'
+};
+
+// ── RENDER LISTA ──────────────────────────────────────────────────
+function renderLista() {
+  const busq = document.getElementById('buscar').value.toLowerCase();
+  const cat  = document.getElementById('f-cat').value;
+  const dia  = document.getElementById('f-dia').value;
+
+  let lista = getProveedores().filter(p =>
+    (!busq || (p.nombre_juridico||'').toLowerCase().includes(busq) || (p.nombre_comercial||'').toLowerCase().includes(busq))
+ && (!cat  || p.categoria === cat)
+ && (!dia  || p.dia_pedido === dia)
+  );
+
+  const grid = document.getElementById('grid-proveedores');
+  document.getElementById('status-count').textContent = getProveedores().length + ' proveedores';
+  document.getElementById('status-msg').textContent   = lista.length + ' de ' + getProveedores().length + ' proveedor' + (getProveedores().length!==1?'es':'');
+
+  if (!lista.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
+      <div class="empty-icon">🔍</div>
+      <p>${getProveedores().length ? 'Sin resultados para esa búsqueda.' : 'Sin proveedores registrados. Hacé clic en <strong>Nuevo proveedor</strong>.'}</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = lista.map(p => {
+    const iniciales = (p.nombre_comercial||p.nombre_juridico||'?').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+    const credito   = parseInt(p.condicion_pago)||0;
+    const creditoBadge = credito === 0
+      ? `<span class="prov-chip chip-contado">Contado</span>`
+      : `<span class="prov-chip chip-cred">${credito} días crédito</span>`;
+    const dias = Array.isArray(p.dias_pedido) && p.dias_pedido.length
+      ? p.dias_pedido
+      : (p.dia_pedido ? p.dia_pedido.split(', ').filter(Boolean) : []);
+    const diaBadge = dias.map(d =>
+      `<span class="prov-chip chip-dia">${d.slice(0,2)}</span>`
+    ).join('');
+    const catBadge = p.categoria
+      ? `<span class="prov-chip chip-cat">${p.categoria}</span>`
+      : '';
+
+    return `<div class="prov-card" onclick="abrirEditar('${p.id}')">
+      <div class="prov-card-head">
+        <div class="prov-avatar">${iniciales}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="prov-nombre">${p.nombre_comercial||p.nombre_juridico}</div>
+          ${p.nombre_comercial && p.nombre_juridico !== p.nombre_comercial
+            ? `<div class="prov-comercial">${p.nombre_juridico}</div>` : ''}
+        </div>
+      </div>
+      <div class="prov-body">
+        <div class="prov-meta">${catBadge}${diaBadge}${creditoBadge}</div>
+        ${p.contacto ? `<div class="prov-contacto">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          ${p.contacto}</div>` : ''}
+        ${p.telefono ? `<div class="prov-contacto">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.22 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.29 6.29l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/></svg>
+          ${p.telefono}</div>` : ''}
+        ${p.correo ? `<div class="prov-contacto">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          ${p.correo}</div>` : ''}
+        <div class="prov-actions" onclick="event.stopPropagation()">
+          <button class="btn-edit" onclick="abrirEditar('${p.id}')">Editar</button>
+          <button class="btn-del"  onclick="eliminar('${p.id}')">Eliminar</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── GUARDAR ───────────────────────────────────────────────────────
+function guardar() {
+  const nombre_juridico  = document.getElementById('p-nombre-juridico').value.trim();
+  const nombre_comercial = document.getElementById('p-nombre-comercial').value.trim();
+  const categoria        = document.getElementById('p-categoria').value;
+
+  if (!nombre_juridico) { showToast('Ingresá el nombre jurídico.','error'); return; }
+  if (!categoria)       { showToast('Seleccioná una categoría.','error'); return; }
+
+  const editId = document.getElementById('edit-id').value;
+  const registro = {
+    id:                editId || 'PROV-' + Date.now(),
+    nombre_juridico,
+    nombre_comercial,
+    categoria,
+    contacto:          document.getElementById('p-contacto').value.trim(),
+    telefono:          document.getElementById('p-telefono').value.trim(),
+    correo:            document.getElementById('p-correo').value.trim(),
+    dias_pedido:       [...document.querySelectorAll('input[name="dia-pedido"]:checked')].map(c=>c.value),
+    dia_pedido:        [...document.querySelectorAll('input[name="dia-pedido"]:checked')].map(c=>c.value).join(', '),
+    notas_contacto:    document.getElementById('p-notas-contacto').value.trim(),
+    cuenta:            document.getElementById('p-cuenta').value.trim(),
+    condicion_pago:    document.getElementById('p-condicion-pago').value,
+    notas_pago:        document.getElementById('p-notas-pago').value.trim(),
+    actualizado:       new Date().toISOString()
+  };
+
+  const lista = getProveedores();
+  if (editId) {
+    const idx = lista.findIndex(p => p.id === editId);
+    if (idx > -1) lista[idx] = registro;
+  } else {
+    lista.push(registro);
+  }
+  saveProveedores(lista);
+  actualizarFiltros();
+  renderLista();
+  cerrarModal();
+  showToast((editId ? 'Proveedor actualizado' : 'Proveedor guardado') + ' ✓', 'success');
+
+  // Sincronizar con Google Sheets
+  syncProveedor(registro);
+}
+
+async function syncProveedor(registro) {
+  try {
+    await fetch(APPS_SCRIPT_COSTOS, {
+      method: 'POST',
+      body: new URLSearchParams({ data: JSON.stringify({ modulo: 'proveedor', ...registro }) })
+    });
+  } catch(e) { console.warn('Sin conexión al Sheet:', e.message); }
+}
+
+// ── EDITAR / ELIMINAR ─────────────────────────────────────────────
+function abrirEditar(id) {
+  const p = getProveedores().find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('modal-titulo').textContent      = 'Editar proveedor';
+  document.getElementById('edit-id').value                 = p.id;
+  document.getElementById('p-nombre-juridico').value       = p.nombre_juridico || '';
+  document.getElementById('p-nombre-comercial').value      = p.nombre_comercial || '';
+  document.getElementById('p-categoria').value             = p.categoria || '';
+  document.getElementById('p-contacto').value              = p.contacto || '';
+  document.getElementById('p-telefono').value              = p.telefono || '';
+  document.getElementById('p-correo').value                = p.correo || '';
+  // Marcar días de pedido
+  document.querySelectorAll('input[name="dia-pedido"]').forEach(cb => {
+    const dias = Array.isArray(p.dias_pedido) ? p.dias_pedido : (p.dia_pedido ? p.dia_pedido.split(', ') : []);
+    cb.checked = dias.includes(cb.value);
+  });
+  document.getElementById('p-notas-contacto').value        = p.notas_contacto || '';
+  document.getElementById('p-cuenta').value                = p.cuenta || '';
+  document.getElementById('p-condicion-pago').value        = p.condicion_pago || '0';
+  document.getElementById('p-notas-pago').value            = p.notas_pago || '';
+  document.getElementById('modal-prov').classList.add('open');
+}
+
+function abrirNuevo() {
+  document.getElementById('modal-titulo').textContent = 'Nuevo proveedor';
+  document.getElementById('edit-id').value = '';
+  ['p-nombre-juridico','p-nombre-comercial','p-contacto','p-telefono',
+   'p-correo','p-notas-contacto','p-cuenta','p-notas-pago'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('p-categoria').value = '';
+  document.querySelectorAll('input[name="dia-pedido"]').forEach(cb => cb.checked = false);
+  document.getElementById('p-condicion-pago').value = '0';
+  document.getElementById('modal-prov').classList.add('open');
+  document.getElementById('p-nombre-juridico').focus();
+}
+
+function cerrarModal() {
+  document.getElementById('modal-prov').classList.remove('open');
+}
+
+function eliminar(id) {
+  const p = getProveedores().find(x => x.id === id);
+  if (!confirm(`¿Eliminar a "${p?.nombre_juridico}"?`)) return;
+  saveProveedores(getProveedores().filter(x => x.id !== id));
+  actualizarFiltros();
+  renderLista();
+  showToast('Proveedor eliminado', 'success');
+  // Sincronizar con Google Sheets
+  try {
+    fetch(APPS_SCRIPT_COSTOS, {
+      method: 'POST',
+      body: new URLSearchParams({ data: JSON.stringify({ modulo: 'eliminar_proveedor', id }) })
+    });
+  } catch(e) {}
+}
+
+// ── FILTROS ───────────────────────────────────────────────────────
+function actualizarFiltros() {
+  const cats = [...new Set(getProveedores().map(p=>p.categoria).filter(Boolean))].sort();
+  const sel  = document.getElementById('f-cat');
+  const val  = sel.value;
+  sel.innerHTML = '<option value="">Todas las categorías</option>' +
+    cats.map(c => `<option${c===val?' selected':''}>${c}</option>`).join('');
+}
+
+// ── TABS ──────────────────────────────────────────────────────────
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  if (tab === 'nuevo') { abrirNuevo(); el.classList.remove('active'); document.querySelectorAll('.tab')[0].classList.add('active'); }
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').innerHTML = type==='success'
+    ? '<polyline points="3 8 7 12 13 4"/>'
+    : '<line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = `toast ${type}`;
+  requestAnimationFrame(()=>t.classList.add('show'));
+  setTimeout(()=>t.classList.remove('show'), 3500);
+}
+
+// Cerrar modal al hacer click fuera
+document.getElementById('modal-prov').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-prov')) cerrarModal();
+});
+
+// ── INIT ──────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  actualizarFiltros();
+  renderLista();
+  if (new URLSearchParams(location.search).get('nuevo') === '1') abrirNuevo();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Órdenes de Compra · Grupo del Sol</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#fff;
+      --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
+      --amber:#c87820; --amber-bg:#fdf6e3; --amber-lt:#f0d890;
+      --blue:#185fa5; --blue-bg:#eef4fb; --blue-lt:#b8d0f0;
+      --purple:#6a3a9a; --purple-bg:#f3eefb; --purple-lt:#d4b8f0;
+      --teal:#0e7a7a; --teal-bg:#eaf6f6; --teal-lt:#a8d8d8;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+    header { height:56px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; background:var(--bg); position:sticky; top:0; z-index:20; }
+    .nav-left { display:flex; align-items:center; gap:10px; }
+    .back-btn { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); }
+    .back-btn:hover { color:var(--text); border-color:var(--border-h); }
+    .back-btn svg { width:13px; height:13px; }
+    .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
+    .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 10px; }
+    main { max-width:1100px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .page-header { margin-bottom:1.5rem; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .page-header h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+    .page-header p { font-size:13px; color:var(--muted); }
+    .tabs { display:flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:4px; margin-bottom:1.25rem; width:fit-content; }
+    .tab { font-size:13px; font-weight:500; padding:6px 16px; border-radius:7px; border:none; cursor:pointer; background:transparent; color:var(--muted); transition:background .15s,color .15s; white-space:nowrap; }
+    .tab.active { background:var(--card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; }
+    .card-head { padding:1rem 1.25rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    .card-title { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); }
+    .area-header { padding:9px 14px; font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; display:flex; align-items:center; justify-content:space-between; }
+    .area-cocina     { background:#eef8f2; color:#1a7a4a; border-bottom:1px solid #d0eedd; }
+    .area-bar        { background:#eef4fb; color:#185fa5; border-bottom:1px solid #b8d0f0; }
+    .area-consumible { background:#fdf6e3; color:#c87820; border-bottom:1px solid #f0d890; }
+    .area-otro       { background:var(--surface); color:var(--muted); border-bottom:1px solid var(--border); }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th { text-align:left; font-size:10px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:8px 10px; border-bottom:1px solid var(--border); background:var(--surface); white-space:nowrap; }
+    td { padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    .num { text-align:right; font-variant-numeric:tabular-nums; }
+    .qty-input { width:75px; background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:var(--font-b); font-size:13px; padding:5px 7px; outline:none; text-align:right; }
+    .qty-input:focus { border-color:var(--blue); box-shadow:0 0 0 2px rgba(24,95,165,.1); }
+    .qty-input.sugerido { border-color:var(--amber); background:var(--amber-bg); }
+    .prov-input { width:130px; background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:var(--font-b); font-size:12px; padding:5px 7px; outline:none; }
+    .prov-input:focus { border-color:var(--blue); }
+    .badge { display:inline-flex; align-items:center; gap:3px; font-size:11px; font-weight:600; padding:3px 8px; border-radius:20px; white-space:nowrap; }
+    .b-ok       { background:var(--green-bg); color:var(--green); }
+    .b-low      { background:var(--amber-bg); color:var(--amber); }
+    .b-out      { background:var(--red-bg);   color:var(--red); }
+    .b-proceso  { background:var(--amber-bg); color:var(--amber); }
+    .b-aprobada { background:var(--green-bg); color:var(--green); }
+    .b-dot { width:5px; height:5px; border-radius:50%; background:currentColor; }
+    .btn-primary { background:var(--blue); color:#fff; border:none; border-radius:9px; font-family:var(--font-d); font-size:14px; font-weight:700; padding:10px 20px; cursor:pointer; transition:opacity .15s; white-space:nowrap; display:inline-flex; align-items:center; gap:6px; }
+    .btn-primary:hover { opacity:.9; }
+    .btn-green { background:var(--green); color:#fff; border:none; border-radius:9px; font-family:var(--font-d); font-size:14px; font-weight:700; padding:10px 20px; cursor:pointer; white-space:nowrap; }
+    .btn-green:hover { opacity:.9; }
+    .btn-sec { padding:9px 16px; border-radius:9px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; cursor:pointer; white-space:nowrap; }
+    .btn-sec:hover { color:var(--text); border-color:var(--border-h); }
+    .total-strip { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:var(--blue-bg); border-top:1px solid var(--blue-lt); }
+    .hist-item { padding:1rem 1.25rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:12px; cursor:pointer; transition:background .12s; }
+    .hist-item:hover { background:var(--surface); }
+    .hist-item:last-child { border-bottom:none; }
+    .prov-card { border:1px solid var(--border); border-radius:10px; margin:10px 14px; overflow:hidden; }
+    .prov-card-head { padding:10px 14px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; font-weight:600; font-size:13px; }
+    .send-btns { display:flex; gap:6px; }
+    .btn-email { padding:7px 14px; border-radius:7px; border:1px solid var(--blue-lt); background:var(--blue-bg); color:var(--blue); font-size:12px; font-weight:600; cursor:pointer; }
+    .btn-email:hover { background:var(--blue); color:#fff; }
+    .btn-wa { padding:7px 14px; border-radius:7px; border:1px solid #d0ead8; background:#edfbf1; color:#128c5e; font-size:12px; font-weight:600; cursor:pointer; }
+    .btn-wa:hover { background:#128c5e; color:#fff; }
+    .empty { text-align:center; padding:3rem; color:var(--subtle); font-size:13px; }
+    .spinner { display:inline-block; width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--blue); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
+    .sdot { width:6px; height:6px; border-radius:50%; background:var(--blue); }
+    .ssep { width:1px; height:14px; background:var(--border); }
+    .toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px); background:var(--card); border:1px solid var(--border); border-radius:10px; padding:11px 18px; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s; opacity:0; z-index:100; box-shadow:0 4px 20px rgba(0,0,0,.08); white-space:nowrap; }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+    .toast.success { border-color:var(--green); color:var(--green); }
+    .toast.error { border-color:var(--red); color:var(--red); }
+    .toast svg { width:16px; height:16px; }
+    input[type="date"] { background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--font-b); font-size:13px; padding:7px 10px; outline:none; }
+    input[type="date"]:focus { border-color:var(--blue); }
+    select.inline-sel { background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--font-b); font-size:13px; padding:7px 10px; outline:none; cursor:pointer; }
+    @media (max-width:700px) { header{padding:0 1rem;} main{padding:1.5rem 1rem 3rem;} }
+  </style>
+</head>
+<body>
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Órdenes de compra</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<main>
+  <div class="page-header">
+    <div>
+      <h1>Órdenes de compra</h1>
+      <p>Análisis de inventario · Propuesta de pedido · Aprobación por proveedor</p>
+    </div>
+    <button class="btn-primary" onclick="nuevaOrden()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
+      Nueva orden de compra
+    </button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('ordenes',this)">Órdenes</button>
+    <button class="tab" id="tab-btn-actual" onclick="switchTab('actual',this)" style="display:none;">Orden actual</button>
+    <button class="tab" onclick="switchTab('historial',this)">Historial</button>
+  </div>
+
+  <div id="tab-ordenes">
+    <div class="card">
+      <div class="card-head"><div class="card-title">Órdenes de compra</div></div>
+      <div id="lista-ordenes"><div class="empty">No hay órdenes. Creá una con el botón de arriba.</div></div>
+    </div>
+  </div>
+
+  <div id="tab-actual" style="display:none;">
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span style="font-family:var(--font-d);font-size:15px;font-weight:700;" id="actual-id"></span>
+            <span id="actual-estado-badge"></span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px;" id="actual-info"></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <label style="font-size:13px;font-weight:500;">Fecha:</label>
+            <input type="date" id="fecha-orden" onchange="guardarFechaOrden()">
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <label style="font-size:13px;font-weight:500;">Inventario:</label>
+            <select class="inline-sel" id="sel-inventario" onchange="cargarInventarioSeleccionado()">
+              <option value="">— Sin inventario —</option>
+            </select>
+          </div>
+          <button class="btn-green" id="btn-aprobar" onclick="aprobarOrden()">✓ Aprobar orden</button>
+        </div>
+      </div>
+      <div id="totales-orden" style="display:flex;flex-wrap:wrap;border-bottom:1px solid var(--border);"></div>
+      <div id="contenido-orden"><div class="empty"><span class="spinner"></span> Cargando productos…</div></div>
+      <div class="total-strip" id="total-general" style="display:none;">
+        <span style="font-size:13px;font-weight:600;color:var(--blue);">Total estimado de compra</span>
+        <span id="total-valor" style="font-family:var(--font-d);font-size:24px;font-weight:700;color:var(--blue);">₡0</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-historial" style="display:none;">
+    <div class="card">
+      <div class="card-head"><div class="card-title">Órdenes aprobadas</div></div>
+      <div id="lista-historial"><div class="empty">Sin órdenes aprobadas.</div></div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <span class="sdot"></span>
+    <span id="status-msg">Cargando…</span>
+    <span class="ssep"></span>
+    <span style="margin-left:auto;">v1.0 · Compras · Grupo del Sol</span>
+  </div>
+</main>
+
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────
+console.log('[OC] Script cargado OK');
+const SHEET_ID         = '1PtT9AHv2drY7oLygHKWMhHQgeOuT20_cD_igqu6ijyA';
+const EMAIL_GERENCIA   = 'TODO_GERENCIA_LORITO@pendiente.com';
+const APPS_SCRIPT_RRHH = 'TODO_APPS_SCRIPT_RRHH_LORITO';
+// ─────────────────────────────────────────────────────────────────
+
+const hoy      = new Date();
+const pad      = n => String(n).padStart(2,'0');
+const fechaHoy = hoy.getFullYear()+'-'+pad(hoy.getMonth()+1)+'-'+pad(hoy.getDate());
+const fmt      = n => '\u20a1' + Number(n||0).toLocaleString('es-CR', {minimumFractionDigits:0});
+const fmt2     = n => '\u20a1' + Number(n||0).toLocaleString('es-CR', {minimumFractionDigits:2,maximumFractionDigits:2});
+
+document.getElementById('date-chip').textContent =
+  hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
+
+// ── ESTADO ────────────────────────────────────────────────────────
+var ordenes     = [];
+var ordenActual = null;
+var productos   = [];
+var stockActual = {}; // { nombreProducto.toLowerCase(): {cerrado, abierto} }
+
+function getOrdenes()   { try { return JSON.parse(localStorage.getItem('ordenes_compra')||'[]'); } catch(e) { return []; } }
+function saveOrdenes(o) { localStorage.setItem('ordenes_compra', JSON.stringify(o)); }
+function genId() { return 'OC-'+hoy.getFullYear()+pad(hoy.getMonth()+1)+pad(hoy.getDate())+'-'+Math.floor(Math.random()*9000+1000); }
+
+var AREAS      = ['Cocina','Bar','Consumible','Otro'];
+var AREA_CLS   = { 'Cocina':'cocina','Bar':'bar','Consumible':'consumible','Otro':'otro' };
+
+// ── GVIZ: leer hoja pública via script tag (sin CORS) ────────────
+function gvizLoad(hoja) {
+  return new Promise(function(resolve, reject) {
+    var cb = '_gv_' + Math.random().toString(36).slice(2,10);
+    var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
+            + '/gviz/tq?tqx=responseHandler:' + cb
+            + '&sheet=' + encodeURIComponent(hoja);
+    var done  = false;
+    var timer = setTimeout(function() {
+      if (!done) { done=true; cleanup(); reject(new Error('Timeout: '+hoja)); }
+    }, 15000);
+    function cleanup() {
+      clearTimeout(timer);
+      try { delete window[cb]; } catch(e) {}
+      try { if (s && s.parentNode) document.body.removeChild(s); } catch(e) {}
+    }
+    window[cb] = function(data) {
+      if (done) return; done = true; cleanup();
+      try {
+        var cols = (data.table.cols||[]).map(function(c){ return c.label||c.id||''; });
+        var rows = (data.table.rows||[]).filter(function(r){ return r&&r.c; }).map(function(row){
+          var obj = {};
+          cols.forEach(function(col,i){
+            var cell = row.c[i];
+            obj[col] = cell ? (cell.f!=null?cell.f:(cell.v!=null?cell.v:'')) : '';
+          });
+          return obj;
+        });
+        resolve(rows);
+      } catch(e2) { reject(e2); }
+    };
+    var s = document.createElement('script');
+    s.onerror = function(){ if(!done){done=true;cleanup();reject(new Error('Error: '+hoja));} };
+    s.src = url;
+    document.body.appendChild(s);
+  });
+}
+
+// ── INIT ──────────────────────────────────────────────────────────
+function init() {
+  // Cargar estado sincrónico — los botones quedan activos de inmediato
+  ordenes   = getOrdenes();
+  productos = JSON.parse(localStorage.getItem('costos_productos')||'[]')
+    .filter(function(p){ return p.en_uso !== false && p.en_uso !== 'false'; });
+
+  ordenActual = ordenes.find(function(o){ return o.estado === 'en_proceso'; }) || null;
+  if (ordenActual) {
+    document.getElementById('tab-btn-actual').style.display = 'block';
+  }
+
+  renderListaOrdenes();
+  renderHistorial();
+  document.getElementById('status-msg').textContent =
+    productos.length + ' productos · Cargando inventarios del Sheet...';
+
+  // Cargar inventarios del Sheet en segundo plano (no bloquea la UI)
+  cargarListaInventarios().then(function() {
+    document.getElementById('status-msg').textContent =
+      productos.length + ' productos · listo';
+    if (ordenActual && ordenActual.inventario_id) {
+      document.getElementById('sel-inventario').value = ordenActual.inventario_id;
+    }
+  }).catch(function(e) {
+    document.getElementById('status-msg').textContent =
+      productos.length + ' productos · Sin conexión al Sheet';
+  });
+}
+
+// ── CARGAR LISTA DE TOMAS DEL SHEET ──────────────────────────────
+// Cache del historial para no cargarlo dos veces
+var historialCache = null;
+
+async function cargarHistorial() {
+  if (historialCache) return historialCache;
+  historialCache = await gvizLoad('HISTORIAL_inventario');
+  return historialCache;
+}
+
+async function cargarListaInventarios() {
+  var sel = document.getElementById('sel-inventario');
+  try {
+    var rows = await cargarHistorial();
+
+    // Extraer IDs únicos de toma desde el detalle
+    var ids = [], fechas = {};
+    rows.forEach(function(r){
+      var id    = String(r['Toma ID']||'').trim();
+      var fecha = String(r['Fecha toma']||'').trim();
+      if (id && ids.indexOf(id) === -1) {
+        ids.push(id);
+        fechas[id] = fecha;
+      }
+    });
+    ids.sort(function(a,b){ return b.localeCompare(a); }); // más reciente primero
+
+    sel.innerHTML = '<option value="">— Seleccioná un inventario —</option>';
+    ids.forEach(function(id){
+      var opt = document.createElement('option');
+      opt.value = id;
+      opt.textContent = id + ' · ' + (fechas[id]||'');
+      sel.appendChild(opt);
+    });
+    if (!ids.length)
+      sel.innerHTML = '<option value="">Sin inventarios en el Sheet</option>';
+  } catch(e) {
+    console.warn('Error cargando inventarios:', e.message);
+    sel.innerHTML = '<option value="">Error al cargar</option>';
+  }
+}
+
+// ── CARGAR DETALLE AL SELECCIONAR UN INVENTARIO ───────────────────
+async function cargarInventarioSeleccionado() {
+  if (!ordenActual) return;
+  var tomaId = document.getElementById('sel-inventario').value;
+  ordenActual.inventario_id = tomaId;
+  saveOrdenes(ordenes);
+  stockActual = {};
+
+  if (!tomaId) { renderOrden(); return; }
+
+  document.getElementById('contenido-orden').innerHTML =
+    '<div class="empty"><span class="spinner"></span> Cargando stock de ' + tomaId + '...</div>';
+
+  try {
+    var rows = await cargarHistorial();
+    rows.filter(function(r){ return String(r['Toma ID']||'').trim() === tomaId; })
+      .forEach(function(r){
+        var nombre = String(r['Producto']||'').trim().toLowerCase();
+        if (!nombre) return;
+        stockActual[nombre] = {
+          cerrado: parseFloat(r['Cant. completos']) || 0,
+          abierto: parseFloat(r['Cant. en uso'])    || 0,
+        };
+      });
+    console.log('[OC] Stock cargado:', Object.keys(stockActual));
+  } catch(e) {
+    console.warn('Error cargando detalle:', e.message);
+  }
+  renderOrden();
+}
+
+// ── STOCK ACTUAL ─────────────────────────────────────────────────
+function getStockActual(p) {
+  var key = (p.nombre||'').trim().toLowerCase();
+  var s   = stockActual[key];
+  if (!s) return null;
+  var cantPres = parseFloat(p.cantidad_presentacion) || 1;
+  return { cerrado: s.cerrado, abierto: s.abierto,
+           enPresentaciones: s.cerrado + (s.abierto / cantPres) };
+}
+
+function calcPedidoSugerido(p) {
+  var min   = parseFloat(p.stock_minimo) || 0;
+  var stock = getStockActual(p);
+  if (!min)   return 0;
+  if (!stock) return min;
+  var diff = min - stock.enPresentaciones;
+  return diff > 0 ? Math.ceil(diff) : 0;
+}
+
+// ── NUEVA ORDEN ───────────────────────────────────────────────────
+function nuevaOrden() {
+  // Recargar estado por si init no completó
+  if (!ordenes.length) ordenes = getOrdenes();
+  if (!productos.length) {
+    productos = JSON.parse(localStorage.getItem('costos_productos')||'[]')
+      .filter(function(p){ return p.en_uso !== false && p.en_uso !== 'false'; });
+  }
+  if (ordenActual && !confirm('Ya hay una orden en proceso. ¿Descartarla?')) return;
+  if (ordenActual) { ordenActual.estado = 'cancelada'; saveOrdenes(ordenes); }
+  var id = genId();
+  ordenActual = { id:id, estado:'en_proceso', fecha:fechaHoy,
+                  inventario_id:'', lineas:{}, creada:new Date().toISOString() };
+  ordenes.unshift(ordenActual);
+  saveOrdenes(ordenes);
+  stockActual = {};
+  document.getElementById('sel-inventario').value = '';
+  document.getElementById('tab-btn-actual').style.display = 'block';
+  document.getElementById('btn-aprobar').style.display = 'block';
+  switchTab('actual', document.getElementById('tab-btn-actual'));
+  renderMeta();
+  renderOrden();
+  renderListaOrdenes();
+  showToast('Orden ' + id + ' iniciada', 'success');
+}
+
+function guardarFechaOrden() {
+  if (!ordenActual) return;
+  ordenActual.fecha = document.getElementById('fecha-orden').value;
+  saveOrdenes(ordenes);
+}
+
+// ── RENDER META ───────────────────────────────────────────────────
+function renderMeta() {
+  if (!ordenActual) return;
+  document.getElementById('actual-id').textContent = ordenActual.id;
+  document.getElementById('actual-estado-badge').innerHTML = ordenActual.estado === 'en_proceso'
+    ? '<span class="badge b-proceso"><span class="b-dot"></span>En proceso</span>'
+    : '<span class="badge b-aprobada"><span class="b-dot"></span>Aprobada</span>';
+  document.getElementById('actual-info').textContent = 'Creada: ' + new Date(ordenActual.creada).toLocaleString('es-CR');
+  document.getElementById('fecha-orden').value = ordenActual.fecha || fechaHoy;
+  if (ordenActual.inventario_id) document.getElementById('sel-inventario').value = ordenActual.inventario_id;
+}
+
+// ── RENDER TABLA DE LA ORDEN ──────────────────────────────────────
+function renderOrden() {
+  if (!ordenActual) return;
+  var totalGeneral   = 0;
+  var totalesPorArea = {};
+  var html = '';
+
+  AREAS.forEach(function(area) {
+    var prods = productos.filter(function(p){ return (p.area||'Otro') === area; });
+    if (!prods.length) return;
+    var subtotal = 0;
+    var filas = '';
+
+    prods.forEach(function(p) {
+      var min       = parseFloat(p.stock_minimo) || 0;
+      var stock     = getStockActual(p);
+      var linea     = ordenActual.lineas[p.id] || {};
+      var sugerido  = calcPedidoSugerido(p);
+      var pedido    = linea.pedido !== undefined ? linea.pedido : sugerido;
+      var proveedor = linea.proveedor !== undefined ? linea.proveedor : (p.proveedor||'');
+      var precioC   = parseFloat(p.precio_sin_iva) || 0;
+      var monto     = pedido * precioC;
+      subtotal += monto;
+
+      var stockBadge = '<span style="color:var(--subtle);font-size:12px;">Sin datos</span>';
+      var stockSub   = '';
+      if (stock !== null) {
+        stockSub = '<div style="font-size:10px;color:var(--muted);margin-top:2px;">'
+          + stock.cerrado + ' compl. + ' + stock.abierto + ' ' + (p.unidad||'u') + ' en uso</div>';
+        if (stock.enPresentaciones <= 0)
+          stockBadge = '<span class="badge b-out">Sin stock</span>';
+        else if (min > 0 && stock.enPresentaciones < min)
+          stockBadge = '<span class="badge b-low">' + stock.enPresentaciones.toFixed(1) + ' pres.</span>';
+        else
+          stockBadge = '<span class="badge b-ok">' + stock.enPresentaciones.toFixed(1) + ' pres.</span>';
+      }
+
+      var pres = [p.presentacion, p.tamano].filter(Boolean).join(' ') || '—';
+      filas += '<tr>'
+        + '<td><div style="font-weight:500;font-size:13px;">' + p.nombre + '</div>'
+        + '<div style="font-size:11px;color:var(--muted);">' + pres + '</div></td>'
+        + '<td>' + stockBadge + stockSub + '</td>'
+        + '<td class="num" style="color:var(--muted);">' + (min > 0 ? min + ' pres.' : '—') + '</td>'
+        + '<td class="num"><input type="number" class="qty-input' + (sugerido > 0 ? ' sugerido' : '')
+        + '" id="ped-' + p.id + '" min="0" step="1" value="' + pedido
+        + '" oninput="onPedido(\'' + p.id + '\',this)"></td>'
+        + '<td class="num" style="color:var(--muted);font-size:12px;">' + fmt2(precioC) + '</td>'
+        + '<td class="num" style="font-weight:600;" id="monto-' + p.id + '">' + fmt(monto) + '</td>'
+        + '<td><input type="text" class="prov-input" value="' + proveedor
+        + '" placeholder="Proveedor\u2026" onchange="onProveedor(\'' + p.id + '\',this)"></td>'
+        + '</tr>';
+    });
+
+    totalGeneral += subtotal;
+    totalesPorArea[area] = subtotal;
+    html += '<div class="area-header area-' + (AREA_CLS[area]||'otro') + '">'
+      + '<span>' + area + '</span>'
+      + '<span style="font-weight:400;font-size:12px;" id="sub-' + area + '">' + fmt(subtotal) + '</span></div>'
+      + '<table><thead><tr>'
+      + '<th>Producto</th><th>Stock actual</th>'
+      + '<th style="text-align:right;">Stock mín.</th>'
+      + '<th style="text-align:right;">Pedido (pres.)</th>'
+      + '<th style="text-align:right;">Precio compra</th>'
+      + '<th style="text-align:right;">Monto estimado</th>'
+      + '<th>Proveedor</th>'
+      + '</tr></thead><tbody>' + filas + '</tbody></table>';
+  });
+
+  document.getElementById('contenido-orden').innerHTML =
+    html || '<div class="empty">Sin productos en la base.</div>';
+
+  // Totales por área
+  var totEl = document.getElementById('totales-orden');
+  totEl.innerHTML = Object.keys(totalesPorArea).map(function(a){
+    return '<div style="flex:1;min-width:130px;padding:10px 14px;border-right:1px solid var(--border);">'
+      + '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;">' + a + '</div>'
+      + '<div style="font-family:var(--font-d);font-size:16px;font-weight:700;color:var(--blue);">' + fmt(totalesPorArea[a]) + '</div>'
+      + '</div>';
+  }).join('');
+
+  document.getElementById('total-valor').textContent = fmt(totalGeneral);
+  document.getElementById('total-general').style.display = 'flex';
+  ordenActual.total = totalGeneral;
+  saveOrdenes(ordenes);
+}
+
+function onPedido(id, input) {
+  if (!ordenActual.lineas[id]) ordenActual.lineas[id] = {};
+  var val   = parseFloat(input.value) || 0;
+  ordenActual.lineas[id].pedido = val;
+  var p     = productos.find(function(x){ return x.id === id; });
+  var mEl   = document.getElementById('monto-' + id);
+  if (mEl) mEl.textContent = fmt(val * (parseFloat(p ? p.precio_sin_iva : 0) || 0));
+  saveOrdenes(ordenes);
+  recalcularTotales();
+}
+
+function onProveedor(id, input) {
+  if (!ordenActual.lineas[id]) ordenActual.lineas[id] = {};
+  ordenActual.lineas[id].proveedor = input.value.trim();
+  saveOrdenes(ordenes);
+}
+
+function recalcularTotales() {
+  var total = 0;
+  AREAS.forEach(function(area) {
+    var sub = 0;
+    productos.filter(function(p){ return (p.area||'Otro') === area; }).forEach(function(p){
+      var linea  = ordenActual.lineas[p.id] || {};
+      var pedido = linea.pedido !== undefined ? linea.pedido : calcPedidoSugerido(p);
+      sub += (pedido||0) * (parseFloat(p.precio_sin_iva)||0);
+    });
+    total += sub;
+    var el = document.getElementById('sub-' + area);
+    if (el) el.textContent = fmt(sub);
+  });
+  document.getElementById('total-valor').textContent = fmt(total);
+  ordenActual.total = total;
+  saveOrdenes(ordenes);
+}
+
+// ── APROBAR ───────────────────────────────────────────────────────
+async function aprobarOrden() {
+  if (!ordenActual) return;
+  var lineas = productos.filter(function(p){
+    var l = ordenActual.lineas[p.id] || {};
+    return (l.pedido !== undefined ? l.pedido : calcPedidoSugerido(p)) > 0;
+  }).map(function(p){
+    var l     = ordenActual.lineas[p.id] || {};
+    var ped   = l.pedido !== undefined ? l.pedido : calcPedidoSugerido(p);
+    var prov  = l.proveedor !== undefined ? l.proveedor : (p.proveedor||'');
+    return Object.assign({}, p, { pedido:ped, monto:ped*(parseFloat(p.precio_sin_iva)||0), proveedor_orden:prov });
+  });
+
+  if (!lineas.length) { showToast('Sin productos con pedido > 0','error'); return; }
+  if (!confirm('Aprobar orden ' + ordenActual.id + ' - Total: ' + fmt(ordenActual.total||0))) return;
+
+  ordenActual.estado          = 'aprobada';
+  ordenActual.aprobada        = new Date().toISOString();
+  ordenActual.lineas_aprobadas = lineas;
+  saveOrdenes(ordenes);
+
+  renderOrdenAprobada(ordenActual);
+  document.getElementById('btn-aprobar').style.display = 'none';
+  document.getElementById('actual-estado-badge').innerHTML =
+    '<span class="badge b-aprobada"><span class="b-dot"></span>Aprobada</span>';
+
+  var oa = ordenActual;
+  ordenActual = null;
+  document.getElementById('tab-btn-actual').style.display = 'none';
+  renderListaOrdenes();
+  renderHistorial();
+  showToast('Orden aprobada ✓', 'success');
+}
+
+// ── ORDEN APROBADA: por proveedor ─────────────────────────────────
+function renderOrdenAprobada(orden) {
+  var lineas  = orden.lineas_aprobadas || [];
+  var provMap = {};
+  lineas.forEach(function(l){
+    var k = l.proveedor_orden || l.proveedor || 'Sin proveedor';
+    if (!provMap[k]) provMap[k] = [];
+    provMap[k].push(l);
+  });
+
+  var html = '<div style="padding:1rem 1.25rem;background:var(--green-bg);border-bottom:1px solid var(--green-lt);font-size:13px;color:var(--green);font-weight:600;">'
+    + '✓ Orden aprobada el ' + new Date(orden.aprobada).toLocaleString('es-CR') + '</div>';
+
+  Object.keys(provMap).sort().forEach(function(prov){
+    var items = provMap[prov];
+    var total = items.reduce(function(a,i){ return a+(i.monto||0); },0);
+    var waMsg    = buildWA(prov, orden, items);
+    var emailData = buildEmail(prov, orden, items);
+
+    var provKey  = orden.id + '_' + prov.replace(/\W/g,'_');
+    var enviado  = (orden.enviados || {})[provKey] || false;
+    var cardBg   = enviado ? 'background:var(--green-bg);border-color:var(--green-lt);' : '';
+
+    html += '<div class="prov-card" id="pcard-' + provKey + '" style="' + cardBg + '">'
+      + '<div class="prov-card-head" style="flex-wrap:wrap;gap:10px;">'
+      + '<div style="display:flex;align-items:center;gap:10px;flex:1;">'
+      + '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">'
+      + '<input type="checkbox"'
+      + (enviado ? ' checked' : '')
+      + ' onchange="toggleEnviado(\'' + orden.id + '\',\'' + prov.replace(/'/g,"\\'") + '\',\'' + provKey + '\',this)"'
+      + ' style="width:17px;height:17px;cursor:pointer;accent-color:var(--green);">'
+      + '<span style="font-size:14px;font-weight:600;">' + prov + '</span>'
+      + '</label>'
+      + (enviado
+        ? '<span class="badge b-ok">&#10003; Enviado</span>'
+        : '<span style="font-size:12px;color:var(--muted);" id="lbl-' + provKey + '">Pendiente de envío</span>')
+      + '<span style="font-size:12px;color:var(--muted);">'
+      + items.length + ' producto' + (items.length!==1?'s':'') + ' · ' + fmt(total)
+      + '</span>'
+      + '</div>'
+      + '<div class="send-btns">'
+      + '<button class="btn-email" onclick="abrirEmail(\'' + encodeURIComponent(emailData.asunto) + '\',\'' + encodeURIComponent(emailData.cuerpo) + '\')">&#9993; Correo</button>'
+      + '<button class="btn-wa" onclick="abrirWA(\'' + encodeURIComponent(waMsg) + '\')">&#128172; WhatsApp</button>'
+      + '</div></div>'
+      + '<table><thead><tr><th>Producto</th><th>Presentación</th>'
+      + '<th style="text-align:right;">Cantidad</th><th style="text-align:right;">Precio</th><th style="text-align:right;">Monto</th>'
+      + '</tr></thead><tbody>'
+      + items.map(function(i){
+          return '<tr><td style="font-weight:500;">' + i.nombre + '</td>'
+            + '<td style="color:var(--muted);font-size:12px;">' + ([i.presentacion,i.tamano].filter(Boolean).join(' ')||'—') + '</td>'
+            + '<td class="num">' + i.pedido + '</td>'
+            + '<td class="num" style="color:var(--muted);">' + fmt2(i.precio_sin_iva||0) + '</td>'
+            + '<td class="num" style="font-weight:600;">' + fmt(i.monto) + '</td></tr>';
+        }).join('')
+      + '</tbody></table></div>';
+  });
+
+  document.getElementById('contenido-orden').innerHTML = html;
+  document.getElementById('total-valor').textContent = fmt(orden.total||0);
+  document.getElementById('total-general').style.display = 'flex';
+}
+
+function toggleEnviado(ordenId, prov, provKey, checkbox) {
+  // Buscar la orden en el storage
+  var todas = getOrdenes();
+  var orden  = todas.find(function(o){ return o.id === ordenId; });
+  if (!orden) return;
+
+  if (!orden.enviados) orden.enviados = {};
+  orden.enviados[provKey] = checkbox.checked;
+  saveOrdenes(todas);
+
+  // Actualizar visual de la card sin re-renderizar todo
+  var card = document.getElementById('pcard-' + provKey);
+  if (card) {
+    if (checkbox.checked) {
+      card.style.background   = 'var(--green-bg)';
+      card.style.borderColor  = 'var(--green-lt)';
+    } else {
+      card.style.background   = 'var(--card)';
+      card.style.borderColor  = '';
+    }
+  }
+  // Actualizar el badge de estado junto al checkbox
+  var label = checkbox.parentElement;
+  // Quitar badge anterior
+  var oldBadge = label.querySelector('span.badge, span.muted-estado');
+  if (oldBadge) oldBadge.remove();
+  // Insertar nuevo badge
+  var span = document.createElement('span');
+  if (checkbox.checked) {
+    span.className   = 'badge b-ok';
+    span.style.fontSize = '11px';
+    span.textContent = '✓ Enviado';
+  } else {
+    span.style.fontSize = '12px';
+    span.style.color    = 'var(--muted)';
+    span.className      = 'muted-estado';
+    span.textContent    = 'Pendiente de envío';
+  }
+  label.appendChild(span);
+
+  showToast(checkbox.checked ? 'Pedido a ' + prov + ' marcado como enviado' : 'Marcado como pendiente', 'success');
+}
+
+function buildEmail(prov, orden, items) {
+  var total  = items.reduce(function(a,i){ return a+(i.monto||0); }, 0);
+  var lineas = items.map(function(i){ return '- ' + i.nombre + ': ' + i.pedido + ' ' + (i.presentacion||'u'); }).join('\n');
+  var cuerpo = 'Estimados ' + prov + ', pedido de Lorito. Orden: ' + orden.id + '. Fecha: ' + orden.fecha + '.\n\n' + lineas + '\n\nTotal estimado: ' + fmt(total) + '\n\nGracias, Grupo del Sol';
+  return { asunto: 'Pedido ' + orden.id + ' - Lorito', cuerpo: cuerpo };
+}
+
+function buildWA(prov, orden, items) {
+  var total = items.reduce(function(a,i){ return a+(i.monto||0); }, 0);
+  var lineas = items.map(function(i){ return '- ' + i.nombre + ': ' + i.pedido + ' ' + (i.presentacion||'u') + ' ' + (i.tamano||''); }).join('\n');
+  return '*Pedido ' + orden.id + ' - Lorito*\nFecha: ' + orden.fecha + '\nProveedor: ' + prov + '\n\n' + lineas + '\n\n*Total: ' + fmt(total) + '*';
+}
+
+function abrirEmail(asunto, cuerpo) {
+  window.open('mailto:?subject=' + asunto + '&body=' + cuerpo);
+}
+function abrirWA(msg) {
+  window.open('https://wa.me/?text=' + encodeURIComponent(decodeURIComponent(msg)), '_blank');
+}
+
+// ── ELIMINAR ORDEN ───────────────────────────────────────────────
+function eliminarOrden(id, e) {
+  e.stopPropagation(); // no abrir la orden al hacer click
+  if (!confirm('¿Eliminar la orden ' + id + '? Esta acción no se puede deshacer.')) return;
+  ordenes = ordenes.filter(function(o){ return o.id !== id; });
+  // Si era la orden activa, limpiarla
+  if (ordenActual && ordenActual.id === id) {
+    ordenActual = null;
+    document.getElementById('tab-btn-actual').style.display = 'none';
+    switchTab('ordenes', document.querySelectorAll('.tab')[0]);
+  }
+  saveOrdenes(ordenes);
+  renderListaOrdenes();
+  renderHistorial();
+  showToast('Orden eliminada', 'success');
+}
+
+// ── LISTA Y HISTORIAL ─────────────────────────────────────────────
+function renderListaOrdenes() {
+  var cont  = document.getElementById('lista-ordenes');
+  var todas = getOrdenes().filter(function(o){ return o.estado !== 'cancelada'; });
+  if (!todas.length) { cont.innerHTML = '<div class="empty">No hay órdenes.</div>'; return; }
+  cont.innerHTML = todas.map(function(o){
+    var enP = o.estado === 'en_proceso';
+    return '<div class="hist-item" onclick="' + (enP ? 'abrirOrden()' : 'verOrdenAprobada(\'' + o.id + '\')') + '">'
+      + '<div><div style="font-weight:600;">' + o.id + '</div>'
+      + '<div style="font-size:12px;color:var(--muted);">Fecha: ' + (o.fecha||'—') + '</div></div>'
+      + '<div style="display:flex;align-items:center;gap:10px;">'
+      + '<span class="badge ' + (enP?'b-proceso':'b-aprobada') + '"><span class="b-dot"></span>' + (enP?'En proceso':'Aprobada') + '</span>'
+      + '<span style="font-family:var(--font-d);font-size:16px;font-weight:700;color:var(--blue);">' + fmt(o.total||0) + '</span>'
+      + '<button onclick="eliminarOrden(\'' + o.id + '\',event)" style="padding:5px 12px;border-radius:7px;border:1px solid var(--red-lt);background:var(--red-bg);color:var(--red);font-size:12px;font-weight:600;cursor:pointer;">Eliminar</button>'
+      + '</div></div>';
+  }).join('');
+}
+
+function abrirOrden() {
+  ordenActual = ordenes.find(function(o){ return o.estado === 'en_proceso'; });
+  if (!ordenActual) return;
+  stockActual = {};
+  document.getElementById('tab-btn-actual').style.display = 'block';
+  document.getElementById('btn-aprobar').style.display = 'block';
+  switchTab('actual', document.getElementById('tab-btn-actual'));
+  renderMeta();
+  if (ordenActual.inventario_id) {
+    document.getElementById('sel-inventario').value = ordenActual.inventario_id;
+    cargarInventarioSeleccionado();
+  } else { renderOrden(); }
+}
+
+function verOrdenAprobada(id) {
+  var orden = getOrdenes().find(function(o){ return o.id === id; });
+  if (!orden) return;
+  document.getElementById('tab-btn-actual').style.display = 'block';
+  document.getElementById('btn-aprobar').style.display = 'none';
+  switchTab('actual', document.getElementById('tab-btn-actual'));
+  ordenActual = orden;
+  renderMeta();
+  renderOrdenAprobada(orden);
+}
+
+function renderHistorial() {
+  var cont = document.getElementById('lista-historial');
+  var ap   = getOrdenes().filter(function(o){ return o.estado==='aprobada'; }).reverse();
+  if (!ap.length) { cont.innerHTML = '<div class="empty">Sin órdenes aprobadas.</div>'; return; }
+  cont.innerHTML = ap.map(function(o){
+    return '<div class="hist-item" onclick="verOrdenAprobada(\'' + o.id + '\')">'
+      + '<div><div style="font-weight:600;">' + o.id + '</div>'
+      + '<div style="font-size:12px;color:var(--muted);">Fecha: ' + (o.fecha||'—') + '</div></div>'
+      + '<div style="display:flex;align-items:center;gap:10px;">'
+      + '<span class="badge b-aprobada"><span class="b-dot"></span>Aprobada</span>'
+      + '<span style="font-family:var(--font-d);font-size:16px;font-weight:700;color:var(--blue);">' + fmt(o.total||0) + '</span>'
+      + '<button onclick="eliminarOrden(\'' + o.id + '\',event)" style="padding:5px 12px;border-radius:7px;border:1px solid var(--red-lt);background:var(--red-bg);color:var(--red);font-size:12px;font-weight:600;cursor:pointer;">Eliminar</button>'
+      + '</div></div>';
+  }).join('');
+}
+
+// ── TABS ──────────────────────────────────────────────────────────
+function switchTab(tab, el) {
+  ['ordenes','actual','historial'].forEach(function(t){
+    var d = document.getElementById('tab-'+t);
+    if (d) d.style.display = t===tab?'block':'none';
+  });
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  if (el) el.classList.add('active');
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────
+function showToast(msg, type) {
+  type = type||'success';
+  var t = document.getElementById('toast');
+  document.getElementById('toast-icon').innerHTML = type==='success'
+    ? '<polyline points="3 8 7 12 13 4"/>'
+    : '<line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = 'toast '+type;
+  requestAnimationFrame(function(){ t.classList.add('show'); });
+  setTimeout(function(){ t.classList.remove('show'); }, 4000);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Asegurar estado inicial correcto de los tabs
+  document.getElementById('tab-ordenes').style.display  = 'block';
+  document.getElementById('tab-actual').style.display   = 'none';
+  document.getElementById('tab-historial').style.display = 'none';
+  init();
+});
+</script>
+</body>
+</html>

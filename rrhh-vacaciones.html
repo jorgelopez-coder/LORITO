@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solicitud de Vacaciones · RRHH · Grupo del Sol</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#ffffff;
+      --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
+      --amber:#c87820; --amber-bg:#fdf6e3; --amber-lt:#f0d890;
+      --blue:#185fa5; --blue-bg:#eef4fb;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+
+    header { height:56px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; background:var(--bg); position:sticky; top:0; z-index:20; }
+    .nav-left { display:flex; align-items:center; gap:10px; }
+    .back-btn { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); }
+    .back-btn svg { width:13px; height:13px; }
+    .back-btn:hover { color:var(--text); border-color:var(--border-h); }
+    .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
+    .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 10px; }
+
+    main { max-width:780px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .page-header { margin-bottom:2rem; }
+    .page-header h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+    .page-header p { font-size:13px; color:var(--muted); }
+
+    .tabs { display:flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:4px; margin-bottom:1.5rem; width:fit-content; }
+    .tab { font-size:13px; font-weight:500; padding:6px 16px; border-radius:7px; border:none; cursor:pointer; background:transparent; color:var(--muted); transition:background .15s,color .15s; }
+    .tab.active { background:var(--card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; margin-bottom:1rem; }
+    .card-title { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:1.25rem; }
+
+    .field { margin-bottom:1.1rem; }
+    .field:last-child { margin-bottom:0; }
+    .field-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+    label { display:block; font-size:13px; font-weight:500; color:var(--text); margin-bottom:5px; }
+    .req { color:var(--red); margin-left:2px; }
+
+    input, select, textarea {
+      width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px;
+      color:var(--text); font-family:var(--font-b); font-size:14px; padding:9px 12px;
+      outline:none; appearance:none; transition:border-color .15s,box-shadow .15s;
+    }
+    input:focus, select:focus, textarea:focus { border-color:var(--green); box-shadow:0 0 0 3px rgba(26,122,74,.1); }
+    input::placeholder { color:var(--subtle); }
+    select {
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat:no-repeat; background-position:right 12px center; padding-right:36px; cursor:pointer;
+    }
+    textarea { resize:vertical; min-height:70px; line-height:1.5; }
+
+    /* Balance card */
+    .balance-card { background:var(--green-bg); border:1px solid var(--green-lt); border-radius:var(--radius); padding:1.25rem 1.5rem; display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+    .balance-label { font-size:13px; color:var(--muted); margin-bottom:2px; }
+    .balance-valor { font-family:var(--font-d); font-size:32px; font-weight:700; color:var(--green); letter-spacing:-.02em; }
+    .balance-sub { font-size:12px; color:var(--muted); }
+    .balance-aviso { font-size:12px; color:var(--amber); background:var(--amber-bg); border:1px solid var(--amber-lt); border-radius:8px; padding:8px 12px; margin-top:8px; display:none; }
+
+    /* Días seleccionados */
+    .dias-tag { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--green); background:var(--green-bg); border:1px solid var(--green-lt); border-radius:8px; padding:6px 14px; margin-top:8px; }
+    .dias-tag.warning { color:var(--red); background:var(--red-bg); border-color:var(--red-lt); }
+
+    /* Solicitudes tabla */
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th { text-align:left; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:0 12px 10px 0; border-bottom:1px solid var(--border); white-space:nowrap; }
+    td { padding:11px 12px 11px 0; border-bottom:1px solid var(--border); vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:var(--surface); }
+
+    .badge { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:500; padding:3px 8px; border-radius:20px; }
+    .badge-pending { background:var(--amber-bg); color:var(--amber); }
+    .badge-approved { background:var(--green-bg); color:var(--green); }
+    .badge-rejected { background:var(--red-bg); color:var(--red); }
+
+    .action-btns { display:flex; gap:6px; }
+    .btn-aprobar { font-size:11px; padding:4px 10px; border-radius:6px; border:1px solid var(--green); background:var(--green-bg); color:var(--green); cursor:pointer; font-weight:500; transition:background .15s; }
+    .btn-aprobar:hover { background:var(--green); color:#fff; }
+    .btn-rechazar { font-size:11px; padding:4px 10px; border-radius:6px; border:1px solid var(--red-lt); background:var(--red-bg); color:var(--red); cursor:pointer; font-weight:500; transition:background .15s; }
+    .btn-rechazar:hover { background:var(--red); color:#fff; }
+
+    .empty-state { text-align:center; padding:2.5rem; color:var(--subtle); font-size:13px; }
+
+    .submit-area { display:flex; align-items:center; gap:10px; margin-top:1.5rem; }
+    .btn-submit { flex:1; background:var(--green); color:#fff; border:none; border-radius:9px; font-family:var(--font-d); font-size:15px; font-weight:700; padding:12px 24px; cursor:pointer; transition:opacity .15s; }
+    .btn-submit:hover { opacity:.9; }
+    .btn-submit:disabled { opacity:.4; cursor:not-allowed; }
+    .btn-clear { padding:12px 16px; border-radius:9px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; cursor:pointer; }
+    .btn-clear:hover { color:var(--text); border-color:var(--border-h); }
+
+    .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
+    .ssep { width:1px; height:14px; background:var(--border); }
+
+    .toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px); background:var(--card); border:1px solid var(--border-h); border-radius:10px; padding:11px 18px; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s; opacity:0; z-index:100; white-space:nowrap; box-shadow:0 4px 20px rgba(0,0,0,.08); }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+    .toast.success { border-color:var(--green); color:var(--green); }
+    .toast.error { border-color:var(--red); color:var(--red); }
+    .toast svg { width:16px; height:16px; flex-shrink:0; }
+
+    @media (max-width:600px) { header { padding:0 1rem; } main { padding:1.5rem 1rem 3rem; } .field-row { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Solicitud de vacaciones</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<main>
+  <div class="page-header">
+    <h1>Solicitud de vacaciones</h1>
+    <p>Registrá y gestioná las solicitudes de días libres del equipo.</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('solicitud',this)">Nueva solicitud</button>
+    <button class="tab" onclick="switchTab('historial',this)">Solicitudes</button>
+  </div>
+
+  <!-- TAB SOLICITUD -->
+  <div id="tab-solicitud">
+
+    <div class="card">
+      <p class="card-title">Colaborador</p>
+      <div class="field">
+        <label for="colaborador">Nombre del colaborador <span class="req">*</span></label>
+        <select id="colaborador" onchange="cargarBalance()" required>
+          <option value="" disabled selected>Seleccioná un colaborador…</option>
+        </select>
+        <div id="colaborador-error" style="display:none;font-size:12px;color:var(--red);margin-top:6px;">
+          <span id="colaborador-error-msg"></span>
+          <a href="javascript:void(0)" onclick="cargarColaboradores()" style="color:var(--green);font-weight:600;text-decoration:none;margin-left:4px;">Reintentar</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="balance-card" id="balance-card" style="display:none;">
+      <div>
+        <div class="balance-label">Saldo disponible de vacaciones</div>
+        <div class="balance-valor" id="balance-dias">—</div>
+        <div class="balance-sub" id="balance-sub">días disponibles</div>
+      </div>
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#2ecc8a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".4">
+        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    </div>
+    <div class="balance-aviso" id="balance-aviso">⚠️ Los días solicitados superan el saldo disponible.</div>
+
+    <div class="card">
+      <p class="card-title">Período solicitado</p>
+      <div class="field-row">
+        <div class="field">
+          <label for="fecha-inicio">Fecha de inicio <span class="req">*</span></label>
+          <input type="date" id="fecha-inicio" onchange="calcularDias()" required>
+        </div>
+        <div class="field">
+          <label for="fecha-fin">Fecha de regreso <span class="req">*</span></label>
+          <input type="date" id="fecha-fin" onchange="calcularDias()" required>
+        </div>
+      </div>
+      <div id="dias-resultado" style="display:none;">
+        <span class="dias-tag" id="dias-tag">0 días hábiles</span>
+      </div>
+      <div class="field" style="margin-top:1rem;">
+        <label for="observaciones">Observaciones</label>
+        <textarea id="observaciones" placeholder="Información adicional sobre la solicitud…"></textarea>
+      </div>
+    </div>
+
+    <div class="submit-area">
+      <button type="button" class="btn-clear" onclick="limpiarForm()">Limpiar</button>
+      <button type="button" class="btn-submit" id="btn-enviar" onclick="enviarSolicitud()">Enviar solicitud</button>
+    </div>
+  </div>
+
+  <!-- TAB HISTORIAL -->
+  <div id="tab-historial" style="display:none;">
+    <div class="card">
+      <div id="historial-container">
+        <div class="empty-state">No hay solicitudes registradas.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <span id="status-msg">Listo</span>
+    <span class="ssep"></span>
+    <span style="margin-left:auto;">v1.0 · RRHH · Grupo del Sol</span>
+  </div>
+</main>
+
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ─── CONFIGURACIÓN ──────────────────────────────────────────────
+const APPS_SCRIPT_URL  = 'TODO_APPS_SCRIPT_RRHH_LORITO'; // URL de tu Apps Script
+const EMAIL_GERENCIA   = ''; // Correo de gerencia para notificaciones
+// ────────────────────────────────────────────────────────────────
+
+const hoy = new Date();
+const pad = n => String(n).padStart(2,'0');
+document.getElementById('date-chip').textContent =
+  hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
+
+// Cargar colaboradores desde Google Sheets
+async function cargarColaboradores() {
+  const sel      = document.getElementById('colaborador');
+  const errBox   = document.getElementById('colaborador-error');
+  const errMsg   = document.getElementById('colaborador-error-msg');
+  errBox.style.display = 'none';
+  sel.innerHTML = '<option value="" disabled selected>Cargando colaboradores…</option>';
+
+  try {
+    const resp = await fetch(APPS_SCRIPT_URL + '?modulo=personal');
+    if (!resp.ok) throw new Error(`El servidor respondió con error ${resp.status}`);
+    const data = await resp.json();
+
+    sel.innerHTML = '<option value="" disabled selected>Seleccioná un colaborador…</option>';
+
+    if (data.ok && data.registros && data.registros.length > 0) {
+      const activos = data.registros.filter(p => {
+        const estado = (p['Estado'] || p.estado || 'ACTIVO').toString().toUpperCase();
+        return estado === 'ACTIVO';
+      });
+
+      activos.forEach(p => {
+        const nombre  = p['Nombre completo'] || ((p['Nombre'] || p.nombre || '') + ' ' + (p['Apellidos'] || p.apellidos || '')).trim();
+        const salario = p['Salario']           || p.salario           || 0;
+        const balance = p['Saldo vacaciones']  || p.balance_vacaciones || 0;
+        const puesto  = p['Puesto']            || p.puesto            || '';
+        const depto   = p['Departamento']      || p.departamento      || '';
+        const ingreso = p['Fecha ingreso']     || p.fecha_ingreso     || '';
+
+        if (nombre.trim()) {
+          const o = document.createElement('option');
+          o.value           = nombre;
+          o.dataset.salario = salario;
+          o.dataset.balance = balance;
+          o.dataset.puesto  = puesto;
+          o.dataset.depto   = depto;
+          o.dataset.ingreso = ingreso;
+          o.dataset.estado  = p['Estado'] || 'ACTIVO';
+          o.textContent     = nombre;
+          sel.appendChild(o);
+        }
+      });
+
+      if (activos.length === 0) {
+        sel.innerHTML = '<option value="" disabled selected>No hay colaboradores activos</option>';
+      }
+    } else {
+      sel.innerHTML = '<option value="" disabled selected>Sin colaboradores registrados</option>';
+    }
+  } catch(err) {
+    console.error('Error cargando colaboradores:', err);
+    sel.innerHTML = '<option value="" disabled selected>Error al cargar colaboradores</option>';
+    errMsg.textContent = `No se pudo conectar con la base de datos (${err.message}).`;
+    errBox.style.display = 'block';
+  }
+}
+cargarColaboradores();
+
+function cargarBalance() {
+  const sel = document.getElementById('colaborador');
+  const opt = sel.options[sel.selectedIndex];
+  const dias = parseFloat(opt.dataset.balance || 0);
+  document.getElementById('balance-dias').textContent = dias;
+  document.getElementById('balance-card').style.display = 'flex';
+  calcularDias();
+}
+
+function diasHabiles(desde, hasta) {
+  let count = 0;
+  const cur = new Date(desde);
+  cur.setDate(cur.getDate()); // incluir día inicio
+  while (cur <= hasta) {
+    const d = cur.getDay();
+    if (d !== 0 && d !== 6) count++;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return count;
+}
+
+function calcularDias() {
+  const ini = document.getElementById('fecha-inicio').value;
+  const fin = document.getElementById('fecha-fin').value;
+  if (!ini || !fin) return;
+  const dIni = new Date(ini + 'T00:00:00');
+  const dFin = new Date(fin + 'T00:00:00');
+  if (dFin < dIni) {
+    showToast('La fecha de regreso debe ser igual o posterior al inicio.','error'); return;
+  }
+  const dias = diasHabiles(dIni, dFin);
+  const tag  = document.getElementById('dias-tag');
+  const bal  = parseFloat(document.getElementById('balance-dias').textContent || 0);
+
+  tag.textContent = `${dias} día${dias!==1?'s':''} hábil${dias!==1?'es':''}`;
+  tag.className   = dias > bal ? 'dias-tag warning' : 'dias-tag';
+  document.getElementById('dias-resultado').style.display = 'block';
+
+  const aviso = document.getElementById('balance-aviso');
+  aviso.style.display = dias > bal ? 'block' : 'none';
+}
+
+function switchTab(tab, el) {
+  document.getElementById('tab-solicitud').style.display  = tab==='solicitud'  ? 'block':'none';
+  document.getElementById('tab-historial').style.display  = tab==='historial'  ? 'block':'none';
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  if (tab==='historial') renderHistorial();
+}
+
+function getSolicitudes() {
+  try { return JSON.parse(localStorage.getItem('solicitudes_vac') || '[]'); }
+  catch { return []; }
+}
+
+function renderHistorial() {
+  const lista = getSolicitudes();
+  const cont  = document.getElementById('historial-container');
+  if (!lista.length) { cont.innerHTML='<div class="empty-state">No hay solicitudes registradas.</div>'; return; }
+
+  const filas = lista.map((s,i) => `
+    <tr>
+      <td style="font-weight:500">${s.colaborador}</td>
+      <td>${s.fecha_inicio}</td>
+      <td>${s.fecha_fin}</td>
+      <td>${s.dias} días</td>
+      <td><span class="badge badge-${s.estado==='Aprobado'?'approved':s.estado==='Rechazado'?'rejected':'pending'}">${s.estado}</span></td>
+      <td>
+        ${s.estado==='Pendiente' ? `
+        <div class="action-btns">
+          <button class="btn-aprobar" onclick="cambiarEstado(${i},'Aprobado')">Aprobar</button>
+          <button class="btn-rechazar" onclick="cambiarEstado(${i},'Rechazado')">Rechazar</button>
+        </div>` : '—'}
+      </td>
+    </tr>
+  `).join('');
+
+  cont.innerHTML = `<table>
+    <thead><tr><th>Colaborador</th><th>Inicio</th><th>Regreso</th><th>Días</th><th>Estado</th><th>Acción</th></tr></thead>
+    <tbody>${filas}</tbody>
+  </table>`;
+}
+
+function cambiarEstado(idx, estado) {
+  const lista = getSolicitudes();
+  lista[idx].estado = estado;
+  localStorage.setItem('solicitudes_vac', JSON.stringify(lista));
+
+  if (APPS_SCRIPT_URL) {
+    fetch(APPS_SCRIPT_URL, {
+      method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ modulo:'vacaciones_estado', id: lista[idx].id, estado })
+    }).catch(()=>{});
+  }
+
+  showToast(`Solicitud ${estado.toLowerCase()} correctamente`, estado==='Aprobado'?'success':'error');
+  renderHistorial();
+}
+
+async function enviarSolicitud() {
+  const colaborador = document.getElementById('colaborador').value;
+  const ini = document.getElementById('fecha-inicio').value;
+  const fin = document.getElementById('fecha-fin').value;
+  const obs = document.getElementById('observaciones').value.trim();
+
+  if (!colaborador) { showToast('Seleccioná un colaborador.','error'); return; }
+  if (!ini || !fin)  { showToast('Seleccioná las fechas.','error'); return; }
+
+  const dIni = new Date(ini+'T00:00:00');
+  const dFin = new Date(fin+'T00:00:00');
+  if (dFin < dIni)   { showToast('La fecha de regreso debe ser posterior al inicio.','error'); return; }
+
+  const dias = diasHabiles(dIni, dFin);
+  const bal  = parseFloat(document.getElementById('balance-dias').textContent || 0);
+  if (dias > bal)    { showToast('Días solicitados superan el saldo disponible.','error'); return; }
+
+  const registro = {
+    modulo:'vacaciones', id: Date.now(),
+    colaborador, fecha_inicio:ini, fecha_fin:fin,
+    dias, observaciones:obs, estado:'Pendiente',
+    registrado: new Date().toISOString()
+  };
+
+  const btn = document.getElementById('btn-enviar');
+  btn.disabled = true; btn.textContent = 'Enviando…';
+
+  if (APPS_SCRIPT_URL) {
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method:'POST', mode:'no-cors',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(registro)
+      });
+    } catch { showToast('Sin conexión — guardado localmente.','error'); }
+  }
+
+  const lista = getSolicitudes();
+  lista.unshift(registro);
+  localStorage.setItem('solicitudes_vac', JSON.stringify(lista));
+
+  showToast(`Solicitud enviada — ${dias} días para ${colaborador}`,'success');
+  document.getElementById('status-msg').textContent = `Última solicitud: ${colaborador} · ${ini} al ${fin}`;
+  limpiarForm();
+  btn.disabled = false; btn.textContent = 'Enviar solicitud';
+}
+
+function limpiarForm() {
+  document.getElementById('colaborador').value = '';
+  document.getElementById('fecha-inicio').value = '';
+  document.getElementById('fecha-fin').value = '';
+  document.getElementById('observaciones').value = '';
+  document.getElementById('balance-card').style.display = 'none';
+  document.getElementById('dias-resultado').style.display = 'none';
+  document.getElementById('balance-aviso').style.display = 'none';
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').innerHTML = type==='success'
+    ? '<polyline points="3 8 7 12 13 4"/>'
+    : '<line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = `toast ${type}`;
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+</script>
+</body>
+</html>

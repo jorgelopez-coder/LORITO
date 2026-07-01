@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reputación Digital · Lorito</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #0b0d14;
+      --surface:    #13161f;
+      --card:       #181c28;
+      --card-h:     #1d2235;
+      --border:     #252a3d;
+      --border-h:   #363d58;
+      --text:       #e6e8f0;
+      --muted:      #6b748f;
+      --subtle:     #3a4060;
+      --google:     #4285f4;
+      --google-bg:  #0d1a35;
+      --google-b:   #1a3060;
+      --trip:       #00af87;
+      --trip-bg:    #051f1a;
+      --trip-b:     #0d3830;
+      --star:       #f5a52a;
+      --green:      #2ecb8a;
+      --warn:       #e05555;
+      --radius-sm:  8px;
+      --radius-md:  12px;
+      --radius-lg:  16px;
+      --font-d: 'Inter Tight', sans-serif;
+      --font-b: 'Inter', sans-serif;
+    }
+
+    body { background: var(--bg); color: var(--text); font-family: var(--font-b); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+
+    /* HEADER */
+    header { height: 56px; border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--bg); z-index: 20; }
+    .nav-left { display: flex; align-items: center; gap: 12px; }
+    .back-btn { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); text-decoration: none; padding: 5px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); transition: color .15s, border-color .15s; }
+    .back-btn:hover { color: var(--text); border-color: var(--border-h); }
+    .back-btn svg { width: 13px; height: 13px; }
+    .page-title { font-family: var(--font-d); font-size: 14px; font-weight: 700; }
+    .date-chip { font-size: 11px; color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; }
+
+    /* MAIN */
+    main { max-width: 1040px; margin: 0 auto; padding: 2rem 2rem 5rem; }
+    .page-header { margin-bottom: 1.75rem; }
+    .page-header h1 { font-family: var(--font-d); font-size: 24px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 4px; }
+    .page-header p { font-size: 13px; color: var(--muted); }
+
+    /* TABS ROW */
+    .view-tabs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 1.75rem;
+      flex-wrap: wrap;
+    }
+    .tab-view {
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .tab-view:hover { color: var(--text); border-color: var(--border-h); }
+    .tab-view.active { background: var(--card-h); border-color: var(--border-h); color: var(--text); }
+    .tab-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+
+    /* LOCAL SELECTOR */
+    .local-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .local-tab {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 13px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .local-tab:hover { color: var(--text); border-color: var(--border-h); }
+    .local-tab.active { border-color: var(--green); color: var(--text); background: rgba(46,203,138,.08); }
+    .local-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+
+    /* SECTION LABEL */
+    .section-label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 1rem; margin-top: 1.75rem; display: flex; align-items: center; gap: 10px; }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ── VIEW: SINGLE LOCAL ── */
+    #view-single { display: block; }
+    #view-all    { display: none; }
+
+    /* SCORES ROW */
+    .scores-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 1.75rem; }
+    .score-card { border-radius: var(--radius-lg); border: 1px solid; padding: 1.3rem 1.4rem; display: flex; align-items: center; gap: 1.2rem; }
+    .score-card--google { background: var(--google-bg); border-color: var(--google-b); }
+    .score-card--trip   { background: var(--trip-bg);   border-color: var(--trip-b);   }
+    .score-logo { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .score-card--google .score-logo { background: #0f2448; }
+    .score-card--trip   .score-logo { background: #082820; }
+    .score-logo svg { width: 22px; height: 22px; }
+    .score-body { flex: 1; min-width: 0; }
+    .score-platform { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+    .score-num { font-family: var(--font-d); font-size: 30px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; margin-bottom: 5px; }
+    .score-card--google .score-num { color: var(--google); }
+    .score-card--trip   .score-num { color: var(--trip); }
+    .stars { display: flex; align-items: center; gap: 3px; margin-bottom: 3px; }
+    .stars svg { width: 13px; height: 13px; }
+    .score-meta { font-size: 11px; color: var(--muted); }
+    .score-actions { display: flex; flex-direction: column; gap: 7px; flex-shrink: 0; }
+    .btn-platform { display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: var(--radius-sm); border: 1px solid; font-size: 11px; font-weight: 500; text-decoration: none; cursor: pointer; transition: opacity .15s; white-space: nowrap; background: transparent; }
+    .btn-platform:hover { opacity: .75; }
+    .btn-platform svg { width: 12px; height: 12px; flex-shrink: 0; }
+    .btn-google { color: var(--google); border-color: var(--google-b); }
+    .btn-trip   { color: var(--trip);   border-color: var(--trip-b);   }
+
+    /* REVIEWS GRID */
+    .reviews-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .review-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 9px; transition: border-color .15s; }
+    .review-card:hover { border-color: var(--border-h); }
+    .review-card--google { border-left: 3px solid var(--google); }
+    .review-card--trip   { border-left: 3px solid var(--trip); }
+    .review-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .reviewer { display: flex; align-items: center; gap: 9px; min-width: 0; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-d); font-size: 12px; font-weight: 700; flex-shrink: 0; }
+    .avatar--google { background: var(--google-bg); color: var(--google); border: 1px solid var(--google-b); }
+    .avatar--trip   { background: var(--trip-bg);   color: var(--trip);   border: 1px solid var(--trip-b); }
+    .reviewer-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .reviewer-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .review-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 20px; flex-shrink: 0; }
+    .badge-google { background: var(--google-bg); color: var(--google); border: 1px solid var(--google-b); }
+    .badge-trip   { background: var(--trip-bg);   color: var(--trip);   border: 1px solid var(--trip-b); }
+    .review-stars { display: flex; gap: 2px; }
+    .review-stars svg { width: 11px; height: 11px; }
+    .review-text { font-size: 13px; color: var(--text); line-height: 1.5; flex: 1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .review-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 8px; border-top: 1px solid var(--border); }
+    .review-date { font-size: 11px; color: var(--muted); }
+    .btn-reply { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 6px; border: 1px solid; background: transparent; cursor: pointer; text-decoration: none; transition: opacity .15s; }
+    .btn-reply:hover { opacity: .75; }
+    .btn-reply svg { width: 11px; height: 11px; }
+    .btn-reply--google { color: var(--google); border-color: var(--google-b); }
+    .btn-reply--trip   { color: var(--trip);   border-color: var(--trip-b); }
+    .responded-badge { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--green); font-weight: 500; }
+    .responded-badge svg { width: 11px; height: 11px; }
+
+    /* ── VIEW: TODOS LOS LOCALES ── */
+    .all-locals-grid { display: flex; flex-direction: column; gap: 16px; }
+
+    .local-block {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .local-block-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      gap: 12px;
+    }
+
+    .local-block-header:hover { background: var(--card-h); }
+
+    .local-block-left { display: flex; align-items: center; gap: 12px; }
+
+    .local-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    .local-block-name { font-family: var(--font-d); font-size: 15px; font-weight: 700; }
+
+    .local-block-scores {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .mini-score {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+    }
+
+    .mini-score-num {
+      font-family: var(--font-d);
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .mini-score-num.g { color: var(--google); }
+    .mini-score-num.t { color: var(--trip); }
+
+    .mini-stars { display: flex; gap: 1px; }
+    .mini-stars svg { width: 10px; height: 10px; }
+
+    .mini-label { font-size: 10px; color: var(--muted); font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+
+    .chevron { color: var(--muted); transition: transform .2s; }
+    .chevron svg { width: 16px; height: 16px; }
+    .local-block.open .chevron { transform: rotate(180deg); }
+
+    .local-block-body {
+      display: none;
+      padding: 1.25rem;
+    }
+
+    .local-block.open .local-block-body { display: block; }
+
+    .local-body-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* ── RESUMEN GENERAL (vista todos) ── */
+    .summary-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 1.75rem;
+    }
+
+    .summary-kpi {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.1rem;
+    }
+
+    .kpi-label { font-size: 10px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .kpi-val { font-family: var(--font-d); font-size: 26px; font-weight: 800; letter-spacing: -0.03em; }
+    .kpi-val.g { color: var(--google); }
+    .kpi-val.t { color: var(--trip); }
+    .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+    /* EMPTY STATE */
+    .empty { text-align: center; padding: 2.5rem; color: var(--muted); font-size: 13px; }
+    .empty .icon { font-size: 32px; margin-bottom: 10px; }
+
+    /* ── CONFIG ── */
+    .config-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .config-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+    }
+
+    .config-panel-header:hover { background: var(--card-h); }
+    .config-panel-title { font-family: var(--font-d); font-size: 14px; font-weight: 700; }
+    .config-panel-body { padding: 1.25rem; display: none; }
+    .config-panel.open .config-panel-body { display: block; }
+
+    .locals-config-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px; }
+
+    .local-config-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.1rem;
+    }
+
+    .local-config-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .color-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .local-config-name {
+      font-family: var(--font-d);
+      font-size: 13px;
+      font-weight: 700;
+      flex: 1;
+    }
+
+    .btn-del-local {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 16px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: color .15s, background .15s;
+    }
+
+    .btn-del-local:hover { color: var(--warn); background: rgba(224,85,85,.1); }
+
+    .config-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    .cfg-field { display: flex; flex-direction: column; gap: 4px; }
+    .cfg-field label { font-size: 11px; font-weight: 500; color: var(--muted); }
+    .cfg-field input { background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--font-b); font-size: 12px; padding: 7px 10px; outline: none; transition: border-color .15s; }
+    .cfg-field input:focus { border-color: var(--green); }
+    .cfg-field input::placeholder { color: var(--subtle); }
+
+    .btn-add-local {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px dashed var(--border-h);
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .15s;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn-add-local:hover { border-color: var(--green); color: var(--green); }
+
+    .btn-save-config {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 18px;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: var(--green);
+      color: #0a1f14;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 14px;
+      transition: opacity .15s;
+    }
+
+    .btn-save-config:hover { opacity: .85; }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(60px); background: var(--card); border: 1px solid var(--border-h); border-radius: 10px; padding: 10px 18px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .3s; opacity: 0; z-index: 100; }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.ok { border-color: var(--green); color: var(--green); }
+    .toast svg { width: 15px; height: 15px; }
+
+    /* RESPONSIVE */
+    @media (max-width: 680px) {
+      header { padding: 0 1rem; }
+      main { padding: 1.5rem 1rem 3rem; }
+      .scores-row { grid-template-columns: 1fr; }
+      .reviews-grid { grid-template-columns: 1fr; }
+      .local-body-grid { grid-template-columns: 1fr; }
+      .config-fields { grid-template-columns: 1fr; }
+      .summary-row { grid-template-columns: 1fr 1fr; }
+      .local-block-scores { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Reputación digital</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<main>
+
+  <div class="page-header">
+    <h1>Reputación digital</h1>
+    <p>Google Maps y TripAdvisor · todos los locales</p>
+  </div>
+
+  <!-- TABS PRINCIPAL -->
+  <div class="view-tabs">
+    <button class="tab-view active" onclick="switchView('single', this)">📍 Un local</button>
+    <button class="tab-view" onclick="switchView('all', this)">🗺 Todos los locales</button>
+    <span class="tab-sep"></span>
+    <!-- Selector de local (solo vista single) -->
+    <div class="local-selector" id="local-selector"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- VISTA: UN SOLO LOCAL                       -->
+  <!-- ══════════════════════════════════════════ -->
+  <div id="view-single">
+
+    <p class="section-label">Calificaciones</p>
+
+    <div class="scores-row">
+      <div class="score-card score-card--google">
+        <div class="score-logo">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+        </div>
+        <div class="score-body">
+          <div class="score-platform">Google Maps</div>
+          <div class="score-num" id="s-google-num">—</div>
+          <div class="stars" id="s-google-stars"></div>
+          <div class="score-meta" id="s-google-meta">Sin configurar</div>
+        </div>
+        <div class="score-actions">
+          <a href="#" id="s-google-biz-link" class="btn-platform btn-google" target="_blank" rel="noopener">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M8 6v4M6 8h4"/></svg>
+            Panel Google Business
+          </a>
+          <a href="https://business.google.com/reviews" id="s-google-reviews-link" class="btn-platform btn-google" target="_blank" rel="noopener">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3l3 3 3-3h3a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/></svg>
+            Responder reseñas
+          </a>
+        </div>
+      </div>
+
+      <div class="score-card score-card--trip">
+        <div class="score-logo">
+          <svg viewBox="0 0 24 24" fill="#00af87">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2.5 13c-1.93 0-3.5-1.57-3.5-3.5S7.57 8 9.5 8s3.5 1.57 3.5 3.5S11.43 15 9.5 15zm5 0c-1.93 0-3.5-1.57-3.5-3.5S12.57 8 14.5 8s3.5 1.57 3.5 3.5S16.43 15 14.5 15z"/>
+            <circle cx="9.5" cy="11.5" r="1.5" fill="#0b0d14"/>
+            <circle cx="14.5" cy="11.5" r="1.5" fill="#0b0d14"/>
+          </svg>
+        </div>
+        <div class="score-body">
+          <div class="score-platform">TripAdvisor</div>
+          <div class="score-num" id="s-trip-num">—</div>
+          <div class="stars" id="s-trip-stars"></div>
+          <div class="score-meta" id="s-trip-meta">Sin configurar</div>
+        </div>
+        <div class="score-actions">
+          <a href="#" id="s-trip-profile-link" class="btn-platform btn-trip" target="_blank" rel="noopener">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2h12v12H2z" rx="2"/><path d="M8 6v4M6 8h4"/></svg>
+            Ver perfil
+          </a>
+          <a href="https://www.tripadvisor.com/Owners" class="btn-platform btn-trip" target="_blank" rel="noopener">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3l3 3 3-3h3a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/></svg>
+            Responder reseñas
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <p class="section-label">Reseñas recientes</p>
+    <div class="reviews-grid" id="single-reviews"></div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- VISTA: TODOS LOS LOCALES                   -->
+  <!-- ══════════════════════════════════════════ -->
+  <div id="view-all" style="display:none;">
+
+    <p class="section-label">Resumen general</p>
+    <div class="summary-row" id="summary-row"></div>
+
+    <p class="section-label">Por local</p>
+    <div class="all-locals-grid" id="all-locals-grid"></div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- CONFIGURACIÓN                              -->
+  <!-- ══════════════════════════════════════════ -->
+  <p class="section-label">Configuración de locales</p>
+
+  <div class="config-panel" id="config-panel">
+    <div class="config-panel-header" onclick="toggleConfig()">
+      <span class="config-panel-title">⚙️ Agregar y configurar locales</span>
+      <span class="chevron" id="config-chevron">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+      </span>
+    </div>
+    <div class="config-panel-body" id="config-body">
+      <div class="locals-config-list" id="locals-config-list"></div>
+      <button class="btn-add-local" onclick="addLocalConfig()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="14" height="14"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
+        Agregar local
+      </button>
+      <button class="btn-save-config" onclick="saveAllConfig()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="13" height="13"><polyline points="3 8 7 12 13 4"/></svg>
+        Guardar configuración
+      </button>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast">
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="3 8 7 12 13 4"/></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ── COLORES POR LOCAL ──
+const LOCAL_COLORS = ['#4f8ef7','#2ecb8a','#f5a52a','#c97cf4','#e06050','#1ec8b0'];
+
+// ── RESEÑAS DEMO POR LOCAL ──
+// Cada local tiene sus propias reseñas. Reemplazá con datos reales de tu API.
+const DEMO_REVIEWS = {
+  0: [
+    { platform:'google', author:'Alejandra Mora',   rating:5, date:'hace 2 días',    text:'Excelente lugar, la cerveza artesanal es increíble y el ambiente muy agradable. El servicio fue atento y rápido.',  responded:false },
+    { platform:'trip',   author:'Carlos R.',        rating:4, date:'hace 5 días',    text:'Muy buen restaurante, la comida estuvo deliciosa y las cervezas artesanales son lo mejor. Un poco ruidoso los fines de semana.', responded:true  },
+    { platform:'google', author:'María Jiménez',    rating:5, date:'hace 1 semana',  text:'Los mejores platillos que he probado en mucho tiempo. El maridaje con cerveza artesanal es una experiencia única.', responded:true  },
+    { platform:'trip',   author:'Roberto S.',       rating:3, date:'hace 2 semanas', text:'Buena experiencia en general aunque el tiempo de espera fue largo. La calidad justifica el precio.',               responded:false },
+  ],
+  1: [
+    { platform:'google', author:'Sofía Vargas',     rating:4, date:'hace 1 día',     text:'Muy buen servicio y buena comida. El local es cómodo y limpio. Lo recomendaría a amigos y familia.',               responded:false },
+    { platform:'trip',   author:'Diego P.',         rating:5, date:'hace 3 días',    text:'Increíble experiencia. Las cervezas artesanales tienen un sabor único. El personal muy amable.',                    responded:false },
+    { platform:'google', author:'Ana Solano',       rating:5, date:'hace 1 semana',  text:'Uno de mis lugares favoritos. Siempre hay algo nuevo en el menú y las cervezas son consistentemente buenas.',        responded:true  },
+  ],
+  2: [
+    { platform:'google', author:'Fabián Castro',    rating:3, date:'hace 3 días',    text:'La comida estuvo buena pero el servicio tardó bastante. Esperamos casi 40 minutos por la orden.',                   responded:false },
+    { platform:'trip',   author:'Lucía M.',         rating:4, date:'hace 1 semana',  text:'Buen lugar para ir con amigos. La variedad de cervezas es impresionante y los precios son razonables.',              responded:true  },
+  ],
+  3: [
+    { platform:'trip',   author:'Andrés Quesada',   rating:5, date:'hace 4 días',    text:'Sin duda el mejor local de la cadena. Ambiente increíble, atención de primera y cervezas de calidad.',              responded:false },
+    { platform:'google', author:'Valeria F.',       rating:4, date:'hace 6 días',    text:'Muy agradable. Las papas fritas caseras son deliciosas y la cerveza de temporada estuvo excelente.',                responded:false },
+  ],
+};
+
+// ── UTILS ──
+function starsHTML(rating, platform) {
+  const c = platform === 'google' ? '#4285f4' : '#00af87';
+  const f = Math.round(rating);
+  let h = '';
+  for (let i = 1; i <= 5; i++) {
+    h += i <= f
+      ? `<svg viewBox="0 0 16 16" fill="${c}"><path d="M8 1l1.9 3.9L14 5.6l-3 2.9.7 4.1L8 10.5l-3.7 2.1.7-4.1-3-2.9 4.1-.7z"/></svg>`
+      : `<svg viewBox="0 0 16 16" fill="none" stroke="${c}" stroke-width="1.2"><path d="M8 1l1.9 3.9L14 5.6l-3 2.9.7 4.1L8 10.5l-3.7 2.1.7-4.1-3-2.9 4.1-.7z"/></svg>`;
+  }
+  return h;
+}
+
+function initials(name) {
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function reviewCardHTML(r, replyUrlG, replyUrlT) {
+  const isG = r.platform === 'google';
+  const cls = isG ? 'google' : 'trip';
+  const url = isG ? replyUrlG : replyUrlT;
+  const label = isG ? 'Responder en Google' : 'Responder en TripAdvisor';
+  return `
+    <div class="review-card review-card--${cls}">
+      <div class="review-top">
+        <div class="reviewer">
+          <div class="avatar avatar--${cls}">${initials(r.author)}</div>
+          <div>
+            <div class="reviewer-name">${r.author}</div>
+            <div class="review-stars">${starsHTML(r.rating, r.platform)}</div>
+          </div>
+        </div>
+        <span class="review-badge badge-${cls}">${isG ? 'Google' : 'TripAdvisor'}</span>
+      </div>
+      <div class="review-text">${r.text}</div>
+      <div class="review-footer">
+        <span class="review-date">${r.date}</span>
+        ${r.responded
+          ? `<span class="responded-badge"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="3 8 7 12 13 4"/></svg>Respondida</span>`
+          : `<a href="${url}" class="btn-reply btn-reply--${cls}" target="_blank" rel="noopener">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14 2H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3l3 3 3-3h3a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/></svg>
+              ${label}
+            </a>`}
+      </div>
+    </div>`;
+}
+
+// ── STORAGE ──
+function getConfig() {
+  try { return JSON.parse(localStorage.getItem('rep_locals') || 'null'); }
+  catch { return null; }
+}
+
+function setConfig(cfg) {
+  localStorage.setItem('rep_locals', JSON.stringify(cfg));
+}
+
+// Default locals si no hay config
+const DEFAULT_LOCALS = [
+  { name: 'Local 1', googlePlaceId: '', googleScore: 4.6, googleTotal: 128, tripUrl: '', tripScore: 4.5, tripTotal: 74 },
+  { name: 'Local 2', googlePlaceId: '', googleScore: 4.3, googleTotal: 89,  tripUrl: '', tripScore: 4.2, tripTotal: 51 },
+  { name: 'Local 3', googlePlaceId: '', googleScore: 4.7, googleTotal: 210, tripUrl: '', tripScore: 4.6, tripTotal: 103 },
+  { name: 'Local 4', googlePlaceId: '', googleScore: 4.1, googleTotal: 62,  tripUrl: '', tripScore: 4.0, tripTotal: 38 },
+];
+
+let locals = getConfig() || DEFAULT_LOCALS;
+let activeLocal = 0;
+let currentView = 'single';
+
+// ── TOAST ──
+function toast(msg) {
+  const el = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  el.className = 'toast ok show';
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ── LOCAL SELECTOR TABS ──
+function renderLocalSelector() {
+  const sel = document.getElementById('local-selector');
+  sel.innerHTML = locals.map((l, i) => `
+    <button class="local-tab ${i === activeLocal ? 'active' : ''}" onclick="selectLocal(${i})">
+      <span class="local-dot" style="background:${LOCAL_COLORS[i % LOCAL_COLORS.length]}"></span>
+      ${l.name}
+    </button>
+  `).join('');
+}
+
+function selectLocal(i) {
+  activeLocal = i;
+  renderLocalSelector();
+  renderSingleView();
+}
+
+// ── VISTA SINGLE ──
+function renderSingleView() {
+  const l = locals[activeLocal];
+  const color = LOCAL_COLORS[activeLocal % LOCAL_COLORS.length];
+  const reviews = DEMO_REVIEWS[activeLocal] || [];
+
+  const replyUrlG = l.googlePlaceId
+    ? `https://business.google.com/reviews`
+    : 'https://business.google.com';
+  const replyUrlT = l.tripUrl || 'https://www.tripadvisor.com/Owners';
+
+  // Google score
+  document.getElementById('s-google-num').textContent = l.googleScore || '—';
+  document.getElementById('s-google-stars').innerHTML = l.googleScore ? starsHTML(l.googleScore, 'google') : '';
+  document.getElementById('s-google-meta').textContent = l.googleScore
+    ? `${l.googleTotal || 0} reseñas · ${l.name}`
+    : 'Sin configurar';
+  document.getElementById('s-google-biz-link').href = 'https://business.google.com';
+
+  // Trip score
+  document.getElementById('s-trip-num').textContent = l.tripScore || '—';
+  document.getElementById('s-trip-stars').innerHTML = l.tripScore ? starsHTML(l.tripScore, 'trip') : '';
+  document.getElementById('s-trip-meta').textContent = l.tripScore
+    ? `${l.tripTotal || 0} reseñas · ${l.name}`
+    : 'Sin configurar';
+  document.getElementById('s-trip-profile-link').href = l.tripUrl || 'https://www.tripadvisor.com';
+
+  // Reviews
+  const grid = document.getElementById('single-reviews');
+  if (!reviews.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="icon">💬</div>No hay reseñas de demo para este local.<br>Configurá las URLs arriba para ir directo a las plataformas.</div>';
+  } else {
+    grid.innerHTML = reviews.map(r => reviewCardHTML(r, replyUrlG, replyUrlT)).join('');
+  }
+}
+
+// ── VISTA TODOS ──
+function renderAllView() {
+  // Summary KPIs
+  const validG = locals.filter(l => l.googleScore);
+  const validT = locals.filter(l => l.tripScore);
+  const avgG = validG.length ? (validG.reduce((s,l) => s + l.googleScore, 0) / validG.length).toFixed(1) : '—';
+  const avgT = validT.length ? (validT.reduce((s,l) => s + l.tripScore, 0) / validT.length).toFixed(1) : '—';
+  const totalG = locals.reduce((s,l) => s + (l.googleTotal||0), 0);
+  const totalT = locals.reduce((s,l) => s + (l.tripTotal||0), 0);
+
+  document.getElementById('summary-row').innerHTML = `
+    <div class="summary-kpi">
+      <div class="kpi-label">Promedio Google</div>
+      <div class="kpi-val g">${avgG}</div>
+      <div class="kpi-sub">${validG.length} locales con datos</div>
+    </div>
+    <div class="summary-kpi">
+      <div class="kpi-label">Promedio TripAdvisor</div>
+      <div class="kpi-val t">${avgT}</div>
+      <div class="kpi-sub">${validT.length} locales con datos</div>
+    </div>
+    <div class="summary-kpi">
+      <div class="kpi-label">Reseñas Google</div>
+      <div class="kpi-val g">${totalG.toLocaleString('es-CR')}</div>
+      <div class="kpi-sub">en todos los locales</div>
+    </div>
+    <div class="summary-kpi">
+      <div class="kpi-label">Reseñas TripAdvisor</div>
+      <div class="kpi-val t">${totalT.toLocaleString('es-CR')}</div>
+      <div class="kpi-sub">en todos los locales</div>
+    </div>
+  `;
+
+  // Per-local blocks
+  const grid = document.getElementById('all-locals-grid');
+  grid.innerHTML = locals.map((l, i) => {
+    const color = LOCAL_COLORS[i % LOCAL_COLORS.length];
+    const reviews = DEMO_REVIEWS[i] || [];
+    const replyUrlG = l.googlePlaceId ? 'https://business.google.com/reviews' : 'https://business.google.com';
+    const replyUrlT = l.tripUrl || 'https://www.tripadvisor.com/Owners';
+    const pending = reviews.filter(r => !r.responded).length;
+
+    return `
+      <div class="local-block" id="block-${i}">
+        <div class="local-block-header" onclick="toggleBlock(${i})">
+          <div class="local-block-left">
+            <span class="local-color-dot" style="background:${color}"></span>
+            <span class="local-block-name">${l.name}</span>
+            ${pending > 0 ? `<span style="background:rgba(224,85,85,.15);color:#e05555;border:1px solid rgba(224,85,85,.3);font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;">${pending} sin responder</span>` : ''}
+          </div>
+          <div class="local-block-scores">
+            ${l.googleScore ? `
+              <div class="mini-score">
+                <div>
+                  <div class="mini-label">Google</div>
+                  <div class="mini-stars">${starsHTML(l.googleScore, 'google')}</div>
+                </div>
+                <span class="mini-score-num g">${l.googleScore}</span>
+              </div>` : ''}
+            ${l.tripScore ? `
+              <div class="mini-score">
+                <div>
+                  <div class="mini-label">TripAdvisor</div>
+                  <div class="mini-stars">${starsHTML(l.tripScore, 'trip')}</div>
+                </div>
+                <span class="mini-score-num t">${l.tripScore}</span>
+              </div>` : ''}
+            <span class="chevron"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="16" height="16"><path d="M4 6l4 4 4-4"/></svg></span>
+          </div>
+        </div>
+        <div class="local-block-body">
+          ${reviews.length
+            ? `<div class="local-body-grid">${reviews.slice(0,4).map(r => reviewCardHTML(r, replyUrlG, replyUrlT)).join('')}</div>`
+            : `<div class="empty"><div class="icon">💬</div>Sin reseñas de demo para este local.</div>`
+          }
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleBlock(i) {
+  document.getElementById('block-' + i).classList.toggle('open');
+}
+
+// ── CONFIG PANEL ──
+function toggleConfig() {
+  document.getElementById('config-panel').classList.toggle('open');
+}
+
+function renderConfigList() {
+  const list = document.getElementById('locals-config-list');
+  list.innerHTML = locals.map((l, i) => {
+    const color = LOCAL_COLORS[i % LOCAL_COLORS.length];
+    return `
+      <div class="local-config-item" data-i="${i}">
+        <div class="local-config-top">
+          <span class="color-swatch" style="background:${color}"></span>
+          <span class="local-config-name">Local ${i + 1}</span>
+          <button class="btn-del-local" onclick="deleteLocal(${i})" title="Eliminar local">×</button>
+        </div>
+        <div class="config-fields">
+          <div class="cfg-field">
+            <label>Nombre del local</label>
+            <input type="text" data-field="name" data-i="${i}" value="${l.name}" placeholder="Ej: Escazú, Centro, Norte…">
+          </div>
+          <div class="cfg-field">
+            <label>Calificación Google (demo)</label>
+            <input type="number" data-field="googleScore" data-i="${i}" value="${l.googleScore||''}" placeholder="4.5" min="1" max="5" step="0.1">
+          </div>
+          <div class="cfg-field">
+            <label>Google Place ID</label>
+            <input type="text" data-field="googlePlaceId" data-i="${i}" value="${l.googlePlaceId||''}" placeholder="ChIJ...">
+          </div>
+          <div class="cfg-field">
+            <label>Total reseñas Google</label>
+            <input type="number" data-field="googleTotal" data-i="${i}" value="${l.googleTotal||''}" placeholder="120">
+          </div>
+          <div class="cfg-field" style="grid-column:1/-1">
+            <label>URL perfil TripAdvisor</label>
+            <input type="text" data-field="tripUrl" data-i="${i}" value="${l.tripUrl||''}" placeholder="https://www.tripadvisor.com/Restaurant_Review-...">
+          </div>
+          <div class="cfg-field">
+            <label>Calificación TripAdvisor (demo)</label>
+            <input type="number" data-field="tripScore" data-i="${i}" value="${l.tripScore||''}" placeholder="4.3" min="1" max="5" step="0.1">
+          </div>
+          <div class="cfg-field">
+            <label>Total reseñas TripAdvisor</label>
+            <input type="number" data-field="tripTotal" data-i="${i}" value="${l.tripTotal||''}" placeholder="80">
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function addLocalConfig() {
+  locals.push({ name: `Local ${locals.length + 1}`, googlePlaceId: '', googleScore: 0, googleTotal: 0, tripUrl: '', tripScore: 0, tripTotal: 0 });
+  renderConfigList();
+  renderLocalSelector();
+}
+
+function deleteLocal(i) {
+  if (locals.length <= 1) { toast('Debe haber al menos un local'); return; }
+  locals.splice(i, 1);
+  if (activeLocal >= locals.length) activeLocal = locals.length - 1;
+  renderConfigList();
+  renderLocalSelector();
+  renderSingleView();
+  toast('Local eliminado');
+}
+
+function saveAllConfig() {
+  // Read all inputs
+  document.querySelectorAll('#locals-config-list input[data-field]').forEach(inp => {
+    const i = parseInt(inp.dataset.i);
+    const field = inp.dataset.field;
+    const val = inp.value.trim();
+    if (field === 'googleScore' || field === 'tripScore' || field === 'googleTotal' || field === 'tripTotal') {
+      locals[i][field] = parseFloat(val) || 0;
+    } else {
+      locals[i][field] = val;
+    }
+  });
+
+  setConfig(locals);
+  renderLocalSelector();
+  renderSingleView();
+  renderAllView();
+  toast('✓ Configuración guardada');
+}
+
+// ── SWITCH VIEW ──
+function switchView(view, btn) {
+  currentView = view;
+  document.querySelectorAll('.tab-view').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const sel = document.getElementById('local-selector');
+
+  if (view === 'single') {
+    document.getElementById('view-single').style.display = 'block';
+    document.getElementById('view-all').style.display = 'none';
+    sel.style.display = 'flex';
+    renderSingleView();
+  } else {
+    document.getElementById('view-single').style.display = 'none';
+    document.getElementById('view-all').style.display = 'block';
+    sel.style.display = 'none';
+    renderAllView();
+  }
+}
+
+// ── INIT ──
+(function init() {
+  const now = new Date();
+  document.getElementById('date-chip').textContent =
+    now.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
+
+  renderLocalSelector();
+  renderSingleView();
+  renderConfigList();
+})();
+</script>
+</body>
+</html>

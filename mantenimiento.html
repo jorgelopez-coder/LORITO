@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Mantenimiento · Grupo del Sol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#faf7f0;--surface:#f2ede2;--card:#ffffff;
+  --border:#c8ddd0;--border-h:#8ab89e;
+  --text:#1c3a28;--muted:#5a8a6a;--subtle:#a0c8b0;
+  --green:#1a7a4a;--green-bg:#eef8f2;--green-lt:#d0eedd;
+  --red:#c84a20;--red-bg:#fdf0eb;--red-lt:#f0c0a8;
+  --amber:#c87820;--amber-bg:#fdf6e3;--amber-lt:#f0d890;
+  --blue:#185fa5;--blue-bg:#eef4fb;--blue-lt:#c0d4f0;
+  --radius:12px;--font-d:'Inter Tight',sans-serif;--font-b:'Inter',sans-serif;
+}
+body{font-family:var(--font-b);background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;line-height:1.6}
+header{height:56px;border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;background:var(--bg);position:sticky;top:0;z-index:20}
+.nav-left{display:flex;align-items:center;gap:10px}
+.back-btn{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--muted);text-decoration:none;padding:5px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface);transition:color .15s,border-color .15s}
+.back-btn:hover{color:var(--text);border-color:var(--border-h)}
+.back-btn svg{width:13px;height:13px}
+.page-title{font-family:var(--font-d);font-size:14px;font-weight:700}
+.date-chip{font-size:11px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:3px 10px}
+
+.tabs{display:flex;gap:4px;padding:0 2rem;background:var(--bg);border-bottom:1px solid var(--border)}
+.tab-btn{font-size:13px;font-weight:500;padding:10px 16px;border:none;background:transparent;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;font-family:var(--font-b)}
+.tab-btn.active{color:var(--green);border-bottom-color:var(--green)}
+.tab-btn:hover:not(.active){color:var(--text)}
+
+main{max-width:860px;margin:0 auto;padding:2rem 2rem 5rem}
+.page{display:none}.page.active{display:block}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem}
+.card-title{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:1.25rem}
+
+.field{margin-bottom:1rem}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:13px;font-weight:500;color:var(--text);margin-bottom:5px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.req{color:var(--red);margin-left:2px}
+input[type=text],input[type=date],select,textarea{
+  width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-family:var(--font-b);font-size:14px;padding:9px 12px;
+  outline:none;appearance:none;transition:border-color .15s
+}
+input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(26,122,74,.08)}
+input::placeholder,textarea::placeholder{color:var(--subtle)}
+textarea{resize:vertical;min-height:70px;line-height:1.5}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;cursor:pointer}
+
+.mant-tipos{display:flex;flex-direction:column;gap:0}
+.mant-tipo-opt{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;color:var(--text);background:var(--card);transition:all .15s;margin-bottom:6px}
+.mant-tipo-opt:hover{border-color:var(--border-h);background:var(--green-bg)}
+.mant-tipo-opt.selected{border-color:var(--green);background:var(--green-bg);color:var(--green);font-weight:500}
+.mant-tipo-opt input[type=radio]{display:none}
+.mant-tipo-icon{font-size:18px;width:28px;text-align:center;flex-shrink:0}
+
+.foto-upload{border:2px dashed var(--border);border-radius:10px;padding:1.25rem;text-align:center;cursor:pointer;color:var(--muted);font-size:13px;transition:border-color .15s;position:relative}
+.foto-upload:hover{border-color:var(--green);color:var(--green)}
+.foto-upload input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.foto-preview-wrap{position:relative;margin-top:10px;width:100%}
+.foto-preview-wrap img{width:100%;max-height:320px;object-fit:contain;border-radius:10px;border:1px solid var(--border);display:block;background:var(--surface)}
+.foto-remove{position:absolute;top:8px;right:8px;background:var(--red);color:#fff;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+
+.submit-area{display:flex;gap:10px;margin-top:1.5rem;flex-wrap:wrap}
+.btn-primary{flex:1;min-width:160px;background:var(--green);color:#fff;border:none;border-radius:9px;font-family:var(--font-d);font-size:15px;font-weight:700;padding:12px 24px;cursor:pointer;transition:opacity .15s}
+.btn-primary:hover{opacity:.9}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-secondary{padding:12px 16px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;cursor:pointer}
+.btn-secondary:hover{color:var(--text);border-color:var(--border-h)}
+.btn-sm{font-size:12px;padding:6px 12px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-weight:500;transition:all .15s}
+.btn-sm:hover{border-color:var(--border-h)}
+.btn-proceso{background:var(--blue-bg);color:var(--blue);border-color:var(--blue-lt)}
+.btn-proceso:hover{background:var(--blue);color:#fff}
+.btn-resuelto{background:var(--green-bg);color:var(--green);border-color:var(--green-lt)}
+.btn-resuelto:hover{background:var(--green);color:#fff}
+.btn-wa{width:100%;background:#25D366;color:#fff;border:none;border-radius:9px;font-family:var(--font-d);font-size:15px;font-weight:700;padding:12px 24px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:opacity .15s;margin-top:10px}
+.btn-wa:hover{opacity:.9}
+
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(80px);background:var(--card);border:1px solid var(--border-h);border-radius:10px;padding:11px 18px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;z-index:100;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.08)}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.success{border-color:var(--green);color:var(--green)}
+.toast.error{border-color:var(--red);color:var(--red)}
+.toast svg{width:16px;height:16px;flex-shrink:0}
+
+/* Seguimiento */
+.seg-filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.seg-view{display:flex;gap:6px}
+.seg-view-btn{font-size:12px;font-weight:500;padding:6px 14px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;transition:all .15s}
+.seg-view-btn.active{background:var(--green);color:#fff;border-color:var(--green)}
+.reporte-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:12px}
+.reporte-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}
+.reporte-tipo{font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;font-family:var(--font-d)}
+.reporte-meta{font-size:12px;color:var(--muted);margin-bottom:8px}
+.reporte-detalle{font-size:13px;color:var(--text);line-height:1.5;margin-bottom:10px;background:var(--surface);border-radius:8px;padding:10px 12px}
+.reporte-foto{width:100%;max-height:200px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer;margin-bottom:10px;display:block}
+.foto-link{font-size:12px;color:var(--blue);display:inline-flex;align-items:center;gap:4px;margin-bottom:10px;text-decoration:none}
+.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px}
+.badge-pendiente{background:var(--amber-bg);color:var(--amber)}
+.badge-proceso{background:var(--blue-bg);color:var(--blue)}
+.badge-resuelto{background:var(--green-bg);color:var(--green)}
+.reporte-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.resolucion-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.resolucion-row label{font-size:12px;color:var(--muted);white-space:nowrap}
+.resolucion-row input[type=date]{width:auto;padding:6px 10px;font-size:13px}
+.notas-section{border-top:1px solid var(--border);padding-top:10px;margin-top:4px}
+.notas-titulo{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.nota-item{font-size:12px;color:var(--text);background:var(--surface);border-radius:7px;padding:8px 10px;margin-bottom:6px;line-height:1.5;white-space:pre-wrap}
+.nota-add{display:flex;gap:8px;margin-top:8px}
+.nota-add textarea{min-height:38px;font-size:12px;padding:7px 10px}
+.nota-add button{flex-shrink:0;align-self:flex-end}
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--subtle);font-size:13px}
+.vencido{color:var(--red);font-weight:600}
+
+@media(max-width:600px){
+  header{padding:0 1rem}main{padding:1.5rem 1rem 3rem}
+  .field-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">🔧 Mantenimiento</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab('nuevo',this)">Nuevo reporte</button>
+  <button class="tab-btn" onclick="showTab('seguimiento',this)">Seguimiento</button>
+</div>
+
+<main>
+
+<!-- ── TAB NUEVO REPORTE ── -->
+<div class="page active" id="tab-nuevo">
+  <div class="card">
+    <p class="card-title">Identificación</p>
+    <div class="field-row">
+      <div class="field">
+        <label for="mant-encargado">Reportado por <span class="req">*</span></label>
+        <select id="mant-encargado">
+          <option value="" disabled selected>Cargando…</option>
+        </select>
+        <div id="enc-error" style="display:none;font-size:12px;color:var(--red);margin-top:5px;">
+          <span id="enc-error-msg"></span>
+          <a href="javascript:void(0)" onclick="cargarEncargados()" style="color:var(--green);font-weight:600;margin-left:4px;">Reintentar</a>
+        </div>
+      </div>
+      <div class="field">
+        <label for="mant-fecha">Fecha <span class="req">*</span></label>
+        <input type="date" id="mant-fecha"/>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Tipo de incidencia <span class="req">*</span></p>
+    <div id="mant-tipos-lista">
+      <label class="mant-tipo-opt" onclick="selectTipoMant(this)">
+        <input type="radio" name="mant-tipo" value="Bombillo quemado"/>
+        <span class="mant-tipo-icon">💡</span><span>Bombillo quemado</span>
+      </label>
+      <label class="mant-tipo-opt" onclick="selectTipoMant(this)">
+        <input type="radio" name="mant-tipo" value="Fuga de agua"/>
+        <span class="mant-tipo-icon">💧</span><span>Fuga de agua</span>
+      </label>
+      <label class="mant-tipo-opt" onclick="selectTipoMant(this)">
+        <input type="radio" name="mant-tipo" value="Plantas dañadas"/>
+        <span class="mant-tipo-icon">🌿</span><span>Plantas dañadas</span>
+      </label>
+      <label class="mant-tipo-opt" onclick="selectTipoMant(this)">
+        <input type="radio" name="mant-tipo" value="Problema eléctrico"/>
+        <span class="mant-tipo-icon">⚡</span><span>Problema eléctrico</span>
+      </label>
+      <label class="mant-tipo-opt" onclick="selectTipoMant(this)">
+        <input type="radio" name="mant-tipo" value="Puerta o ventana dañada"/>
+        <span class="mant-tipo-icon">🚪</span><span>Puerta o ventana dañada</span>
+      </label>
+      <label class="mant-tipo-opt" onclick="selectTipoMant(this)">
+        <input type="radio" name="mant-tipo" value="Baño en mal estado"/>
+        <span class="mant-tipo-icon">🚽</span><span>Baño en mal estado</span>
+      </label>
+      <label class="mant-tipo-opt" onclick="selectTipoMant(this)">
+        <input type="radio" name="mant-tipo" value="Problema con aire acondicionado"/>
+        <span class="mant-tipo-icon">❄️</span><span>Problema con aire acondicionado</span>
+      </label>
+      <label class="mant-tipo-opt" onclick="selectTipoMant(this)">
+        <input type="radio" name="mant-tipo" value="Daño en mobiliario"/>
+        <span class="mant-tipo-icon">🪑</span><span>Daño en mobiliario</span>
+      </label>
+      <label class="mant-tipo-opt" onclick="selectTipoMant(this)">
+        <input type="radio" name="mant-tipo" value="Vidrio roto"/>
+        <span class="mant-tipo-icon">🪟</span><span>Vidrio roto</span>
+      </label>
+      <label class="mant-tipo-opt" onclick="selectTipoMant(this)">
+        <input type="radio" name="mant-tipo" value="Daño en equipo de cocina"/>
+        <span class="mant-tipo-icon">🍳</span><span>Daño en equipo de cocina</span>
+      </label>
+      <label class="mant-tipo-opt" onclick="selectTipoMant(this)">
+        <input type="radio" name="mant-tipo" value="Plaga detectada"/>
+        <span class="mant-tipo-icon">🐛</span><span>Plaga detectada</span>
+      </label>
+      <label class="mant-tipo-opt" onclick="selectTipoMant(this)">
+        <input type="radio" name="mant-tipo" value="Otro"/>
+        <span class="mant-tipo-icon">📋</span><span>Otro</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Detalle</p>
+    <div class="field">
+      <label for="mant-detalle">Descripción del problema</label>
+      <textarea id="mant-detalle" rows="4" placeholder="Describí el problema con el mayor detalle posible: ubicación, magnitud, cuándo ocurrió…"></textarea>
+    </div>
+    <div class="field" style="margin-top:1rem">
+      <label>Foto de evidencia</label>
+      <div class="foto-upload" id="foto-upload-area">
+        <input type="file" id="mant-foto" accept="image/*" capture="environment" onchange="onFotoSelected(event)"/>
+        <div id="foto-placeholder">
+          <div style="font-size:28px;margin-bottom:6px">📷</div>
+          <div>Tocá para tomar foto o seleccionar de galería</div>
+          <div style="font-size:11px;margin-top:4px;color:var(--subtle)">JPG, PNG, HEIC · máx. 5 MB</div>
+        </div>
+      </div>
+      <div class="foto-preview-wrap" id="foto-preview-wrap" style="display:none">
+        <img id="foto-preview-img" src="" alt="Vista previa"/>
+        <button class="foto-remove" onclick="quitarFoto(event)">×</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="submit-area">
+    <button class="btn-secondary" onclick="limpiarMant()">Limpiar</button>
+    <button class="btn-primary" id="btn-mant-submit" onclick="guardarReporte()">Guardar reporte</button>
+  </div>
+
+  <div id="mant-wa-section" style="display:none;margin-top:12px">
+    <div id="mant-wa-btn"></div>
+  </div>
+</div><!-- /tab-nuevo -->
+
+
+<!-- ── TAB SEGUIMIENTO ── -->
+<div class="page" id="tab-seguimiento">
+  <div class="seg-filtros">
+    <div class="seg-view">
+      <button class="seg-view-btn active" id="seg-btn-activos" onclick="segFiltro('activos',this)">Activos</button>
+      <button class="seg-view-btn" id="seg-btn-resueltos" onclick="segFiltro('resueltos',this)">Resueltos</button>
+      <button class="seg-view-btn" id="seg-btn-todos" onclick="segFiltro('todos',this)">Todos</button>
+    </div>
+    <input type="text" id="seg-buscar" placeholder="Buscar…" style="width:160px" oninput="renderSeguimiento()"/>
+    <button class="btn-sm" onclick="cargarMantDesdeSheet()" style="margin-left:auto">↻ Actualizar</button>
+  </div>
+  <div id="seg-count" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
+  <div id="seg-lista">
+    <div class="empty-state">Cargando reportes…</div>
+  </div>
+</div><!-- /tab-seguimiento -->
+
+</main>
+
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────
+const APPS_SCRIPT_RRHH = 'TODO_APPS_SCRIPT_RRHH_LORITO';
+const MANT_URL         = 'TODO_APPS_SCRIPT_MANTENIMIENTO_LORITO';
+const WA_NUMERO_DEFAULT = '50688301564';
+
+let fotoBase64 = null;
+let mantDataSheet = [];
+let segVista = 'activos';
+let encargadoActual = '';
+
+// ── TABS ──────────────────────────────────────────────────────────
+function showTab(tab, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  el.classList.add('active');
+  if (tab === 'seguimiento') cargarMantDesdeSheet();
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').innerHTML = type === 'success'
+    ? '<polyline points="3 8 7 12 13 4"/>'
+    : '<line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = `toast ${type}`;
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── ENCARGADOS DESDE RRHH ─────────────────────────────────────────
+async function cargarEncargados() {
+  const sel = document.getElementById('mant-encargado');
+  const errBox = document.getElementById('enc-error');
+  const errMsg = document.getElementById('enc-error-msg');
+  sel.innerHTML = '<option value="" disabled selected>Cargando…</option>';
+  errBox.style.display = 'none';
+  try {
+    const resp = await fetch(APPS_SCRIPT_RRHH + '?modulo=personal');
+    if (!resp.ok) throw new Error('Error ' + resp.status);
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Sin datos');
+    const activos = (data.registros || []).filter(p =>
+      (p['Estado'] || '').toString().toUpperCase() === 'ACTIVO'
+    ).map(p => p['Nombre completo'] || ((p['Nombre']||'') + ' ' + (p['Apellidos']||'')).trim())
+     .filter(Boolean)
+     .sort((a, b) => a.localeCompare(b));
+    sel.innerHTML = '<option value="" disabled selected>Seleccioná un encargado…</option>'
+      + activos.map(n => `<option>${n}</option>`).join('');
+    if (!activos.length) sel.innerHTML = '<option value="" disabled selected>Sin colaboradores activos</option>';
+    sel.onchange = () => { encargadoActual = sel.value; };
+  } catch(e) {
+    sel.innerHTML = '<option value="" disabled selected>Error al cargar</option>';
+    errMsg.textContent = 'No se pudo conectar con RRHH (' + e.message + ').';
+    errBox.style.display = 'block';
+  }
+}
+
+// ── TIPO ──────────────────────────────────────────────────────────
+function selectTipoMant(label) {
+  document.querySelectorAll('.mant-tipo-opt').forEach(l => l.classList.remove('selected'));
+  label.classList.add('selected');
+  label.querySelector('input[type=radio]').checked = true;
+}
+function getTipoMant() {
+  const r = document.querySelector('input[name="mant-tipo"]:checked');
+  return r ? r.value : '';
+}
+
+// ── FOTO ──────────────────────────────────────────────────────────
+function onFotoSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { showToast('La foto supera 5 MB', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    fotoBase64 = e.target.result;
+    document.getElementById('foto-placeholder').style.display = 'none';
+    document.getElementById('foto-preview-wrap').style.display = 'block';
+    document.getElementById('foto-preview-img').src = fotoBase64;
+  };
+  reader.readAsDataURL(file);
+}
+function quitarFoto(event) {
+  event.preventDefault(); event.stopPropagation();
+  fotoBase64 = null;
+  document.getElementById('mant-foto').value = '';
+  document.getElementById('foto-placeholder').style.display = 'block';
+  document.getElementById('foto-preview-wrap').style.display = 'none';
+}
+
+// ── LOCAL CACHE (respaldo offline) ───────────────────────────────
+const MANT_KEY = 'mantenimiento_reportes';
+function getReportes() { try { return JSON.parse(localStorage.getItem(MANT_KEY) || '[]'); } catch { return []; } }
+function saveReportes(lista) { localStorage.setItem(MANT_KEY, JSON.stringify(lista)); }
+
+// ── GUARDAR REPORTE ───────────────────────────────────────────────
+async function guardarReporte() {
+  const encargado = document.getElementById('mant-encargado').value.trim();
+  const fecha     = document.getElementById('mant-fecha').value;
+  const tipo      = getTipoMant();
+  const detalle   = document.getElementById('mant-detalle').value.trim();
+
+  if (!encargado) { showToast('Seleccioná quién reporta', 'error'); return; }
+  if (!tipo)      { showToast('Seleccioná el tipo de incidencia', 'error'); return; }
+  if (!detalle)   { showToast('Agregá una descripción del problema', 'error'); return; }
+
+  const btn = document.getElementById('btn-mant-submit');
+  btn.disabled = true; btn.textContent = 'Guardando…';
+
+  const reporte = {
+    id: Date.now(),
+    fecha: fecha || hoy(),
+    hora: new Date().toLocaleTimeString('es-CR', {hour:'2-digit', minute:'2-digit'}),
+    encargado, tipo, detalle,
+    foto: fotoBase64 || null,
+    fotoUrl: '',
+    estado: 'Pendiente',
+    registrado_en: new Date().toISOString()
+  };
+
+  const lista = getReportes();
+  lista.unshift(reporte);
+  saveReportes(lista);
+
+  try {
+    const resp = await fetch(MANT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(reporte)
+    });
+    const out = await resp.json();
+    if (out.ok && out.fotoUrl) {
+      const idx = lista.findIndex(r => r.id === reporte.id);
+      if (idx >= 0) { lista[idx].fotoUrl = out.fotoUrl; saveReportes(lista); }
+    }
+    showToast('Reporte guardado ✓');
+  } catch(e) {
+    showToast('Guardado local — sin conexión al Sheet', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Guardar reporte';
+  }
+
+  mostrarWAMantenimiento(reporte);
+  limpiarMant();
+}
+
+function mostrarWAMantenimiento(r) {
+  const sec = document.getElementById('mant-wa-section');
+  const btn = document.getElementById('mant-wa-btn');
+  const fecha = new Date((r.fecha||hoy())+'T12:00:00').toLocaleDateString('es-CR',{weekday:'long',day:'numeric',month:'long'});
+  const WA_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.057 23.428a.75.75 0 0 0 .916.916l5.569-1.475A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.694 9.694 0 0 1-4.953-1.356l-.355-.211-3.706.981.993-3.614-.23-.372A9.699 9.699 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg>`;
+  const msg = `🔧 *Reporte de Mantenimiento*
+📅 ${fecha} · 🕐 ${r.hora}
+👤 ${r.encargado}
+
+🚨 *Incidencia:* ${r.tipo}
+📝 *Detalle:* ${r.detalle}
+
+⚙️ Estado: ${r.estado}`;
+  sec.style.display = 'block';
+  btn.innerHTML = `<button class="btn-wa" onclick="window.open('https://wa.me/${WA_NUMERO_DEFAULT}?text='+encodeURIComponent(${JSON.stringify(msg)}),'_blank')">${WA_SVG} Notificar por WhatsApp${r.foto ? ' (adjuntá la foto manualmente)' : ''}</button>`;
+}
+
+function limpiarMant() {
+  document.getElementById('mant-encargado').value = '';
+  document.getElementById('mant-detalle').value = '';
+  document.getElementById('mant-fecha').value = hoy();
+  document.querySelectorAll('.mant-tipo-opt').forEach(l => l.classList.remove('selected'));
+  document.querySelectorAll('input[name="mant-tipo"]').forEach(r => r.checked = false);
+  quitarFoto({ preventDefault:()=>{}, stopPropagation:()=>{} });
+  document.getElementById('mant-wa-section').style.display = 'none';
+}
+
+// ── SEGUIMIENTO ───────────────────────────────────────────────────
+const TIPO_ICONS = {
+  'Bombillo quemado':'💡','Fuga de agua':'💧','Plantas dañadas':'🌿',
+  'Problema eléctrico':'⚡','Puerta o ventana dañada':'🚪','Baño en mal estado':'🚽',
+  'Problema con aire acondicionado':'❄️','Daño en mobiliario':'🪑',
+  'Vidrio roto':'🪟','Daño en equipo de cocina':'🍳','Plaga detectada':'🐛','Otro':'📋'
+};
+
+async function cargarMantDesdeSheet() {
+  document.getElementById('seg-lista').innerHTML = '<div class="empty-state">Cargando…</div>';
+  try {
+    const resp = await fetch(MANT_URL);
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Error al leer');
+
+    mantDataSheet = (data.registros || []).map(r => ({
+      id:        String(r['ID'] || r.id || ''),
+      fecha:     String(r['Fecha'] || r.fecha || '').slice(0,10),
+      hora:      r['Hora'] || r.hora || '',
+      encargado: r['Encargado'] || r.encargado || '',
+      tipo:      r['Tipo'] || r.tipo || '',
+      detalle:   r['Detalle'] || r.detalle || '',
+      estado:    r['Estado'] || r.estado || 'Pendiente',
+      fotoUrl:   r['Foto URL'] || r.fotoUrl || '',
+      fechaResolucion: String(r['Fecha Resolución'] || r.fecha_resolucion || '').slice(0,10),
+      notas:     r['Notas'] || r.notas || '',
+      foto: null
+    }));
+
+    const local = getReportes();
+    mantDataSheet.forEach(s => {
+      const loc = local.find(l => String(l.id) === s.id);
+      if (loc?.foto) s.foto = loc.foto;
+    });
+
+    renderSeguimiento();
+  } catch(e) {
+    document.getElementById('seg-lista').innerHTML =
+      '<div class="empty-state">No se pudo cargar el seguimiento. Revisá la conexión.</div>';
+  }
+}
+
+function segFiltro(vista, el) {
+  segVista = vista;
+  document.querySelectorAll('.seg-view-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderSeguimiento();
+}
+
+function renderSeguimiento() {
+  const busq = (document.getElementById('seg-buscar')?.value || '').toLowerCase();
+  const ordenada = [...mantDataSheet].sort((a, b) => Number(b.id) - Number(a.id));
+
+  let lista = ordenada.filter(r => {
+    if (segVista === 'activos'   && r.estado === 'Resuelto') return false;
+    if (segVista === 'resueltos' && r.estado !== 'Resuelto') return false;
+    if (busq && !(r.tipo+r.detalle+r.encargado).toLowerCase().includes(busq)) return false;
+    return true;
+  });
+
+  document.getElementById('seg-count').textContent = lista.length + ' de ' + mantDataSheet.length + ' reportes';
+
+  if (!lista.length) {
+    document.getElementById('seg-lista').innerHTML = '<div class="empty-state">Sin reportes que coincidan.</div>';
+    return;
+  }
+
+  const estBadge = {
+    'Pendiente': '<span class="badge badge-pendiente">⏳ Pendiente</span>',
+    'En proceso': '<span class="badge badge-proceso">🔧 En proceso</span>',
+    'Resuelto': '<span class="badge badge-resuelto">✅ Resuelto</span>',
+  };
+
+  document.getElementById('seg-lista').innerHTML = lista.map(r => {
+    const icon  = TIPO_ICONS[r.tipo] || '📋';
+    const fecha = r.fecha ? new Date(r.fecha+'T12:00:00').toLocaleDateString('es-CR',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+
+    let fotoHtml = '';
+    if (r.foto) fotoHtml = `<img src="${r.foto}" class="reporte-foto" onclick="verFoto(this.src)" alt="Foto"/>`;
+    else if (r.fotoUrl) fotoHtml = `<a href="${r.fotoUrl}" target="_blank" rel="noopener" class="foto-link">📷 Ver foto en Drive</a><br/>`;
+
+    let acciones = '';
+    if (r.estado === 'Pendiente') {
+      acciones += `<button class="btn-sm btn-proceso" onclick="marcarEnProceso('${r.id}')">🔧 Marcar en proceso</button>`;
+    }
+    if (r.estado !== 'Resuelto') {
+      acciones += `<button class="btn-sm btn-resuelto" onclick="marcarResuelto('${r.id}')">✓ Marcar resuelto</button>`;
+    }
+
+    const hoyStr = hoy();
+    const vencido = r.fechaResolucion && r.fechaResolucion < hoyStr && r.estado !== 'Resuelto';
+    const resolucionRow = r.estado !== 'Resuelto' ? `
+      <div class="resolucion-row">
+        <label>📅 Fecha estimada de resolución:</label>
+        <input type="date" value="${r.fechaResolucion||''}" onchange="guardarFechaResolucion('${r.id}',this.value)"/>
+        ${vencido ? '<span class="vencido">⚠️ Vencida</span>' : ''}
+      </div>` : (r.fechaResolucion ? `<div class="resolucion-row"><label>📅 Se resolvió antes del:</label><span>${r.fechaResolucion}</span></div>` : '');
+
+    const notasArr = (r.notas || '').split('\n').filter(Boolean);
+    const notasHtml = notasArr.length
+      ? notasArr.map(n => `<div class="nota-item">${escHtml(n)}</div>`).join('')
+      : '<div style="font-size:12px;color:var(--subtle);margin-bottom:6px">Sin notas aún.</div>';
+
+    return `<div class="reporte-card">
+      <div class="reporte-head">
+        <div class="reporte-tipo">${icon} ${r.tipo}</div>
+        ${estBadge[r.estado] || ''}
+      </div>
+      <div class="reporte-meta">${fecha} · ${r.hora||''} · 👤 ${r.encargado}</div>
+      <div class="reporte-detalle">${escHtml(r.detalle)}</div>
+      ${fotoHtml}
+      <div class="reporte-actions">${acciones}</div>
+      ${resolucionRow}
+      <div class="notas-section">
+        <div class="notas-titulo">Notas de seguimiento</div>
+        ${notasHtml}
+        <div class="nota-add">
+          <textarea id="nota-input-${r.id}" placeholder="Agregar una nota de seguimiento…"></textarea>
+          <button class="btn-sm" onclick="agregarNotaUI('${r.id}')">Agregar</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function escHtml(s) {
+  return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function marcarEnProceso(id) {
+  await cambiarEstadoSheet(id, 'En proceso');
+}
+
+async function marcarResuelto(id) {
+  if (!confirm('¿Marcar este reporte como resuelto?')) return;
+  await cambiarEstadoSheet(id, 'Resuelto');
+}
+
+async function cambiarEstadoSheet(id, nuevoEstado) {
+  const item = mantDataSheet.find(r => r.id === id);
+  if (item) item.estado = nuevoEstado;
+  renderSeguimiento();
+  try {
+    await fetch(MANT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ accion: 'cambiar_estado', id, estado: nuevoEstado })
+    });
+    showToast('Estado actualizado ✓');
+  } catch(e) {
+    showToast('Sin conexión — no se pudo sincronizar', 'error');
+  }
+}
+
+async function guardarFechaResolucion(id, fecha) {
+  const item = mantDataSheet.find(r => r.id === id);
+  if (item) item.fechaResolucion = fecha;
+  try {
+    await fetch(MANT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ accion: 'fijar_resolucion', id, fecha_resolucion: fecha })
+    });
+    showToast('Fecha de resolución guardada ✓');
+  } catch(e) {
+    showToast('Sin conexión — no se pudo guardar la fecha', 'error');
+  }
+  renderSeguimiento();
+}
+
+async function agregarNotaUI(id) {
+  const textarea = document.getElementById('nota-input-' + id);
+  const nota = textarea.value.trim();
+  if (!nota) { showToast('Escribí una nota antes de agregar', 'error'); return; }
+  const autor = encargadoActual || document.getElementById('mant-encargado')?.value || '';
+
+  try {
+    await fetch(MANT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ accion: 'agregar_nota', id, nota, autor })
+    });
+    showToast('Nota agregada ✓');
+    await cargarMantDesdeSheet();
+  } catch(e) {
+    showToast('Sin conexión — no se pudo agregar la nota', 'error');
+  }
+}
+
+function verFoto(src) {
+  const w = window.open('');
+  w.document.write(`<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="${src}" style="max-width:100%;max-height:100vh;object-fit:contain"/></body></html>`);
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────
+function hoy() { return new Date().toISOString().slice(0,10); }
+
+// ── INIT ──────────────────────────────────────────────────────────
+document.getElementById('date-chip').textContent =
+  new Date().toLocaleDateString('es-CR',{weekday:'long',day:'numeric',month:'long'});
+document.getElementById('mant-fecha').value = hoy();
+cargarEncargados();
+</script>
+</body>
+</html>

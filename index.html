@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal · Lorito</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#fff;
+      --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
+      --amber:#c87820; --amber-bg:#fdf6e3; --amber-lt:#f0d890;
+      --blue:#185fa5; --blue-bg:#eef4fb; --blue-lt:#b8d0f0;
+      --teal:#0e7a7a; --teal-bg:#eaf6f6; --teal-lt:#a8d8d8;
+      --purple:#6a3a9a; --purple-bg:#f3eefb; --purple-lt:#d4b8f0;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+
+    /* ── HEADER ─────────────────────────────────────────────── */
+    header {
+      height:60px; border-bottom:1px solid var(--border);
+      padding:0 2rem; display:flex; align-items:center;
+      justify-content:space-between; background:var(--bg);
+      position:sticky; top:0; z-index:20;
+    }
+    .logo { display:flex; align-items:center; gap:10px; }
+    .logo-mark {
+      width:32px; height:32px; border-radius:8px;
+      background:var(--text); display:flex; align-items:center;
+      justify-content:center;
+    }
+    .logo-mark svg { width:18px; height:18px; stroke:#fff; fill:none; }
+    .logo-name { font-family:var(--font-d); font-size:15px; font-weight:700; }
+    .logo-sub  { font-size:11px; color:var(--muted); margin-left:4px; }
+    .header-right { display:flex; align-items:center; gap:8px; }
+    .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:4px 12px; }
+    .sync-btn { font-size:12px; color:var(--muted); background:transparent; border:1px solid var(--border); border-radius:8px; padding:5px 10px; cursor:pointer; display:flex; align-items:center; gap:5px; }
+    .sync-btn:hover { border-color:var(--border-h); color:var(--text); }
+    .sync-btn svg { width:12px; height:12px; }
+
+    /* ── MAIN ───────────────────────────────────────────────── */
+    main { max-width:1080px; margin:0 auto; padding:2rem 2rem 4rem; }
+
+    /* ── SALUDO ─────────────────────────────────────────────── */
+    .greeting { margin-bottom:1.75rem; }
+    .greeting h1 { font-family:var(--font-d); font-size:26px; font-weight:700; letter-spacing:-.02em; margin-bottom:3px; }
+    .greeting p  { font-size:13px; color:var(--muted); }
+
+    /* ── KPI STRIP ──────────────────────────────────────────── */
+    .kpi-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:1.5rem; }
+    .kpi { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; position:relative; overflow:hidden; }
+    .kpi-accent { position:absolute; top:0; left:0; width:3px; height:100%; border-radius:3px 0 0 3px; }
+    .kpi-val { font-family:var(--font-d); font-size:22px; font-weight:700; letter-spacing:-.02em; margin-bottom:3px; }
+    .kpi-lbl { font-size:11px; color:var(--muted); }
+    .kpi-sub { font-size:11px; margin-top:4px; font-weight:500; }
+
+    /* ── GRID PRINCIPAL ─────────────────────────────────────── */
+    .main-grid { display:grid; grid-template-columns:1fr 240px 220px; gap:14px; margin-bottom:1.5rem; }
+
+    /* ── SECCIÓN ────────────────────────────────────────────── */
+    .section-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+    .section-head { padding:.9rem 1.25rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .section-title { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); }
+    .section-link { font-size:12px; color:var(--blue); text-decoration:none; font-weight:500; }
+    .section-link:hover { text-decoration:underline; }
+
+    /* ── ACCIONES RÁPIDAS ───────────────────────────────────── */
+    .quick-action { display:flex; align-items:center; gap:12px; padding:.85rem 1.25rem; border-bottom:1px solid var(--border); text-decoration:none; color:var(--text); transition:background .12s; cursor:pointer; }
+    .quick-action:last-child { border-bottom:none; }
+    .quick-action:hover { background:var(--surface); }
+    .qa-icon { width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .qa-icon svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+    .qa-text { flex:1; }
+    .qa-name { font-size:13px; font-weight:500; }
+    .qa-sub  { font-size:11px; color:var(--muted); }
+    .qa-arrow { color:var(--subtle); }
+    .qa-arrow svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+    .qa-badge { font-size:10px; font-weight:600; padding:2px 7px; border-radius:20px; }
+
+    .no-alerts { padding:1.5rem 1.25rem; text-align:center; font-size:12px; color:var(--subtle); }
+
+    /* ── HORARIO RESUMEN ────────────────────────────────────── */
+    .horario-resumen { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:1.5rem; }
+    .horario-resumen table { width:100%; border-collapse:collapse; font-size:12px; min-width:620px; }
+    .horario-resumen thead th { font-size:10px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); padding:7px 8px; background:var(--surface); border-bottom:1px solid var(--border); text-align:center; white-space:nowrap; }
+    .horario-resumen thead th.th-emp { text-align:left; padding-left:14px; min-width:140px; }
+    .horario-resumen tbody td { padding:6px 8px; border-bottom:1px solid var(--border); text-align:center; vertical-align:middle; }
+    .horario-resumen tbody td.td-emp { text-align:left; padding-left:14px; font-weight:500; font-size:12px; }
+    .horario-resumen tbody td.td-dep { color:var(--muted); font-size:11px; text-align:left; }
+    .horario-resumen tbody tr:last-child td { border-bottom:none; }
+    .horario-resumen tbody tr:hover td { background:var(--surface); }
+    .hor-dot { display:inline-flex; align-items:center; justify-content:center; width:28px; height:22px; border-radius:5px; font-size:10px; font-weight:600; }
+    .hor-trabajo  { background:var(--green-bg); color:var(--green); }
+    .hor-libre    { background:var(--surface); color:var(--muted); border:1px solid var(--border); }
+    .hor-vac      { background:#dbeafe; color:#1e3a5f; }
+    .hor-inc      { background:#fef3c7; color:#78350f; }
+    .hor-perm     { background:#f3e8ff; color:#4c1d95; }
+    .hor-otro     { background:var(--surface); color:var(--muted); border:1px solid var(--border); }
+    .hor-vacio    { color:var(--subtle); font-size:14px; }
+    .hor-tot      { font-weight:600; color:var(--green); font-size:12px; }
+    .hor-overflow { overflow-x:auto; }
+
+    /* ── MÓDULOS GRID ───────────────────────────────────────── */
+    .modules-section { margin-bottom:1.5rem; }
+    .modules-section-title { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; padding:0 2px; }
+    .modules-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(155px,1fr)); gap:8px; }
+    .mod-tile { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1rem; text-decoration:none; color:var(--text); display:flex; flex-direction:column; gap:8px; transition:border-color .12s, background .12s; }
+    .mod-tile:hover { border-color:var(--border-h); background:var(--surface); }
+    .mod-tile.disabled { opacity:.45; pointer-events:none; }
+    .mod-tile-icon { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; }
+    .mod-tile-icon svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+    .mod-tile-name { font-size:13px; font-weight:500; }
+    .mod-tile-area { font-size:11px; color:var(--muted); }
+    .mod-tile-badge { font-size:10px; font-weight:600; padding:2px 6px; border-radius:20px; width:fit-content; }
+
+    /* colores de iconos */
+    .ic-green  { background:var(--green-bg); color:var(--green); }
+    .ic-teal   { background:var(--teal-bg);  color:var(--teal);  }
+    .ic-blue   { background:var(--blue-bg);  color:var(--blue);  }
+    .ic-amber  { background:var(--amber-bg); color:var(--amber); }
+    .ic-red    { background:var(--red-bg);   color:var(--red);   }
+    .ic-purple { background:var(--purple-bg);color:var(--purple);}
+
+    /* ── MANTENIMIENTO RESUMEN ─────────────────────────────── */
+    .mant-resumen { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:1.5rem; }
+    .mant-item { display:flex; align-items:center; gap:10px; padding:.75rem 1.25rem; border-bottom:1px solid var(--border); text-decoration:none; color:var(--text); transition:background .12s; }
+    .mant-item:last-child { border-bottom:none; }
+    .mant-item:hover { background:var(--surface); }
+    .mant-icon { font-size:18px; width:32px; text-align:center; flex-shrink:0; }
+    .mant-info { flex:1; min-width:0; }
+    .mant-tipo { font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .mant-meta { font-size:11px; color:var(--muted); margin-top:1px; }
+    .mant-badge { font-size:10px; font-weight:600; padding:2px 8px; border-radius:20px; white-space:nowrap; flex-shrink:0; }
+    .mb-pendiente { background:var(--amber-bg); color:var(--amber); }
+    .mb-proceso   { background:var(--blue-bg);  color:var(--blue);  }
+    .mant-vencido { color:var(--red); font-weight:600; font-size:10px; }
+
+    /* ── STATUS ─────────────────────────────────────────────── */
+    .status-bar { display:flex; align-items:center; gap:12px; font-size:11px; color:var(--muted); border-top:1px solid var(--border); padding-top:1rem; margin-top:.5rem; }
+    .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+    .sdot.off { background:var(--subtle); }
+    .spinner { display:inline-block; width:10px; height:10px; border:1.5px solid var(--border); border-top-color:var(--teal); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    @media (max-width:720px) {
+      main { padding:1.25rem 1rem 3rem; }
+      .kpi-strip { grid-template-columns:1fr 1fr; }
+      .main-grid { grid-template-columns:1fr; }
+      #lista-pedidos-hoy { max-height:none; }
+      .modules-grid { grid-template-columns:repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    </div>
+    <div>
+      <span class="logo-name">Lorito</span>
+      <span class="logo-sub">Portal de Operaciones</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="date-chip" id="fecha-hoy"></span>
+    <div style="display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px 10px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;color:var(--muted);"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span style="font-size:12px;font-weight:500;color:var(--muted);" id="user-nombre">—</span>
+      <button onclick="cerrarSesion()" style="background:none;border:none;font-size:11px;color:var(--subtle);cursor:pointer;padding:0 2px;" title="Cerrar sesión">Salir</button>
+    </div>
+    <a href="admin-accesos.html" style="font-size:12px;color:var(--muted);padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);text-decoration:none;" id="btn-admin">⚙ Accesos</a>
+    <button class="sync-btn" onclick="cargarKPIs()" title="Actualizar datos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      Actualizar
+    </button>
+  </div>
+</header>
+
+<main>
+
+  <!-- Saludo -->
+  <div class="greeting">
+    <h1 id="saludo">Buen día</h1>
+    <p id="status-general">Cargando datos del sistema…</p>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-strip">
+    <div class="kpi">
+      <div class="kpi-accent" style="background:var(--teal);"></div>
+      <div class="kpi-val" id="kpi-inv" style="color:var(--teal);">—</div>
+      <div class="kpi-lbl">Último inventario</div>
+      <div class="kpi-sub" id="kpi-inv-sub" style="color:var(--muted);"></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-accent" style="background:var(--amber);"></div>
+      <div class="kpi-val" id="kpi-oc" style="color:var(--text);">—</div>
+      <div class="kpi-lbl">Órdenes de compra</div>
+      <div class="kpi-sub" id="kpi-oc-sub" style="color:var(--muted);"></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-accent" style="background:var(--green);"></div>
+      <div class="kpi-val" id="kpi-prod" style="color:var(--text);">—</div>
+      <div class="kpi-lbl">Productos en base</div>
+      <div class="kpi-sub" id="kpi-prod-sub" style="color:var(--muted);"></div>
+    </div>
+  </div>
+
+  <!-- Grid principal -->
+  <div class="main-grid">
+
+    <!-- Acciones rápidas -->
+    <div class="section-card">
+      <div class="section-head">
+        <span class="section-title">Acciones rápidas</span>
+      </div>
+
+      <a href="inventario.html" class="quick-action" data-mod="inventario">
+        <div class="qa-icon ic-teal">
+          <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <div class="qa-text">
+          <div class="qa-name">Nueva toma de inventario</div>
+          <div class="qa-sub">Conteo físico · valorización automática</div>
+        </div>
+        <div class="qa-arrow"><svg viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+      <a href="ordenes-compra.html" class="quick-action" data-mod="ordenes-compra">
+        <div class="qa-icon ic-blue">
+          <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        </div>
+        <div class="qa-text">
+          <div class="qa-name">Nueva orden de compra</div>
+          <div class="qa-sub">Pedido a proveedor · análisis de stock</div>
+        </div>
+        <div id="oc-badge-qa"></div>
+        <div class="qa-arrow"><svg viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+      <a href="rrhh-acciones.html" class="quick-action" data-mod="rrhh-acciones">
+        <div class="qa-icon ic-red">
+          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <div class="qa-text">
+          <div class="qa-name">Acción de personal</div>
+          <div class="qa-sub">Ingreso · vacaciones · amonestaciones</div>
+        </div>
+        <div class="qa-arrow"><svg viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+      <a href="costos-productos.html" class="quick-action" data-mod="costos-productos">
+        <div class="qa-icon ic-purple">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        </div>
+        <div class="qa-text">
+          <div class="qa-name">Agregar producto</div>
+          <div class="qa-sub">Base de productos · costos · presentación</div>
+        </div>
+        <div class="qa-arrow"><svg viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+      <a href="mantenimiento.html" class="quick-action" data-mod="mantenimiento">
+        <div class="qa-icon ic-amber">
+          <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+        </div>
+        <div class="qa-text">
+          <div class="qa-name">Nuevo reporte de mantenimiento</div>
+          <div class="qa-sub">Reportar incidencia · seguimiento</div>
+        </div>
+        <div class="qa-arrow"><svg viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+    </div>
+
+    <!-- Mantenimiento pendiente -->
+    <div>
+      <div class="section-card">
+        <div class="section-head">
+          <span class="section-title">🔧 Mantenimiento</span>
+          <a href="mantenimiento.html" class="section-link">Ver todos →</a>
+        </div>
+        <div id="mant-grid-body">
+          <div class="no-alerts"><span class="spinner"></span></div>
+        </div>
+        <div style="padding:.6rem 1.25rem;border-top:1px solid var(--border);">
+          <a href="mantenimiento.html" style="font-size:12px;color:var(--muted);text-decoration:none;">Nuevo reporte →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pedidos del día -->
+    <div>
+      <div class="section-card" style="margin-top:0;">
+        <div class="section-head">
+          <span class="section-title">Pedidos de hoy</span>
+          <span id="dia-hoy-label" style="font-size:11px;color:var(--muted);"></span>
+        </div>
+        <div id="lista-pedidos-hoy">
+          <div class="no-alerts" style="padding:1.25rem;text-align:center;font-size:12px;color:var(--subtle);">
+            <span class="spinner"></span>
+          </div>
+        </div>
+        <div style="padding:.6rem 1.25rem;border-top:1px solid var(--border);">
+          <a href="proveedores.html" style="font-size:12px;color:var(--muted);text-decoration:none;">Ver todos los proveedores →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RESUMEN HORARIO SEMANA ── -->
+  <div class="horario-resumen" id="horario-resumen-panel">
+    <div class="section-head">
+      <span class="section-title">Horario — semana en curso</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span id="horario-semana-lbl" style="font-size:11px;color:var(--muted);"></span>
+        <a href="horarios.html" class="section-link">Ver horario completo →</a>
+      </div>
+    </div>
+    <div class="hor-overflow">
+      <div id="horario-resumen-body" style="padding:1.25rem;text-align:center;font-size:12px;color:var(--subtle);">
+        <span class="spinner"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TODOS LOS MÓDULOS ── -->
+  <div class="modules-section">
+    <div class="modules-section-title">Operaciones</div>
+    <div class="modules-grid">
+      <a href="inventario.html" class="mod-tile" data-mod="inventario">
+        <div class="mod-tile-icon ic-teal"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><rect x="2" y="10" width="20" height="5" rx="1"/><rect x="2" y="17" width="20" height="5" rx="1"/></svg></div>
+        <div>
+          <div class="mod-tile-name">Inventario</div>
+          <div class="mod-tile-area">Toma de stock · valorización</div>
+        </div>
+      </a>
+      <a href="ordenes-compra.html" class="mod-tile" data-mod="ordenes-compra">
+        <div class="mod-tile-icon ic-blue"><svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg></div>
+        <div>
+          <div class="mod-tile-name">Órdenes de compra</div>
+          <div class="mod-tile-area">Pedidos · análisis stock</div>
+        </div>
+      </a>
+      <a href="proveedores.html" class="mod-tile" data-mod="proveedores">
+        <div class="mod-tile-icon ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
+        <div>
+          <div class="mod-tile-name">Proveedores</div>
+          <div class="mod-tile-area">Base de datos · contactos</div>
+        </div>
+      </a>
+      <a href="compras.html" class="mod-tile" data-mod="compras">
+        <div class="mod-tile-icon ic-green"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <div>
+          <div class="mod-tile-name">Datos de compras</div>
+          <div class="mod-tile-area">Facturas · proveedores</div>
+        </div>
+      </a>
+      <a href="cuentas-por-pagar.html" class="mod-tile" data-mod="cuentas-por-pagar">
+        <div class="mod-tile-icon ic-green"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg></div>
+        <div>
+          <div class="mod-tile-name">Cuentas por pagar</div>
+          <div class="mod-tile-area">Vencimientos · pagos · abonos</div>
+        </div>
+      </a>
+      <a href="cierres.html" class="mod-tile" data-mod="cierres">
+        <div class="mod-tile-icon ic-green"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+        <div>
+          <div class="mod-tile-name">Cierres de caja</div>
+          <div class="mod-tile-area">Registros diarios</div>
+        </div>
+      </a>
+      <a href="mantenimiento.html" class="mod-tile" data-mod="mantenimiento">
+        <div class="mod-tile-icon ic-amber"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></div>
+        <div>
+          <div class="mod-tile-name">Mantenimiento</div>
+          <div class="mod-tile-area">Reportes · seguimiento</div>
+        </div>
+      </a>
+      <a href="mermas.html" class="mod-tile" data-mod="mermas">
+        <div class="mod-tile-icon ic-amber"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+        <div>
+          <div class="mod-tile-name">Mermas</div>
+          <div class="mod-tile-area">Control de pérdidas</div>
+        </div>
+      </a>
+      <a href="depositos.html" class="mod-tile" data-mod="depositos">
+        <div class="mod-tile-icon ic-teal"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg></div>
+        <div>
+          <div class="mod-tile-name">Depósitos</div>
+          <div class="mod-tile-area">Depósitos bancarios</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="modules-section">
+    <div class="modules-section-title">Costos y recetas</div>
+    <div class="modules-grid">
+      <a href="costos-productos.html" class="mod-tile" data-mod="costos-productos">
+        <div class="mod-tile-icon ic-purple"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg></div>
+        <div>
+          <div class="mod-tile-name">Base de productos</div>
+          <div class="mod-tile-area">Costos · presentaciones</div>
+        </div>
+      </a>
+      <a href="costos-recetas.html" class="mod-tile" data-mod="costos-recetas">
+        <div class="mod-tile-icon ic-purple"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M12 8v4l3 3"/></svg></div>
+        <div>
+          <div class="mod-tile-name">Recetas</div>
+          <div class="mod-tile-area">Recetas · subrecetas · FC</div>
+        </div>
+      </a>
+      <a href="costos-menu.html" class="mod-tile" data-mod="costos-menu">
+        <div class="mod-tile-icon ic-purple"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+        <div>
+          <div class="mod-tile-name">Menú</div>
+          <div class="mod-tile-area">Platos · precios · FC</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="modules-section">
+    <div class="modules-section-title">Recursos Humanos</div>
+    <div class="modules-grid">
+      <a href="rrhh-personal.html" class="mod-tile" data-mod="rrhh-personal">
+        <div class="mod-tile-icon ic-red"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <div>
+          <div class="mod-tile-name">Personal</div>
+          <div class="mod-tile-area">Expedientes · estado</div>
+        </div>
+      </a>
+      <a href="rrhh-acciones.html" class="mod-tile" data-mod="rrhh-acciones">
+        <div class="mod-tile-icon ic-red"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
+        <div>
+          <div class="mod-tile-name">Acciones RRHH</div>
+          <div class="mod-tile-area">Ingresos · vacaciones</div>
+        </div>
+      </a>
+      <a href="rrhh-control-vacaciones.html" class="mod-tile" data-mod="rrhh-vacaciones">
+        <div class="mod-tile-icon ic-red"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+        <div>
+          <div class="mod-tile-name">Vacaciones</div>
+          <div class="mod-tile-area">Saldos · solicitudes</div>
+        </div>
+      </a>
+      <a href="horarios.html" class="mod-tile" data-mod="horarios">
+        <div class="mod-tile-icon ic-red"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div>
+          <div class="mod-tile-name">Horarios</div>
+          <div class="mod-tile-area">Turnos · vacaciones automáticas</div>
+        </div>
+      </a>
+      <a href="rrhh-liquidaciones.html" class="mod-tile" data-mod="rrhh-liquidaciones">
+        <div class="mod-tile-icon ic-amber"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div>
+          <div class="mod-tile-name">Liquidaciones</div>
+          <div class="mod-tile-area">Cálculo y pago de CT</div>
+        </div>
+      </a>
+      <a href="rrhh-amonestaciones.html" class="mod-tile" data-mod="rrhh-amonestaciones">
+        <div class="mod-tile-icon ic-amber"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+        <div>
+          <div class="mod-tile-name">Amonestaciones</div>
+          <div class="mod-tile-area">Historial disciplinario</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="modules-section">
+    <div class="modules-section-title">Administración</div>
+    <div class="modules-grid">
+      <a href="admin-accesos.html" class="mod-tile" data-mod="admin-accesos">
+        <div class="mod-tile-icon" style="background:#f3eefb;color:#6a3a9a;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        </div>
+        <div>
+          <div class="mod-tile-name">Gestión de accesos</div>
+          <div class="mod-tile-area">Roles · PINs · módulos</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <span class="sdot" id="status-dot"></span>
+    <span id="status-texto">Cargando…</span>
+    <span style="margin-left:auto;color:var(--subtle);">v2.0 · Lorito</span>
+  </div>
+
+</main>
+
+<script>
+// ── INIT ──────────────────────────────────────────────────────
+const hoy   = new Date();
+const pad   = n => String(n).padStart(2,'0');
+const fmt   = n => '₡' + Number(n||0).toLocaleString('es-CR',{minimumFractionDigits:0,maximumFractionDigits:0});
+const SHEET_COSTOS = '1PtT9AHv2drY7oLygHKWMhHQgeOuT20_cD_igqu6ijyA';
+
+// Saludo según hora
+const hora = hoy.getHours();
+const saludo = hora < 12 ? 'Buenos días' : hora < 18 ? 'Buenas tardes' : 'Buenas noches';
+document.getElementById('saludo').textContent = saludo;
+document.getElementById('fecha-hoy').textContent =
+  hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+// ── GVIZ helper ───────────────────────────────────────────────
+function gvizLoad(sheetId, hoja) {
+  return new Promise((resolve, reject) => {
+    const cb  = '_idx_' + Math.random().toString(36).slice(2,9);
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=responseHandler:${cb}&sheet=${encodeURIComponent(hoja)}`;
+    const t   = setTimeout(() => { cleanup(); reject(new Error('timeout')); }, 12000);
+    function cleanup() { clearTimeout(t); try{delete window[cb];}catch(e){} try{if(s&&s.parentNode)s.parentNode.removeChild(s);}catch(e){} }
+    window[cb] = data => {
+      cleanup();
+      const cols = (data.table.cols||[]).map(c => c.label||c.id||'');
+      const rows = (data.table.rows||[]).filter(r=>r&&r.c).map(row => {
+        const obj={};
+        cols.forEach((col,i)=>{ const cell=row.c[i]; obj[col]=cell?(cell.f!=null?cell.f:(cell.v!=null?cell.v:'')):''; });
+        return obj;
+      });
+      resolve(rows);
+    };
+    var s = document.createElement('script');
+    s.onerror = () => { cleanup(); reject(new Error('scripterror')); };
+    s.src = url;
+    document.body.appendChild(s);
+  });
+}
+
+// ── CARGAR KPIs ───────────────────────────────────────────────
+async function cargarKPIs() {
+  document.getElementById('status-texto').innerHTML = '<span class="spinner"></span> Actualizando datos…';
+
+  // 1. PRODUCTOS (localStorage)
+  const productos = JSON.parse(localStorage.getItem('costos_productos')||'[]');
+  const enUso     = productos.filter(p => p.en_uso !== false && p.en_uso !== 'false');
+  document.getElementById('kpi-prod').textContent = enUso.length || '—';
+  document.getElementById('kpi-prod-sub').textContent = enUso.length
+    ? `${enUso.length} habilitados en base`
+    : 'Sin productos en base local';
+
+  // 2. ÓRDENES DE COMPRA (localStorage)
+  const ordenes     = JSON.parse(localStorage.getItem('ordenes_compra')||'[]');
+  const enProceso   = ordenes.filter(o => o.estado === 'en_proceso');
+  const aprobadas   = ordenes.filter(o => o.estado === 'aprobada');
+  const totalOC     = ordenes.filter(o => o.estado !== 'cancelada').length;
+
+  if (enProceso.length) {
+    document.getElementById('kpi-oc').textContent       = enProceso.length + ' en proceso';
+    document.getElementById('kpi-oc').style.color       = 'var(--amber)';
+    document.getElementById('kpi-oc-sub').textContent   = `${aprobadas.length} aprobada${aprobadas.length!==1?'s':''} · ${totalOC} total`;
+    document.getElementById('oc-badge-qa').innerHTML    = `<span class="qa-badge" style="background:var(--amber-bg);color:var(--amber);">${enProceso.length} activa${enProceso.length!==1?'s':''}</span>`;
+  } else {
+    document.getElementById('kpi-oc').textContent     = totalOC + ' orden' + (totalOC!==1?'es':'');
+    document.getElementById('kpi-oc').style.color     = 'var(--text)';
+    document.getElementById('kpi-oc-sub').textContent = `${aprobadas.length} aprobada${aprobadas.length!==1?'s':''}`;
+  }
+
+  // 3. INVENTARIO (Sheet via gviz)
+  try {
+    const filasHist = await gvizLoad(SHEET_COSTOS, 'Inventarios');
+    if (filasHist.length) {
+      // Última toma
+      const ultima = filasHist[filasHist.length - 1];
+      const valor  = parseFloat(String(ultima['Valor total']||'0').replace(/[₡,\s]/g,'')) || 0;
+      const id     = String(ultima['ID']||'').trim();
+      const fecha  = String(ultima['Fecha toma']||'').trim();
+      document.getElementById('kpi-inv').textContent     = valor > 0 ? fmt(valor) : id || '—';
+      document.getElementById('kpi-inv-sub').textContent = fecha ? `${id} · ${fecha}` : id;
+
+      // Alertas de stock bajo mínimo
+      if (enUso.length) {
+        const detalle = await gvizLoad(SHEET_COSTOS, 'HISTORIAL_inventario');
+        const lineasUltima = detalle.filter(l => String(l['Toma ID']||'').trim() === id);
+        const stockMap = {};
+        lineasUltima.forEach(l => {
+          const nombre = String(l['Producto']||'').trim().toLowerCase();
+          const p      = enUso.find(x => (x.nombre||'').toLowerCase() === nombre);
+          if (!p) return;
+          const cantPres = parseFloat(p.cantidad_presentacion)||1;
+          const cerrado  = parseFloat(l['Cant. completos'])||0;
+          const abierto  = parseFloat(l['Cant. en uso'])||0;
+          stockMap[p.id] = cerrado + abierto / cantPres;
+        });
+        const bajos = enUso.filter(p => {
+          const min   = parseFloat(p.stock_minimo)||0;
+          const stock = stockMap[p.id];
+          return min > 0 && stock !== undefined && stock < min;
+        });
+        // bajos disponibles para uso futuro si se requiere
+      }
+    } else {
+      document.getElementById('kpi-inv').textContent     = 'Sin datos';
+      document.getElementById('kpi-inv-sub').textContent = 'Finalizá una toma de inventario';
+    }
+  } catch(e) {
+    document.getElementById('kpi-inv').textContent     = 'Sin conexión';
+    document.getElementById('kpi-inv-sub').textContent = 'Sheet no accesible';
+  }
+
+  // 4. Status bar
+  document.getElementById('status-dot').className = 'sdot';
+  document.getElementById('status-texto').textContent =
+    `${enUso.length} productos · ${totalOC} órdenes · actualizado ${new Date().toLocaleTimeString('es-CR')}`;
+  // Mostrar/ocultar botón admin
+  const btnAdmin = document.getElementById('btn-admin');
+  if (btnAdmin) {
+    const s = JSON.parse(localStorage.getItem('portal_sesion')||'null');
+    btnAdmin.style.display = (s && (s.rol_id === 'admin' || s.modulos === 'todos' || (Array.isArray(s.modulos) && s.modulos.includes('admin-accesos')))) ? '' : 'none';
+  }
+
+  document.getElementById('status-general').textContent = `Todo en orden · ${enUso.length} productos cargados`;
+}
+
+// ── CONTROL DE ACCESO ────────────────────────────────────────
+function verificarAcceso() {
+  const sesion = JSON.parse(localStorage.getItem('portal_sesion')||'null');
+  if (!sesion || (Date.now() - sesion.ts) > 8 * 60 * 60 * 1000) {
+    localStorage.removeItem('portal_sesion');
+    window.location.href = 'login.html';
+    return null;
+  }
+  return sesion;
+}
+
+function aplicarRol(sesion) {
+  // Mostrar nombre de usuario
+  const nombreEl = document.getElementById('user-nombre');
+  if (nombreEl) nombreEl.textContent = sesion.nombre;
+
+  // Si tiene todos los módulos, no filtrar
+  if (sesion.modulos === 'todos') return;
+
+  // Ocultar tiles de módulos no permitidos
+  document.querySelectorAll('.mod-tile[data-mod]').forEach(tile => {
+    const modId = tile.dataset.mod;
+    if (!sesion.modulos.includes(modId)) {
+      tile.style.display = 'none';
+    }
+  });
+
+  // Ocultar secciones vacías
+  document.querySelectorAll('.modules-section').forEach(sec => {
+    const visibles = sec.querySelectorAll('.mod-tile:not([style*="none"])');
+    if (!visibles.length) sec.style.display = 'none';
+  });
+
+  // Ocultar acciones rápidas no permitidas
+  document.querySelectorAll('.quick-action[data-mod]').forEach(qa => {
+    if (!sesion.modulos.includes(qa.dataset.mod)) qa.style.display = 'none';
+  });
+}
+
+// ── PEDIDOS DEL DÍA ────────────────────────────────────────────
+function cargarPedidosHoy() {
+  const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const diaHoy = DIAS[new Date().getDay()];
+  const diaShort = diaHoy.slice(0,2);
+
+  const labelEl = document.getElementById('dia-hoy-label');
+  if (labelEl) labelEl.textContent = diaHoy;
+
+  const proveedores = JSON.parse(localStorage.getItem('proveedores')||'[]');
+  const cont = document.getElementById('lista-pedidos-hoy');
+  if (!cont) return;
+
+  const provHoy = proveedores.filter(p => {
+    const dias = Array.isArray(p.dias_pedido) ? p.dias_pedido
+      : (p.dia_pedido ? p.dia_pedido.split(', ').filter(Boolean) : []);
+    return dias.includes(diaHoy);
+  });
+
+  if (!provHoy.length) {
+    cont.innerHTML = `<div style="padding:1.25rem;text-align:center;font-size:12px;color:var(--subtle);">
+      Sin pedidos programados para hoy</div>`;
+    return;
+  }
+
+  cont.innerHTML = provHoy.map(p => {
+    const iniciales = (p.nombre_comercial||p.nombre_juridico||'?')
+      .split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+    const credito   = parseInt(p.condicion_pago)||0;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:.75rem 1.25rem;border-bottom:1px solid var(--border);">
+      <div style="width:32px;height:32px;border-radius:8px;background:var(--green-bg);color:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:12px;font-weight:700;flex-shrink:0;">${iniciales}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.nombre_comercial||p.nombre_juridico}</div>
+        <div style="font-size:11px;color:var(--muted);">${p.categoria||''} ${p.contacto ? '· ' + p.contacto : ''}</div>
+      </div>
+      ${credito === 0
+        ? '<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;background:var(--green-bg);color:var(--green);white-space:nowrap;">Contado</span>'
+        : `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;background:var(--amber-bg);color:var(--amber);white-space:nowrap;">${credito}d</span>`}
+    </div>`;
+  }).join('');
+}
+
+function cerrarSesion() {
+  localStorage.removeItem('portal_sesion');
+  window.location.href = 'login.html';
+}
+
+/* ── RESUMEN HORARIO SEMANA EN CURSO ── */
+const APPS_SCRIPT_RRHH = 'TODO_APPS_SCRIPT_RRHH_LORITO';
+const DIAS_SEMANA = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+
+function getMondayISO() {
+  const hoy = new Date();
+  const diff = hoy.getDay() === 0 ? -6 : 1 - hoy.getDay();
+  const lun = new Date(hoy);
+  lun.setDate(hoy.getDate() + diff);
+  return lun.toISOString().slice(0,10);
+}
+
+function getWeekDatesISO_idx(semanaInicio) {
+  const base = new Date(semanaInicio + 'T00:00:00');
+  return Array.from({length:7}, (_,i) => {
+    const d = new Date(base); d.setDate(base.getDate()+i);
+    return d.toISOString().slice(0,10);
+  });
+}
+
+function horDot(registro) {
+  const est = (registro && registro['Estado']) || '';
+  const entrada = registro && registro['Hora entrada'] || '';
+  const salida  = registro && registro['Hora salida']  || '';
+  const horas   = registro ? parseFloat(registro['Horas']||0) : 0;
+
+  if (!registro || est==='trabajo' && !entrada && !salida)
+    return '<span class="hor-dot hor-vacio" title="Sin datos">·</span>';
+
+  switch(est) {
+    case 'trabajo':
+      const lbl = entrada && salida ? entrada.slice(0,5)+'–'+salida.slice(0,5) : horas.toFixed(0)+'h';
+      return '<span class="hor-dot hor-trabajo" title="'+lbl+'">'+horas.toFixed(0)+'h</span>';
+    case 'libre':      return '<span class="hor-dot hor-libre"  title="Día libre">L</span>';
+    case 'vacaciones': return '<span class="hor-dot hor-vac"    title="Vacaciones">V</span>';
+    case 'incapacidad':return '<span class="hor-dot hor-inc"    title="Incapacidad">I</span>';
+    case 'permiso':    return '<span class="hor-dot hor-perm"   title="Permiso sin goce">P</span>';
+    default:           return '<span class="hor-dot hor-otro"   title="Otro">O</span>';
+  }
+}
+
+async function cargarResumenHorario() {
+  const semana = getMondayISO();
+  const fechas = getWeekDatesISO_idx(semana);
+  const lbl = new Date(semana+'T00:00:00').toLocaleDateString('es-CR',{day:'2-digit',month:'short'})
+    + ' – ' + new Date(fechas[6]+'T00:00:00').toLocaleDateString('es-CR',{day:'2-digit',month:'short',year:'numeric'});
+  document.getElementById('horario-semana-lbl').textContent = lbl;
+
+  try {
+    const resp = await fetch(APPS_SCRIPT_RRHH + '?modulo=horarios');
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Sin datos');
+
+    const registros = (data.registros || []).filter(r => (r['Semana inicio']||'') === semana);
+
+    if (!registros.length) {
+      document.getElementById('horario-resumen-body').innerHTML =
+        '<p style="padding:1rem;font-size:12px;color:var(--muted);">No hay horario guardado para esta semana. ' +
+        '<a href="horarios.html" style="color:var(--blue);">Ir a Horarios →</a></p>';
+      return;
+    }
+
+    // Agrupar por colaborador
+    const porColab = {};
+    registros.forEach(r => {
+      const nombre = (r['Colaborador']||'').trim();
+      const fecha  = r['Fecha'] || '';
+      if (!nombre || !fecha) return;
+      if (!porColab[nombre]) porColab[nombre] = { depto: r['Departamento']||'', dias: {}, horas: 0 };
+      porColab[nombre].dias[fecha] = r;
+      porColab[nombre].horas += parseFloat(r['Horas']||0) || 0;
+    });
+
+    const colaboradores = Object.keys(porColab).sort();
+
+    let html = '<table><thead><tr>'
+      + '<th class="th-emp">Colaborador</th>'
+      + '<th class="th-dep" style="text-align:left">Depto</th>'
+      + DIAS_SEMANA.map((d,i) => '<th>'+d+'<br><span style="font-weight:400;font-size:9px;color:var(--subtle);">'+
+          new Date(fechas[i]+'T00:00:00').toLocaleDateString('es-CR',{day:'2-digit',month:'2-digit'})+'</span></th>').join('')
+      + '<th>Total</th>'
+      + '</tr></thead><tbody>';
+
+    colaboradores.forEach(nombre => {
+      const c = porColab[nombre];
+      html += '<tr>'
+        + '<td class="td-emp">' + nombre + '</td>'
+        + '<td class="td-dep">' + (c.depto||'—') + '</td>'
+        + fechas.map(f => '<td>' + horDot(c.dias[f]) + '</td>').join('')
+        + '<td class="hor-tot">' + c.horas.toFixed(1) + 'h</td>'
+        + '</tr>';
+    });
+
+    html += '</tbody></table>';
+    document.getElementById('horario-resumen-body').innerHTML = html;
+
+  } catch(e) {
+    document.getElementById('horario-resumen-body').innerHTML =
+      '<p style="padding:1rem;font-size:12px;color:var(--muted);">No se pudo cargar el horario de esta semana.</p>';
+  }
+}
+
+/* ── RESUMEN MANTENIMIENTO PENDIENTE ── */
+const MANT_URL = 'TODO_APPS_SCRIPT_MANTENIMIENTO_LORITO';
+const MANT_TIPO_ICONS = {
+  'Bombillo quemado':'💡','Fuga de agua':'💧','Plantas dañadas':'🌿',
+  'Problema eléctrico':'⚡','Puerta o ventana dañada':'🚪','Baño en mal estado':'🚽',
+  'Problema con aire acondicionado':'❄️','Daño en mobiliario':'🪑',
+  'Vidrio roto':'🪟','Daño en equipo de cocina':'🍳','Plaga detectada':'🐛','Otro':'📋'
+};
+
+async function cargarResumenMantenimiento() {
+  const body = document.getElementById('mant-grid-body');
+  try {
+    const resp = await fetch(MANT_URL);
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Sin datos');
+
+    const hoyStr = new Date().toISOString().slice(0,10);
+    const activos = (data.registros || [])
+      .filter(r => r['Estado'] !== 'Resuelto')
+      .map(r => ({
+        id:     String(r['ID'] || ''),
+        tipo:   r['Tipo'] || '',
+        estado: r['Estado'] || 'Pendiente',
+        fecha:  String(r['Fecha'] || '').slice(0,10),
+        encargado: r['Encargado'] || '',
+        fechaResolucion: String(r['Fecha Resolución'] || '').slice(0,10)
+      }))
+      .sort((a,b) => Number(b.id) - Number(a.id));
+
+    if (!activos.length) {
+      body.innerHTML = `<div style="padding:1rem 1.25rem;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Sin pendientes</div>`;
+      return;
+    }
+
+    body.innerHTML = activos.slice(0, 6).map(r => {
+      const icon     = MANT_TIPO_ICONS[r.tipo] || '📋';
+      const vencido  = r.fechaResolucion && r.fechaResolucion < hoyStr;
+      const badgeCls = r.estado === 'En proceso' ? 'mb-proceso' : 'mb-pendiente';
+      const fechaFmt = r.fecha ? new Date(r.fecha+'T12:00:00').toLocaleDateString('es-CR',{day:'2-digit',month:'short'}) : '';
+      return `<a href="mantenimiento.html" class="mant-item">
+        <span class="mant-icon">${icon}</span>
+        <div class="mant-info">
+          <div class="mant-tipo">${r.tipo}</div>
+          <div class="mant-meta">${fechaFmt}${vencido ? ' · <span class="mant-vencido">⚠ Vencido</span>' : ''}</div>
+        </div>
+        <span class="mant-badge ${badgeCls}">${r.estado}</span>
+      </a>`;
+    }).join('');
+
+  } catch(e) {
+    body.innerHTML = '<div class="no-alerts">Sin conexión</div>';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const sesion = verificarAcceso();
+  if (!sesion) return;
+  aplicarRol(sesion);
+  cargarPedidosHoy();
+  cargarKPIs();
+  cargarResumenHorario();
+  cargarResumenMantenimiento();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Datos de Compras · Lorito</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#ffffff;
+      --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
+      --amber:#c87820; --amber-bg:#fdf6e3; --amber-lt:#f0d890;
+      --blue:#185fa5; --blue-bg:#eef4fb; --blue-lt:#b8d0f0;
+      --purple:#6a3a9a; --purple-bg:#f3eefb;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+
+    header { height:56px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; background:var(--bg); position:sticky; top:0; z-index:20; }
+    .nav-left { display:flex; align-items:center; gap:10px; }
+    .back-btn { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); transition:color .15s,border-color .15s; }
+    .back-btn:hover { color:var(--text); border-color:var(--border-h); }
+    .back-btn svg { width:13px; height:13px; }
+    .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
+    .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 10px; }
+
+    main { max-width:1100px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .page-header { margin-bottom:1.5rem; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .page-header h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+    .page-header p { font-size:13px; color:var(--muted); }
+
+    /* KPIs */
+    .kpi-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:1.25rem; }
+    .kpi-box { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; }
+    .kpi-val { font-family:var(--font-d); font-size:22px; font-weight:700; letter-spacing:-.02em; color:var(--text); }
+    .kpi-lbl { font-size:11px; color:var(--muted); margin-top:2px; }
+    .kpi-val.verde { color:var(--green); }
+    .kpi-val.rojo  { color:var(--red); }
+    .kpi-val.ambar { color:var(--amber); }
+
+    /* Tabs */
+    .tabs { display:flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:4px; margin-bottom:1.25rem; width:fit-content; }
+    .tab { font-size:13px; font-weight:500; padding:6px 16px; border-radius:7px; border:none; cursor:pointer; background:transparent; color:var(--muted); transition:background .15s,color .15s; white-space:nowrap; }
+    .tab.active { background:var(--card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+
+    /* Toolbar */
+    .toolbar { display:flex; gap:8px; margin-bottom:1rem; flex-wrap:wrap; align-items:center; }
+    .search-wrap { position:relative; flex:1; min-width:200px; }
+    .search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--subtle); pointer-events:none; }
+    .search-input { width:100%; background:var(--card); border:1px solid var(--border); border-radius:9px; color:var(--text); font-family:var(--font-b); font-size:13px; padding:8px 12px 8px 32px; outline:none; transition:border-color .15s; }
+    .search-input:focus { border-color:var(--green); }
+    .search-input::placeholder { color:var(--subtle); }
+    .filter-sel { font-size:13px; padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--text); outline:none; cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:30px; }
+
+    /* Card */
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; }
+
+    /* Tabla */
+    .tabla-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th { text-align:left; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:10px 12px; border-bottom:1px solid var(--border); white-space:nowrap; background:var(--surface); }
+    td { padding:11px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:var(--surface); }
+    .num { text-align:right; font-variant-numeric:tabular-nums; }
+
+    /* Fila expandible */
+    .tr-main { cursor:pointer; }
+    .tr-detail { display:none; }
+    .tr-detail.open { display:table-row; }
+    .detail-cell { padding:0 !important; border-bottom:1px solid var(--border); }
+    .detail-inner { padding:12px 24px; background:var(--surface); }
+    .detail-table { width:100%; border-collapse:collapse; font-size:12px; }
+    .detail-table th { background:transparent; font-size:10px; padding:6px 8px; }
+    .detail-table td { padding:6px 8px; border-bottom:1px solid var(--border); }
+    .detail-table tr:last-child td { border-bottom:none; }
+
+    /* Badges */
+    .badge { display:inline-flex; align-items:center; gap:3px; font-size:11px; font-weight:500; padding:3px 8px; border-radius:20px; white-space:nowrap; }
+    .b-ok  { background:var(--green-bg); color:var(--green); }
+    .b-err { background:var(--red-bg);   color:var(--red); }
+    .b-dot { width:5px; height:5px; border-radius:50%; background:currentColor; }
+
+    /* Categoría chips */
+    .cat-chip { display:inline-block; font-size:11px; padding:2px 7px; border-radius:20px; font-weight:500; }
+    .cat-frutas     { background:#eef8f2; color:#1a7a4a; }
+    .cat-bebidas    { background:#eef4fb; color:#185fa5; }
+    .cat-lacteos    { background:#fdf6e3; color:#c87820; }
+    .cat-granos     { background:#f3eefb; color:#6a3a9a; }
+    .cat-condimentos{ background:#fdf0eb; color:#c84a20; }
+    .cat-otro       { background:var(--surface); color:var(--muted); }
+
+    /* Arrow toggle */
+    .toggle-arrow { width:16px; height:16px; transition:transform .2s; color:var(--subtle); }
+    .toggle-arrow.open { transform:rotate(180deg); }
+
+    /* Paginación */
+    .pagination { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-top:1px solid var(--border); font-size:12px; color:var(--muted); }
+    .pag-btns { display:flex; gap:4px; }
+    .pag-btn { padding:4px 10px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:12px; cursor:pointer; transition:background .12s; }
+    .pag-btn:hover:not(:disabled) { background:var(--surface); color:var(--text); }
+    .pag-btn:disabled { opacity:.4; cursor:default; }
+    .pag-btn.active { background:var(--green); color:#fff; border-color:var(--green); }
+
+    /* Empty / Spinner */
+    .empty { text-align:center; padding:3rem; color:var(--subtle); font-size:13px; }
+    .spinner { display:inline-block; width:18px; height:18px; border:2px solid var(--border); border-top-color:var(--green); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* Status */
+    .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
+    .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+    .sdot.off { background:var(--subtle); }
+    .ssep { width:1px; height:14px; background:var(--border); }
+
+    @media (max-width:700px) {
+      header { padding:0 1rem; } main { padding:1.5rem 1rem 3rem; }
+      .kpi-strip { grid-template-columns:1fr 1fr; }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Datos de compras</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<main>
+  <div class="page-header">
+    <div>
+      <h1>Compras</h1>
+      <p>Facturas electrónicas · Lorito</p>
+    </div>
+    <div id="status-carga" style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;">
+      <span class="spinner"></span> Cargando…
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-strip">
+    <div class="kpi-box">
+      <div class="kpi-val verde" id="kpi-total">₡—</div>
+      <div class="kpi-lbl">Total compras</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val" id="kpi-facturas">—</div>
+      <div class="kpi-lbl">Facturas</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val" id="kpi-proveedores">—</div>
+      <div class="kpi-lbl">Proveedores</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val rojo" id="kpi-nocuadran">—</div>
+      <div class="kpi-lbl">No cuadran</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('analisis',this)">Análisis</button>
+    <button class="tab" onclick="switchTab('facturas',this)">Facturas</button>
+    <button class="tab" onclick="switchTab('productos',this)">Productos</button>
+    <button class="tab" onclick="switchTab('proveedores',this)">Por proveedor</button>
+    <button class="tab" onclick="switchTab('categorias',this)">Por categoría</button>
+  </div>
+
+  <!-- ══ TAB FACTURAS ══════════════════════════════════════════════ -->
+  <div id="tab-facturas" style="display:none;">
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="search-input" id="s-fact" placeholder="Buscar factura o proveedor…" oninput="renderFacturas()">
+      </div>
+
+      <select class="filter-sel" id="f-mes" onchange="renderFacturas()">
+        <option value="">Todos los meses</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="tabla-wrap" id="tabla-facturas">
+        <div class="empty"><span class="spinner"></span></div>
+      </div>
+      <div class="pagination" id="pag-facturas" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- ══ TAB PRODUCTOS ═════════════════════════════════════════════ -->
+  <div id="tab-productos" style="display:none;">
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="search-input" id="s-prod" placeholder="Buscar producto o proveedor…" oninput="renderProductos()">
+      </div>
+      <select class="filter-sel" id="f-cat" onchange="renderProductos()">
+        <option value="">Todas las categorías</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="tabla-wrap" id="tabla-productos">
+        <div class="empty"><span class="spinner"></span></div>
+      </div>
+      <div class="pagination" id="pag-productos" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- ══ TAB PROVEEDORES ══════════════════════════════════════════ -->
+  <div id="tab-proveedores" style="display:none;">
+    <div class="card">
+      <div class="tabla-wrap" id="tabla-proveedores">
+        <div class="empty"><span class="spinner"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB CATEGORÍAS ═══════════════════════════════════════════ -->
+  <div id="tab-categorias" style="display:none;">
+    <div class="card">
+      <div class="tabla-wrap" id="tabla-categorias">
+        <div class="empty"><span class="spinner"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB ANÁLISIS ════════════════════════════════════════════ -->
+  <div id="tab-analisis">
+
+    <!-- Controles de análisis -->
+    <div class="card" style="padding:1.25rem 1.5rem;margin-bottom:12px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+
+        <!-- Agrupación -->
+        <div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Agrupar por</div>
+          <div style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:3px;">
+            <button class="tab active" id="grp-dia"  onclick="setAgrupacion('dia',this)"    style="padding:5px 14px;">Día</button>
+            <button class="tab"        id="grp-sem"  onclick="setAgrupacion('semana',this)" style="padding:5px 14px;">Semana</button>
+            <button class="tab"        id="grp-mes"  onclick="setAgrupacion('mes',this)"   style="padding:5px 14px;">Mes</button>
+            <button class="tab"        id="grp-anio" onclick="setAgrupacion('anio',this)"  style="padding:5px 14px;">Año</button>
+          </div>
+        </div>
+
+        <!-- Período específico -->
+        <div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Período específico</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <label style="font-size:12px;color:var(--muted);">Desde</label>
+              <input type="date" id="filtro-desde" onchange="renderAnalisis()"
+                style="font-size:13px;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);outline:none;">
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <label style="font-size:12px;color:var(--muted);">Hasta</label>
+              <input type="date" id="filtro-hasta" onchange="renderAnalisis()"
+                style="font-size:13px;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);outline:none;">
+            </div>
+            <button onclick="limpiarFiltroFecha()"
+              style="font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">
+              Limpiar
+            </button>
+          </div>
+        </div>
+
+      </div>
+      <div id="rango-info" style="font-size:12px;color:var(--muted);margin-top:10px;"></div>
+    </div>
+
+    <!-- Gráfico de barras — totales por período -->
+    <div class="card" style="padding:1.25rem 1.5rem;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;">Total de compras por período</div>
+      <div style="position:relative;height:260px;">
+        <canvas id="chart-periodos"></canvas>
+      </div>
+    </div>
+
+    <!-- Gráfico de dona — totales por categoría -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div class="card" style="padding:1.25rem 1.5rem;">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;">Gasto por categoría</div>
+        <div style="position:relative;height:240px;">
+          <canvas id="chart-categorias"></canvas>
+        </div>
+      </div>
+      <div class="card" style="padding:1.25rem 1.5rem;">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;">Gasto por proveedor (Top 6)</div>
+        <div style="position:relative;height:240px;">
+          <canvas id="chart-proveedores"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla resumen agrupada -->
+    <div class="card">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:1rem 1.25rem;border-bottom:1px solid var(--border);">Detalle por período</div>
+      <div class="tabla-wrap" id="tabla-agrupada"></div>
+    </div>
+
+  </div>
+
+  <div class="status-bar">
+    <div style="display:flex;align-items:center;gap:6px;"><span class="sdot" id="conn-dot"></span><span id="conn-label">Conectando…</span></div>
+    <span class="ssep"></span>
+    <span id="status-msg">—</span>
+    <span class="ssep"></span>
+    <span style="margin-left:auto;">v1.0 · Operaciones · Grupo del Sol</span>
+  </div>
+</main>
+
+<script>
+// ─── CONFIGURACIÓN ────────────────────────────────────────────────
+// Pegá aquí la URL del Apps Script del Sheet de compras
+const APPS_SCRIPT_COMPRAS = 'TODO_APPS_SCRIPT_COMPRAS_LORITO';
+// ─────────────────────────────────────────────────────────────────
+
+const hoy = new Date();
+document.getElementById('date-chip').textContent =
+  hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
+
+const fmt  = n => '₡' + Number(n).toLocaleString('es-CR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+const fmtN = n => Number(n).toLocaleString('es-CR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+
+let dataResumen  = [];
+let dataFacturas = [];
+let dataControl  = [];
+let pagFacturas  = 1;
+let pagProductos = 1;
+const POR_PAGINA = 15;
+
+// ── CATEGORÍA → CSS ───────────────────────────────────────────────
+function catClass(cat) {
+  const c = (cat||'').toLowerCase();
+  if (c.includes('fruta') || c.includes('verdura')) return 'cat-frutas';
+  if (c.includes('bebida')) return 'cat-bebidas';
+  if (c.includes('lácteo') || c.includes('lacteo')) return 'cat-lacteos';
+  if (c.includes('grano') || c.includes('cereal')) return 'cat-granos';
+  if (c.includes('condimento') || c.includes('especia')) return 'cat-condimentos';
+  return 'cat-otro';
+}
+
+// ── JSONP helper para evitar CORS ────────────────────────────────
+function jsonpFetch(url) {
+  return new Promise((resolve, reject) => {
+    const cbName = 'cb_' + Math.random().toString(36).slice(2);
+    const script = document.createElement('script');
+    const timer  = setTimeout(() => {
+      delete window[cbName];
+      if (script.parentNode) document.body.removeChild(script);
+      reject(new Error('Timeout'));
+    }, 15000);
+    window[cbName] = (data) => {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) document.body.removeChild(script);
+      resolve(data);
+    };
+    script.src     = url + '&callback=' + cbName;
+    script.onerror = () => {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) document.body.removeChild(script);
+      reject(new Error('Script error'));
+    };
+    document.body.appendChild(script);
+  });
+}
+
+// ── GVIZ: leer Sheet de compras (público, sin CORS) ─────────────
+const COMPRAS_SHEET_ID = '1Hd1CuITuquWIhSmT5CHIDliymUN0GwKhI8hvRc5ZAIQ';
+
+function gvizLoadCompras(hoja) {
+  return new Promise(function(resolve, reject) {
+    var cb    = '_gc_' + Math.random().toString(36).slice(2,10);
+    var url   = 'https://docs.google.com/spreadsheets/d/' + COMPRAS_SHEET_ID
+              + '/gviz/tq?tqx=responseHandler:' + cb
+              + '&sheet=' + encodeURIComponent(hoja);
+    var timer = setTimeout(function() { cleanup(); reject(new Error('Timeout: ' + hoja)); }, 15000);
+    function cleanup() {
+      clearTimeout(timer);
+      try { delete window[cb]; } catch(e) {}
+      try { if (s && s.parentNode) document.body.removeChild(s); } catch(e) {}
+    }
+    window[cb] = function(data) {
+      cleanup();
+      try {
+        var cols = (data.table.cols||[]).map(function(c){ return c.label||c.id||''; });
+        var rows = (data.table.rows||[]).filter(function(r){ return r&&r.c; }).map(function(row){
+          var obj = {};
+          cols.forEach(function(col,i){
+            var cell = row.c[i];
+            obj[col] = cell ? (cell.f!=null?cell.f:(cell.v!=null?cell.v:'')) : '';
+          });
+          return obj;
+        });
+        resolve({ ok: true, registros: rows });
+      } catch(e2) { reject(e2); }
+    };
+    var s = document.createElement('script');
+    s.onerror = function(){ cleanup(); reject(new Error('Error: ' + hoja)); };
+    s.src = url;
+    document.body.appendChild(s);
+  });
+}
+
+async function cargarDatos() {
+  document.getElementById('status-carga').innerHTML = '<span class="spinner"></span> Conectando con Google Sheets…';
+
+  try {
+    const [dF, dR, dC] = await Promise.all([
+      gvizLoadCompras('Facturas'),
+      gvizLoadCompras('Resumen').catch(() => ({ ok: true, registros: [] })),
+      gvizLoadCompras('Control').catch(() => ({ ok: true, registros: [] }))
+    ]);
+
+    if (!dF.ok) throw new Error('Error leyendo hoja Facturas');
+
+    dataFacturas = dF.registros || [];
+    dataResumen  = dR.registros || [];
+    dataControl  = dC.registros || [];
+
+    document.getElementById('conn-dot').classList.remove('off');
+    document.getElementById('conn-label').textContent = 'Conectado · Google Sheets';
+    document.getElementById('status-carga').innerHTML =
+      '<span style="color:var(--green);">✓</span> ' + dataResumen.length + ' facturas · ' + dataFacturas.length + ' líneas';
+    inicializar();
+
+  } catch(e) {
+    console.error('Error cargando compras:', e.message);
+    document.getElementById('conn-dot').classList.add('off');
+    document.getElementById('conn-label').textContent = 'Error de conexión';
+    document.getElementById('status-carga').innerHTML =
+      '<span style="color:var(--red);">✕</span> ' + e.message;
+    ['tabla-facturas','tabla-productos','tabla-proveedores','tabla-categorias']
+      .forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.innerHTML = '<div class="empty">No se pudo conectar. Verificá que el Sheet sea público (Compartir → Cualquiera con el enlace).</div>';
+      });
+  }
+}
+// ── PARSER GVIZ ──────────────────────────────────────────────────
+function parsearGviz(text) {
+  const json = JSON.parse(text.replace(/^[^{]*/, '').replace(/[^}]*$/, ''));
+  const cols  = json.table.cols.map(c => c.label);
+  return (json.table.rows || []).map(row => {
+    const obj = {};
+    cols.forEach((col, i) => {
+      const cell = row.c[i];
+      obj[col] = cell ? (cell.f ?? cell.v ?? '') : '';
+    });
+    return obj;
+  });
+}
+
+// ── INICIALIZAR ───────────────────────────────────────────────────
+function inicializar() {
+  // KPIs desde resumen
+  // Campos del Resumen: Cliente, Tipo de documento, Moneda, Número de factura,
+  // Fecha de factura, Proveedor, Subtotal, Descuento, Impuestos, Total, Fecha de carga
+  const totalCompras = dataResumen.reduce((a,r) => {
+    const v = String(r['Total']||'0').replace(/[,₡\s]/g,'');
+    return a + (parseFloat(v)||0);
+  }, 0);
+  const nFacturas   = dataResumen.length;
+  const proveedores = new Set(dataResumen.map(r => r['Proveedor']||'').filter(Boolean)).size;
+  // Estado desde hoja Control (columna Estado)
+  const noCuadran = dataControl.filter(r =>
+    (r['Estado']||'').toLowerCase().includes('no')).length;
+
+  document.getElementById('kpi-total').textContent       = fmt(totalCompras);
+  document.getElementById('kpi-facturas').textContent    = nFacturas;
+  document.getElementById('kpi-proveedores').textContent = proveedores;
+  document.getElementById('kpi-nocuadran').textContent   = noCuadran;
+  document.getElementById('status-msg').textContent      = `Total: ${fmt(totalCompras)}`;
+
+  // Meses disponibles para filtro
+  const meses = [...new Set(dataResumen.map(r => {
+    const f = r['Fecha de factura'] || '';
+    return f ? f.substring(0,7) : '';
+  }).filter(Boolean))].sort().reverse();
+
+  const selMes = document.getElementById('f-mes');
+  meses.forEach(m => {
+    const o = document.createElement('option');
+    o.value = m;
+    const [y, mo] = m.split('-');
+    const nom = new Date(y, mo-1).toLocaleDateString('es-CR', { month:'long', year:'numeric' });
+    o.textContent = nom;
+    selMes.appendChild(o);
+  });
+
+  // Categorías
+  const cats = [...new Set(dataFacturas.map(r => r['Categoría']||'').filter(Boolean))].sort();
+  const selCat = document.getElementById('f-cat');
+  cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; selCat.appendChild(o); });
+
+  renderFacturas();
+  renderProductos();
+  renderProveedores();
+  renderCategorias();
+  renderAnalisis();
+}
+
+// ── RENDER FACTURAS ───────────────────────────────────────────────
+function renderFacturas() {
+  pagFacturas = 1;
+  _renderFacturas();
+}
+
+function _renderFacturas() {
+  const busq   = document.getElementById('s-fact').value.toLowerCase();
+  const estado = '';
+  const mes    = document.getElementById('f-mes').value;
+
+  let lista = dataResumen.filter(r => {
+    const prov = (r['Proveedor']||'').toLowerCase();
+    const fact = (r['Número de factura']||'').toLowerCase();
+    const est  = r['Estado'] || '';
+    const fech = (r['Fecha de factura']||'').substring(0,7);
+    return (!busq   || prov.includes(busq) || fact.includes(busq))
+
+        && (!mes    || fech === mes);
+  });
+
+  const total  = lista.length;
+  const inicio = (pagFacturas-1) * POR_PAGINA;
+  const pagina = lista.slice(inicio, inicio + POR_PAGINA);
+
+  if (!lista.length) {
+    document.getElementById('tabla-facturas').innerHTML = '<div class="empty">Sin resultados.</div>';
+    document.getElementById('pag-facturas').style.display = 'none';
+    return;
+  }
+
+  // Detalle por factura desde hoja facturas
+  const detalleMap = {};
+  dataFacturas.forEach(f => {
+    const num = f['Número de factura'] || '';
+    if (!detalleMap[num]) detalleMap[num] = [];
+    detalleMap[num].push(f);
+  });
+
+  const filas = pagina.map((r, idx) => {
+    const num   = r['Número de factura'] || '—';
+    const prov  = r['Proveedor'] || '—';
+    const fecha = r['Fecha de factura'] || '—';
+    const total = parseFloat(String(r['Total']||'0').replace(/[,₡\s]/g,'')) || 0;
+    // Buscar estado en hoja Control por número de factura
+    const ctrl  = dataControl.find(c => c['Número de factura'] === num);
+    const est   = ctrl ? (ctrl['Estado'] || '') : '';
+    const ok    = !est.toLowerCase().includes('no');
+    const rowId = 'frow-' + (inicio + idx);
+
+    // Detalle de líneas
+    const lineas = detalleMap[num] || [];
+    const lineasHtml = lineas.length ? `
+      <table class="detail-table">
+        <thead><tr><th>Producto</th><th>Categoría</th><th>Cant.</th><th>Unidad</th><th style="text-align:right;">P. Unit.</th><th style="text-align:right;">Total línea</th></tr></thead>
+        <tbody>
+          ${lineas.map(l => `<tr>
+            <td>${l['Nombre normalizado'] || l['Producto'] || '—'}</td>
+            <td><span class="cat-chip ${catClass(l['Categoría'])}">${l['Categoría']||'—'}</span></td>
+            <td>${l['Cantidad']||'—'}</td>
+            <td>${l['Unidad de medida']||'—'}</td>
+            <td class="num">${fmtN(parseFloat(String(l['Precio unitario']||0).replace(/[,]/g,'')))}</td>
+            <td class="num">${fmtN(parseFloat(String(l['Total línea']||0).replace(/[,]/g,'')))}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>` : '<div style="font-size:12px;color:var(--subtle);padding:8px 0;">Sin detalle de líneas.</div>';
+
+    return `
+      <tr class="tr-main" onclick="toggleDetalle('${rowId}')">
+        <td>
+          <svg class="toggle-arrow" id="${rowId}-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+        </td>
+        <td style="color:var(--muted);font-size:12px;">${fecha}</td>
+        <td style="font-weight:500;">${prov}</td>
+        <td style="font-size:12px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${num}</td>
+
+        <td class="num" style="font-weight:600;">${fmt(total)}</td>
+        
+      </tr>
+      <tr class="tr-detail" id="${rowId}">
+        <td class="detail-cell" colspan="6">
+          <div class="detail-inner">${lineasHtml}</div>
+        </td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('tabla-facturas').innerHTML = `
+    <table>
+      <thead><tr><th></th><th>Fecha</th><th>Proveedor</th><th>Factura</th><th>Categorías</th><th style="text-align:right;">Total</th><th>Estado</th></tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+
+  renderPaginacion('pag-facturas', total, pagFacturas, p => { pagFacturas = p; _renderFacturas(); });
+}
+
+function toggleDetalle(id) {
+  const el  = document.getElementById(id);
+  const ico = document.getElementById(id + '-ico');
+  const open = !el.classList.contains('open');
+  el.classList.toggle('open', open);
+  if (ico) ico.classList.toggle('open', open);
+}
+
+// ── RENDER PRODUCTOS (agrupado) ───────────────────────────────────
+function renderProductos() {
+  pagProductos = 1;
+  _renderProductos();
+}
+
+function _renderProductos() {
+  const busq = document.getElementById('s-prod').value.toLowerCase();
+  const cat  = document.getElementById('f-cat').value;
+
+  let lista = dataFacturas.filter(r => {
+    const prod = (r['Nombre normalizado']||r['Producto']||'').toLowerCase();
+    const prov = (r['Proveedor']||'').toLowerCase();
+    return (!busq || prod.includes(busq) || prov.includes(busq))
+        && (!cat  || r['Categoría'] === cat);
+  });
+
+  if (!lista.length) {
+    document.getElementById('tabla-productos').innerHTML = '<div class="empty">Sin resultados.</div>';
+    document.getElementById('pag-productos').style.display = 'none';
+    return;
+  }
+
+  // Agrupar por nombre normalizado
+  const grupos = {};
+  lista.forEach(r => {
+    const nombre = r['Nombre normalizado'] || r['Producto'] || 'Sin nombre';
+    if (!grupos[nombre]) grupos[nombre] = { cat: r['Categoría']||'—', unidad: r['Unidad de medida']||'—', lineas: [] };
+    grupos[nombre].lineas.push(r);
+  });
+
+  const nombresOrdenados = Object.keys(grupos).sort();
+  const total  = nombresOrdenados.length;
+  const inicio = (pagProductos - 1) * POR_PAGINA;
+  const pagina = nombresOrdenados.slice(inicio, inicio + POR_PAGINA);
+
+  const filas = pagina.map((nombre, idx) => {
+    const g       = grupos[nombre];
+    const rowId   = 'prod-' + (inicio + idx);
+    const totalCant  = g.lineas.reduce((a,r) => a + (parseFloat(r['Cantidad'])||0), 0);
+    const totalLinea = g.lineas.reduce((a,r) => a + (parseFloat(String(r['Total línea']||0).replace(/,/g,''))||0), 0);
+    const nCompras   = g.lineas.length;
+    const proveedores = [...new Set(g.lineas.map(r => r['Proveedor']||''))].join(', ');
+
+    // Detalle expandible
+    const detalleHtml = `
+      <table class="detail-table">
+        <thead><tr><th>Proveedor</th><th>Fecha</th><th style="text-align:right;">Cantidad</th><th>Unidad</th><th style="text-align:right;">P. Unitario</th><th style="text-align:right;">Total línea</th></tr></thead>
+        <tbody>
+          ${g.lineas.map(r => {
+            const pUnit  = parseFloat(String(r['Precio unitario']||0).replace(/,/g,''))||0;
+            const tLinea = parseFloat(String(r['Total línea']||0).replace(/,/g,''))||0;
+            return `<tr>
+              <td>${r['Proveedor']||'—'}</td>
+              <td style="color:var(--muted);">${r['Fecha de factura']||'—'}</td>
+              <td class="num">${r['Cantidad']||'—'}</td>
+              <td style="color:var(--muted);">${r['Unidad de medida']||'—'}</td>
+              <td class="num">${fmt(pUnit)}</td>
+              <td class="num" style="font-weight:600;">${fmt(tLinea)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+
+    return `
+      <tr class="tr-main" onclick="toggleDetalle('${rowId}')">
+        <td>
+          <svg class="toggle-arrow" id="${rowId}-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+        </td>
+        <td style="font-weight:500;">${nombre}</td>
+        <td><span class="cat-chip ${catClass(g.cat)}">${g.cat}</span></td>
+        <td style="color:var(--muted);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${proveedores}</td>
+        <td class="num">${nCompras} compra${nCompras!==1?'s':''}</td>
+        <td class="num">${totalCant.toFixed(2)} ${g.unidad}</td>
+        <td class="num" style="font-weight:600;">${fmt(totalLinea)}</td>
+      </tr>
+      <tr class="tr-detail" id="${rowId}">
+        <td class="detail-cell" colspan="7">
+          <div class="detail-inner">${detalleHtml}</div>
+        </td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('tabla-productos').innerHTML = `
+    <table>
+      <thead><tr>
+        <th></th><th>Producto</th><th>Categoría</th><th>Proveedores</th>
+        <th style="text-align:right;">Compras</th>
+        <th style="text-align:right;">Total cantidad</th>
+        <th style="text-align:right;">Total</th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+
+  renderPaginacion('pag-productos', total, pagProductos, p => { pagProductos = p; _renderProductos(); });
+}
+
+// ── RENDER PROVEEDORES (con facturas desplegables) ────────────────
+function renderProveedores() {
+  const provMap = {};
+
+  dataResumen.forEach(r => {
+    const prov  = r['Proveedor'] || 'Sin nombre';
+    const total = parseFloat(String(r['Total']||'0').replace(/[,₡\s]/g,'')) || 0;
+    if (!provMap[prov]) provMap[prov] = { total:0, facturas:[], cats: new Set() };
+    provMap[prov].total += total;
+    provMap[prov].facturas.push(r);
+  });
+
+  dataFacturas.forEach(r => {
+    const prov = r['Proveedor'] || 'Sin nombre';
+    if (!provMap[prov]) provMap[prov] = { total:0, facturas:[], cats: new Set() };
+    if (r['Categoría']) provMap[prov].cats.add(r['Categoría']);
+  });
+
+  const lista    = Object.entries(provMap).sort((a,b) => b[1].total - a[1].total);
+  const maxTotal = lista[0]?.[1].total || 1;
+
+  const filas = lista.map(([prov, d], idx) => {
+    const pct    = Math.min(100, (d.total / maxTotal) * 100);
+    const cats   = [...d.cats].map(c => `<span class="cat-chip ${catClass(c)}">${c}</span>`).join(' ') || '—';
+    const rowId  = 'prov-' + idx;
+    const nFact  = d.facturas.length;
+
+    const facturasHtml = `
+      <table class="detail-table">
+        <thead><tr><th>Fecha</th><th>Número de factura</th><th style="text-align:right;">Subtotal</th><th style="text-align:right;">Impuestos</th><th style="text-align:right;">Total</th></tr></thead>
+        <tbody>
+          ${d.facturas.map(f => {
+            const total = parseFloat(String(f['Total']||'0').replace(/[,₡\s]/g,''))||0;
+            const sub   = parseFloat(String(f['Subtotal']||'0').replace(/[,₡\s]/g,''))||0;
+            const imp   = parseFloat(String(f['Impuestos']||'0').replace(/[,₡\s]/g,''))||0;
+            return `<tr>
+              <td style="color:var(--muted);">${f['Fecha de factura']||'—'}</td>
+              <td style="font-size:12px;color:var(--muted);">${f['Número de factura']||'—'}</td>
+              <td class="num">${fmt(sub)}</td>
+              <td class="num">${fmt(imp)}</td>
+              <td class="num" style="font-weight:600;">${fmt(total)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+
+    return `
+      <tr class="tr-main" onclick="toggleDetalle('${rowId}')">
+        <td>
+          <svg class="toggle-arrow" id="${rowId}-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+        </td>
+        <td style="font-weight:500;">${prov}</td>
+        <td>${cats}</td>
+        <td class="num">${nFact} factura${nFact!==1?'s':''}</td>
+        <td class="num" style="font-weight:600;">${fmt(d.total)}</td>
+        <td style="min-width:100px;">
+          <div style="height:6px;background:var(--surface);border-radius:3px;overflow:hidden;">
+            <div style="height:100%;width:${pct}%;background:var(--green);border-radius:3px;"></div>
+          </div>
+        </td>
+      </tr>
+      <tr class="tr-detail" id="${rowId}">
+        <td class="detail-cell" colspan="6">
+          <div class="detail-inner">${facturasHtml}</div>
+        </td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('tabla-proveedores').innerHTML = `
+    <table>
+      <thead><tr>
+        <th></th><th>Proveedor</th><th>Categorías</th>
+        <th style="text-align:right;">Facturas</th>
+        <th style="text-align:right;">Total comprado</th>
+        <th>Proporción</th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+}
+
+// ── RENDER CATEGORÍAS ─────────────────────────────────────────────
+function renderCategorias() {
+  const catMap = {};
+  dataFacturas.forEach(r => {
+    const cat   = r['Categoría'] || 'Sin categoría';
+    const total = parseFloat(String(r['Total línea']||0).replace(/[,]/g,'')) || 0;
+    if (!catMap[cat]) catMap[cat] = { items:0, total:0 };
+    catMap[cat].items++;
+    catMap[cat].total += total;
+  });
+
+  const lista = Object.entries(catMap).sort((a,b) => b[1].total - a[1].total);
+  const totalGral = lista.reduce((a,b) => a + b[1].total, 0);
+
+  const filas = lista.map(([cat, d]) => {
+    const pct  = totalGral ? (d.total / totalGral * 100).toFixed(1) : 0;
+    const pBar = Math.min(100, d.total / (lista[0][1].total||1) * 100);
+    return `<tr>
+      <td><span class="cat-chip ${catClass(cat)}">${cat}</span></td>
+      <td class="num">${d.items} líneas</td>
+      <td class="num" style="font-weight:600;">${fmt(d.total)}</td>
+      <td class="num" style="color:var(--muted);">${pct}%</td>
+      <td style="min-width:140px;">
+        <div style="height:6px;background:var(--surface);border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:${pBar}%;background:var(--green);border-radius:3px;"></div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tabla-categorias').innerHTML = `
+    <table>
+      <thead><tr><th>Categoría</th><th style="text-align:right;">Líneas</th><th style="text-align:right;">Total</th><th style="text-align:right;">% del total</th><th>Proporción</th></tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+}
+
+// ── PAGINACIÓN ────────────────────────────────────────────────────
+function renderPaginacion(id, total, pag, cb) {
+  const pagEl   = document.getElementById(id);
+  const totalPag = Math.ceil(total / POR_PAGINA);
+  if (totalPag <= 1) { pagEl.style.display = 'none'; return; }
+
+  pagEl.style.display = 'flex';
+  const desde = (pag-1)*POR_PAGINA + 1;
+  const hasta = Math.min(pag*POR_PAGINA, total);
+
+  let btns = '';
+  for (let i = 1; i <= totalPag; i++) {
+    if (i === 1 || i === totalPag || Math.abs(i - pag) <= 1) {
+      btns += `<button class="pag-btn${i===pag?' active':''}" onclick="(${cb.toString()})(${i})">${i}</button>`;
+    } else if (Math.abs(i - pag) === 2) {
+      btns += `<span style="padding:4px;">…</span>`;
+    }
+  }
+
+  pagEl.innerHTML = `
+    <span>${desde}–${hasta} de ${total}</span>
+    <div class="pag-btns">
+      <button class="pag-btn" onclick="(${cb.toString()})(${pag-1})" ${pag<=1?'disabled':''}>← Anterior</button>
+      ${btns}
+      <button class="pag-btn" onclick="(${cb.toString()})(${pag+1})" ${pag>=totalPag?'disabled':''}>Siguiente →</button>
+    </div>`;
+}
+
+// ── TABS ──────────────────────────────────────────────────────────
+function switchTab(tab, el) {
+  ['analisis','facturas','productos','proveedores','categorias'].forEach(t =>
+    document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  if (tab === 'analisis') renderAnalisis();
+}
+
+// ── ANÁLISIS ──────────────────────────────────────────────────────
+let agrupacion    = 'dia';
+let chartPeriodos = null;
+let chartCats     = null;
+let chartProvs    = null;
+
+// Paleta de colores por categoría
+const CAT_COLORES = {
+  'Frutas y Verduras':    '#1a7a4a',
+  'Bebidas':              '#185fa5',
+  'Lácteos':              '#c87820',
+  'Granos y Cereales':    '#6a3a9a',
+  'Condimentos y Especias':'#c84a20',
+  'Carnes':               '#8b3a1a',
+  'default':              '#a0c8b0',
+};
+
+function colorCat(cat) {
+  return CAT_COLORES[cat] || CAT_COLORES['default'];
+}
+
+function setAgrupacion(tipo, el) {
+  agrupacion = tipo;
+  document.querySelectorAll('[id^="grp-"]').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderAnalisis();
+}
+
+function claveAgrupacion(fecha) {
+  if (!fecha) return 'Sin fecha';
+  const f = String(fecha).substring(0,10);
+  const [y, m, d] = f.split('-');
+  if (!y) return 'Sin fecha';
+  if (agrupacion === 'dia')   return f;
+  if (agrupacion === 'mes')   return `${y}-${m}`;
+  if (agrupacion === 'anio')  return y;
+  if (agrupacion === 'semana') {
+    const dt   = new Date(parseInt(y), parseInt(m)-1, parseInt(d));
+    const ini  = new Date(dt);
+    ini.setDate(dt.getDate() - dt.getDay() + 1); // lunes
+    return `${ini.getFullYear()}-${String(ini.getMonth()+1).padStart(2,'0')}-${String(ini.getDate()).padStart(2,'0')}`;
+  }
+  return f;
+}
+
+function labelPeriodo(clave) {
+  if (agrupacion === 'dia') {
+    const [y,m,d] = clave.split('-');
+    return new Date(y,m-1,d).toLocaleDateString('es-CR',{day:'numeric',month:'short'});
+  }
+  if (agrupacion === 'semana') {
+    const [y,m,d] = clave.split('-');
+    const ini = new Date(y,m-1,d);
+    const fin = new Date(ini); fin.setDate(ini.getDate()+6);
+    return `${ini.getDate()}/${ini.getMonth()+1} – ${fin.getDate()}/${fin.getMonth()+1}`;
+  }
+  if (agrupacion === 'mes') {
+    const [y,m] = clave.split('-');
+    return new Date(y,m-1).toLocaleDateString('es-CR',{month:'short',year:'numeric'});
+  }
+  return clave;
+}
+
+function limpiarFiltroFecha() {
+  document.getElementById('filtro-desde').value = '';
+  document.getElementById('filtro-hasta').value = '';
+  renderAnalisis();
+}
+
+function filtrarPorPeriodo(lista, campoFecha) {
+  const desde = document.getElementById('filtro-desde').value;
+  const hasta = document.getElementById('filtro-hasta').value;
+  if (!desde && !hasta) return lista;
+  return lista.filter(r => {
+    const f = String(r[campoFecha]||'').substring(0,10);
+    if (!f) return false;
+    if (desde && f < desde) return false;
+    if (hasta && f > hasta) return false;
+    return true;
+  });
+}
+
+function renderAnalisis() {
+  if (!dataResumen.length) return;
+
+  // Aplicar filtro de período si está activo
+  const resumenFiltrado  = filtrarPorPeriodo(dataResumen,  'Fecha de factura');
+  const facturasFiltradas = filtrarPorPeriodo(dataFacturas, 'Fecha de factura');
+
+  const desde = document.getElementById('filtro-desde').value;
+  const hasta = document.getElementById('filtro-hasta').value;
+
+  // ─ Agrupar totales por período (desde Resumen filtrado) ─
+  const periodoMap = {};
+  resumenFiltrado.forEach(r => {
+    const k = claveAgrupacion(r['Fecha de factura']);
+    const v = parseFloat(String(r['Total']||'0').replace(/[,₡\s]/g,'')) || 0;
+    periodoMap[k] = (periodoMap[k] || 0) + v;
+  });
+
+  const claves  = Object.keys(periodoMap).sort();
+  const labels  = claves.map(labelPeriodo);
+  const valores = claves.map(k => periodoMap[k]);
+
+  const filtroActivo = desde || hasta;
+  const totalFiltrado = resumenFiltrado.reduce((a,r) => a + (parseFloat(String(r['Total']||'0').replace(/[,₡\s]/g,''))||0), 0);
+  document.getElementById('rango-info').innerHTML =
+    `<strong>${claves.length}</strong> período${claves.length!==1?'s':''} &nbsp;·&nbsp; <strong>${claves[0]||'—'}</strong> → <strong>${claves[claves.length-1]||'—'}</strong> &nbsp;·&nbsp; Total: <strong style="color:var(--green)">₡${Number(totalFiltrado).toLocaleString('es-CR',{minimumFractionDigits:2})}</strong>${filtroActivo?' &nbsp;<span style="background:var(--amber-bg);color:var(--amber);font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid var(--amber-lt);">Filtro activo</span>':''}`;
+
+  // Chart barras — períodos
+  const ctxP = document.getElementById('chart-periodos').getContext('2d');
+  if (chartPeriodos) chartPeriodos.destroy();
+  chartPeriodos = new Chart(ctxP, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Total compras (₡)',
+        data: valores,
+        backgroundColor: 'rgba(26,122,74,0.75)',
+        borderColor: '#1a7a4a',
+        borderWidth: 1,
+        borderRadius: 5,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ' ₡' + Number(ctx.raw).toLocaleString('es-CR', {minimumFractionDigits:2})
+          }
+        }
+      },
+      scales: {
+        y: {
+          ticks: {
+            callback: v => '₡' + (v>=1000000 ? (v/1000000).toFixed(1)+'M' : v>=1000 ? (v/1000).toFixed(0)+'K' : v),
+            color: '#5a8a6a', font: { size: 11 }
+          },
+          grid: { color: '#e8f0ea' }
+        },
+        x: { ticks: { color: '#5a8a6a', font: { size: 11 } }, grid: { display: false } }
+      }
+    }
+  });
+
+  // ─ Agrupar por categoría (desde Facturas filtradas) ─
+  const catMap = {};
+  facturasFiltradas.forEach(r => {
+    const cat = r['Categoría'] || 'Sin categoría';
+    const v   = parseFloat(String(r['Total línea']||'0').replace(/[,]/g,'')) || 0;
+    catMap[cat] = (catMap[cat] || 0) + v;
+  });
+
+  const catEntries = Object.entries(catMap).sort((a,b) => b[1]-a[1]);
+  const ctxC = document.getElementById('chart-categorias').getContext('2d');
+  if (chartCats) chartCats.destroy();
+  chartCats = new Chart(ctxC, {
+    type: 'doughnut',
+    data: {
+      labels: catEntries.map(e => e[0]),
+      datasets: [{
+        data: catEntries.map(e => e[1]),
+        backgroundColor: catEntries.map(e => colorCat(e[0])),
+        borderWidth: 2,
+        borderColor: '#ffffff',
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { size: 11 }, color: '#1c3a28', padding: 10, boxWidth: 12 }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ₡${Number(ctx.raw).toLocaleString('es-CR',{minimumFractionDigits:2})}`
+          }
+        }
+      }
+    }
+  });
+
+  // ─ Top 6 proveedores (desde Resumen filtrado) ─
+  const provMap = {};
+  resumenFiltrado.forEach(r => {
+    const prov = r['Proveedor'] || 'Sin proveedor';
+    const v    = parseFloat(String(r['Total']||'0').replace(/[,₡\s]/g,'')) || 0;
+    provMap[prov] = (provMap[prov] || 0) + v;
+  });
+
+  const top6 = Object.entries(provMap).sort((a,b) => b[1]-a[1]).slice(0,6);
+  const provColores = ['#1a7a4a','#185fa5','#c87820','#6a3a9a','#c84a20','#0e7a7a'];
+
+  const ctxPr = document.getElementById('chart-proveedores').getContext('2d');
+  if (chartProvs) chartProvs.destroy();
+  chartProvs = new Chart(ctxPr, {
+    type: 'bar',
+    data: {
+      labels: top6.map(e => e[0].length > 20 ? e[0].substring(0,20)+'…' : e[0]),
+      datasets: [{
+        label: 'Total',
+        data: top6.map(e => e[1]),
+        backgroundColor: top6.map((_,i) => provColores[i % provColores.length]),
+        borderRadius: 5,
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ' ₡' + Number(ctx.raw).toLocaleString('es-CR',{minimumFractionDigits:2})
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            callback: v => '₡' + (v>=1000000?(v/1000000).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'K':v),
+            color: '#5a8a6a', font: { size: 10 }
+          },
+          grid: { color: '#e8f0ea' }
+        },
+        y: { ticks: { color: '#1c3a28', font: { size: 11 } }, grid: { display: false } }
+      }
+    }
+  });
+
+  // ─ Tabla de detalle por período ─
+  const fmt2 = n => '₡' + Number(n).toLocaleString('es-CR',{minimumFractionDigits:2});
+  const filas = claves.map(k => {
+    const facturasDePeriodo = resumenFiltrado.filter(r => claveAgrupacion(r['Fecha de factura']) === k);
+    const nFact  = facturasDePeriodo.length;
+    const total  = periodoMap[k];
+    const provs  = [...new Set(facturasDePeriodo.map(r => r['Proveedor']||''))].join(', ');
+    return `<tr>
+      <td style="font-weight:500;">${labelPeriodo(k)}</td>
+      <td style="color:var(--muted);">${k}</td>
+      <td class="num">${nFact} factura${nFact!==1?'s':''}</td>
+      <td style="color:var(--muted);font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${provs}</td>
+      <td class="num" style="font-weight:700;color:var(--green);">${fmt2(total)}</td>
+    </tr>`;
+  }).reverse().join('');
+
+  document.getElementById('tabla-agrupada').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Período</th><th>Fecha</th><th style="text-align:right;">Facturas</th>
+        <th>Proveedores</th><th style="text-align:right;">Total</th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+}
+
+cargarDatos();
+</script>
+</body>
+</html>

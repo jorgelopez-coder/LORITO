@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menú · Costos · Grupo del Sol</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#fff;
+      --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --purple:#6a3a9a; --purple-bg:#f3eefb; --purple-lt:#d4b8f0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
+      --amber:#c87820; --amber-bg:#fdf6e3;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+    header { height:56px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; background:var(--bg); position:sticky; top:0; z-index:20; }
+    .nav-left { display:flex; align-items:center; gap:10px; }
+    .back-btn { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); }
+    .back-btn:hover { color:var(--text); border-color:var(--border-h); }
+    .back-btn svg { width:13px; height:13px; }
+    .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
+    .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 10px; }
+    main { max-width:960px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .page-header { margin-bottom:1.5rem; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .page-header h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+    .page-header p { font-size:13px; color:var(--muted); }
+    .tabs { display:flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:4px; margin-bottom:1.5rem; width:fit-content; }
+    .tab { font-size:13px; font-weight:500; padding:6px 16px; border-radius:7px; border:none; cursor:pointer; background:transparent; color:var(--muted); transition:background .15s,color .15s; }
+    .tab.active { background:var(--card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.4rem 1.5rem; margin-bottom:12px; }
+    .card-title { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:1.1rem; }
+    .field { margin-bottom:1rem; }
+    .field:last-child { margin-bottom:0; }
+    .field-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .field-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+    label { display:block; font-size:13px; font-weight:500; color:var(--text); margin-bottom:5px; }
+    .req { color:var(--red); margin-left:2px; }
+    input, select, textarea { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--font-b); font-size:14px; padding:9px 12px; outline:none; appearance:none; transition:border-color .15s,box-shadow .15s; }
+    input:focus, select:focus, textarea:focus { border-color:var(--purple); box-shadow:0 0 0 3px rgba(106,58,154,.1); }
+    input::placeholder, textarea::placeholder { color:var(--subtle); }
+    select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:36px; cursor:pointer; }
+    textarea { resize:vertical; min-height:60px; line-height:1.5; }
+    .submit-area { display:flex; gap:10px; margin-top:1.25rem; }
+    .btn-primary { flex:1; background:var(--purple); color:#fff; border:none; border-radius:9px; font-family:var(--font-d); font-size:15px; font-weight:700; padding:12px; cursor:pointer; transition:opacity .15s; }
+    .btn-primary:hover { opacity:.9; }
+    .btn-primary:disabled { opacity:.4; cursor:not-allowed; }
+    .btn-secondary { padding:12px 16px; border-radius:9px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; cursor:pointer; }
+    .btn-secondary:hover { color:var(--text); border-color:var(--border-h); }
+    .toolbar { display:flex; gap:8px; margin-bottom:1rem; flex-wrap:wrap; }
+    .search-wrap { position:relative; flex:1; min-width:180px; }
+    .search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--subtle); pointer-events:none; }
+    .search-input { padding-left:32px; font-size:13px; }
+    .filter-sel { font-size:13px; padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--text); outline:none; cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:30px; }
+    .menu-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; }
+    .plato-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.1rem 1.25rem; transition:border-color .15s,box-shadow .15s; }
+    .plato-card:hover { border-color:var(--purple-lt); box-shadow:0 2px 12px rgba(106,58,154,.08); }
+    .plato-nombre { font-family:var(--font-d); font-size:15px; font-weight:700; color:var(--text); margin-bottom:3px; }
+    .plato-cat { font-size:12px; color:var(--muted); margin-bottom:8px; }
+    .plato-precio { font-family:var(--font-d); font-size:20px; font-weight:700; color:var(--purple); }
+    .plato-desc { font-size:12px; color:var(--muted); margin-top:6px; line-height:1.5; }
+    .plato-actions { display:flex; gap:6px; margin-top:10px; }
+    .btn-edit { font-size:11px; padding:4px 10px; border-radius:6px; border:1px solid var(--purple-lt); background:var(--purple-bg); color:var(--purple); cursor:pointer; font-weight:500; }
+    .btn-edit:hover { background:var(--purple); color:#fff; }
+    .btn-del { font-size:11px; padding:4px 10px; border-radius:6px; border:1px solid var(--red-lt); background:var(--red-bg); color:var(--red); cursor:pointer; font-weight:500; }
+    .btn-del:hover { background:var(--red); color:#fff; }
+    .empty { text-align:center; padding:2.5rem; color:var(--subtle); font-size:13px; }
+    .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
+    .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+    .ssep { width:1px; height:14px; background:var(--border); }
+    .toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px); background:var(--card); border:1px solid var(--border); border-radius:10px; padding:11px 18px; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s; opacity:0; z-index:100; box-shadow:0 4px 20px rgba(0,0,0,.08); }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+    .toast.success { border-color:var(--green); color:var(--green); }
+    .toast.error { border-color:var(--red); color:var(--red); }
+    .toast svg { width:16px; height:16px; }
+    @media (max-width:600px) { header{padding:0 1rem;} main{padding:1.5rem 1rem 3rem;} .field-row,.field-row-3{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Menú</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<main>
+  <div class="page-header">
+    <div>
+      <h1>Menú</h1>
+      <p>Platos y categorías del restaurante.</p>
+    </div>
+    <button class="btn-primary" style="width:auto;padding:10px 20px;font-size:13px;" onclick="switchTab('nuevo', document.querySelectorAll('.tab')[1])">+ Nuevo plato</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('lista',this)">Menú</button>
+    <button class="tab" onclick="switchTab('nuevo',this)">Nuevo plato</button>
+  </div>
+
+  <!-- LISTA -->
+  <div id="tab-lista">
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="search-input" id="search" placeholder="Buscar plato…" oninput="renderMenu()">
+      </div>
+      <select class="filter-sel" id="f-cat" onchange="renderMenu()">
+        <option value="">Todas las categorías</option>
+        <option>Entradas</option><option>Sopas</option><option>Ensaladas</option>
+        <option>Platos fuertes</option><option>Postres</option><option>Bebidas</option>
+        <option>Especiales</option>
+      </select>
+    </div>
+    <div id="menu-container">
+      <div class="empty">No hay platos en el menú. Agregá el primero.</div>
+    </div>
+  </div>
+
+  <!-- NUEVO / EDITAR -->
+  <div id="tab-nuevo" style="display:none;">
+    <div class="card">
+      <p class="card-title" id="form-title">Nuevo plato</p>
+      <input type="hidden" id="edit-id">
+
+      <div class="field-row">
+        <div class="field">
+          <label for="m-nombre">Nombre del plato <span class="req">*</span></label>
+          <input type="text" id="m-nombre" placeholder="Ej. Lomo al chimichurri">
+        </div>
+        <div class="field">
+          <label for="m-categoria">Categoría <span class="req">*</span></label>
+          <select id="m-categoria">
+            <option value="" disabled selected>Seleccioná…</option>
+            <option>Entradas</option><option>Sopas</option><option>Ensaladas</option>
+            <option>Platos fuertes</option><option>Postres</option><option>Bebidas</option>
+            <option>Especiales</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-row-3">
+        <div class="field">
+          <label for="m-precio">Precio de venta (₡) <span class="req">*</span></label>
+          <input type="number" id="m-precio" min="0" step="100" placeholder="0" oninput="calcFC()">
+        </div>
+        <div class="field">
+          <label for="m-disponible">Disponibilidad</label>
+          <select id="m-disponible">
+            <option value="Disponible">Disponible</option>
+            <option value="No disponible">No disponible</option>
+            <option value="Temporada">De temporada</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>%FC (Food Cost)</label>
+          <div id="fc-display" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px;color:var(--muted);">Asociá una receta</div>
+        </div>
+      </div>
+      <!-- Receta asociada para costo -->
+      <div class="field">
+        <label for="m-receta">Receta asociada</label>
+        <select id="m-receta" onchange="calcFC()">
+          <option value="">Sin receta asociada</option>
+        </select>
+        <div id="costo-receta-display" style="font-size:12px;color:var(--muted);margin-top:4px;display:none;">
+          Costo de receta: <strong id="costo-receta-val">₡0</strong>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="m-descripcion">Descripción</label>
+        <textarea id="m-descripcion" placeholder="Descripción del plato para el menú…"></textarea>
+      </div>
+    </div>
+
+    <div class="submit-area">
+      <button class="btn-secondary" onclick="limpiarForm()">Cancelar</button>
+      <button class="btn-primary" onclick="guardar()">Guardar plato</button>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <span class="sdot"></span>
+    <span id="status-msg">—</span>
+    <span class="ssep"></span>
+    <span style="margin-left:auto;">v1.0 · Costos · Grupo del Sol</span>
+  </div>
+</main>
+
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+const STORAGE_KEY = 'costos_menu';
+const APPS_SCRIPT_COSTOS = 'TODO_APPS_SCRIPT_COSTOS_LORITO'; // Pegá la URL del Apps Script de costos
+const hoy = new Date();
+document.getElementById('date-chip').textContent =
+  hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
+
+const fmt = n => '₡' + Number(n).toLocaleString('es-CR', {minimumFractionDigits:2});
+
+function getPlatos() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch { return []; }
+}
+function savePlatos(lista) { localStorage.setItem(STORAGE_KEY, JSON.stringify(lista)); }
+window.getPlatos = getPlatos;
+
+const DISP_COLORS = {
+  'Disponible':    { bg:'var(--green-bg)', col:'var(--green)' },
+  'No disponible': { bg:'var(--red-bg)',   col:'var(--red)'   },
+  'De temporada':  { bg:'var(--amber-bg)', col:'var(--amber)' },
+};
+
+function poblarRecetas() {
+  const recetas = JSON.parse(localStorage.getItem('costos_recetas')||'[]')
+    .filter(r => r.tipo === 'receta');
+  const sel = document.getElementById('m-receta');
+  sel.innerHTML = '<option value="">Sin receta asociada</option>';
+  recetas.forEach(r => {
+    const o = document.createElement('option');
+    o.value = r.id; o.textContent = `${r.nombre} (₡${Number(r.costo_porcion).toLocaleString('es-CR',{minimumFractionDigits:2})}/porción)`;
+    sel.appendChild(o);
+  });
+}
+
+function calcFC() {
+  const precio    = parseFloat(document.getElementById('m-precio').value) || 0;
+  const recetaId  = document.getElementById('m-receta').value;
+  const receta    = JSON.parse(localStorage.getItem('costos_recetas')||'[]').find(r=>r.id===recetaId);
+  const costo     = receta ? receta.costo_porcion : 0;
+  const fcEl      = document.getElementById('fc-display');
+  const costoEl   = document.getElementById('costo-receta-display');
+  const costoVal  = document.getElementById('costo-receta-val');
+
+  if (receta) {
+    costoEl.style.display = 'block';
+    costoVal.textContent  = '₡' + Number(costo).toLocaleString('es-CR',{minimumFractionDigits:2});
+  } else {
+    costoEl.style.display = 'none';
+  }
+
+  if (precio > 0 && costo > 0) {
+    const fc = (costo/precio)*100;
+    const col = fc <= 28 ? 'var(--green)' : fc <= 35 ? 'var(--amber)' : 'var(--red)';
+    fcEl.textContent = fc.toFixed(1) + '%';
+    fcEl.style.color = col;
+    fcEl.style.fontWeight = '700';
+  } else {
+    fcEl.textContent = receta ? 'Ingresá precio' : 'Asociá una receta';
+    fcEl.style.color = 'var(--muted)';
+    fcEl.style.fontWeight = '400';
+  }
+}
+
+function renderMenu() {
+  const busq = document.getElementById('search').value.toLowerCase();
+  const cat  = document.getElementById('f-cat').value;
+  let lista  = getPlatos().filter(p =>
+    (!busq || p.nombre.toLowerCase().includes(busq)) && (!cat || p.categoria === cat)
+  );
+
+  document.getElementById('status-msg').textContent = `${getPlatos().length} platos`;
+
+  if (!lista.length) {
+    document.getElementById('menu-container').innerHTML =
+      '<div class="empty">No hay platos. Agregá el primero con "+ Nuevo plato".</div>';
+    return;
+  }
+
+  const d = DISP_COLORS;
+  const cards = lista.map(p => {
+    const disp = DISP_COLORS[p.disponible] || DISP_COLORS['Disponible'];
+    return `<div class="plato-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div class="plato-nombre">${p.nombre}</div>
+          <div class="plato-cat">${p.categoria}</div>
+        </div>
+        <span style="font-size:11px;padding:3px 8px;border-radius:20px;background:${disp.bg};color:${disp.col};">${p.disponible}</span>
+      </div>
+      <div class="plato-precio">${fmt(p.precio)}</div>
+      ${p.costo_receta > 0 ? `
+        <div style="display:flex;gap:10px;margin-top:6px;font-size:12px;">
+          <span style="color:var(--muted);">Costo: <strong>₡${Number(p.costo_receta).toLocaleString('es-CR',{minimumFractionDigits:2})}</strong></span>
+          <span style="font-weight:700;color:${parseFloat(p.fc)<=28?'var(--green)':parseFloat(p.fc)<=35?'var(--amber)':'var(--red)'};">FC ${p.fc}%</span>
+        </div>` : ''}
+      ${p.descripcion ? `<div class="plato-desc">${p.descripcion}</div>` : ''}
+      <div class="plato-actions">
+        <button class="btn-edit" onclick="editar('${p.id}')">Editar</button>
+        <button class="btn-del"  onclick="eliminar('${p.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('menu-container').innerHTML = `<div class="menu-grid">${cards}</div>`;
+}
+
+async function guardar() {
+  const nombre      = document.getElementById('m-nombre').value.trim();
+  const categoria   = document.getElementById('m-categoria').value;
+  const precio      = parseFloat(document.getElementById('m-precio').value) || 0;
+  const disponible  = document.getElementById('m-disponible').value;
+  const descripcion = document.getElementById('m-descripcion').value.trim();
+  const recetaId    = document.getElementById('m-receta').value;
+  const editId      = document.getElementById('edit-id').value;
+
+  if (!nombre)   { showToast('Ingresá el nombre.', 'error'); return; }
+  if (!categoria){ showToast('Seleccioná una categoría.', 'error'); return; }
+  if (!precio)   { showToast('Ingresá el precio.', 'error'); return; }
+
+  const id = editId || 'PLT-' + Date.now();
+  const receta = JSON.parse(localStorage.getItem('costos_recetas')||'[]').find(r=>r.id===recetaId);
+  const costoReceta = receta ? receta.costo_porcion : 0;
+  const fc = precio > 0 && costoReceta > 0 ? ((costoReceta/precio)*100).toFixed(1) : null;
+  const registro = { id, nombre, categoria, precio, disponible, descripcion, receta_id: recetaId, costo_receta: costoReceta, fc };
+
+  const lista = getPlatos();
+  if (editId) {
+    const idx = lista.findIndex(p => p.id === editId);
+    if (idx > -1) lista[idx] = registro;
+  } else {
+    lista.push(registro);
+  }
+  savePlatos(lista);
+
+  if (APPS_SCRIPT_COSTOS) {
+    try { await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'plato', ...registro }) }) }); }
+    catch(e) {}
+  }
+
+  showToast(`${nombre} ${editId ? 'actualizado' : 'agregado al menú'}`, 'success');
+  limpiarForm();
+  switchTab('lista', document.querySelectorAll('.tab')[0]);
+  renderMenu();
+}
+
+function editar(id) {
+  const p = getPlatos().find(p => p.id === id);
+  if (!p) return;
+  document.getElementById('edit-id').value       = p.id;
+  document.getElementById('m-nombre').value      = p.nombre;
+  document.getElementById('m-categoria').value   = p.categoria;
+  document.getElementById('m-precio').value      = p.precio;
+  document.getElementById('m-disponible').value  = p.disponible;
+  document.getElementById('m-descripcion').value = p.descripcion || '';
+  document.getElementById('m-receta').value = p.receta_id || '';
+  document.getElementById('form-title').textContent = 'Editar plato';
+  poblarRecetas(); calcFC();
+  switchTab('nuevo', document.querySelectorAll('.tab')[1]);
+}
+
+async function eliminar(id) {
+  savePlatos(getPlatos().filter(p => p.id !== id));
+  if (APPS_SCRIPT_COSTOS) {
+    try { await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'eliminar', tipo:'menu', id }) }) }); }
+    catch(e) {}
+  }
+  renderMenu();
+  showToast('Plato eliminado', 'success');
+}
+
+function limpiarForm() {
+  document.getElementById('edit-id').value = '';
+  document.getElementById('m-nombre').value = '';
+  document.getElementById('m-categoria').value = '';
+  document.getElementById('m-precio').value = '';
+  document.getElementById('m-disponible').value = 'Disponible';
+  document.getElementById('m-descripcion').value = '';
+  document.getElementById('form-title').textContent = 'Nuevo plato';
+}
+
+function switchTab(tab, el) {
+  document.getElementById('tab-lista').style.display = tab==='lista' ? 'block':'none';
+  document.getElementById('tab-nuevo').style.display = tab==='nuevo' ? 'block':'none';
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  if (tab==='nuevo') poblarRecetas();
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').innerHTML = type==='success'
+    ? '<polyline points="3 8 7 12 13 4"/>'
+    : '<line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = `toast ${type}`;
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+renderMenu();
+</script>
+</body>
+</html>

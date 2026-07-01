@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Cierre de Caja · Grupo del Sol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#faf7f0;--surface:#f2ede2;--card:#ffffff;
+  --border:#c8ddd0;--border-h:#8ab89e;
+  --text:#1c3a28;--muted:#5a8a6a;--subtle:#a0c8b0;
+  --green:#1a7a4a;--green-bg:#eef8f2;--green-lt:#d0eedd;
+  --red:#c84a20;--red-bg:#fdf0eb;--red-lt:#f0c0a8;
+  --amber:#c87820;--amber-bg:#fdf6e3;--amber-lt:#f0d890;
+  --blue:#185fa5;--blue-bg:#eef4fb;
+  --radius:12px;--font-d:'Inter Tight',sans-serif;--font-b:'Inter',sans-serif;--font-m:'JetBrains Mono',monospace;
+}
+body{font-family:var(--font-b);background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+header{height:56px;border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;background:var(--bg);position:sticky;top:0;z-index:20}
+.nav-left{display:flex;align-items:center;gap:10px}
+.back-btn{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--muted);text-decoration:none;padding:5px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface);transition:color .15s,border-color .15s}
+.back-btn:hover{color:var(--text);border-color:var(--border-h)}
+.back-btn svg{width:13px;height:13px}
+.page-title{font-family:var(--font-d);font-size:14px;font-weight:700}
+.date-chip{font-size:11px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:3px 10px}
+
+.tabs{display:flex;gap:4px;padding:0 2rem;background:var(--bg);border-bottom:1px solid var(--border)}
+.tab-btn{font-size:13px;font-weight:500;padding:10px 16px;border:none;background:transparent;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;font-family:var(--font-b)}
+.tab-btn.active{color:var(--green);border-bottom-color:var(--green)}
+.tab-btn:hover:not(.active){color:var(--text)}
+
+main{max-width:860px;margin:0 auto;padding:2rem 2rem 5rem}
+.page{display:none}.page.active{display:block}
+
+/* Cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem}
+.card-title{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:1.25rem}
+
+/* Fields */
+.field{margin-bottom:1rem}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:13px;font-weight:500;color:var(--text);margin-bottom:5px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.req{color:var(--red);margin-left:2px}
+input[type=text],input[type=number],input[type=date],select,textarea{
+  width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-family:var(--font-b);font-size:14px;padding:9px 12px;
+  outline:none;appearance:none;transition:border-color .15s
+}
+input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(26,122,74,.08)}
+input::placeholder{color:var(--subtle)}
+input[type=number]{font-family:var(--font-m)}
+textarea{resize:vertical;min-height:70px;line-height:1.5}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;cursor:pointer}
+input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
+
+/* Turno */
+.turno-group{display:flex;gap:8px;margin-top:4px}
+.turno-opt{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:2px solid var(--border);border-radius:9px;padding:9px 12px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .15s;user-select:none}
+.turno-opt input[type=radio]{display:none}
+.turno-opt:hover{border-color:var(--border-h);color:var(--text)}
+.turno-opt.selected{border-color:var(--green);background:var(--green-bg);color:var(--green)}
+
+/* Denominaciones */
+.denom-section{border-top:1px solid var(--border);padding-top:1.25rem;margin-top:1.25rem}
+.denom-group-title{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem}
+.denom-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:1rem}
+.denom-item{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px}
+.denom-chip{font-size:11px;font-weight:600;font-family:var(--font-m);color:var(--muted);min-width:54px;text-align:center;padding:3px 6px;background:var(--card);border:1px solid var(--border);border-radius:5px}
+.denom-chip.billete{color:var(--blue);border-color:#c0d4f0}
+.denom-chip.moneda{color:var(--green);border-color:var(--green-lt)}
+.denom-chip.usd{color:#2e7d32;border-color:#c8e6c9}
+.denom-input{width:54px;padding:5px 8px;text-align:center;font-family:var(--font-m);font-size:13px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);outline:none}
+.denom-input:focus{border-color:var(--green)}
+.denom-sub{font-size:11px;font-family:var(--font-m);color:var(--muted);margin-left:auto;min-width:60px;text-align:right}
+
+/* Cuadre summary */
+.cuadre-card{background:var(--green-bg);border:1px solid var(--green-lt);border-radius:var(--radius);padding:1.25rem;margin-top:1rem}
+.cuadre-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px}
+.cuadre-row+.cuadre-row{border-top:1px solid var(--green-lt)}
+.cuadre-row label{color:var(--muted)}
+.cuadre-row .val{font-family:var(--font-m);font-weight:600;color:var(--text)}
+.cuadre-total{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:2px solid var(--green-lt);font-size:15px;font-weight:700}
+.cuadre-total .val{font-family:var(--font-m)}
+.diff-ok{color:var(--green)}.diff-warn{color:var(--red)}.diff-minor{color:var(--amber)}
+
+/* Submit area */
+.submit-area{display:flex;gap:10px;margin-top:1.5rem;flex-wrap:wrap}
+.btn-primary{flex:1;min-width:160px;background:var(--green);color:#fff;border:none;border-radius:9px;font-family:var(--font-d);font-size:15px;font-weight:700;padding:12px 24px;cursor:pointer;transition:opacity .15s}
+.btn-primary:hover{opacity:.9}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-secondary{padding:12px 16px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;cursor:pointer}
+.btn-secondary:hover{color:var(--text);border-color:var(--border-h)}
+.btn-wa{width:100%;background:#25D366;color:#fff;border:none;border-radius:9px;font-family:var(--font-d);font-size:15px;font-weight:700;padding:12px 24px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:opacity .15s;margin-top:10px}
+.btn-wa:hover{opacity:.9}
+.btn-wa:disabled{opacity:.35;cursor:not-allowed}
+
+/* Toast */
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(80px);background:var(--card);border:1px solid var(--border-h);border-radius:10px;padding:11px 18px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;z-index:100;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.08)}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.success{border-color:var(--green);color:var(--green)}
+.toast.error{border-color:var(--red);color:var(--red)}
+.toast svg{width:16px;height:16px;flex-shrink:0}
+
+/* Historial */
+.hist-filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.hist-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:8px;cursor:pointer;transition:border-color .12s}
+.hist-card:hover{border-color:var(--border-h)}
+.hist-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.hist-fecha{font-weight:600;font-size:13px}
+.hist-encargado{font-size:12px;color:var(--muted)}
+.hist-total{font-family:var(--font-m);font-size:16px;font-weight:700;color:var(--green)}
+.hist-row{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.hist-row span{display:flex;align-items:center;gap:4px}
+.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:2px 8px;border-radius:20px}
+.badge-t1{background:var(--blue-bg);color:var(--blue)}
+.badge-t2{background:var(--amber-bg);color:var(--amber)}
+.badge-ok{background:var(--green-bg);color:var(--green)}
+.badge-warn{background:var(--red-bg);color:var(--red)}
+.badge-minor{background:var(--amber-bg);color:var(--amber)}
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--subtle);font-size:13px}
+
+/* Config */
+.tc-row{display:flex;gap:8px;align-items:flex-end}
+.tc-row input{max-width:160px}
+
+/* USD section */
+.usd-section{border-top:1px solid var(--border);padding-top:1.25rem;margin-top:1.25rem}
+.tc-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;margin-bottom:12px}
+.tc-badge strong{color:var(--green);font-family:var(--font-m)}
+
+/* Resumen ventas antes de submit */
+.resumen-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;margin-top:1rem}
+.resumen-title{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem}
+.resumen-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px}
+.resumen-item{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);padding:3px 0}
+.resumen-item .v{font-family:var(--font-m);color:var(--text);font-weight:500}
+.resumen-total{display:flex;justify-content:space-between;align-items:center;padding:8px 0 0;margin-top:6px;border-top:1px solid var(--border);font-size:14px;font-weight:700}
+.resumen-total .v{font-family:var(--font-m);color:var(--green);font-size:16px}
+
+.status-bar{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.6rem 1.25rem;font-size:12px;color:var(--muted)}
+.conn-dot{width:7px;height:7px;border-radius:50%;background:var(--subtle);flex-shrink:0}
+.conn-dot.on{background:var(--green)}
+
+/* Fotos de respaldo */
+.foto-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.foto-label{font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px;display:block}
+.foto-box{border:2px dashed var(--border);border-radius:10px;padding:1rem;text-align:center;cursor:pointer;transition:border-color .15s;position:relative;min-height:130px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:var(--surface)}
+.foto-box:hover{border-color:var(--border-h)}
+.foto-box.has-img{border-style:solid;border-color:var(--green-lt);padding:0;overflow:hidden;min-height:150px}
+.foto-box img{width:100%;height:150px;object-fit:cover;display:block}
+.foto-icon{width:26px;height:26px;color:var(--subtle)}
+.foto-hint{font-size:11px;color:var(--muted);line-height:1.4}
+.foto-remove{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(20,30,25,.6);color:#fff;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;line-height:1}
+.foto-remove:hover{background:rgba(20,30,25,.85)}
+.foto-badge{position:absolute;bottom:6px;left:6px;background:rgba(20,30,25,.6);color:#fff;font-size:10px;font-weight:600;padding:3px 7px;border-radius:5px}
+.btn-secondary:disabled{opacity:.4;cursor:not-allowed}
+.ia-box{border-radius:10px;padding:.85rem 1rem;font-size:12px;line-height:1.6}
+.ia-box.ia-ok{background:var(--green-bg);border:1px solid var(--green-lt);color:var(--text)}
+.ia-box.ia-warn{background:var(--amber-bg);border:1px solid var(--amber-lt);color:var(--text)}
+.ia-box.ia-error{background:var(--red-bg);border:1px solid var(--red-lt);color:var(--text)}
+.ia-box .ia-title{font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.ia-conf{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;text-transform:uppercase}
+.ia-conf.alta{background:var(--green-lt);color:var(--green)}
+.ia-conf.media{background:var(--amber-lt);color:var(--amber)}
+.ia-conf.baja{background:var(--red-lt);color:var(--red)}
+
+@media(max-width:600px){
+  header{padding:0 1rem}main{padding:1.5rem 1rem 3rem}
+  .field-row,.field-row-3{grid-template-columns:1fr}
+  .denom-grid{grid-template-columns:1fr 1fr}
+  .turno-group{flex-direction:column}
+  .resumen-grid{grid-template-columns:1fr}
+  .foto-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Cierre de Caja</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab('form',this)">Registrar cierre</button>
+  <button class="tab-btn" onclick="showTab('historial',this)">Historial</button>
+  <button class="tab-btn" onclick="showTab('config',this)">Configuración</button>
+  <a href="mantenimiento.html" class="tab-btn" style="text-decoration:none;display:inline-flex;align-items:center">🔧 Mantenimiento ↗</a>
+</div>
+
+<main>
+
+<!-- ── TAB REGISTRO ── -->
+<div class="page active" id="tab-form">
+
+  <div class="card">
+    <p class="card-title">Identificación</p>
+    <div class="field-row">
+      <div class="field">
+        <label for="f-encargado">Encargado <span class="req">*</span></label>
+        <select id="f-encargado">
+          <option value="" disabled selected>Cargando...</option>
+        </select>
+        <div id="enc-error" style="display:none;font-size:12px;color:var(--red);margin-top:5px;">
+          <span id="enc-error-msg"></span>
+          <a href="javascript:void(0)" onclick="cargarEncargados()" style="color:var(--green);font-weight:600;margin-left:4px;">Reintentar</a>
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-fecha">Fecha <span class="req">*</span></label>
+        <input type="date" id="f-fecha"/>
+      </div>
+    </div>
+    <div class="field">
+      <label>Turno</label>
+      <div class="turno-group">
+        <label class="turno-opt" id="turno-1">
+          <input type="radio" name="turno" value="Turno 1" onchange="selectTurno(this)"/>
+          <span>🌅 Turno 1</span>
+        </label>
+        <label class="turno-opt" id="turno-2">
+          <input type="radio" name="turno" value="Turno 2" onchange="selectTurno(this)"/>
+          <span>🌙 Turno 2</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Evidencia fotográfica</p>
+    <div class="foto-grid">
+      <div class="field">
+        <label class="foto-label">Foto cierre del sistema</label>
+        <div class="foto-box" id="foto-box-sistema" onclick="document.getElementById('input-foto-sistema').click()">
+          <svg class="foto-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-2h6l2 2h3v12H4V7z"/><circle cx="12" cy="13" r="3.5"/></svg>
+          <span class="foto-hint">Tocá para tomar o subir foto del sistema</span>
+        </div>
+        <input type="file" id="input-foto-sistema" accept="image/*" capture="environment" style="display:none"/>
+      </div>
+      <div class="field">
+        <label class="foto-label">Foto cierre del datáfono</label>
+        <div class="foto-box" id="foto-box-datafono" onclick="document.getElementById('input-foto-datafono').click()">
+          <svg class="foto-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-2h6l2 2h3v12H4V7z"/><circle cx="12" cy="13" r="3.5"/></svg>
+          <span class="foto-hint">Tocá para tomar o subir foto del datáfono</span>
+        </div>
+        <input type="file" id="input-foto-datafono" accept="image/*" capture="environment" style="display:none"/>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-top:.75rem">Las fotos son opcionales y quedan como respaldo del cierre. Si no las tenés a mano, podés completar todo el formulario manualmente.</p>
+    <button class="btn-secondary" id="btn-extraer-ia" onclick="extraerConIA()" disabled style="margin-top:12px;width:100%">🪄 Extraer datos con IA</button>
+    <div id="ia-resultado" style="display:none;margin-top:10px"></div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Ventas del día</p>
+    <div class="field-row">
+      <div class="field">
+        <label for="f-efectivo">Ventas en Efectivo (₡)</label>
+        <input type="number" id="f-efectivo" placeholder="0" min="0" oninput="actualizarResumen();calcCuadre()"/>
+      </div>
+      <div class="field">
+        <label for="f-tarjeta">Ventas con Tarjeta (₡)</label>
+        <input type="number" id="f-tarjeta" placeholder="0" min="0" oninput="actualizarResumen()"/>
+      </div>
+      <div class="field">
+        <label for="f-sinpe">Transferencia / SINPE (₡)</label>
+        <input type="number" id="f-sinpe" placeholder="0" min="0" oninput="actualizarResumen()"/>
+      </div>
+      <div class="field">
+        <label for="f-credito">Ventas a Crédito (₡)</label>
+        <input type="number" id="f-credito" placeholder="0" min="0" oninput="actualizarResumen()"/>
+      </div>
+      <div class="field">
+        <label for="f-plataformas">Ventas por Plataformas (₡)</label>
+        <input type="number" id="f-plataformas" placeholder="0" min="0" oninput="actualizarResumen()"/>
+        <input type="text" id="f-plataformas-desc" placeholder="Ej: Uber Eats, Rappi…" style="margin-top:5px;font-size:12px;padding:6px 10px"/>
+      </div>
+      <div class="field">
+        <label for="f-servicio">10% Servicio (₡)</label>
+        <input type="number" id="f-servicio" placeholder="0" min="0" oninput="actualizarResumen()"/>
+      </div>
+      <div class="field">
+        <label for="f-otras">Otras Ventas (₡)</label>
+        <input type="number" id="f-otras" placeholder="0" min="0" oninput="actualizarResumen()"/>
+      </div>
+    </div>
+
+    <!-- USD -->
+    <div class="usd-section">
+      <p class="denom-group-title">💵 Ventas en Dólares</p>
+      <div class="tc-badge">TC: <strong id="tc-display">—</strong> ₡/$</div>
+      <div class="field-row-3">
+        <div class="field">
+          <label for="f-usd-efectivo">Efectivo ($)</label>
+          <input type="number" id="f-usd-efectivo" placeholder="0.00" min="0" step="0.01" oninput="calcDolares();actualizarResumen()"/>
+        </div>
+        <div class="field">
+          <label for="f-usd-tarjeta">Tarjeta ($)</label>
+          <input type="number" id="f-usd-tarjeta" placeholder="0.00" min="0" step="0.01" oninput="calcDolares();actualizarResumen()"/>
+        </div>
+        <div class="field">
+          <label>Total $ en colones</label>
+          <input type="text" id="f-usd-total-crc" placeholder="₡0" readonly/>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumen ventas -->
+    <div class="resumen-card" id="resumen-ventas">
+      <p class="resumen-title">Resumen de ventas</p>
+      <div class="resumen-grid" id="resumen-grid"></div>
+      <div class="resumen-total">
+        <span>Total ventas</span>
+        <span class="v" id="resumen-total">₡0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Cuadre de Caja</p>
+    <div class="field" style="max-width:220px">
+      <label for="f-fondo">Fondo de Caja Inicial (₡)</label>
+      <input type="number" id="f-fondo" placeholder="0" min="0" oninput="calcCuadre()"/>
+    </div>
+
+    <!-- Denominaciones CRC -->
+    <div class="denom-section">
+      <p class="denom-group-title">Billetes (₡)</p>
+      <div class="denom-grid">
+        <div class="denom-item"><span class="denom-chip billete">₡50.000</span><span style="color:var(--muted);font-size:12px">×</span><input class="denom-input" type="number" id="d-50000" min="0" placeholder="0" oninput="calcCuadre()"/><span class="denom-sub" id="s-50000">₡0</span></div>
+        <div class="denom-item"><span class="denom-chip billete">₡20.000</span><span style="color:var(--muted);font-size:12px">×</span><input class="denom-input" type="number" id="d-20000" min="0" placeholder="0" oninput="calcCuadre()"/><span class="denom-sub" id="s-20000">₡0</span></div>
+        <div class="denom-item"><span class="denom-chip billete">₡10.000</span><span style="color:var(--muted);font-size:12px">×</span><input class="denom-input" type="number" id="d-10000" min="0" placeholder="0" oninput="calcCuadre()"/><span class="denom-sub" id="s-10000">₡0</span></div>
+        <div class="denom-item"><span class="denom-chip billete">₡5.000</span><span style="color:var(--muted);font-size:12px">×</span><input class="denom-input" type="number" id="d-5000" min="0" placeholder="0" oninput="calcCuadre()"/><span class="denom-sub" id="s-5000">₡0</span></div>
+        <div class="denom-item"><span class="denom-chip billete">₡2.000</span><span style="color:var(--muted);font-size:12px">×</span><input class="denom-input" type="number" id="d-2000" min="0" placeholder="0" oninput="calcCuadre()"/><span class="denom-sub" id="s-2000">₡0</span></div>
+        <div class="denom-item"><span class="denom-chip billete">₡1.000</span><span style="color:var(--muted);font-size:12px">×</span><input class="denom-input" type="number" id="d-1000" min="0" placeholder="0" oninput="calcCuadre()"/><span class="denom-sub" id="s-1000">₡0</span></div>
+      </div>
+
+      <p class="denom-group-title">Monedas (₡)</p>
+      <div class="denom-grid">
+        <div class="denom-item"><span class="denom-chip moneda">₡500</span><span style="color:var(--muted);font-size:12px">×</span><input class="denom-input" type="number" id="d-500" min="0" placeholder="0" oninput="calcCuadre()"/><span class="denom-sub" id="s-500">₡0</span></div>
+        <div class="denom-item"><span class="denom-chip moneda">₡100</span><span style="color:var(--muted);font-size:12px">×</span><input class="denom-input" type="number" id="d-100" min="0" placeholder="0" oninput="calcCuadre()"/><span class="denom-sub" id="s-100">₡0</span></div>
+        <div class="denom-item"><span class="denom-chip moneda">₡50</span><span style="color:var(--muted);font-size:12px">×</span><input class="denom-input" type="number" id="d-50" min="0" placeholder="0" oninput="calcCuadre()"/><span class="denom-sub" id="s-50">₡0</span></div>
+        <div class="denom-item"><span class="denom-chip moneda">₡25</span><span style="color:var(--muted);font-size:12px">×</span><input class="denom-input" type="number" id="d-25" min="0" placeholder="0" oninput="calcCuadre()"/><span class="denom-sub" id="s-25">₡0</span></div>
+        <div class="denom-item"><span class="denom-chip moneda">₡10</span><span style="color:var(--muted);font-size:12px">×</span><input class="denom-input" type="number" id="d-10" min="0" placeholder="0" oninput="calcCuadre()"/><span class="denom-sub" id="s-10">₡0</span></div>
+        <div class="denom-item"><span class="denom-chip moneda">₡5</span><span style="color:var(--muted);font-size:12px">×</span><input class="denom-input" type="number" id="d-5" min="0" placeholder="0" oninput="calcCuadre()"/><span class="denom-sub" id="s-5">₡0</span></div>
+      </div>
+
+      <p class="denom-group-title" style="margin-top:.25rem">Billetes ($)</p>
+      <div class="denom-grid">
+        <div class="denom-item"><span class="denom-chip usd">$100</span><span style="color:var(--muted);font-size:12px">×</span><input class="denom-input" type="number" id="d-usd100" min="0" placeholder="0" oninput="calcCuadre()"/><span class="denom-sub" id="s-usd100">$0</span></div>
+        <div class="denom-item"><span class="denom-chip usd">$50</span><span style="color:var(--muted);font-size:12px">×</span><input class="denom-input" type="number" id="d-usd50" min="0" placeholder="0" oninput="calcCuadre()"/><span class="denom-sub" id="s-usd50">$0</span></div>
+        <div class="denom-item"><span class="denom-chip usd">$20</span><span style="color:var(--muted);font-size:12px">×</span><input class="denom-input" type="number" id="d-usd20" min="0" placeholder="0" oninput="calcCuadre()"/><span class="denom-sub" id="s-usd20">$0</span></div>
+        <div class="denom-item"><span class="denom-chip usd">$10</span><span style="color:var(--muted);font-size:12px">×</span><input class="denom-input" type="number" id="d-usd10" min="0" placeholder="0" oninput="calcCuadre()"/><span class="denom-sub" id="s-usd10">$0</span></div>
+        <div class="denom-item"><span class="denom-chip usd">$5</span><span style="color:var(--muted);font-size:12px">×</span><input class="denom-input" type="number" id="d-usd5" min="0" placeholder="0" oninput="calcCuadre()"/><span class="denom-sub" id="s-usd5">$0</span></div>
+        <div class="denom-item"><span class="denom-chip usd">$1</span><span style="color:var(--muted);font-size:12px">×</span><input class="denom-input" type="number" id="d-usd1" min="0" placeholder="0" oninput="calcCuadre()"/><span class="denom-sub" id="s-usd1">$0</span></div>
+      </div>
+    </div>
+
+    <!-- Resultado cuadre -->
+    <div class="cuadre-card">
+      <div class="cuadre-row"><label>Total contado en caja</label><span class="val" id="cuadre-total">₡0</span></div>
+      <div class="cuadre-row"><label>Fondo de caja inicial</label><span class="val" id="cuadre-fondo">₡0</span></div>
+      <div class="cuadre-row"><label>Efectivo esperado (ventas)</label><span class="val" id="cuadre-esperado">₡0</span></div>
+      <div class="cuadre-row" id="usd-diff-row" style="display:none">
+        <label>💵 Diferencia USD</label>
+        <span class="val" id="cuadre-usd-diff">$0.00</span>
+      </div>
+      <div class="cuadre-total">
+        <span>Diferencia de caja (₡)</span>
+        <span class="val" id="cuadre-diff">₡0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Observaciones</p>
+    <div class="field">
+      <textarea id="f-obs" rows="3" placeholder="Incidencias, devoluciones, notas del turno…"></textarea>
+    </div>
+  </div>
+
+  <div class="submit-area">
+    <button class="btn-secondary" onclick="limpiarForm()">Limpiar</button>
+    <button class="btn-primary" id="btn-submit" onclick="submitCierre()">Guardar cierre ✓</button>
+  </div>
+
+  <div id="wa-section" style="display:none;margin-top:12px">
+    <div id="wa-buttons"></div>
+  </div>
+
+</div><!-- /tab-form -->
+
+
+<!-- ── TAB HISTORIAL ── -->
+<div class="page" id="tab-historial">
+  <div class="hist-filters">
+    <input type="text" id="hist-buscar" placeholder="Buscar encargado…" style="width:180px" oninput="renderHistorial()"/>
+    <select id="hist-turno" onchange="renderHistorial()" style="width:130px">
+      <option value="">Todos los turnos</option>
+      <option value="Turno 1">Turno 1</option>
+      <option value="Turno 2">Turno 2</option>
+    </select>
+    <button class="btn-secondary" onclick="cargarHistorial()" style="padding:8px 14px;font-size:12px">↻ Actualizar</button>
+    <span style="font-size:12px;color:var(--muted);margin-left:auto" id="hist-count"></span>
+  </div>
+  <div id="hist-lista">
+    <div class="empty-state">Cargando historial…</div>
+  </div>
+</div>
+
+
+<!-- ── TAB CONFIGURACIÓN ── -->
+<div class="page" id="tab-config">
+  <div class="card">
+    <p class="card-title">Tipo de Cambio</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1rem">Tipo de cambio del día (₡ por $1). Se aplica para convertir ventas en dólares.</p>
+    <div class="tc-row">
+      <div class="field" style="margin-bottom:0">
+        <label for="cfg-tc">₡ por $1</label>
+        <input type="number" id="cfg-tc" placeholder="Ej: 520" min="1" step="0.01" style="max-width:160px"/>
+      </div>
+      <button class="btn-primary" onclick="guardarTC()" style="margin-top:22px;flex:0;min-width:auto;padding:9px 20px;font-size:13px">Guardar</button>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────
+const SHEETS_URL      = 'TODO_APPS_SCRIPT_CIERRES_LORITO';
+const APPS_SCRIPT_RRHH = 'TODO_APPS_SCRIPT_RRHH_LORITO';
+const EXTRACTOR_URL   = ''; // pegar acá la URL /exec del proyecto "cierre-extractor" una vez desplegado
+const PUNTO_VENTA     = 'Lorito'; // valor fijo, sin selección en UI
+
+// ── DENOMINACIONES ────────────────────────────────────────────────
+const DENOMS_CRC = [50000,20000,10000,5000,2000,1000,500,100,50,25,10,5];
+const DENOMS_USD = [
+  {id:'usd100',val:100},{id:'usd50',val:50},{id:'usd20',val:20},
+  {id:'usd10',val:10},{id:'usd5',val:5},{id:'usd1',val:1}
+];
+
+// ── HISTORIAL LOCAL ───────────────────────────────────────────────
+let historialData = [];
+
+// ── FOTOS DE RESPALDO ────────────────────────────────────────────
+const fotos = { sistema: null, datafono: null }; // {base64, mime, nombre}
+
+function comprimirImagen(file, maxDim = 1600, calidad = 0.82) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const ratio = Math.min(maxDim / width, maxDim / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', calidad);
+        resolve({ base64: dataUrl.split(',')[1], mime: 'image/jpeg' });
+      };
+      img.onerror = () => reject(new Error('No se pudo leer la imagen'));
+      img.src = reader.result;
+    };
+    reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleFotoSelect(key, file) {
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showToast('Seleccioná una imagen válida', 'error'); return; }
+  try {
+    const { base64, mime } = await comprimirImagen(file);
+    fotos[key] = { base64, mime, nombre: file.name };
+    renderFotoBox(key);
+    actualizarBtnExtraer();
+  } catch (e) {
+    showToast('No se pudo procesar la imagen', 'error');
+  }
+}
+
+function actualizarBtnExtraer() {
+  const btn = document.getElementById('btn-extraer-ia');
+  if (btn) btn.disabled = !(fotos.sistema || fotos.datafono);
+}
+
+function fotoBoxPlaceholder(key) {
+  const label = key === 'sistema' ? 'del sistema' : 'del datáfono';
+  return `<svg class="foto-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-2h6l2 2h3v12H4V7z"/><circle cx="12" cy="13" r="3.5"/></svg>
+    <span class="foto-hint">Tocá para tomar o subir foto ${label}</span>`;
+}
+
+function renderFotoBox(key) {
+  const box = document.getElementById('foto-box-' + key);
+  const f = fotos[key];
+  if (!f) {
+    box.classList.remove('has-img');
+    box.innerHTML = fotoBoxPlaceholder(key);
+    return;
+  }
+  box.classList.add('has-img');
+  box.innerHTML = `<img src="data:${f.mime};base64,${f.base64}" alt="Foto ${key}"/>
+    <button type="button" class="foto-remove" onclick="event.stopPropagation();quitarFoto('${key}')">✕</button>
+    <span class="foto-badge">✓ Cargada</span>`;
+}
+
+function quitarFoto(key) {
+  fotos[key] = null;
+  const input = document.getElementById('input-foto-' + key);
+  if (input) input.value = '';
+  renderFotoBox(key);
+  actualizarBtnExtraer();
+}
+
+// ── EXTRACCIÓN CON IA ────────────────────────────────────────────
+async function extraerConIA() {
+  if (!EXTRACTOR_URL) {
+    showToast('Falta configurar EXTRACTOR_URL', 'error');
+    return;
+  }
+  if (!fotos.sistema && !fotos.datafono) {
+    showToast('Subí al menos una foto primero', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btn-extraer-ia');
+  const resultBox = document.getElementById('ia-resultado');
+  btn.disabled = true;
+  const textoOriginal = btn.textContent;
+  btn.textContent = 'Extrayendo…';
+  resultBox.style.display = 'none';
+
+  try {
+    const resp = await fetch(EXTRACTOR_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        fotoSistema: fotos.sistema ? fotos.sistema.base64 : '',
+        fotoSistemaMime: fotos.sistema ? fotos.sistema.mime : '',
+        fotoDatafono: fotos.datafono ? fotos.datafono.base64 : '',
+        fotoDatafonoMime: fotos.datafono ? fotos.datafono.mime : '',
+      })
+    });
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error || 'Error desconocido');
+    aplicarExtraccionIA(json.data);
+    showToast('Datos extraídos — revisá antes de guardar');
+  } catch (e) {
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = `<div class="ia-box ia-error"><div class="ia-title">⚠️ No se pudo extraer</div>${e.message} — completá los campos manualmente.</div>`;
+    showToast('Error al extraer — completá manualmente', 'error');
+  } finally {
+    btn.disabled = !(fotos.sistema || fotos.datafono);
+    btn.textContent = textoOriginal;
+  }
+}
+
+function aplicarExtraccionIA(d) {
+  const setIfNum = (id, val) => {
+    const el = document.getElementById(id);
+    if (el && typeof val === 'number') el.value = val || '';
+  };
+  setIfNum('f-efectivo', d.ventasEfectivo);
+  setIfNum('f-tarjeta', d.ventasTarjeta);
+  setIfNum('f-credito', d.ventasCredito);
+  setIfNum('f-sinpe', d.ventasSinpe);
+  setIfNum('f-otras', d.ventasOtros);
+  setIfNum('f-servicio', d.propinaTotal);
+  actualizarResumen(); calcCuadre();
+
+  const resultBox = document.getElementById('ia-resultado');
+  resultBox.style.display = 'block';
+  const conf = (d.confianza || 'media').toLowerCase();
+  const tieneDif = Math.abs(d.diferenciaTarjetaVsDatafono || 0) > 500;
+  const tipo = tieneDif ? 'ia-warn' : 'ia-ok';
+  resultBox.innerHTML = `
+    <div class="ia-box ${tipo}">
+      <div class="ia-title">✓ Extraído${d.puntoVenta ? ' — ' + d.puntoVenta : ''} <span class="ia-conf ${conf}">${conf}</span></div>
+      ${d.datafonoTotalGlobal != null ? `Datáfono: ₡${Math.round(d.datafonoTotalGlobal).toLocaleString('es-CR')}${tieneDif ? ` · ⚠️ diferencia vs. tarjeta del sistema: ₡${Math.round(d.diferenciaTarjetaVsDatafono).toLocaleString('es-CR')}` : ' · cuadra con tarjeta ✓'}<br/>` : ''}
+      ${d.notas ? `📝 ${d.notas}` : ''}
+      <div style="margin-top:4px;color:var(--muted)">Revisá los montos antes de guardar.</div>
+    </div>`;
+}
+
+// ── TABS ──────────────────────────────────────────────────────────
+function showTab(tab, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  el.classList.add('active');
+  if (tab === 'historial') cargarHistorial();
+  if (tab === 'config') {
+    const tc = getTC();
+    if (tc > 0) document.getElementById('cfg-tc').value = tc;
+  }
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').innerHTML = type === 'success'
+    ? '<polyline points="3 8 7 12 13 4"/>'
+    : '<line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = `toast ${type}`;
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── TIPO DE CAMBIO ────────────────────────────────────────────────
+function getTC() { return parseFloat(localStorage.getItem('cierre_tc') || '0') || 0; }
+function guardarTC() {
+  const val = parseFloat(document.getElementById('cfg-tc').value);
+  if (!val || val < 1) { showToast('Ingresá un tipo de cambio válido', 'error'); return; }
+  localStorage.setItem('cierre_tc', val);
+  updateTCDisplay();
+  showToast('Tipo de cambio guardado: ₡' + val.toLocaleString('es-CR') + ' por $1');
+}
+function updateTCDisplay() {
+  const tc = getTC();
+  const el = document.getElementById('tc-display');
+  if (el) el.textContent = tc > 0 ? tc.toLocaleString('es-CR') : 'No configurado';
+}
+
+// ── ENCARGADOS DESDE RRHH ─────────────────────────────────────────
+async function cargarEncargados() {
+  const sel = document.getElementById('f-encargado');
+  const errBox = document.getElementById('enc-error');
+  const errMsg = document.getElementById('enc-error-msg');
+  sel.innerHTML = '<option value="" disabled selected>Cargando…</option>';
+  errBox.style.display = 'none';
+  try {
+    const resp = await fetch(APPS_SCRIPT_RRHH + '?modulo=personal');
+    if (!resp.ok) throw new Error('Error ' + resp.status);
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Sin datos');
+    const activos = (data.registros || []).filter(p =>
+      (p['Estado'] || '').toString().toUpperCase() === 'ACTIVO'
+    ).map(p => p['Nombre completo'] || ((p['Nombre']||'') + ' ' + (p['Apellidos']||'')).trim())
+     .filter(Boolean)
+     .sort((a, b) => a.localeCompare(b));
+    sel.innerHTML = '<option value="" disabled selected>Seleccioná un encargado…</option>'
+      + activos.map(n => `<option>${n}</option>`).join('');
+    if (!activos.length) sel.innerHTML = '<option value="" disabled selected>Sin colaboradores activos</option>';
+  } catch(e) {
+    sel.innerHTML = '<option value="" disabled selected>Error al cargar</option>';
+    errMsg.textContent = 'No se pudo conectar con RRHH (' + e.message + ').';
+    errBox.style.display = 'block';
+  }
+}
+
+// ── TURNO ─────────────────────────────────────────────────────────
+function selectTurno(radio) {
+  document.querySelectorAll('.turno-opt').forEach(l => l.classList.remove('selected'));
+  radio.closest('.turno-opt').classList.add('selected');
+}
+function getTurno() {
+  const r = document.querySelector('input[name="turno"]:checked');
+  return r ? r.value : '';
+}
+function resetTurno() {
+  document.querySelectorAll('input[name="turno"]').forEach(r => r.checked = false);
+  document.querySelectorAll('.turno-opt').forEach(l => l.classList.remove('selected'));
+}
+
+// ── TOTALES ───────────────────────────────────────────────────────
+function getTotales() {
+  const v = id => parseFloat(document.getElementById(id)?.value) || 0;
+  const tc = getTC();
+  const usdE = v('f-usd-efectivo'), usdT = v('f-usd-tarjeta');
+  const usdTotalCrc = Math.round((usdE + usdT) * tc);
+  const efectivo    = v('f-efectivo');
+  const tarjeta     = v('f-tarjeta');
+  const sinpe       = v('f-sinpe');
+  const otras       = v('f-otras');
+  const credito     = v('f-credito');
+  const plataformas = v('f-plataformas');
+  const servicio    = v('f-servicio');
+  const totalVentas = efectivo + tarjeta + sinpe + otras + credito + plataformas + servicio + usdTotalCrc;
+  return {efectivo,tarjeta,sinpe,otras,credito,plataformas,servicio,usdE,usdT,tc,usdTotalCrc,totalVentas};
+}
+
+function actualizarResumen() {
+  const t = getTotales();
+  const items = [
+    ['Efectivo ₡', t.efectivo],['Tarjeta ₡', t.tarjeta],
+    ['SINPE ₡', t.sinpe],['Crédito ₡', t.credito],
+    ['Plataformas ₡', t.plataformas],['10% Servicio ₡', t.servicio],
+    ['Otras ₡', t.otras],['USD en ₡', t.usdTotalCrc],
+  ].filter(([,v]) => v > 0);
+
+  const grid = document.getElementById('resumen-grid');
+  grid.innerHTML = items.map(([lbl,val]) =>
+    `<div class="resumen-item"><span>${lbl}</span><span class="v">${fmtCRC(val)}</span></div>`
+  ).join('');
+  document.getElementById('resumen-total').textContent = fmtCRC(t.totalVentas);
+}
+
+function calcDolares() {
+  const tc = getTC();
+  const usdE = parseFloat(document.getElementById('f-usd-efectivo')?.value) || 0;
+  const usdT = parseFloat(document.getElementById('f-usd-tarjeta')?.value) || 0;
+  const total = (usdE + usdT) * tc;
+  document.getElementById('f-usd-total-crc').value =
+    tc > 0 ? '₡' + Math.round(total).toLocaleString('es-CR') : '(configure TC)';
+}
+
+function calcCuadre() {
+  let total = 0;
+  DENOMS_CRC.forEach(d => {
+    const qty = parseInt(document.getElementById('d-'+d)?.value) || 0;
+    const sub = qty * d;
+    total += sub;
+    const el = document.getElementById('s-'+d);
+    if (el) el.textContent = '₡' + sub.toLocaleString('es-CR');
+  });
+
+  let totalUsd = 0;
+  DENOMS_USD.forEach(({id,val}) => {
+    const qty = parseInt(document.getElementById('d-'+id)?.value) || 0;
+    const sub = qty * val;
+    totalUsd += sub;
+    const el = document.getElementById('s-'+id);
+    if (el) el.textContent = '$' + sub;
+  });
+
+  const efectivo = parseFloat(document.getElementById('f-efectivo')?.value) || 0;
+  const fondo    = parseFloat(document.getElementById('f-fondo')?.value) || 0;
+  const esperado = efectivo + fondo;
+  const diff     = total - esperado;
+  const usdEfectivo = parseFloat(document.getElementById('f-usd-efectivo')?.value) || 0;
+  const usdDiff  = totalUsd - usdEfectivo;
+
+  document.getElementById('cuadre-total').textContent   = fmtCRC(total);
+  document.getElementById('cuadre-fondo').textContent   = fmtCRC(fondo);
+  document.getElementById('cuadre-esperado').textContent= fmtCRC(Math.max(0, esperado));
+
+  const diffEl = document.getElementById('cuadre-diff');
+  diffEl.textContent = (diff >= 0 ? '+' : '') + fmtCRC(diff);
+  diffEl.className = 'val ' + (diff === 0 ? 'diff-ok' : Math.abs(diff) <= 500 ? 'diff-minor' : 'diff-warn');
+
+  const usdRow  = document.getElementById('usd-diff-row');
+  const usdDiffEl = document.getElementById('cuadre-usd-diff');
+  if (usdEfectivo > 0 || totalUsd > 0) {
+    usdRow.style.display = 'flex';
+    usdDiffEl.textContent = (usdDiff >= 0 ? '+' : '') + '$' + usdDiff.toFixed(2);
+    usdDiffEl.className = 'val ' + (usdDiff === 0 ? 'diff-ok' : Math.abs(usdDiff) <= 1 ? 'diff-minor' : 'diff-warn');
+  } else {
+    usdRow.style.display = 'none';
+  }
+}
+
+// ── SUBMIT ────────────────────────────────────────────────────────
+async function submitCierre() {
+  const encargado = document.getElementById('f-encargado').value.trim();
+  const turno = getTurno();
+  if (!encargado) { showToast('Seleccioná un encargado', 'error'); return; }
+  if (!turno)     { showToast('Seleccioná el turno', 'error'); return; }
+
+  const {efectivo,tarjeta,sinpe,otras,credito,plataformas,servicio,usdE,usdT,tc,usdTotalCrc,totalVentas} = getTotales();
+  const fondo = parseFloat(document.getElementById('f-fondo').value) || 0;
+  const obs   = document.getElementById('f-obs').value.trim();
+  const plataformasDesc = document.getElementById('f-plataformas-desc').value.trim();
+  const fecha = document.getElementById('f-fecha').value || hoy();
+
+  const denomDetalle = {};
+  let caja = 0;
+  DENOMS_CRC.forEach(d => {
+    const qty = parseInt(document.getElementById('d-'+d)?.value) || 0;
+    denomDetalle[d] = qty;
+    caja += qty * d;
+  });
+  const usdDenomDetalle = Object.fromEntries(DENOMS_USD.map(({id,val}) => [id, parseInt(document.getElementById('d-'+id)?.value)||0]));
+  const usdCajaTotalContado = DENOMS_USD.reduce((s,{id,val}) => s+(parseInt(document.getElementById('d-'+id)?.value)||0)*val, 0);
+  const diferencia = caja - (efectivo + fondo);
+
+  const payload = {
+    id: Date.now(),
+    fecha, hora: new Date().toLocaleTimeString('es-CR',{hour:'2-digit',minute:'2-digit'}),
+    punto: PUNTO_VENTA, encargado, turno,
+    efectivo, tarjeta, sinpe, otras, credito, plataformas, plataformasDesc, servicio,
+    totalVentas, fondo, caja, diferencia, obs,
+    usdEfectivo: usdE, usdTarjeta: usdT, tc, usdTotalCrc,
+    d50000: denomDetalle[50000]||0, d20000: denomDetalle[20000]||0,
+    d10000: denomDetalle[10000]||0, d5000: denomDetalle[5000]||0,
+    d2000: denomDetalle[2000]||0,   d1000: denomDetalle[1000]||0,
+    d500: denomDetalle[500]||0,     d100: denomDetalle[100]||0,
+    d50: denomDetalle[50]||0,       d25: denomDetalle[25]||0,
+    d10: denomDetalle[10]||0,       d5: denomDetalle[5]||0,
+    usdD100: usdDenomDetalle.usd100||0, usdD50: usdDenomDetalle.usd50||0,
+    usdD20:  usdDenomDetalle.usd20||0,  usdD10: usdDenomDetalle.usd10||0,
+    usdD5:   usdDenomDetalle.usd5||0,   usdD1:  usdDenomDetalle.usd1||0,
+    usdCajaTotalContado,
+    cajaTotalContada: caja, fondoCajaInicial: fondo,
+    efectivoEsperado: efectivo + fondo, diferenciaColones: diferencia,
+    usdTotalContado: usdCajaTotalContado, usdReportadoVentas: usdE,
+    diferenciaUsd: usdCajaTotalContado - usdE,
+    fotoSistema: fotos.sistema ? fotos.sistema.base64 : '',
+    fotoSistemaMime: fotos.sistema ? fotos.sistema.mime : '',
+    fotoDatafono: fotos.datafono ? fotos.datafono.base64 : '',
+    fotoDatafonoMime: fotos.datafono ? fotos.datafono.mime : '',
+  };
+
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true; btn.textContent = 'Guardando…';
+
+  try {
+    await fetch(SHEETS_URL, {
+      method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify(payload)
+    });
+    showToast('Cierre guardado correctamente');
+    mostrarWhatsApp(payload);
+    limpiarForm();
+  } catch(e) {
+    showToast('Error al guardar — revisá la conexión', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Guardar cierre ✓';
+  }
+}
+
+// ── WHATSAPP ──────────────────────────────────────────────────────
+const WA_NUMERO_DEFAULT = '50688301564';
+
+function buildWAMessage(r) {
+  const fecha = new Date((r.fecha||hoy())+'T12:00:00').toLocaleDateString('es-CR',{day:'numeric',month:'long',year:'numeric'});
+  const difSigno = r.diferencia >= 0 ? '+' : '';
+  const difEmoji = Math.abs(r.diferencia) <= 500 ? '✅' : '⚠️';
+  return `📊 *Cierre de Caja — ${r.punto}*
+📅 ${fecha} | 🕐 ${r.hora}
+👤 ${r.encargado} · ${r.turno}
+
+💰 *Ventas del Día*
+• Efectivo: ₡${(r.efectivo||0).toLocaleString('es-CR')}
+• Tarjeta: ₡${(r.tarjeta||0).toLocaleString('es-CR')}
+• SINPE: ₡${(r.sinpe||0).toLocaleString('es-CR')}${r.credito?`\n• Crédito: ₡${r.credito.toLocaleString('es-CR')}`:''}${r.plataformas?`\n• Plataformas: ₡${r.plataformas.toLocaleString('es-CR')}${r.plataformasDesc?' ('+r.plataformasDesc+')':''}`:''}${r.servicio?`\n• 10% Servicio: ₡${r.servicio.toLocaleString('es-CR')}`:''}${r.otras?`\n• Otras: ₡${r.otras.toLocaleString('es-CR')}`:''}
+• *Total: ₡${(r.totalVentas||0).toLocaleString('es-CR')}*${(r.usdEfectivo||r.usdTarjeta)?`\n• 💵 USD: $${((r.usdEfectivo||0)+(r.usdTarjeta||0)).toFixed(2)} (TC: ₡${(r.tc||0).toLocaleString('es-CR')})`:''}
+
+🏧 *Cuadre de Caja*
+• Caja contada: ₡${(r.caja||0).toLocaleString('es-CR')}
+• ${difEmoji} Diferencia: ${difSigno}₡${(r.diferencia||0).toLocaleString('es-CR')}${r.obs?`\n\n📝 *Observaciones:* ${r.obs}`:''}`;
+}
+
+function mostrarWhatsApp(payload) {
+  const sec = document.getElementById('wa-section');
+  const btns = document.getElementById('wa-buttons');
+  const WA_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.057 23.428a.75.75 0 0 0 .916.916l5.569-1.475A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.694 9.694 0 0 1-4.953-1.356l-.355-.211-3.706.981.993-3.614-.23-.372A9.699 9.699 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg>`;
+  const msg = buildWAMessage(payload);
+  sec.style.display = 'block';
+  btns.innerHTML = `<button class="btn-wa" onclick="window.open('https://wa.me/${WA_NUMERO_DEFAULT}?text='+encodeURIComponent(\`${msg.replace(/`/g,'\\`')}\`),'_blank')">${WA_SVG} Enviar resumen por WhatsApp</button>`;
+}
+
+// ── HISTORIAL ─────────────────────────────────────────────────────
+async function cargarHistorial() {
+  document.getElementById('hist-lista').innerHTML = '<div class="empty-state">Cargando…</div>';
+  document.getElementById('hist-count').textContent = '';
+  try {
+    const resp = await fetch(SHEETS_URL + '?action=read');
+    const data = await resp.json();
+    historialData = (data.records || []).map(r => ({
+      id: r[0], fecha: r[1], hora: r[2], encargado: r[4], turno: r[5],
+      efectivo:    +r[6]||0, tarjeta: +r[7]||0, sinpe: +r[8]||0,
+      otras:       +r[9]||0, credito: +r[10]||0, plataformas: +r[11]||0,
+      plataformasDesc: r[12]||'', servicio: +r[13]||0,
+      totalVentas: +r[14]||0, fondo: +r[15]||0, caja: +r[16]||0,
+      diferencia:  +r[17]||0, obs: r[18]||'',
+      usdEfectivo: +r[32]||0, usdTarjeta: +r[33]||0, tc: +r[34]||0,
+    })).reverse(); // más reciente primero
+    renderHistorial();
+  } catch(e) {
+    document.getElementById('hist-lista').innerHTML =
+      '<div class="empty-state">No se pudo cargar el historial. Revisá la conexión.</div>';
+  }
+}
+
+function renderHistorial() {
+  const busq  = (document.getElementById('hist-buscar')?.value||'').toLowerCase();
+  const turno = document.getElementById('hist-turno')?.value||'';
+  let lista = historialData.filter(r =>
+    (!busq  || (r.encargado||'').toLowerCase().includes(busq)) &&
+    (!turno || r.turno === turno)
+  );
+  document.getElementById('hist-count').textContent = lista.length + ' de ' + historialData.length + ' cierres';
+  if (!lista.length) {
+    document.getElementById('hist-lista').innerHTML = '<div class="empty-state">Sin resultados.</div>';
+    return;
+  }
+  document.getElementById('hist-lista').innerHTML = lista.map(r => {
+    const diff = r.diferencia || 0;
+    const diffBadge = diff === 0
+      ? `<span class="badge badge-ok">Cuadrado</span>`
+      : Math.abs(diff) <= 500
+        ? `<span class="badge badge-minor">${diff > 0 ? '+' : ''}₡${diff.toLocaleString('es-CR')}</span>`
+        : `<span class="badge badge-warn">${diff > 0 ? '+' : ''}₡${diff.toLocaleString('es-CR')}</span>`;
+    const turno = r.turno === 'Turno 1'
+      ? `<span class="badge badge-t1">Turno 1</span>`
+      : `<span class="badge badge-t2">Turno 2</span>`;
+    const fechaLbl = r.fecha
+      ? new Date(r.fecha+'T12:00:00').toLocaleDateString('es-CR',{weekday:'short',day:'2-digit',month:'short'})
+      : '—';
+    return `<div class="hist-card">
+      <div class="hist-head">
+        <div>
+          <div class="hist-fecha">${fechaLbl} · ${r.hora||'—'}</div>
+          <div class="hist-encargado">${r.encargado||'—'}</div>
+        </div>
+        <div class="hist-total">${fmtCRC(r.totalVentas)}</div>
+      </div>
+      <div class="hist-row">
+        ${turno} ${diffBadge}
+        ${r.efectivo?`<span>💵 ₡${r.efectivo.toLocaleString('es-CR')}</span>`:''}
+        ${r.tarjeta?`<span>💳 ₡${r.tarjeta.toLocaleString('es-CR')}</span>`:''}
+        ${r.sinpe?`<span>📱 ₡${r.sinpe.toLocaleString('es-CR')}</span>`:''}
+        ${r.obs?`<span title="${r.obs.replace(/"/g,'')}" style="color:var(--amber)">📝 Observación</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── LIMPIAR FORM ──────────────────────────────────────────────────
+function limpiarForm() {
+  ['f-encargado','f-obs'].forEach(id => { const el=document.getElementById(id); if(el)el.value=''; });
+  ['f-efectivo','f-tarjeta','f-sinpe','f-otras','f-credito','f-plataformas','f-plataformas-desc',
+   'f-servicio','f-usd-efectivo','f-usd-tarjeta','f-fondo'].forEach(id => {
+    const el=document.getElementById(id); if(el)el.value='';
+  });
+  document.getElementById('f-fecha').value = hoy();
+  resetTurno();
+  DENOMS_CRC.forEach(d => { const el=document.getElementById('d-'+d); if(el)el.value=''; });
+  DENOMS_USD.forEach(({id}) => { const el=document.getElementById('d-'+id); if(el)el.value=''; });
+  calcCuadre(); actualizarResumen();
+  document.getElementById('f-usd-total-crc').value = '';
+  document.getElementById('wa-section').style.display = 'none';
+  quitarFoto('sistema'); quitarFoto('datafono');
+  document.getElementById('ia-resultado').style.display = 'none';
+  // Recargar encargados por si cambió personal
+  cargarEncargados();
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────
+function hoy() { return new Date().toISOString().slice(0,10); }
+function fmtCRC(n) { return '₡' + Math.round(n||0).toLocaleString('es-CR'); }
+
+// ── INIT ──────────────────────────────────────────────────────────
+document.getElementById('date-chip').textContent =
+  new Date().toLocaleDateString('es-CR',{weekday:'long',day:'numeric',month:'long'});
+document.getElementById('f-fecha').value = hoy();
+updateTCDisplay();
+cargarEncargados();
+actualizarResumen();
+document.getElementById('input-foto-sistema').addEventListener('change', e => handleFotoSelect('sistema', e.target.files[0]));
+document.getElementById('input-foto-datafono').addEventListener('change', e => handleFotoSelect('datafono', e.target.files[0]));
+
+</script>
+</body>
+</html>

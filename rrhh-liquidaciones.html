@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Liquidaciones · RRHH · Grupo del Sol</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#ffffff;
+      --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
+      --amber:#c87820; --amber-bg:#fdf6e3; --amber-lt:#f0d890;
+      --blue:#185fa5; --blue-bg:#eef4fb; --blue-lt:#b8d0f0;
+      --purple:#6a3a9a; --purple-bg:#f3eefb;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+
+    header { height:56px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; background:var(--bg); position:sticky; top:0; z-index:20; }
+    .nav-left { display:flex; align-items:center; gap:10px; }
+    .back-btn { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); transition:color .15s,border-color .15s; }
+    .back-btn:hover { color:var(--text); border-color:var(--border-h); }
+    .back-btn svg { width:13px; height:13px; }
+    .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
+    .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 10px; }
+
+    main { max-width:1000px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .page-header { margin-bottom:1.5rem; }
+    .page-header h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+    .page-header p { font-size:13px; color:var(--muted); }
+
+    /* Layout dos columnas */
+    .layout { display:grid; grid-template-columns:320px 1fr; gap:16px; align-items:start; }
+
+    /* Lista de pendientes */
+    .lista-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+    .lista-head { padding:12px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .lista-head-title { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); }
+    .badge-count { font-size:11px; font-weight:600; background:var(--red-bg); color:var(--red); border-radius:20px; padding:2px 8px; }
+
+    .colab-item { display:flex; align-items:center; gap:12px; padding:12px 14px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .12s; }
+    .colab-item:last-child { border-bottom:none; }
+    .colab-item:hover { background:var(--surface); }
+    .colab-item.selected { background:var(--amber-bg); border-left:3px solid var(--amber); }
+    .avatar { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--font-d); font-size:13px; font-weight:700; flex-shrink:0; background:var(--red-bg); color:var(--red); }
+    .ci-info { flex:1; min-width:0; }
+    .ci-nombre { font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ci-sub { font-size:11px; color:var(--muted); }
+    .ci-arrow { color:var(--subtle); }
+    .ci-arrow svg { width:14px; height:14px; }
+
+    .empty-lista { padding:2.5rem; text-align:center; color:var(--subtle); font-size:13px; }
+    .spinner { display:inline-block; width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--green); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* Panel de liquidación */
+    .panel-placeholder { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:3rem; text-align:center; color:var(--subtle); }
+    .panel-placeholder svg { width:48px; height:48px; margin-bottom:12px; opacity:.3; }
+
+    .panel { display:none; }
+    .panel.visible { display:block; }
+
+    /* Header del colaborador */
+    .colab-header { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem 1.5rem; margin-bottom:12px; display:flex; align-items:center; gap:14px; }
+    .colab-avatar-lg { width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--font-d); font-size:18px; font-weight:700; background:var(--red-bg); color:var(--red); flex-shrink:0; }
+    .colab-nombre-lg { font-family:var(--font-d); font-size:18px; font-weight:700; letter-spacing:-.01em; }
+    .colab-det { font-size:13px; color:var(--muted); }
+    .badge { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:500; padding:3px 9px; border-radius:20px; }
+    .badge-liq { background:var(--red-bg); color:var(--red); }
+    .badge-pagado { background:var(--green-bg); color:var(--green); }
+    .badge-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+
+    /* Card genérica */
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem 1.5rem; margin-bottom:12px; }
+    .card-title { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:1rem; display:flex; align-items:center; gap:7px; }
+    .card-title svg { width:14px; height:14px; }
+
+    /* Datos del cálculo */
+    .datos-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:1rem; }
+    .dato-input { }
+    .dato-input label { display:block; font-size:12px; font-weight:500; color:var(--muted); margin-bottom:4px; }
+    .dato-input input, .dato-input select {
+      width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px;
+      color:var(--text); font-family:var(--font-b); font-size:13px; padding:8px 10px;
+      outline:none; appearance:none; transition:border-color .15s;
+    }
+    .dato-input input:focus, .dato-input select:focus { border-color:var(--amber); box-shadow:0 0 0 3px rgba(200,120,32,.1); }
+    .dato-input select {
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat:no-repeat; background-position:right 10px center; padding-right:28px;
+    }
+    .computed-tag { font-size:12px; color:var(--muted); margin-top:4px; }
+
+    /* Tabla de cálculo */
+    .calc-tabla { width:100%; border-collapse:collapse; font-size:13px; }
+    .calc-tabla th { text-align:left; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:0 10px 8px 0; border-bottom:1px solid var(--border); }
+    .calc-tabla td { padding:10px 10px 10px 0; border-bottom:1px solid var(--border); vertical-align:top; }
+    .calc-tabla tr:last-child td { border-bottom:none; }
+    .calc-tabla .monto { text-align:right; font-variant-numeric:tabular-nums; font-weight:500; }
+    .calc-tabla .subtit { font-size:11px; color:var(--muted); margin-top:2px; }
+    .calc-tabla tr.na td { color:var(--subtle); }
+    .calc-tabla tr.na .monto { color:var(--subtle); }
+
+    /* Total */
+    .total-row { display:flex; align-items:center; justify-content:space-between; background:var(--green-bg); border:1px solid var(--green-lt); border-radius:10px; padding:14px 18px; margin-top:12px; }
+    .total-label { font-size:13px; font-weight:600; color:var(--green); }
+    .total-valor { font-family:var(--font-d); font-size:26px; font-weight:700; color:var(--green); letter-spacing:-.02em; }
+
+    .nota-legal { font-size:11px; color:var(--muted); background:var(--surface); border-radius:8px; padding:10px 12px; margin-top:10px; line-height:1.6; }
+
+    /* Botón confirmar pago */
+    .confirmar-area { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem 1.5rem; margin-bottom:12px; }
+    .confirmar-title { font-size:13px; font-weight:600; margin-bottom:12px; color:var(--text); }
+    .confirmar-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+    .confirmar-row label { display:block; font-size:12px; font-weight:500; color:var(--muted); margin-bottom:4px; }
+    .confirmar-row input { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--font-b); font-size:13px; padding:8px 10px; outline:none; transition:border-color .15s; }
+    .confirmar-row input:focus { border-color:var(--green); box-shadow:0 0 0 3px rgba(26,122,74,.1); }
+
+    .btn-confirmar { width:100%; background:var(--green); color:#fff; border:none; border-radius:9px; font-family:var(--font-d); font-size:15px; font-weight:700; padding:13px; cursor:pointer; transition:opacity .15s; display:flex; align-items:center; justify-content:center; gap:8px; }
+    .btn-confirmar:hover { opacity:.9; }
+    .btn-confirmar:disabled { opacity:.4; cursor:not-allowed; }
+    .btn-confirmar svg { width:18px; height:18px; }
+
+    .pagado-banner { background:var(--green-bg); border:1px solid var(--green-lt); border-radius:10px; padding:1.25rem 1.5rem; display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+    .pagado-banner svg { width:28px; height:28px; color:var(--green); flex-shrink:0; }
+    .pagado-titulo { font-family:var(--font-d); font-size:15px; font-weight:700; color:var(--green); }
+    .pagado-sub { font-size:12px; color:var(--muted); }
+
+    /* Status */
+    .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
+    .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+    .sdot.off { background:var(--subtle); }
+    .ssep { width:1px; height:14px; background:var(--border); }
+
+    /* Toast */
+    .toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px); background:var(--card); border:1px solid var(--border-h); border-radius:10px; padding:11px 18px; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s; opacity:0; z-index:100; white-space:nowrap; box-shadow:0 4px 20px rgba(0,0,0,.08); }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+    .toast.success { border-color:var(--green); color:var(--green); }
+    .toast.error   { border-color:var(--red);   color:var(--red); }
+    .toast svg { width:16px; height:16px; flex-shrink:0; }
+
+    @media (max-width:740px) {
+      header { padding:0 1rem; }
+      main { padding:1.5rem 1rem 3rem; }
+      .layout { grid-template-columns:1fr; }
+      .datos-grid { grid-template-columns:1fr; }
+      .confirmar-row { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Control de liquidaciones</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<main>
+  <div class="page-header">
+    <h1>Control de liquidaciones</h1>
+    <p>Cálculo preliminar según el Código de Trabajo de Costa Rica · Colaboradores en estado Liquidación</p>
+  </div>
+
+  <div class="layout">
+
+    <!-- Lista colaboradores en liquidación -->
+    <div class="lista-card">
+      <div class="lista-head">
+        <span class="lista-head-title">Pendientes de pago</span>
+        <span class="badge-count" id="badge-count">—</span>
+      </div>
+      <div id="lista-items">
+        <div class="empty-lista"><span class="spinner"></span></div>
+      </div>
+    </div>
+
+    <!-- Panel de cálculo -->
+    <div>
+      <div class="panel-placeholder" id="panel-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        <p>Seleccioná un colaborador<br>para ver el cálculo de liquidación</p>
+      </div>
+      <div class="panel" id="panel"></div>
+    </div>
+
+  </div>
+
+  <div class="status-bar">
+    <div style="display:flex;align-items:center;gap:6px;"><span class="sdot" id="conn-dot"></span><span id="conn-label">Conectando…</span></div>
+    <span class="ssep"></span>
+    <span id="status-msg">—</span>
+    <span class="ssep"></span>
+    <span style="margin-left:auto;">v1.0 · RRHH · Grupo del Sol</span>
+  </div>
+</main>
+
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ─── CONFIGURACIÓN ──────────────────────────────────────────────
+const APPS_SCRIPT_URL = 'TODO_APPS_SCRIPT_RRHH_LORITO';
+// ───────────────────────────────────────────────────────────────
+
+const hoy = new Date();
+const pad = n => String(n).padStart(2,'0');
+const fmt = n => '₡' + Math.round(n).toLocaleString('es-CR');
+document.getElementById('date-chip').textContent =
+  hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
+
+let todosPersonal = [];
+let seleccionado  = null;
+
+// ── CARGAR PERSONAL EN LIQUIDACIÓN ───────────────────────────────
+async function cargarDatos() {
+  try {
+    const resp = await fetch(APPS_SCRIPT_URL + '?modulo=personal');
+    const data = await resp.json();
+    todosPersonal = data.ok ? data.registros : [];
+
+    const enLiquidacion = todosPersonal.filter(p =>
+      (p['Estado'] || '').toUpperCase().includes('LIQUID')
+    );
+
+    document.getElementById('conn-dot').classList.remove('off');
+    document.getElementById('conn-label').textContent = 'Conectado a Google Sheets';
+    document.getElementById('badge-count').textContent = enLiquidacion.length;
+    document.getElementById('status-msg').textContent =
+      `${enLiquidacion.length} colaborador${enLiquidacion.length !== 1 ? 'es' : ''} pendiente${enLiquidacion.length !== 1 ? 's' : ''} de liquidación`;
+
+    renderLista(enLiquidacion);
+  } catch(err) {
+    document.getElementById('conn-dot').classList.add('off');
+    document.getElementById('conn-label').textContent = 'Error de conexión';
+    document.getElementById('lista-items').innerHTML =
+      '<div class="empty-lista">No se pudo conectar con Google Sheets.</div>';
+  }
+}
+
+// ── RENDER LISTA ──────────────────────────────────────────────────
+function renderLista(lista) {
+  const cont = document.getElementById('lista-items');
+  if (!lista.length) {
+    cont.innerHTML = '<div class="empty-lista">No hay colaboradores<br>pendientes de liquidación.</div>';
+    return;
+  }
+  window._listaLiq = lista;
+  cont.innerHTML = lista.map((p, i) => {
+    const nombre  = p['Nombre completo'] || `${p['Nombre']||''} ${p['Apellidos']||''}`;
+    const puesto  = p['Puesto'] || '—';
+    const ingreso = p['Fecha ingreso'] || '';
+    return `<div class="colab-item" id="ci-${i}" onclick="seleccionarColab(${i})">
+      <div class="avatar">${iniciales(nombre)}</div>
+      <div class="ci-info">
+        <div class="ci-nombre">${nombre}</div>
+        <div class="ci-sub">${puesto} · Ingreso: ${ingreso || '—'}</div>
+      </div>
+      <span class="ci-arrow"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4"/></svg></span>
+    </div>`;
+  }).join('');
+}
+
+function iniciales(n) {
+  return n.split(' ').slice(0,2).map(p => p[0]||'').join('').toUpperCase();
+}
+
+// ── SELECCIONAR COLABORADOR ───────────────────────────────────────
+function seleccionarColab(idx) {
+  document.querySelectorAll('.colab-item').forEach(el => el.classList.remove('selected'));
+  document.getElementById('ci-' + idx).classList.add('selected');
+  seleccionado = window._listaLiq[idx];
+  renderPanel(seleccionado);
+}
+
+// ── RENDER PANEL ─────────────────────────────────────────────────
+function renderPanel(p) {
+  const nombre   = p['Nombre completo'] || `${p['Nombre']||''} ${p['Apellidos']||''}`;
+  const puesto   = p['Puesto']          || '—';
+  const depto    = p['Departamento']    || '—';
+  const salario  = parseFloat(p['Salario'] || 0);
+  const ingreso  = p['Fecha ingreso']   || '';
+  const balance  = parseFloat(p['Saldo vacaciones'] || 0);
+  const pagado   = (p['Estado'] || '').toUpperCase() === 'INACTIVO';
+
+  // Fecha de salida desde terminaciones locales o hoy
+  const termLocal = JSON.parse(localStorage.getItem('terminaciones') || '[]');
+  const termPers  = termLocal.find(t => t.colaborador === nombre);
+  const fechaSalidaDefault = termPers ? termPers.fecha_salida
+    : `${hoy.getFullYear()}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`;
+  const motivoDefault = termPers ? termPers.tipo_terminacion : 'Renuncia voluntaria';
+
+  document.getElementById('panel-placeholder').style.display = 'none';
+  const panel = document.getElementById('panel');
+  panel.className = 'panel visible';
+
+  panel.innerHTML = `
+    <!-- Header colaborador -->
+    <div class="colab-header">
+      <div class="colab-avatar-lg">${iniciales(nombre)}</div>
+      <div style="flex:1;">
+        <div class="colab-nombre-lg">${nombre}</div>
+        <div class="colab-det">${puesto} · ${depto}</div>
+        <div style="margin-top:6px;">
+          <span class="badge ${pagado ? 'badge-pagado' : 'badge-liq'}">
+            <span class="badge-dot"></span>
+            ${pagado ? 'Liquidación pagada' : 'Pendiente de pago'}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    ${pagado ? `
+    <div class="pagado-banner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      <div>
+        <div class="pagado-titulo">Liquidación confirmada como pagada</div>
+        <div class="pagado-sub">Estado actualizado a INACTIVO en la hoja de personal.</div>
+      </div>
+    </div>` : ''}
+
+    <!-- Datos para el cálculo -->
+    <div class="card">
+      <div class="card-title">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="1"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="8" y1="5" x2="8" y2="11"/></svg>
+        Datos del cálculo
+      </div>
+      <div class="datos-grid">
+        <div class="dato-input">
+          <label>Salario base (₡)</label>
+          <input type="number" id="c-salario" value="${salario}" min="0" step="500" oninput="recalcular()">
+        </div>
+        <div class="dato-input">
+          <label>Fecha de ingreso</label>
+          <input type="date" id="c-ingreso" value="${ingreso}" oninput="recalcular()">
+        </div>
+        <div class="dato-input">
+          <label>Fecha de salida</label>
+          <input type="date" id="c-salida" value="${fechaSalidaDefault}" oninput="recalcular()">
+          <div class="computed-tag" id="c-antiguedad"></div>
+        </div>
+        <div class="dato-input">
+          <label>Motivo de terminación</label>
+          <select id="c-motivo" onchange="recalcular()">
+            <option value="Renuncia voluntaria"          ${motivoDefault==='Renuncia voluntaria'          ?'selected':''}>Renuncia voluntaria</option>
+            <option value="Despido sin justa causa"      ${motivoDefault==='Despido sin justa causa'      ?'selected':''}>Despido sin justa causa</option>
+            <option value="Despido con justa causa"      ${motivoDefault==='Despido con justa causa'      ?'selected':''}>Despido con justa causa</option>
+            <option value="Mutuo acuerdo"                ${motivoDefault==='Mutuo acuerdo'                ?'selected':''}>Mutuo acuerdo</option>
+            <option value="Fin de contrato"              ${motivoDefault==='Fin de contrato'              ?'selected':''}>Fin de contrato</option>
+          </select>
+        </div>
+        <div class="dato-input">
+          <label>Saldo de vacaciones (días)</label>
+          <input type="number" id="c-vacaciones" value="${balance}" min="0" step="0.5" oninput="recalcular()">
+        </div>
+        <div class="dato-input">
+          <label>Proporción de aguinaldo trabajada</label>
+          <input type="number" id="c-aguinaldo-meses" value="${mesesEnPeriodoAguinaldo()}" min="0" max="12" step="1" oninput="recalcular()">
+          <div class="computed-tag">Meses trabajados del 1 dic al 30 nov</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de cálculo -->
+    <div class="card">
+      <div class="card-title">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="10" y2="12"/></svg>
+        Desglose de liquidación
+        <span style="font-size:10px;font-weight:400;color:var(--subtle);margin-left:4px;">Cálculo preliminar · Código de Trabajo CR</span>
+      </div>
+      <table class="calc-tabla">
+        <thead>
+          <tr>
+            <th>Concepto</th>
+            <th>Base legal</th>
+            <th style="text-align:right;">Monto</th>
+          </tr>
+        </thead>
+        <tbody id="calc-tbody"></tbody>
+      </table>
+      <div class="total-row">
+        <span class="total-label">Total estimado de liquidación</span>
+        <span class="total-valor" id="total-valor">₡0</span>
+      </div>
+      <div class="nota-legal">
+        ⚖️ <strong>Nota legal:</strong> Este cálculo es una estimación preliminar basada en el Código de Trabajo de Costa Rica (Art. 28–85 y Ley de Aguinaldo). Los montos finales deben ser revisados y confirmados por el departamento legal o contable antes del pago. No incluye deducciones de CCSS, IR u otras retenciones.
+      </div>
+    </div>
+
+    <!-- Confirmar pago -->
+    ${!pagado ? `
+    <div class="confirmar-area">
+      <div class="confirmar-title">Confirmar pago de liquidación</div>
+      <div class="confirmar-row">
+        <div>
+          <label>Fecha de pago</label>
+          <input type="date" id="fecha-pago" value="${hoy.getFullYear()}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}">
+        </div>
+        <div>
+          <label>Confirmado por</label>
+          <input type="text" id="conf-por" placeholder="Tu nombre">
+        </div>
+      </div>
+      <button class="btn-confirmar" id="btn-confirmar" onclick="confirmarPago()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Confirmar pago · Cambiar estado a INACTIVO
+      </button>
+    </div>` : ''}
+  `;
+
+  recalcular();
+}
+
+// ── MESES EN PERÍODO DE AGUINALDO ─────────────────────────────────
+function mesesEnPeriodoAguinaldo() {
+  // Período: 1 dic año anterior al 30 nov año actual
+  const m = hoy.getMonth() + 1; // 1-12
+  // Si estamos entre ene y nov, contamos desde dic del año pasado
+  return m < 12 ? m : 12;
+}
+
+// ── CÁLCULO DE LIQUIDACIÓN (Código de Trabajo CR) ─────────────────
+function recalcular() {
+  const salario  = parseFloat(document.getElementById('c-salario').value) || 0;
+  const ingreso  = document.getElementById('c-ingreso').value;
+  const salida   = document.getElementById('c-salida').value;
+  const motivo   = document.getElementById('c-motivo').value;
+  const vacDias  = parseFloat(document.getElementById('c-vacaciones').value) || 0;
+  const agMeses  = parseFloat(document.getElementById('c-aguinaldo-meses').value) || 0;
+
+  if (!ingreso || !salida || !salario) return;
+
+  const dIng = new Date(ingreso + 'T00:00:00');
+  const dSal = new Date(salida  + 'T00:00:00');
+  if (dSal <= dIng) return;
+
+  // Años y meses de servicio
+  let anios = dSal.getFullYear() - dIng.getFullYear();
+  let meses = dSal.getMonth()    - dIng.getMonth();
+  let dias  = dSal.getDate()     - dIng.getDate();
+  if (dias  < 0) { meses--; }
+  if (meses < 0) { anios--; meses += 12; }
+  const totalMeses = anios * 12 + meses;
+
+  document.getElementById('c-antiguedad').textContent =
+    `${anios} año${anios!==1?'s':''} y ${meses} mes${meses!==1?'es':''}`;
+
+  const salarioDiario  = salario / 30;
+  const salarioMensual = salario;
+
+  // ── Preaviso (Art. 28 CT) ──────────────────────────────────────
+  // Solo aplica en despido sin justa causa o renuncia (al empleador)
+  // En renuncia aplica al trabajador (no se paga, salvo pacto)
+  // En despido sin justa causa: empleador debe pagar
+  let preaviso = 0;
+  let preavisoAplica = false;
+  let preavisoBase = '';
+
+  if (motivo === 'Despido sin justa causa' || motivo === 'Mutuo acuerdo') {
+    preavisoAplica = true;
+    if (totalMeses < 3) {
+      preaviso = salarioDiario * 7;
+      preavisoBase = '7 días (menos de 3 meses)';
+    } else if (totalMeses < 6) {
+      preaviso = salarioDiario * 14;
+      preavisoBase = '14 días (3 a 6 meses)';
+    } else if (totalMeses < 12) {
+      preaviso = salarioDiario * 21;
+      preavisoBase = '21 días (6 a 12 meses)';
+    } else {
+      preaviso = salarioMensual; // 1 mes
+      preavisoBase = '1 mes (más de 1 año)';
+    }
+  }
+
+  // ── Cesantía (Art. 29 CT) ──────────────────────────────────────
+  // Aplica: despido sin justa causa, mutuo acuerdo (según contrato)
+  // NO aplica: renuncia voluntaria, despido con justa causa
+  let cesantia = 0;
+  let cesantiaAplica = false;
+  let cesantiaBase = '';
+
+  if (motivo === 'Despido sin justa causa' || motivo === 'Mutuo acuerdo') {
+    cesantiaAplica = true;
+    const aniosCes = Math.min(anios + meses/12, 8); // tope 8 años Art. 29
+
+    if (totalMeses < 3) {
+      cesantia = 0;
+      cesantiaBase = 'Menos de 3 meses — no aplica';
+      cesantiaAplica = false;
+    } else if (totalMeses < 6) {
+      cesantia = salarioMensual * 7/30;  // 7 días
+      cesantiaBase = '7 días de salario';
+    } else if (totalMeses < 12) {
+      cesantia = salarioMensual * 14/30; // 14 días
+      cesantiaBase = '14 días de salario';
+    } else {
+      // 1 mes por año, máx 8 años (Art. 29)
+      const años8 = Math.min(anios + meses/12, 8);
+      cesantia = salarioMensual * años8;
+      cesantiaBase = `${años8.toFixed(2)} mes${años8!==1?'es':''} (tope 8 años)`;
+    }
+  }
+
+  // ── Vacaciones pendientes (Art. 153 CT) ───────────────────────
+  // Siempre aplica — independiente del motivo
+  // Valor: (salario / 30) × días pendientes
+  // Mínimo legal: 2 semanas por año trabajado = 14 días (o proporcional)
+  let vacMonto = 0;
+  let vacBase  = '';
+
+  // Si no hay saldo registrado, calcular el proporcional mínimo
+  let diasVac = vacDias;
+  if (diasVac === 0 && totalMeses > 0) {
+    // Proporcional: 14 días por año = 1.1667 días/mes
+    diasVac = Math.round((totalMeses % 12) * (14/12) * 10) / 10;
+    vacBase = `${diasVac} días proporcional (calculado)`;
+  } else {
+    vacBase = `${diasVac} días según saldo registrado`;
+  }
+  vacMonto = salarioDiario * diasVac;
+
+  // ── Aguinaldo proporcional (Ley 1788) ────────────────────────
+  // Período dic-nov, se paga la parte proporcional trabajada
+  const aguinaldo = (salarioMensual / 12) * agMeses;
+  const aguinaldoBase = `${agMeses} mes${agMeses!==1?'es':''} del período dic-nov`;
+
+  // ── Total ─────────────────────────────────────────────────────
+  const total = preaviso + cesantia + vacMonto + aguinaldo;
+
+  // ── Render tabla ──────────────────────────────────────────────
+  const filas = [
+    {
+      concepto: 'Preaviso',
+      base: preavisoAplica ? preavisoBase : 'No aplica para ' + motivo,
+      monto: preaviso,
+      aplica: preavisoAplica,
+      legal: 'Art. 28 CT'
+    },
+    {
+      concepto: 'Cesantía (auxilio)',
+      base: cesantiaAplica ? cesantiaBase : 'No aplica para ' + motivo,
+      monto: cesantia,
+      aplica: cesantiaAplica,
+      legal: 'Art. 29 CT'
+    },
+    {
+      concepto: 'Vacaciones pendientes',
+      base: vacBase,
+      monto: vacMonto,
+      aplica: true,
+      legal: 'Art. 153 CT'
+    },
+    {
+      concepto: 'Aguinaldo proporcional',
+      base: aguinaldoBase,
+      monto: aguinaldo,
+      aplica: agMeses > 0,
+      legal: 'Ley 1788'
+    },
+  ];
+
+  document.getElementById('calc-tbody').innerHTML = filas.map(f => `
+    <tr class="${!f.aplica ? 'na' : ''}">
+      <td>
+        <div style="font-weight:500;">${f.concepto}</div>
+        <div class="subtit">${f.base}</div>
+      </td>
+      <td style="color:var(--subtle);font-size:12px;">${f.legal}</td>
+      <td class="monto">${f.aplica ? fmt(f.monto) : '—'}</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('total-valor').textContent = fmt(total);
+
+  // Guardar para usar en confirmar
+  window._calcActual = { preaviso, cesantia, vacMonto, aguinaldo, total, motivo,
+    anios, meses: totalMeses, salario };
+}
+
+// ── CONFIRMAR PAGO ────────────────────────────────────────────────
+async function confirmarPago() {
+  const fechaPago = document.getElementById('fecha-pago').value;
+  const confPor   = document.getElementById('conf-por').value.trim();
+
+  if (!fechaPago) { showToast('Seleccioná la fecha de pago.', 'error'); return; }
+  if (!confPor)   { showToast('Ingresá quién confirma el pago.', 'error'); return; }
+  if (!seleccionado) return;
+
+  const nombre = seleccionado['Nombre completo'] ||
+    `${seleccionado['Nombre']||''} ${seleccionado['Apellidos']||''}`;
+
+  const calc = window._calcActual || {};
+
+  const registro = {
+    modulo:      'confirmar_liquidacion',
+    colaborador: nombre,
+    nuevo_estado:'INACTIVO',
+    fecha_pago:   fechaPago,
+    confirmado_por: confPor,
+    total_pagado: calc.total || 0,
+    desglose: {
+      preaviso:   calc.preaviso   || 0,
+      cesantia:   calc.cesantia   || 0,
+      vacaciones: calc.vacMonto   || 0,
+      aguinaldo:  calc.aguinaldo  || 0,
+    },
+    motivo:      calc.motivo || '',
+    registrado_en: new Date().toISOString()
+  };
+
+  const btn = document.getElementById('btn-confirmar');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Procesando…';
+
+  try {
+    const resp = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: new URLSearchParams({ data: JSON.stringify(registro) })
+    });
+    const result = await resp.json().catch(() => ({ ok: true }));
+
+    if (result.ok !== false) {
+      // Actualizar estado local
+      seleccionado['Estado'] = 'INACTIVO';
+      showToast(`Liquidación de ${nombre} confirmada como pagada`, 'success');
+
+      // Refrescar lista y panel
+      await cargarDatos();
+      renderPanel(seleccionado);
+    } else {
+      throw new Error(result.error || 'Error del servidor');
+    }
+  } catch(err) {
+    showToast('Error al guardar: ' + err.message, 'error');
+    btn.disabled = false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Confirmar pago · Cambiar estado a INACTIVO`;
+  }
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').innerHTML = type==='success'
+    ? '<polyline points="3 8 7 12 13 4"/>'
+    : '<line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = `toast ${type}`;
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+cargarDatos();
+</script>
+</body>
+</html>

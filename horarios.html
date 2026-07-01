@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Horario de trabajo · Grupo del Sol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#f7f6f3;--surface:#fff;--surface2:#f2f1ed;
+  --border:#e2e0d8;--border2:#ccc9be;
+  --text:#1a1917;--text2:#6b6860;--text3:#a09d96;
+  --accent:#2d6a4f;--accent-bg:#eaf4ef;--accent-text:#1b4332;
+  --danger:#c0392b;--danger-bg:#fdf0ee;
+  --warn-bg:#fef9ec;--warn-text:#7a5c00;
+  --vac-bg:#dbeafe;--vac-text:#1e3a5f;--vac-border:#93c5fd;
+  --inc-bg:#fef3c7;--inc-text:#78350f;--inc-border:#fcd34d;
+  --per-bg:#f3e8ff;--per-text:#4c1d95;--per-border:#c4b5fd;
+  --lib-bg:#f1f5f9;--lib-text:#334155;--lib-border:#cbd5e1;
+  --radius:8px;--radius-lg:12px;--shadow:0 1px 3px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.nav-left{display:flex;align-items:center;gap:10px}
+.back-btn{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text2);text-decoration:none;padding:5px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface2)}
+.back-btn:hover{color:var(--text);border-color:var(--border2)}
+.logo{font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.header-right{display:flex;align-items:center;gap:10px}
+main{max-width:1280px;margin:0 auto;padding:24px 20px}
+.btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-family:inherit;font-weight:500;padding:7px 14px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface);color:var(--text);cursor:pointer;transition:background .15s;white-space:nowrap}
+.btn:hover{background:var(--surface2)}.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}.btn-primary:hover{background:#245a42}
+.btn-ghost{border-color:transparent;background:transparent;color:var(--text2)}.btn-ghost:hover{background:var(--surface2);border-color:var(--border);color:var(--text)}
+.btn-sm{font-size:12px;padding:4px 10px}
+.btn-import{background:var(--vac-bg);color:var(--vac-text);border-color:var(--vac-border)}.btn-import:hover{opacity:.85}
+.btn-danger{color:var(--danger);border-color:transparent;background:transparent;font-size:11px;padding:2px 6px}.btn-danger:hover{background:var(--danger-bg)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn:disabled:hover{background:var(--surface)}
+.lock-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--inc-bg);color:var(--inc-text);border:1px solid var(--inc-border)}
+select:disabled,input:disabled,textarea:disabled{opacity:.55;cursor:not-allowed;background:var(--surface2)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:20px}
+.tab{font-size:13px;font-weight:500;padding:7px 16px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s}
+.tab:hover{background:var(--surface2);color:var(--text)}.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+input[type=text],input[type=date],input[type=time],select,textarea{font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent);cursor:pointer}
+label{font-size:12px;color:var(--text2);display:block;margin-bottom:4px}
+.tbl-wrap{overflow-x:auto;border-radius:var(--radius-lg);border:1px solid var(--border);margin-bottom:20px}
+table{width:100%;border-collapse:collapse;min-width:860px}
+thead th{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;padding:10px 6px;background:var(--surface2);border-bottom:1px solid var(--border);text-align:center;white-space:nowrap}
+thead th.ec{text-align:left;min-width:165px;padding-left:16px}
+tbody td{padding:5px 4px;border-bottom:1px solid var(--border);text-align:center;vertical-align:top;background:var(--surface)}
+tbody td.ec{text-align:left;padding-left:14px;vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+.emp-name{font-weight:500;font-size:13px;color:var(--text)}
+.emp-meta{font-size:11px;color:var(--text3);margin-top:1px}
+.day-cell{display:flex;flex-direction:column;gap:3px;align-items:center;padding:5px 2px;min-height:115px}
+.day-cell input[type=time]{width:82px;font-size:12px;padding:3px 4px}
+.hours-lbl{font-size:12px;font-weight:600;color:var(--accent)}
+.st-sel{font-size:11px;padding:3px 5px;border-radius:6px;width:90px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--surface);color:var(--text2)}
+.sv-bg .st-sel{background:var(--vac-bg);color:var(--vac-text);border-color:var(--vac-border);font-weight:500}
+.si-bg .st-sel{background:var(--inc-bg);color:var(--inc-text);border-color:var(--inc-border);font-weight:500}
+.sp-bg .st-sel{background:var(--per-bg);color:var(--per-text);border-color:var(--per-border);font-weight:500}
+.sl-bg .st-sel{background:var(--lib-bg);color:var(--lib-text);border-color:var(--lib-border);font-weight:500}
+.special-td{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-height:115px;gap:4px;padding:7px 3px;font-size:12px;font-weight:500}
+.special-td .sp-icon{font-size:20px;margin-bottom:1px}
+.special-td .sp-lbl{font-size:11px;font-weight:600}
+.sv-bg{background:var(--vac-bg)!important;color:var(--vac-text)}
+.si-bg{background:var(--inc-bg)!important;color:var(--inc-text)}
+.sp-bg{background:var(--per-bg)!important;color:var(--per-text)}
+.sl-bg{background:var(--lib-bg)!important;color:var(--lib-text)}
+.auto-tag{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;opacity:.7;margin-top:-2px}
+.btn-extra{font-size:13px;line-height:1;width:20px;height:20px;border-radius:50%;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center}
+.btn-extra:hover{background:var(--surface2);color:var(--text)}
+.btn-quitar{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;border:1px solid currentColor;background:transparent;color:inherit;opacity:.75;cursor:pointer}
+.btn-quitar:hover{opacity:1}
+.extra-popover{position:fixed;z-index:300;display:none;flex-direction:column;gap:2px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);box-shadow:0 6px 24px rgba(0,0,0,.14);padding:5px;min-width:165px}
+.extra-popover button{font-size:12px;font-family:inherit;text-align:left;padding:7px 9px;border:none;background:transparent;border-radius:6px;cursor:pointer;color:var(--text)}
+.extra-popover button:hover{background:var(--surface2)}
+.note-ta{font-size:11px;padding:3px 5px;width:88px;resize:none;border-radius:6px;min-height:34px;line-height:1.3;color:var(--text2);background:var(--surface2);border:1px solid var(--border)}
+.note-ta:focus{border-color:var(--accent);background:var(--surface)}
+.note-ta::placeholder{color:var(--text3)}
+.note-print{display:none;font-size:10px;color:var(--text3);font-style:italic;text-align:center;margin-top:2px;word-break:break-word;max-width:90px}
+.total-row td{background:var(--surface2)!important;font-weight:600;font-size:12px;color:var(--text2);vertical-align:middle}
+.total-row td.grand{color:var(--accent)}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:20px}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;box-shadow:var(--shadow)}
+.metric-lbl{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.metric-val{font-size:22px;font-weight:600;color:var(--text)}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.toolbar-right{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.banner{display:none;align-items:center;gap:10px;font-size:13px;padding:10px 16px;border-radius:var(--radius);border:1px solid;margin-bottom:16px}
+.banner-info{background:var(--accent-bg);border-color:#b7ddc9;color:var(--accent-text)}
+.banner-vac{background:var(--vac-bg);border-color:var(--vac-border);color:var(--vac-text)}
+.banner-warn{background:var(--warn-bg);border-color:#f0d060;color:var(--warn-text)}
+.banner-close{margin-left:auto;background:none;border:none;cursor:pointer;font-size:16px;opacity:.6}
+.banner-close:hover{opacity:1}
+.status-bar{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text2);padding:8px 14px;background:var(--accent-bg);border-radius:var(--radius);border:1px solid #b7ddc9;margin-bottom:16px}
+.status-bar.warn{background:var(--warn-bg);border-color:#f0d060;color:var(--warn-text)}
+.week-bar{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.week-label{font-size:15px;font-weight:600;color:var(--text)}
+.add-panel{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:20px;display:none}
+.add-panel.open{display:block}
+.add-panel-grid{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.field{display:flex;flex-direction:column}
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
+.legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;padding:10px 18px;border-radius:var(--radius);font-size:13px;font-weight:500;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;z-index:999}
+.toast.show{opacity:1;transform:translateY(0)}
+.export-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+@media print{
+  header,.week-bar .btn,.week-bar input,.toolbar,.add-panel,.export-row,.btn-danger,.status-bar,.banner,.legend,.st-sel,.note-ta,#metrics{display:none!important}
+  .note-print{display:block!important}
+  .tbl-wrap{border:none;overflow:visible}
+  body{background:white}
+  .day-cell,.special-td{min-height:60px}
+  @page{size:landscape;margin:1cm}
+}
+@media(max-width:640px){main{padding:14px 12px}header{padding:0 14px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <div class="logo"><div class="logo-dot"></div>Horarios</div>
+  </div>
+  <div class="header-right">
+    <span id="header-status" style="font-size:12px;color:var(--text2)"></span>
+    <button class="btn btn-sm" onclick="loadSheet()">&#8635; Actualizar planilla</button>
+  </div>
+</header>
+<main>
+  <div class="week-bar">
+    <div style="display:flex;gap:4px">
+      <button class="btn btn-ghost btn-sm" onclick="shiftWeek(-1)">&larr; Anterior</button>
+      <button class="btn btn-ghost btn-sm" onclick="shiftWeek(1)">Siguiente &rarr;</button>
+    </div>
+    <div class="week-label" id="week-label">&mdash;</div>
+    <input type="date" id="week-start" style="width:140px" onchange="onWeekChange()"/>
+    <button class="btn btn-ghost btn-sm" onclick="goToday()">Hoy</button>
+    <span id="semana-cerrada-badge" class="lock-badge" style="display:none">&#128274; Semana cerrada</span>
+    <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+      <a href="horarios-historial.html" class="btn btn-ghost btn-sm">&#128193; Historial</a>
+      <button class="btn btn-sm" id="btn-cerrar-semana" onclick="cerrarSemana()" style="display:none">&#128274; Cerrar horario</button>
+      <button class="btn btn-sm" id="btn-reabrir-semana" onclick="reabrirSemana()" style="display:none">&#128275; Reabrir (código admin)</button>
+    </div>
+  </div>
+
+  <div id="status-bar" class="status-bar" style="display:none"></div>
+
+  <div id="import-banner" class="banner banner-vac">
+    <span id="import-banner-text"></span>
+    <button class="banner-close" onclick="document.getElementById('import-banner').style.display='none'">&#x2715;</button>
+  </div>
+
+  <div class="toolbar" id="toolbar" style="display:none">
+    <label style="margin:0;font-size:13px;color:var(--text2)">Departamento:</label>
+    <select id="filter-area" onchange="renderSched()"><option value="">Todos los departamentos</option></select>
+    <div class="toolbar-right">
+      <button class="btn btn-sm" id="btn-add-extra" onclick="toggleAddPanel()">+ Empleado extra</button>
+      <button class="btn btn-sm btn-primary" id="btn-guardar-semana" onclick="guardarSemana()">&#128190; Guardar semana</button>
+      <button class="btn btn-sm" onclick="window.print()">&#9113; Imprimir</button>
+    </div>
+  </div>
+
+  <div class="add-panel" id="add-panel">
+    <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text2)">Agregar empleado extra al turno</div>
+    <div class="add-panel-grid">
+      <div class="field"><label>Nombre completo</label><input type="text" id="extra-name" placeholder="Ej: Carlos M&eacute;ndez" style="width:190px"/></div>
+      <div class="field"><label>Departamento</label><input type="text" id="extra-area" placeholder="Ej: Cocina" style="width:130px"/></div>
+      <div class="field"><label>Puesto</label><input type="text" id="extra-puesto" placeholder="Ej: salonero" style="width:130px"/></div>
+      <button class="btn btn-primary" onclick="addExtraEmp()">Agregar</button>
+      <button class="btn btn-ghost" onclick="toggleAddPanel()">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="legend" id="legend" style="display:none">
+    <span style="font-size:11px;font-weight:500;color:var(--text3)">Referencias:</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--vac-bg);border:1px solid var(--vac-border)"></span>Vacaciones (auto)</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--inc-bg);border:1px solid var(--inc-border)"></span>Incapacidad</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--per-bg);border:1px solid var(--per-border)"></span>Permiso sin goce</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--lib-bg);border:1px solid var(--lib-border)"></span>D&iacute;a libre</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--lib-bg);border:1px solid var(--lib-border)"></span>Otro</span>
+  </div>
+
+  <div id="sched-container"></div>
+  <div class="metrics" id="metrics" style="display:none"></div>
+
+  <div class="export-row" id="export-row" style="display:none">
+    <button class="btn" id="btn-pdf" onclick="descargarPDF()" disabled title="Cerrá el horario para habilitar la exportación">&darr; Descargar PDF</button>
+    <button class="btn btn-import" id="btn-whatsapp" onclick="enviarWhatsApp()" disabled title="Cerrá el horario para habilitar el envío">&#128172; Enviar por WhatsApp</button>
+  </div>
+</main>
+<div class="toast" id="toast"></div>
+<div class="extra-popover" id="extra-popover">
+  <button type="button" onclick="aplicarExtra('incapacidad')">🏥 Incapacidad</button>
+  <button type="button" onclick="aplicarExtra('permiso')">📋 Permiso sin goce</button>
+  <button type="button" onclick="aplicarExtra('otro')">📌 Otro</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+// Mismo Apps Script de RRHH que usan rrhh-vacaciones.html / rrhh-control-vacaciones.html / rrhh-personal.html
+const APPS_SCRIPT_URL = 'TODO_APPS_SCRIPT_RRHH_LORITO';
+
+const DAYS = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+const ST = {
+  trabajo:    {label:'Turno normal',    icon:'',    bgCls:''},
+  libre:      {label:'Día libre',  icon:'🌙', bgCls:'sl-bg'},
+  vacaciones: {label:'Vacaciones',      icon:'🌴', bgCls:'sv-bg'},
+  incapacidad:{label:'Incapacidad',     icon:'🏥', bgCls:'si-bg'},
+  permiso:    {label:'Permiso sin goce',icon:'📋', bgCls:'sp-bg'},
+  otro:       {label:'Otro',            icon:'📌', bgCls:'sl-bg'},
+};
+const HORAS_VACACIONES = 8;
+let extraTarget = null;
+
+let restos=[], employees=[], schedule={}, activeResto=null, vacaciones=[];
+let semanaCerrada=false;
+// Código de administrador para reabrir/editar una semana cerrada.
+// Cambialo acá si querés otro código.
+const ADMIN_CODE='admin';
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3000)}
+function esc(s){return(s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+/* ── Week ── */
+function getMondayOf(d){const day=d.getDay(),diff=day===0?-6:1-day;const m=new Date(d);m.setDate(d.getDate()+diff);return m}
+function fmt(d){return d.toISOString().slice(0,10)}
+function fmtShort(d){return d.toLocaleDateString('es-CR',{day:'2-digit',month:'2-digit'})}
+function initWeek(){
+  const el=document.getElementById('week-start');
+  const qsSemana=new URLSearchParams(location.search).get('semana');
+  if(!el.value) el.value = qsSemana || fmt(getMondayOf(new Date()));
+  updateWeekLabel();
+}
+function updateWeekLabel(){
+  const base=document.getElementById('week-start').value;if(!base)return;
+  const s=new Date(base+'T00:00:00'),e=new Date(s);e.setDate(s.getDate()+6);
+  document.getElementById('week-label').textContent=fmtShort(s)+' – '+fmtShort(e)+' · '+s.getFullYear();
+}
+async function onWeekChange(){
+  updateWeekLabel();
+  resetWeekCells();
+  await cargarHorarioGuardado();
+  aplicarVacaciones();
+  await cargarEstadoSemana();
+}
+function shiftWeek(dir){const el=document.getElementById('week-start');const d=new Date(el.value+'T00:00:00');d.setDate(d.getDate()+dir*7);el.value=fmt(d);onWeekChange()}
+function goToday(){document.getElementById('week-start').value=fmt(getMondayOf(new Date()));onWeekChange()}
+function getWeekDates(){
+  const base=document.getElementById('week-start').value;
+  const start=new Date(base+'T00:00:00');
+  return DAYS.map((_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);return{label:DAYS[i],date:fmtShort(d)}});
+}
+function getWeekDatesISO(){
+  const base=document.getElementById('week-start').value;
+  const start=new Date(base+'T00:00:00');
+  return DAYS.map((_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);return fmt(d)});
+}
+function getWeekLabel(){
+  const base=document.getElementById('week-start').value;if(!base)return'Semana';
+  const s=new Date(base+'T00:00:00'),e=new Date(s);e.setDate(s.getDate()+6);
+  return fmtShort(s)+'–'+fmtShort(e)+' '+s.getFullYear();
+}
+
+/* ── Data: staff activo + vacaciones desde RRHH (Apps Script / Sheet) ── */
+async function loadSheet(){
+  document.getElementById('header-status').textContent='Actualizando...';
+  try{
+    const [rP, rV] = await Promise.all([
+      fetch(APPS_SCRIPT_URL+'?modulo=personal'),
+      fetch(APPS_SCRIPT_URL+'?modulo=vacaciones').catch(()=>null)
+    ]);
+    if(!rP.ok) throw new Error('Personal respondió '+rP.status);
+    const dP = await rP.json();
+    if(!dP.ok) throw new Error(dP.error||'Respuesta inválida de personal');
+    const dV = rV && rV.ok ? await rV.json() : {ok:false,registros:[]};
+
+    buildFromPersonal(dP.registros||[]);
+    vacaciones = normalizarVacaciones(dV.ok?dV.registros:[]);
+    await cargarHorarioGuardado();
+    aplicarVacaciones();
+    renderAll();
+    await cargarEstadoSemana();
+
+    document.getElementById('header-status').textContent='Planilla actualizada ✓';
+    toast('Planilla y vacaciones actualizadas');
+    setTimeout(()=>{document.getElementById('header-status').textContent=''},3000);
+  }catch(e){
+    console.error('Error cargando datos de RRHH:',e);
+    document.getElementById('header-status').textContent='Sin conexión — verificá RRHH';
+    loadFallback();
+  }
+}
+
+function initSchedule(emp){
+  if(!schedule[emp.id]){
+    schedule[emp.id]={};
+    DAYS.forEach((_,i)=>{schedule[emp.id][i]={status:'trabajo',in:'',out:'',note:'',autoVac:false,otroLabel:''}});
+  }
+}
+
+// Limpia las celdas de la semana visible antes de cargar otra semana, ya que
+// schedule[empId][i] se indexa por día-de-semana (0-6), no por fecha real.
+function resetWeekCells(){
+  employees.forEach(emp=>{
+    if(!schedule[emp.id]) initSchedule(emp);
+    DAYS.forEach((_,i)=>{ schedule[emp.id][i]={status:'trabajo',in:'',out:'',note:'',autoVac:false,otroLabel:''}; });
+  });
+}
+
+/* ── Guardar / cargar historial de horarios (hoja "Horarios" en RRHH) ── */
+async function cargarHorarioGuardado(){
+  try{
+    const resp=await fetch(APPS_SCRIPT_URL+'?modulo=horarios');
+    if(!resp.ok)return;
+    const data=await resp.json();
+    if(!data.ok||!Array.isArray(data.registros))return;
+
+    const semana=document.getElementById('week-start').value;
+    const dates=getWeekDatesISO();
+    const registros=data.registros.filter(r=>(r['Semana inicio']||'')===semana);
+    if(!registros.length)return;
+
+    registros.forEach(r=>{
+      const nombre=(r['Colaborador']||'').toString().trim().toLowerCase();
+      const fecha=r['Fecha']||'';
+      const dayIdx=dates.indexOf(fecha);
+      if(dayIdx<0)return;
+      const emp=employees.find(e=>e.name.trim().toLowerCase()===nombre);
+      if(!emp)return;
+      if(!schedule[emp.id])initSchedule(emp);
+      schedule[emp.id][dayIdx]={
+        status: r['Estado']||'trabajo',
+        in:     r['Hora entrada']||'',
+        out:    r['Hora salida']||'',
+        note:   r['Nota']||'',
+        autoVac:false,
+        otroLabel: r['Detalle']||''
+      };
+    });
+  }catch(e){
+    console.warn('No se pudo cargar el horario guardado:',e);
+  }
+}
+
+async function guardarSemana(){
+  if(!employees.length){toast('No hay colaboradores cargados');return}
+  const dates=getWeekDatesISO();
+  const semana=document.getElementById('week-start').value;
+  const dias=[];
+  employees.forEach(emp=>{
+    dates.forEach((fecha,i)=>{
+      const s=schedule[emp.id]?.[i];
+      if(!s)return;
+      dias.push({
+        fecha, colaborador:emp.name, departamento:emp.area||'', puesto:emp.puesto||'',
+        estado:s.status||'trabajo', entrada:s.in||'', salida:s.out||'',
+        horas:calcH(emp.id,i), nota:s.note||'',
+        detalle:(s.status==='otro'?(s.otroLabel||''):'')
+      });
+    });
+  });
+
+  const btn=document.getElementById('btn-guardar-semana');
+  if(btn){btn.disabled=true;btn.textContent='Guardando…';}
+  try{
+    const resp=await fetch(APPS_SCRIPT_URL,{
+      method:'POST',
+      body:new URLSearchParams({data:JSON.stringify({modulo:'horario_semana',semana_inicio:semana,dias})})
+    });
+    const out=await resp.json();
+    if(out.ok) toast('Semana guardada ✓ ('+dias.length+' registros)');
+    else toast('Error al guardar: '+(out.error||'desconocido'));
+  }catch(e){
+    toast('Sin conexión — no se pudo guardar');
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML='&#128190; Guardar semana';}
+  }
+}
+
+/* ── Cerrar / reabrir semana ──
+   Una semana cerrada bloquea toda edición y habilita exportar/enviar.
+   Reabrir requiere el código de administrador. */
+async function cargarEstadoSemana(){
+  const semana=document.getElementById('week-start').value;
+  try{
+    const resp=await fetch(APPS_SCRIPT_URL+'?modulo=horarios_estado');
+    const data=await resp.json();
+    const reg=(data.ok?data.registros:[]).find(r=>(r['Semana inicio']||'')===semana);
+    semanaCerrada=!!(reg && (reg['Cerrado']||'').toString().trim().toLowerCase()==='sí');
+  }catch(e){
+    semanaCerrada=false;
+  }
+  aplicarEstadoUI();
+}
+
+async function cerrarSemana(){
+  if(!confirm('¿Cerrar el horario de esta semana?\n\nNo se podrán hacer más cambios hasta reabrirlo con el código de administrador.'))return;
+  const semana=document.getElementById('week-start').value;
+  try{
+    const resp=await fetch(APPS_SCRIPT_URL,{
+      method:'POST',
+      body:new URLSearchParams({data:JSON.stringify({modulo:'cerrar_horario',semana_inicio:semana})})
+    });
+    const out=await resp.json();
+    if(!out.ok){toast('Error al cerrar: '+(out.error||'desconocido'));return}
+    semanaCerrada=true;
+    aplicarEstadoUI();
+    toast('Horario cerrado 🔒');
+  }catch(e){
+    toast('Sin conexión — no se pudo cerrar');
+  }
+}
+
+async function reabrirSemana(){
+  const code=prompt('Código de administrador para reabrir esta semana:');
+  if(code===null)return;
+  if(code.trim().toLowerCase()!==ADMIN_CODE){toast('Código incorrecto');return}
+  const semana=document.getElementById('week-start').value;
+  try{
+    const resp=await fetch(APPS_SCRIPT_URL,{
+      method:'POST',
+      body:new URLSearchParams({data:JSON.stringify({modulo:'reabrir_horario',semana_inicio:semana})})
+    });
+    const out=await resp.json();
+    if(!out.ok){toast('Error al reabrir: '+(out.error||'desconocido'));return}
+    semanaCerrada=false;
+    aplicarEstadoUI();
+    toast('Horario reabierto 🔓');
+  }catch(e){
+    toast('Sin conexión — no se pudo reabrir');
+  }
+}
+
+function aplicarEstadoUI(){
+  const badge=document.getElementById('semana-cerrada-badge');
+  const btnCerrar=document.getElementById('btn-cerrar-semana');
+  const btnReabrir=document.getElementById('btn-reabrir-semana');
+  const btnGuardar=document.getElementById('btn-guardar-semana');
+  const btnPDF=document.getElementById('btn-pdf');
+  const btnWA=document.getElementById('btn-whatsapp');
+
+  if(badge) badge.style.display=semanaCerrada?'inline-flex':'none';
+  if(btnCerrar) btnCerrar.style.display=(employees.length&&!semanaCerrada)?'inline-flex':'none';
+  if(btnReabrir) btnReabrir.style.display=(employees.length&&semanaCerrada)?'inline-flex':'none';
+  if(btnGuardar) btnGuardar.disabled=semanaCerrada;
+  const btnAddExtra=document.getElementById('btn-add-extra');
+  if(btnAddExtra) btnAddExtra.disabled=semanaCerrada;
+  if(btnPDF) btnPDF.disabled=!semanaCerrada;
+  if(btnWA) btnWA.disabled=!semanaCerrada;
+  renderSched();
+}
+
+// Convierte el listado de "Personal" (RRHH) en empleados activos para el horario.
+// Un solo punto de venta (Lorito); el filtro de departamento reemplaza
+// el concepto de "PDV" que traía el módulo original.
+function buildFromPersonal(regs){
+  const activos = (regs||[]).filter(p=>((p['Estado']||p.estado||'').toString().toUpperCase())==='ACTIVO');
+
+  const idsExtra = new Set(employees.filter(e=>e.extra).map(e=>e));
+  const extras = employees.filter(e=>e.extra); // conservar empleados extra agregados manualmente
+
+  restos = [{id:'PRINCIPAL', name:'Lorito'}];
+  employees = activos.map(p=>{
+    const nombre = p['Nombre completo'] || ((p['Nombre']||p.nombre||'')+' '+(p['Apellidos']||p.apellidos||'')).trim();
+    return {
+      id: 'EMP-'+(p['Cédula']||p.cedula||nombre),
+      name: nombre,
+      restoId: 'PRINCIPAL',
+      area: (p['Departamento']||p.departamento||'').toString(),
+      puesto: p['Puesto']||p.puesto||''
+    };
+  }).filter(e=>e.name.trim());
+
+  employees = employees.concat(extras);
+  employees.forEach(emp=>initSchedule(emp));
+
+  if(!activeResto||!restos.find(r=>r.id===activeResto)) activeResto = restos[0]?.id||null;
+  showStatus(employees.length+' colaboradores activos · '+vacaciones.length+' solicitudes de vacaciones cargadas', false);
+}
+
+function normalizarVacaciones(regs){
+  return (regs||[]).map(s=>({
+    nombre:  (s['Colaborador']||s.colaborador||'').toString().trim(),
+    inicio:  s['Fecha inicio']||s.fecha_inicio||'',
+    fin:     s['Fecha fin']||s.fecha_fin||'',
+    estado:  (s['Estado']||s.estado||'Pendiente').toString()
+  })).filter(v=>v.nombre&&v.inicio&&v.fin);
+}
+
+// Marca como "Vacaciones" los días de la semana visible cubiertos por una
+// solicitud aprobada. Sólo toca celdas que estén en 'trabajo' o que hayan
+// sido marcadas automáticamente antes (autoVac), para no pisar ediciones
+// manuales (incapacidad, permiso, etc.) hechas por el administrador.
+function aplicarVacaciones(){
+  if(!employees.length) return;
+  const dates = getWeekDatesISO();
+  employees.forEach(emp=>{
+    if(!schedule[emp.id]) initSchedule(emp);
+    dates.forEach((iso,i)=>{
+      const cubierto = vacaciones.some(v=>
+        v.nombre.toLowerCase()===emp.name.toLowerCase().trim() &&
+        v.estado.toLowerCase()==='aprobado' &&
+        iso>=v.inicio && iso<=v.fin
+      );
+      const cell = schedule[emp.id][i];
+      if(cubierto){
+        if(cell.status==='trabajo'||cell.autoVac){ cell.status='vacaciones'; cell.autoVac=true; }
+      } else if(cell.autoVac){
+        cell.status='trabajo'; cell.autoVac=false;
+      }
+    });
+  });
+}
+
+function loadFallback(){
+  showStatus('No se pudo conectar con la base de RRHH — verificá tu conexión y reintentá con "Actualizar planilla".', true);
+  if(!restos.length) restos=[{id:'PRINCIPAL',name:'Lorito'}];
+  if(!activeResto) activeResto=restos[0]?.id||null;
+  renderAll();
+}
+
+function showStatus(msg,warn){
+  const el=document.getElementById('status-bar');el.textContent=msg;el.style.display='flex';
+  el.className=warn?'status-bar warn':'status-bar';
+}
+
+/* ── Schedule ── */
+function calcH(empId,day){
+  const s=schedule[empId]?.[day];
+  if(!s)return 0;
+  if(s.status==='vacaciones')return HORAS_VACACIONES;
+  if(s.status!=='trabajo'||!s.in||!s.out)return 0;
+  const[ih,im]=s.in.split(':').map(Number),[oh,om]=s.out.split(':').map(Number);
+  const diff=(oh*60+om)-(ih*60+im);return diff>0?diff/60:0;
+}
+function setStatus(empId,day,val){
+  if(semanaCerrada){toast('Semana cerrada — reabrila para editar');return}
+  if(!schedule[empId])return;
+  schedule[empId][day].status=val;
+  schedule[empId][day].autoVac=false; // override manual rompe el auto-marcado
+  if(val!=='otro') schedule[empId][day].otroLabel='';
+  renderSched();
+}
+
+/* ── Popover de incapacidad / permiso / otro (botón "+") ── */
+function abrirExtra(empId,day,btnEl){
+  if(semanaCerrada){toast('Semana cerrada — reabrila para editar');return}
+  extraTarget={empId,day};
+  const pop=document.getElementById('extra-popover');
+  const r=btnEl.getBoundingClientRect();
+  pop.style.display='flex';
+  const left=Math.min(r.left,window.innerWidth-180);
+  pop.style.top=(r.bottom+6)+'px';
+  pop.style.left=Math.max(8,left)+'px';
+}
+function cerrarExtra(){
+  document.getElementById('extra-popover').style.display='none';
+  extraTarget=null;
+}
+function aplicarExtra(tipo){
+  if(!extraTarget)return;
+  const {empId,day}=extraTarget;
+  if(!schedule[empId])return;
+  if(tipo==='otro'){
+    const txt=(prompt('Descripción breve (opcional):','')||'').trim();
+    schedule[empId][day].otroLabel=txt;
+  }else{
+    schedule[empId][day].otroLabel='';
+  }
+  schedule[empId][day].status=tipo;
+  schedule[empId][day].autoVac=false;
+  cerrarExtra();
+  renderSched();
+}
+document.addEventListener('click',e=>{
+  const pop=document.getElementById('extra-popover');
+  if(pop.style.display==='flex' && !pop.contains(e.target) && !e.target.classList.contains('btn-extra')) cerrarExtra();
+});
+function setTimeField(empId,day,field,val){
+  if(semanaCerrada)return;
+  if(!schedule[empId])return;
+  schedule[empId][day][field]=val;
+  const h=calcH(empId,day);
+  const el=document.getElementById('h-'+empId+'-'+day);
+  if(el)el.textContent=h>0?h.toFixed(1)+'h':'—';
+  updateTotals();
+}
+function setNote(empId,day,val){if(!semanaCerrada&&schedule[empId])schedule[empId][day].note=val}
+
+function updateTotals(){
+  const emps=employees.filter(e=>e.restoId===activeResto);
+  emps.forEach(emp=>{
+    const el=document.getElementById('tot-'+emp.id);
+    if(el){let t=0;DAYS.forEach((_,i)=>{t+=calcH(emp.id,i)});el.textContent=t.toFixed(1)+'h'}
+  });
+  DAYS.forEach((_,i)=>{
+    const el=document.getElementById('daytot-'+i);
+    if(el){let dt=0;emps.forEach(e=>{dt+=calcH(e.id,i)});el.textContent=dt>0?dt.toFixed(1)+'h':'—'}
+  });
+  const g=document.getElementById('grand-tot');
+  if(g){let t=0;emps.forEach(e=>{DAYS.forEach((_,i)=>{t+=calcH(e.id,i)})});g.textContent=t.toFixed(1)+'h'}
+  renderMetrics();
+}
+
+function showBanner(type,html){
+  const el=document.getElementById('import-banner');
+  document.getElementById('import-banner-text').innerHTML=html;
+  el.className='banner banner-'+(type==='warn'?'warn':'vac');
+  el.style.display='flex';
+}
+
+/* ── Render ── */
+function renderAll(){renderFilterAreas();renderSched()}
+
+function renderFilterAreas(){
+  const emps=employees.filter(e=>e.restoId===activeResto);
+  const areas=[...new Set(emps.map(e=>e.area).filter(Boolean))].sort();
+  const sel=document.getElementById('filter-area'),cur=sel.value;
+  sel.innerHTML='<option value="">Todos los departamentos</option>'+areas.map(a=>'<option value="'+esc(a)+'"'+(cur===a?' selected':'')+'>'+esc(a)+'</option>').join('');
+}
+
+function buildDayCell(empId,i){
+  const s=schedule[empId]?.[i]||{status:'trabajo',in:'',out:'',note:'',autoVac:false,otroLabel:''};
+  const st=s.status||'trabajo';
+  const dis=semanaCerrada?' disabled':'';
+  const noteEl='<textarea class="note-ta" placeholder="Nota…" onchange="setNote(\''+empId+'\','+i+',this.value)"'+dis+'>'+esc(s.note||'')+'</textarea>'+(s.note?'<div class="note-print">'+esc(s.note)+'</div>':'');
+  const extraBtn=semanaCerrada?'':'<button type="button" class="btn-extra" title="Incapacidad / permiso sin goce / otro" onclick="abrirExtra(\''+empId+'\','+i+',this)">+</button>';
+
+  if(st==='trabajo'||st==='libre'){
+    const selEl='<select class="st-sel" onchange="setStatus(\''+empId+'\','+i+',this.value)"'+dis+'>'+
+      '<option value="trabajo"'+(st==='trabajo'?' selected':'')+'>Turno normal</option>'+
+      '<option value="libre"'+(st==='libre'?' selected':'')+'>Día libre</option>'+
+      '</select>';
+    if(st==='libre'){
+      const info=ST.libre;
+      return '<td class="'+info.bgCls+'"><div class="special-td">'+selEl+'<div class="sp-icon">'+info.icon+'</div><div class="sp-lbl">'+info.label+'</div>'+extraBtn+noteEl+'</div></td>';
+    }
+    const h=calcH(empId,i);
+    return '<td><div class="day-cell">'+selEl+
+      '<input type="time" value="'+esc(s.in)+'" onchange="setTimeField(\''+empId+'\','+i+',\'in\',this.value)"'+dis+'/>'+
+      '<input type="time" value="'+esc(s.out)+'" onchange="setTimeField(\''+empId+'\','+i+',\'out\',this.value)"'+dis+'/>'+
+      '<div class="hours-lbl" id="h-'+empId+'-'+i+'">'+(h>0?h.toFixed(1)+'h':'—')+'</div>'+
+      extraBtn+noteEl+'</div></td>';
+  }
+
+  // Estados especiales: vacaciones (automáticas), incapacidad, permiso, otro
+  const info=ST[st]||{label:st,icon:'',bgCls:''};
+  const autoTag=(st==='vacaciones'&&s.autoVac)?'<div class="auto-tag">desde solicitud</div>':'';
+  const horasTag=(st==='vacaciones')?'<div class="hours-lbl" style="font-size:11px;">'+HORAS_VACACIONES.toFixed(1)+'h</div>':'';
+  const lbl=info.label+(st==='otro'&&s.otroLabel?': '+esc(s.otroLabel):'');
+  const quitarBtn=(semanaCerrada||(st==='vacaciones'&&s.autoVac))
+    ? ''
+    : '<button type="button" class="btn-quitar" onclick="setStatus(\''+empId+'\','+i+',\'trabajo\')">Quitar</button>';
+  return '<td class="'+info.bgCls+'"><div class="special-td"><div class="sp-icon">'+info.icon+'</div><div class="sp-lbl">'+lbl+'</div>'+autoTag+horasTag+quitarBtn+noteEl+'</div></td>';
+}
+
+function renderSched(){
+  const container=document.getElementById('sched-container');
+  ['toolbar','export-row','legend'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='flex'});
+  document.getElementById('metrics').style.display='grid';
+
+  if(!restos.length){container.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3)">Cargando...</div>';return}
+
+  const filterVal=document.getElementById('filter-area').value;
+  const allEmps=employees.filter(e=>e.restoId===activeResto);
+  const emps=filterVal?allEmps.filter(e=>e.area===filterVal):allEmps;
+  const dates=getWeekDates();
+
+  if(!emps.length){container.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3)">Sin colaboradores activos. Hacé clic en "Actualizar planilla".</div>';renderMetrics();return}
+
+  let html='<div class="tbl-wrap"><table><thead><tr><th class="ec">Empleado</th>';
+  dates.forEach(d=>{html+='<th>'+d.label+'<br><span style="font-weight:400;font-size:10px;color:var(--text3)">'+d.date+'</span></th>'});
+  html+='<th>Total hrs</th></tr></thead><tbody>';
+
+  emps.forEach(emp=>{
+    let tot=0;DAYS.forEach((_,i)=>{tot+=calcH(emp.id,i)});
+    html+='<tr><td class="ec"><div class="emp-name">'+esc(emp.name)+'</div><div class="emp-meta">'+esc([emp.area,emp.puesto].filter(Boolean).join(' · '))+'</div>'+((emp.extra&&!semanaCerrada)?'<button class="btn btn-danger" onclick="removeEmployee(\''+emp.id+'\')">&#x2715; quitar</button>':'')+'</td>';
+    DAYS.forEach((_,i)=>{html+=buildDayCell(emp.id,i)});
+    html+='<td class="hours-lbl" id="tot-'+emp.id+'" style="font-size:13px;vertical-align:middle">'+tot.toFixed(1)+'h</td></tr>';
+  });
+
+  let grand=0;
+  html+='<tr class="total-row"><td class="ec" style="font-size:12px;color:var(--text2)">Total por día</td>';
+  DAYS.forEach((_,i)=>{let dt=0;emps.forEach(e=>{dt+=calcH(e.id,i)});grand+=dt;html+='<td id="daytot-'+i+'">'+(dt>0?dt.toFixed(1)+'h':'—')+'</td>'});
+  html+='<td class="grand" id="grand-tot">'+grand.toFixed(1)+'h</td></tr></tbody></table></div>';
+  container.innerHTML=html;
+  renderMetrics();
+}
+
+function renderMetrics(){
+  const el=document.getElementById('metrics');
+  if(!activeResto){el.style.display='none';return}
+  const emps=employees.filter(e=>e.restoId===activeResto);
+  if(!emps.length){el.innerHTML='';return}
+  let tot=0,lib=0,vac=0,inc=0,perm=0;
+  emps.forEach(e=>{DAYS.forEach((_,i)=>{
+    const s=schedule[e.id]?.[i];tot+=calcH(e.id,i);
+    if(s){if(s.status==='libre')lib++;if(s.status==='vacaciones')vac++;if(s.status==='incapacidad')inc++;if(s.status==='permiso')perm++}
+  })});
+  el.innerHTML=
+    '<div class="metric"><div class="metric-lbl">Empleados</div><div class="metric-val">'+emps.length+'</div></div>'+
+    '<div class="metric"><div class="metric-lbl">Horas totales</div><div class="metric-val">'+tot.toFixed(1)+'h</div></div>'+
+    '<div class="metric"><div class="metric-lbl">Días libres</div><div class="metric-val">'+lib+'</div></div>'+
+    '<div class="metric"><div class="metric-lbl" style="color:var(--vac-text)">Vacaciones</div><div class="metric-val">'+vac+'</div></div>'+
+    '<div class="metric"><div class="metric-lbl" style="color:var(--inc-text)">Incapacidades</div><div class="metric-val">'+inc+'</div></div>'+
+    '<div class="metric"><div class="metric-lbl" style="color:var(--per-text)">Permisos s/g</div><div class="metric-val">'+perm+'</div></div>';
+}
+
+/* ── Extra employees (personal eventual / freelance que no está en RRHH) ── */
+function toggleAddPanel(){document.getElementById('add-panel').classList.toggle('open')}
+function addExtraEmp(){
+  if(semanaCerrada){toast('Semana cerrada — reabrila para editar');return}
+  const name=document.getElementById('extra-name').value.trim();
+  if(!name||!activeResto){toast('Escribí un nombre');return}
+  const id=uid();
+  const emp={id,name,restoId:activeResto,area:document.getElementById('extra-area').value.trim(),puesto:document.getElementById('extra-puesto').value.trim(),extra:true};
+  employees.push(emp);
+  initSchedule(emp);
+  document.getElementById('extra-name').value='';document.getElementById('extra-area').value='';document.getElementById('extra-puesto').value='';
+  document.getElementById('add-panel').classList.remove('open');
+  renderAll();toast(name+' agregado');
+}
+function removeEmployee(id){
+  if(semanaCerrada){toast('Semana cerrada — reabrila para editar');return}
+  const emp=employees.find(e=>e.id===id);
+  employees=employees.filter(e=>e.id!==id);delete schedule[id];
+  renderAll();if(emp)toast(emp.name+' removido');
+}
+
+/* ── Exports ── */
+function buildPDVHtml(resto,dates){
+  const STINFO={
+    vacaciones:{bg:'#dbeafe',text:'#1e3a5f',icon:'🌴',label:'Vacaciones'},
+    incapacidad:{bg:'#fef3c7',text:'#78350f',icon:'🏥',label:'Incapacidad'},
+    permiso:{bg:'#f3e8ff',text:'#4c1d95',icon:'📋',label:'Permiso sin goce'},
+    libre:{bg:'#f1f5f9',text:'#334155',icon:'🌙',label:'Día libre'},
+    otro:{bg:'#f1f5f9',text:'#334155',icon:'📌',label:'Otro'},
+  };
+  const emps=employees.filter(e=>e.restoId===resto.id);
+  let tbl='<table><thead><tr><th>Empleado</th><th>Depto / Puesto</th>';
+  dates.forEach(d=>{tbl+='<th>'+d.label+'<br><small>'+d.date+'</small></th>'});
+  tbl+='</tr></thead><tbody>';
+  emps.forEach(emp=>{
+    tbl+='<tr><td class="n">'+esc(emp.name)+'</td><td class="a">'+esc([emp.area,emp.puesto].filter(Boolean).join(' / '))+'</td>';
+    DAYS.forEach((_,i)=>{
+      const s=schedule[emp.id]?.[i];const st=s?.status||'trabajo';
+      if(st!=='trabajo'){
+        const info=STINFO[st]||{bg:'#f1f5f9',text:'#334155',icon:'',label:st};
+        const lbl=info.label+(st==='otro'&&s?.otroLabel?': '+esc(s.otroLabel):'');
+        tbl+='<td style="background:'+info.bg+';color:'+info.text+';font-size:11px;text-align:center">'+info.icon+' '+lbl+(s?.note?'<br><em style="font-size:10px;opacity:.7">'+esc(s.note)+'</em>':'')+'</td>';
+      }else{
+        tbl+='<td>'+(s?.in&&s?.out?s.in+'–'+s.out:'')+(s?.note?'<br><em style="font-size:10px;color:#888">'+esc(s.note)+'</em>':'')+'</td>';
+      }
+    });
+    tbl+='</tr>';
+  });
+  tbl+='</tbody></table>';
+  const css='body{font-family:Arial,sans-serif;font-size:12px;color:#1a1917;padding:20px;max-width:1200px;margin:0 auto}'+
+    'h1{font-size:20px;font-weight:700;margin-bottom:3px;color:#2d6a4f}h2{font-size:13px;color:#6b6860;font-weight:400;margin-bottom:16px}'+
+    '.leg{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;margin-bottom:14px}.leg span{padding:2px 8px;border-radius:4px}'+
+    'table{width:100%;border-collapse:collapse;margin-bottom:14px}th,td{border:1px solid #e2e0d8;padding:6px 8px;text-align:center;font-size:11px;vertical-align:top}'+
+    'th{background:#f2f1ed;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.04em}'+
+    'td.n{text-align:left;font-weight:700}td.a{color:#888;text-align:left}'+
+    '@media print{@page{size:landscape;margin:1cm}}';
+  return '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Horario '+esc(resto.name)+' '+getWeekLabel()+'</title><style>'+css+'</style></head><body>'+
+    '<h1>'+esc(resto.name)+'</h1><h2>Semana '+getWeekLabel()+' · Generado '+new Date().toLocaleDateString('es-CR')+'</h2>'+
+    '<div class="leg">'+
+    '<span style="background:#dbeafe;color:#1e3a5f">🌴 Vacaciones</span>'+
+    '<span style="background:#fef3c7;color:#78350f">🏥 Incapacidad</span>'+
+    '<span style="background:#f3e8ff;color:#4c1d95">📋 Permiso sin goce</span>'+
+    '<span style="background:#f1f5f9;color:#334155">🌙 Día libre</span>'+
+    '</div>'+tbl+'</body></html>';
+}
+
+/* ── Generación de PDF (html2canvas + jsPDF) ── */
+async function generarPDF(){
+  if(!window.html2canvas||!window.jspdf){toast('Cargando librería de PDF, esperá un segundo…');return null}
+  const resto=restos.find(r=>employees.some(e=>e.restoId===r.id));
+  if(!resto){toast('Sin datos para exportar');return null}
+
+  const dates=getWeekDates();
+  const html=buildPDVHtml(resto,dates);
+  const parser=new DOMParser();
+  const doc=parser.parseFromString(html,'text/html');
+
+  const holder=document.createElement('div');
+  holder.style.position='fixed';holder.style.left='-99999px';holder.style.top='0';holder.style.width='1100px';
+  holder.innerHTML='<style>'+(doc.querySelector('style')?.textContent||'')+'</style>'+doc.body.innerHTML;
+  document.body.appendChild(holder);
+  await new Promise(r=>setTimeout(r,60));
+
+  let canvas;
+  try{
+    canvas=await html2canvas(holder,{scale:2,backgroundColor:'#ffffff'});
+  }finally{
+    document.body.removeChild(holder);
+  }
+
+  const { jsPDF }=window.jspdf;
+  const pdf=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
+  const pageW=pdf.internal.pageSize.getWidth();
+  const pageH=pdf.internal.pageSize.getHeight();
+  const imgW=pageW;
+  const imgH=canvas.height*imgW/canvas.width;
+  const imgData=canvas.toDataURL('image/png');
+
+  let heightLeft=imgH,position=0;
+  pdf.addImage(imgData,'PNG',0,position,imgW,imgH);
+  heightLeft-=pageH;
+  while(heightLeft>0){
+    position=heightLeft-imgH;
+    pdf.addPage();
+    pdf.addImage(imgData,'PNG',0,position,imgW,imgH);
+    heightLeft-=pageH;
+  }
+
+  const filename='horario_'+document.getElementById('week-start').value+'.pdf';
+  return {pdf,filename};
+}
+
+async function descargarPDF(){
+  const r=await generarPDF();
+  if(!r)return;
+  r.pdf.save(r.filename);
+  toast('PDF descargado');
+}
+
+/* ── Enviar por WhatsApp ──
+   En navegadores con Web Share API (Chrome/Safari en celular) se abre el
+   selector nativo y se puede elegir WhatsApp directamente con el PDF adjunto.
+   Si el navegador no lo soporta (la mayoría de escritorio), se descarga el
+   PDF y se abre WhatsApp con un mensaje para que el archivo se adjunte a mano. */
+async function enviarWhatsApp(){
+  const r=await generarPDF();
+  if(!r)return;
+  const blob=r.pdf.output('blob');
+  const file=new File([blob],r.filename,{type:'application/pdf'});
+  const texto='Horario de la semana '+getWeekLabel();
+
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({files:[file],title:'Horario',text:texto});
+      toast('Compartido ✓');
+      return;
+    }catch(e){
+      if(e && e.name==='AbortError')return; // el usuario canceló el share
+    }
+  }
+
+  r.pdf.save(r.filename);
+  window.open('https://wa.me/?text='+encodeURIComponent(texto+' — adjuntá el PDF que se acaba de descargar.'),'_blank');
+  toast('PDF descargado — adjuntalo en WhatsApp');
+}
+
+initWeek();
+loadSheet();
+</script>
+</body>
+</html>

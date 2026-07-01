@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acceso · Lorito Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --card:#fff; --border:#c8ddd0; --text:#1c3a28;
+      --muted:#5a8a6a; --subtle:#a0c8b0; --green:#1a7a4a;
+      --green-bg:#eef8f2; --red:#c84a20; --red-bg:#fdf0eb;
+      --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body {
+      background:var(--bg); color:var(--text); font-family:var(--font-b);
+      min-height:100vh; display:flex; align-items:center; justify-content:center;
+      padding:2rem;
+    }
+    .card {
+      background:var(--card); border:1px solid var(--border); border-radius:16px;
+      padding:2.5rem; width:100%; max-width:380px;
+    }
+    .logo { display:flex; align-items:center; gap:10px; margin-bottom:2rem; }
+    .logo-mark {
+      width:40px; height:40px; border-radius:10px; background:var(--text);
+      display:flex; align-items:center; justify-content:center;
+    }
+    .logo-mark svg { width:22px; height:22px; stroke:#fff; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+    .logo-name { font-family:var(--font-d); font-size:17px; font-weight:700; }
+    .logo-sub  { font-size:12px; color:var(--muted); }
+    h1 { font-family:var(--font-d); font-size:22px; font-weight:700; margin-bottom:6px; }
+    p  { font-size:13px; color:var(--muted); margin-bottom:2rem; }
+    label { font-size:13px; font-weight:500; color:var(--text); display:block; margin-bottom:6px; }
+    .pin-wrap { position:relative; margin-bottom:1.25rem; }
+    input[type="password"] {
+      width:100%; background:var(--bg); border:1.5px solid var(--border);
+      border-radius:10px; color:var(--text); font-family:var(--font-b);
+      font-size:20px; letter-spacing:.3em; padding:12px 40px 12px 16px;
+      outline:none; transition:border-color .15s;
+    }
+    input[type="password"]:focus { border-color:var(--green); }
+    .toggle-vis {
+      position:absolute; right:12px; top:50%; transform:translateY(-50%);
+      background:none; border:none; cursor:pointer; color:var(--subtle);
+      font-size:12px; padding:4px;
+    }
+    .btn {
+      width:100%; background:var(--text); color:#fff; border:none;
+      border-radius:10px; font-family:var(--font-d); font-size:15px;
+      font-weight:700; padding:13px; cursor:pointer; transition:opacity .15s;
+    }
+    .btn:hover { opacity:.88; }
+    .btn:disabled { opacity:.4; cursor:not-allowed; }
+    .error {
+      font-size:12px; color:var(--red); background:var(--red-bg);
+      border:1px solid #f0c0a8; border-radius:8px; padding:9px 12px;
+      margin-top:12px; display:none; text-align:center;
+    }
+    .footer { text-align:center; margin-top:1.5rem; font-size:11px; color:var(--subtle); }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <div>
+      <div class="logo-name">Lorito</div>
+      <div class="logo-sub">Portal de Operaciones</div>
+    </div>
+  </div>
+
+  <h1>Bienvenido</h1>
+  <p>Ingresá tu código de acceso para continuar.</p>
+
+  <label for="pin">Código de acceso</label>
+  <div class="pin-wrap">
+    <input type="password" id="pin" maxlength="10" placeholder="••••" autocomplete="off"
+      onkeydown="if(event.key==='Enter')ingresar()">
+    <button class="toggle-vis" onclick="toggleVis()" type="button" title="Mostrar código">👁</button>
+  </div>
+
+  <button class="btn" onclick="ingresar()">Ingresar</button>
+  <div class="error" id="error-msg">Código incorrecto. Intentá nuevamente.</div>
+
+  <div class="footer">Lorito · Portal interno</div>
+</div>
+
+<script>
+const ADMIN_DEFAULT = { id:'admin', nombre:'Administrador', pin:'admin', color:'#1a7a4a', modulos:'todos' };
+
+function getRoles() {
+  try { return JSON.parse(localStorage.getItem('portal_roles')||'null') || [ADMIN_DEFAULT]; }
+  catch { return [ADMIN_DEFAULT]; }
+}
+
+function toggleVis() {
+  const inp = document.getElementById('pin');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function ingresar() {
+  const pin = document.getElementById('pin').value.trim();
+  if (!pin) return;
+  const roles = getRoles();
+  const rol   = roles.find(r => r.pin === pin);
+  if (!rol) {
+    document.getElementById('error-msg').style.display = 'block';
+    document.getElementById('pin').value = '';
+    document.getElementById('pin').focus();
+    return;
+  }
+  // Guardar sesión
+  localStorage.setItem('portal_sesion', JSON.stringify({
+    rol_id:   rol.id,
+    nombre:   rol.nombre,
+    modulos:  rol.modulos,
+    ts:       Date.now()
+  }));
+  window.location.href = 'index.html';
+}
+
+// Si ya hay sesión válida, redirigir directo
+const sesion = JSON.parse(localStorage.getItem('portal_sesion')||'null');
+if (sesion && (Date.now() - sesion.ts) < 8 * 60 * 60 * 1000) {
+  window.location.href = 'index.html';
+}
+
+document.getElementById('pin').focus();
+</script>
+</body>
+</html>

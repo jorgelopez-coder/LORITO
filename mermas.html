@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mermas de Cerveza · Lorito</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0f1117;
+      --surface:  #181c27;
+      --card:     #1e2333;
+      --border:   #2a3045;
+      --border-h: #3a4460;
+      --text:     #e8eaf0;
+      --muted:    #7a839a;
+      --green:    #2ecc8a;
+      --green-bg: #0f2820;
+      --red:      #e05555;
+      --red-bg:   #2a1010;
+      --accent:   #f5a623;
+      --radius:   12px;
+      --font-display: 'Inter Tight', sans-serif;
+      --font-body:    'Inter', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 10;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 5px 10px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .back-btn:hover { color: var(--text); border-color: var(--border-h); }
+
+    .back-btn svg { width: 14px; height: 14px; }
+
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .date-pill {
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px;
+    }
+
+    /* Layout */
+    main {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 2rem 2rem 4rem;
+    }
+
+    .page-header {
+      margin-bottom: 2rem;
+    }
+
+    .page-header h1 {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .page-header p {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* Card */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1.25rem;
+    }
+
+    /* Form fields */
+    .field {
+      margin-bottom: 1.25rem;
+    }
+
+    .field:last-child { margin-bottom: 0; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    label .required {
+      color: var(--red);
+      margin-left: 3px;
+    }
+
+    input[type="date"],
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      padding: 9px 12px;
+      outline: none;
+      transition: border-color 0.15s;
+      appearance: none;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(46,204,138,0.12);
+    }
+
+    input::placeholder, textarea::placeholder { color: var(--muted); }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a839a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 36px;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+      line-height: 1.5;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 5px;
+    }
+
+    /* Entradas de merma dinámicas */
+    .merma-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .merma-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .merma-row label { margin-bottom: 4px; }
+
+    .remove-btn {
+      width: 36px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+      flex-shrink: 0;
+    }
+
+    .remove-btn:hover {
+      color: var(--red);
+      border-color: var(--red);
+      background: var(--red-bg);
+    }
+
+    .remove-btn svg { width: 15px; height: 15px; pointer-events: none; }
+
+    .add-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--green);
+      background: var(--green-bg);
+      border: 1px solid #1e4030;
+      border-radius: 8px;
+      padding: 8px 14px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.15s, border-color 0.15s;
+      width: fit-content;
+    }
+
+    .add-btn:hover { background: #143524; border-color: var(--green); }
+    .add-btn svg { width: 15px; height: 15px; }
+
+    /* Total */
+    .total-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-top: 14px;
+      font-size: 14px;
+    }
+
+    .total-label { color: var(--muted); }
+
+    .total-value {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--text);
+    }
+
+    /* Submit */
+    .submit-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 1.5rem;
+    }
+
+    .btn-submit {
+      flex: 1;
+      background: var(--green);
+      color: #0a1f14;
+      border: none;
+      border-radius: 9px;
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 700;
+      padding: 12px 24px;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .btn-submit:hover { opacity: 0.9; }
+    .btn-submit:active { transform: scale(0.98); }
+    .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-clear {
+      padding: 12px 18px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 14px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .btn-clear:hover { color: var(--text); border-color: var(--border-h); }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--card);
+      border: 1px solid var(--border-h);
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
+      opacity: 0;
+      z-index: 100;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success { border-color: var(--green); color: var(--green); }
+    .toast.error   { border-color: var(--red);   color: var(--red);   }
+
+    .toast svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+    /* Historial */
+    .historial-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .historial-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 0 10px 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .historial-table td {
+      padding: 10px 10px 10px 0;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: top;
+    }
+
+    .historial-table tr:last-child td { border-bottom: none; }
+
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* Responsive */
+    @media (max-width: 560px) {
+      header { padding: 0 1rem; }
+      main   { padding: 1.5rem 1rem 3rem; }
+      .field-row { grid-template-columns: 1fr; }
+      .merma-row { grid-template-columns: 1fr auto; }
+      .merma-row .field:first-child { grid-column: 1 / -1; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .toast { transition: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 4L6 8l4 4"/>
+      </svg>
+      Inicio
+    </a>
+    <span class="page-title">Mermas de cerveza</span>
+  </div>
+  <span class="date-pill" id="date-display"></span>
+</header>
+
+<main>
+  <div class="page-header">
+    <h1>Registro de mermas</h1>
+    <p>Completá el formulario al final de cada turno con las mermas del día.</p>
+  </div>
+
+  <!-- Formulario -->
+  <form id="merma-form" novalidate>
+
+    <div class="card">
+      <p class="card-title">Información general</p>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="fecha">Fecha <span class="required">*</span></label>
+          <input type="date" id="fecha" name="fecha" required>
+        </div>
+        <div class="field">
+          <label for="responsable">Responsable <span class="required">*</span></label>
+          <input type="text" id="responsable" name="responsable" placeholder="Nombre del empleado" required>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Detalle de mermas</p>
+
+      <div class="merma-list" id="merma-list">
+        <!-- filas dinámicas -->
+      </div>
+
+      <button type="button" class="add-btn" id="add-row-btn">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/>
+        </svg>
+        Agregar producto
+      </button>
+
+      <div class="total-bar">
+        <span class="total-label">Total merma del día</span>
+        <span class="total-value" id="total-display">0 g</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Observaciones</p>
+      <div class="field">
+        <textarea id="observaciones" name="observaciones" placeholder="Anotá cualquier detalle relevante sobre las mermas de hoy…"></textarea>
+      </div>
+    </div>
+
+    <div class="submit-area">
+      <button type="button" class="btn-clear" id="clear-btn">Limpiar</button>
+      <button type="submit" class="btn-submit" id="submit-btn">Guardar registro</button>
+    </div>
+
+  </form>
+
+  <!-- Historial del día -->
+  <div class="card" style="margin-top: 2rem;">
+    <p class="card-title">Registros de hoy</p>
+    <div id="historial-container">
+      <div class="empty-state">Aún no hay registros para hoy.</div>
+    </div>
+  </div>
+</main>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+  // ─── CONFIGURACIÓN ───────────────────────────────────────────────
+  // Reemplazá esta URL con la de tu Google Apps Script cuando lo tengas
+  const APPS_SCRIPT_URL = '';
+
+  // Tipos de producto — editá esta lista según tus productos
+  const PRODUCTOS = [
+    'Barril 30L',
+    'Barril 50L',
+    'Botella 330ml',
+    'Botella 500ml',
+    'Lata 350ml',
+    'Lata 473ml',
+  ];
+  // ─────────────────────────────────────────────────────────────────
+
+  // Fecha de hoy
+  const hoy = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const fechaHoy = `${hoy.getFullYear()}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`;
+  document.getElementById('fecha').value = fechaHoy;
+
+  const opts = { weekday:'long', day:'numeric', month:'long' };
+  document.getElementById('date-display').textContent =
+    hoy.toLocaleDateString('es-CR', opts);
+
+  // ─── FILAS DINÁMICAS ─────────────────────────────────────────────
+  let rowCount = 0;
+
+  function opcionesProducto(selectedVal) {
+    return PRODUCTOS.map(p =>
+      `<option value="${p}" ${p === selectedVal ? 'selected' : ''}>${p}</option>`
+    ).join('');
+  }
+
+  function addRow(tipo = '', cantidad = '') {
+    rowCount++;
+    const id = rowCount;
+    const list = document.getElementById('merma-list');
+    const div = document.createElement('div');
+    div.className = 'merma-row';
+    div.dataset.id = id;
+    div.innerHTML = `
+      <div class="field">
+        ${id === 1 ? '<label>Tipo de producto</label>' : ''}
+        <select name="tipo_${id}" aria-label="Tipo de producto">
+          <option value="" disabled ${!tipo ? 'selected' : ''}>Seleccioná un tipo…</option>
+          ${opcionesProducto(tipo)}
+        </select>
+      </div>
+      <div class="field">
+        ${id === 1 ? '<label>Cantidad (gramos)</label>' : ''}
+        <input type="number" name="cantidad_${id}" min="0" step="1"
+          placeholder="0" value="${cantidad}" aria-label="Cantidad en gramos"
+          oninput="recalcTotal()">
+      </div>
+      <button type="button" class="remove-btn" onclick="removeRow(this)" aria-label="Eliminar fila">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>
+        </svg>
+      </button>
+    `;
+    list.appendChild(div);
+    recalcTotal();
+  }
+
+  function removeRow(btn) {
+    const row = btn.closest('.merma-row');
+    row.remove();
+    recalcTotal();
+    // Si no quedan filas, agregar una vacía
+    if (document.querySelectorAll('.merma-row').length === 0) addRow();
+  }
+
+  function recalcTotal() {
+    const inputs = document.querySelectorAll('.merma-row input[type="number"]');
+    let total = 0;
+    inputs.forEach(i => { total += parseFloat(i.value) || 0; });
+    document.getElementById('total-display').textContent =
+      total >= 1000
+        ? `${(total/1000).toFixed(2)} kg`
+        : `${total} g`;
+  }
+
+  document.getElementById('add-row-btn').addEventListener('click', () => addRow());
+
+  // Primera fila al cargar
+  addRow();
+
+  // ─── LIMPIAR ─────────────────────────────────────────────────────
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    document.getElementById('responsable').value = '';
+    document.getElementById('observaciones').value = '';
+    document.getElementById('merma-list').innerHTML = '';
+    rowCount = 0;
+    addRow();
+  });
+
+  // ─── TOAST ───────────────────────────────────────────────────────
+  function showToast(msg, type = 'success') {
+    const toast = document.getElementById('toast');
+    const icon  = document.getElementById('toast-icon');
+    document.getElementById('toast-msg').textContent = msg;
+    toast.className = `toast ${type}`;
+    icon.innerHTML = type === 'success'
+      ? '<polyline points="3 8 7 12 13 4"/>'
+      : '<line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>';
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => toast.classList.remove('show'), 3500);
+  }
+
+  // ─── HISTORIAL LOCAL ─────────────────────────────────────────────
+  function getRegistros() {
+    try { return JSON.parse(localStorage.getItem('mermas_hoy') || '[]'); }
+    catch { return []; }
+  }
+
+  function saveRegistro(registro) {
+    const todos = getRegistros();
+    todos.push(registro);
+    localStorage.setItem('mermas_hoy', JSON.stringify(todos));
+    // Limpiar al cambiar de día
+    localStorage.setItem('mermas_fecha', fechaHoy);
+  }
+
+  function renderHistorial() {
+    const fechaGuardada = localStorage.getItem('mermas_fecha');
+    if (fechaGuardada !== fechaHoy) {
+      localStorage.removeItem('mermas_hoy');
+      localStorage.removeItem('mermas_fecha');
+    }
+    const registros = getRegistros();
+    const cont = document.getElementById('historial-container');
+    if (!registros.length) {
+      cont.innerHTML = '<div class="empty-state">Aún no hay registros para hoy.</div>';
+      return;
+    }
+    const rows = registros.map(r => `
+      <tr>
+        <td>${r.responsable}</td>
+        <td>${r.items.map(i => `${i.tipo}: ${i.cantidad}g`).join('<br>')}</td>
+        <td style="font-weight:600">${r.total}g</td>
+        <td style="color:var(--muted)">${r.hora}</td>
+      </tr>
+    `).join('');
+    cont.innerHTML = `
+      <table class="historial-table">
+        <thead><tr>
+          <th>Responsable</th>
+          <th>Detalle</th>
+          <th>Total</th>
+          <th>Hora</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  renderHistorial();
+
+  // ─── ENVÍO ───────────────────────────────────────────────────────
+  document.getElementById('merma-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const fecha       = document.getElementById('fecha').value;
+    const responsable = document.getElementById('responsable').value.trim();
+    const observaciones = document.getElementById('observaciones').value.trim();
+
+    if (!responsable) {
+      showToast('Ingresá el nombre del responsable.', 'error');
+      document.getElementById('responsable').focus();
+      return;
+    }
+
+    // Recolectar filas
+    const filas = document.querySelectorAll('.merma-row');
+    const items = [];
+    let valido = true;
+
+    filas.forEach(fila => {
+      const sel = fila.querySelector('select');
+      const inp = fila.querySelector('input[type="number"]');
+      const tipo = sel ? sel.value : '';
+      const cantidad = parseFloat(inp ? inp.value : 0) || 0;
+      if (tipo && cantidad > 0) items.push({ tipo, cantidad });
+      else if (tipo || cantidad) valido = false;
+    });
+
+    if (!items.length) {
+      showToast('Agregá al menos un producto con cantidad.', 'error');
+      return;
+    }
+    if (!valido) {
+      showToast('Completá tipo y cantidad en todas las filas.', 'error');
+      return;
+    }
+
+    const total = items.reduce((s, i) => s + i.cantidad, 0);
+    const hora  = `${pad(hoy.getHours())}:${pad(hoy.getMinutes())}`;
+
+    const registro = { fecha, responsable, items, total, observaciones, hora };
+
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+
+    // Envío a Google Apps Script (si está configurado)
+    if (APPS_SCRIPT_URL) {
+      try {
+        await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(registro),
+        });
+      } catch {
+        showToast('Error de conexión. Guardado solo localmente.', 'error');
+      }
+    }
+
+    // Guardar local y actualizar historial
+    saveRegistro(registro);
+    renderHistorial();
+    showToast(`Registro guardado — ${total}g de merma`, 'success');
+
+    // Limpiar formulario
+    document.getElementById('responsable').value = '';
+    document.getElementById('observaciones').value = '';
+    document.getElementById('merma-list').innerHTML = '';
+    rowCount = 0;
+    addRow();
+
+    btn.disabled = false;
+    btn.textContent = 'Guardar registro';
+  });
+</script>
+</body>
+</html>

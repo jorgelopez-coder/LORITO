@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recetas · Costos · Grupo del Sol</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#fff;
+      --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --purple:#6a3a9a; --purple-bg:#f3eefb; --purple-lt:#d4b8f0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
+      --amber:#c87820; --amber-bg:#fdf6e3; --amber-lt:#f0d890;
+      --teal:#0e7a7a; --teal-bg:#eaf6f6; --teal-lt:#a8d8d8;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+    header { height:56px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; background:var(--bg); position:sticky; top:0; z-index:20; }
+    .nav-left { display:flex; align-items:center; gap:10px; }
+    .back-btn { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); }
+    .back-btn:hover { color:var(--text); border-color:var(--border-h); }
+    .back-btn svg { width:13px; height:13px; }
+    .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
+    .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 10px; }
+    main { max-width:1000px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .page-header { margin-bottom:1.5rem; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .page-header h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+    .page-header p { font-size:13px; color:var(--muted); }
+    .tabs { display:flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:4px; margin-bottom:1.5rem; width:fit-content; }
+    .tab { font-size:13px; font-weight:500; padding:6px 16px; border-radius:7px; border:none; cursor:pointer; background:transparent; color:var(--muted); transition:background .15s,color .15s; }
+    .tab.active { background:var(--card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.4rem 1.5rem; margin-bottom:12px; }
+    .card-title { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:1.1rem; }
+    .field { margin-bottom:1rem; }
+    .field:last-child { margin-bottom:0; }
+    .field-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .field-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+    label { display:block; font-size:13px; font-weight:500; color:var(--text); margin-bottom:5px; }
+    .req { color:var(--red); margin-left:2px; }
+    input, select { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--font-b); font-size:14px; padding:9px 12px; outline:none; appearance:none; transition:border-color .15s,box-shadow .15s; }
+    input:focus, select:focus { border-color:var(--purple); box-shadow:0 0 0 3px rgba(106,58,154,.1); }
+    input::placeholder { color:var(--subtle); }
+    select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:36px; cursor:pointer; }
+
+    /* Ingredientes dinámicos */
+    .ing-lista { display:flex; flex-direction:column; gap:8px; }
+    .ing-row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr auto; gap:8px; align-items:end; }
+    .ing-row label { margin-bottom:4px; }
+    .ing-costo { font-size:12px; color:var(--purple); font-weight:600; margin-top:4px; }
+    .btn-rm { width:36px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; transition:color .15s,border-color .15s,background .15s; flex-shrink:0; }
+    .btn-rm:hover { color:var(--red); border-color:var(--red); background:var(--red-bg); }
+    .btn-rm svg { width:14px; height:14px; }
+    .btn-add { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:500; color:var(--purple); background:var(--purple-bg); border:1px solid var(--purple-lt); border-radius:8px; padding:8px 14px; cursor:pointer; margin-top:8px; width:fit-content; transition:background .15s; }
+    .btn-add:hover { background:var(--purple-lt); }
+    .btn-add svg { width:14px; height:14px; }
+
+    /* Tipo selector */
+    .tipo-strip { display:flex; gap:6px; margin-bottom:1rem; }
+    .tipo-btn { flex:1; padding:9px; border-radius:9px; border:1.5px solid var(--border); background:var(--bg); cursor:pointer; font-size:13px; font-weight:500; color:var(--muted); text-align:center; transition:all .15s; }
+    .tipo-btn:hover { border-color:var(--border-h); }
+    .tipo-btn.sel-receta  { border-color:var(--purple); background:var(--purple-bg); color:var(--purple); }
+    .tipo-btn.sel-subreceta { border-color:var(--teal); background:var(--teal-bg); color:var(--teal); }
+
+    /* Costo resumen */
+    .costo-box { background:var(--purple-bg); border:1px solid var(--purple-lt); border-radius:var(--radius); padding:1rem 1.25rem; display:flex; align-items:center; justify-content:space-between; margin-top:12px; }
+    .costo-label { font-size:13px; color:var(--purple); }
+    .costo-valor { font-family:var(--font-d); font-size:26px; font-weight:700; color:var(--purple); letter-spacing:-.02em; }
+
+    /* Receta card en lista */
+    .recetas-lista { display:flex; flex-direction:column; gap:10px; }
+    .receta-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; transition:border-color .15s; }
+    .receta-card:hover { border-color:var(--purple-lt); }
+    .receta-head { display:flex; align-items:center; justify-content:space-between; padding:1rem 1.25rem; cursor:pointer; }
+    .receta-nombre { font-family:var(--font-d); font-size:15px; font-weight:700; }
+    .receta-meta { font-size:12px; color:var(--muted); margin-top:2px; }
+    .receta-costo { font-family:var(--font-d); font-size:18px; font-weight:700; color:var(--purple); }
+    .receta-arrow { width:16px; height:16px; color:var(--subtle); transition:transform .2s; }
+    .receta-arrow.open { transform:rotate(180deg); }
+    .receta-detail { display:none; border-top:1px solid var(--border); padding:1rem 1.25rem; background:var(--surface); }
+    .receta-detail.open { display:block; }
+    .det-table { width:100%; border-collapse:collapse; font-size:12px; }
+    .det-table th { text-align:left; font-size:10px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:0 8px 6px 0; border-bottom:1px solid var(--border); }
+    .det-table td { padding:7px 8px 7px 0; border-bottom:1px solid var(--border); }
+    .det-table tr:last-child td { border-bottom:none; }
+    .det-num { text-align:right; font-variant-numeric:tabular-nums; }
+    .badge-sub { font-size:10px; padding:2px 6px; border-radius:20px; background:var(--teal-bg); color:var(--teal); font-weight:500; }
+    .badge-rec { font-size:10px; padding:2px 6px; border-radius:20px; background:var(--purple-bg); color:var(--purple); font-weight:500; }
+
+    .submit-area { display:flex; gap:10px; margin-top:1.25rem; }
+    .btn-primary { flex:1; background:var(--purple); color:#fff; border:none; border-radius:9px; font-family:var(--font-d); font-size:15px; font-weight:700; padding:12px; cursor:pointer; transition:opacity .15s; }
+    .btn-primary:hover { opacity:.9; }
+    .btn-primary:disabled { opacity:.4; cursor:not-allowed; }
+    .btn-secondary { padding:12px 16px; border-radius:9px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; cursor:pointer; }
+    .btn-secondary:hover { color:var(--text); border-color:var(--border-h); }
+
+    .toolbar { display:flex; gap:8px; margin-bottom:1rem; flex-wrap:wrap; }
+    .search-wrap { position:relative; flex:1; min-width:180px; }
+    .search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--subtle); pointer-events:none; }
+    .search-input { padding-left:32px; font-size:13px; }
+    .filter-sel { font-size:13px; padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--text); outline:none; cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:30px; }
+
+    .empty { text-align:center; padding:2.5rem; color:var(--subtle); font-size:13px; }
+    .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
+    .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+    .ssep { width:1px; height:14px; background:var(--border); }
+    .toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px); background:var(--card); border:1px solid var(--border); border-radius:10px; padding:11px 18px; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s; opacity:0; z-index:100; box-shadow:0 4px 20px rgba(0,0,0,.08); }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+    .toast.success { border-color:var(--green); color:var(--green); }
+    .toast.error { border-color:var(--red); color:var(--red); }
+    .toast svg { width:16px; height:16px; }
+    @media (max-width:640px) { header{padding:0 1rem;} main{padding:1.5rem 1rem 3rem;} .field-row,.field-row-3{grid-template-columns:1fr;} .ing-row{grid-template-columns:1fr 1fr auto;} .ing-row .field:nth-child(3){display:none;} .tipo-strip{flex-direction:column;} }
+  </style>
+</head>
+<body>
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Recetas</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<main>
+  <div class="page-header">
+    <div>
+      <h1>Recetas</h1>
+      <p>Recetas y subrecetas con cálculo de costo automático.</p>
+    </div>
+    <button class="btn-primary" style="width:auto;padding:10px 20px;font-size:13px;" onclick="switchTab('nueva', document.querySelectorAll('.tab')[1])">+ Nueva receta</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('lista',this)">Recetas</button>
+    <button class="tab" onclick="switchTab('nueva',this)">Nueva receta</button>
+  </div>
+
+  <!-- LISTA -->
+  <div id="tab-lista">
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="search-input" id="search" placeholder="Buscar receta…" oninput="renderLista()">
+      </div>
+      <select class="filter-sel" id="f-tipo" onchange="renderLista()">
+        <option value="">Todas</option>
+        <option value="receta">Recetas</option>
+        <option value="subreceta">Subrecetas</option>
+      </select>
+    </div>
+    <div id="lista-recetas">
+      <div class="empty">No hay recetas. Agregá la primera.</div>
+    </div>
+  </div>
+
+  <!-- NUEVA -->
+  <div id="tab-nueva" style="display:none;">
+
+    <!-- Tipo -->
+    <div class="card">
+      <p class="card-title">Tipo</p>
+      <div class="tipo-strip">
+        <button type="button" class="tipo-btn sel-receta" id="tipo-receta" onclick="setTipo('receta')">
+          🍽 Receta de plato
+        </button>
+        <button type="button" class="tipo-btn" id="tipo-subreceta" onclick="setTipo('subreceta')">
+          🧪 Subreceta (producción interna)
+        </button>
+      </div>
+      <input type="hidden" id="r-tipo" value="receta">
+    </div>
+
+    <!-- Info básica -->
+    <div class="card">
+      <p class="card-title">Información básica</p>
+      <input type="hidden" id="edit-id">
+
+      <div class="field">
+        <label for="r-nombre">Nombre <span class="req">*</span></label>
+        <select id="r-nombre" onchange="onNombreChange()">
+          <option value="" disabled selected>Seleccioná un plato del menú…</option>
+        </select>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">
+          O escribí un nombre personalizado:
+          <input type="text" id="r-nombre-custom" placeholder="Nombre de subreceta o receta sin plato…" style="display:none;margin-top:6px;font-size:13px;padding:7px 10px;" oninput="onCustomNombre()">
+      </div>
+        <input type="hidden" id="r-plato">
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="r-porciones">Porciones que rinde <span class="req">*</span></label>
+          <input type="number" id="r-porciones" min="1" value="1" oninput="recalcular()">
+        </div>
+        <div class="field" id="unidad-wrap" style="display:none;">
+          <label for="r-unidad">Unidad de producción final <span class="req">*</span></label>
+          <input type="text" id="r-unidad" list="unidad-opciones" placeholder="Ej. Porción, gramos, mililitros…" autocomplete="off" oninput="recalcular()">
+          <datalist id="unidad-opciones">
+            <option value="Porción">
+            <option value="Porciones">
+            <option value="gramos">
+            <option value="kg">
+            <option value="mililitros">
+            <option value="litros">
+            <option value="tazas">
+            <option value="unidades">
+            <option value="piezas">
+            <option value="lata">
+            <option value="caja">
+          </datalist>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Escribí o seleccioná la unidad final (ej. 1 L de salsa, 500 g de masa)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ingredientes -->
+    <div class="card">
+      <p class="card-title">Ingredientes</p>
+      <div class="ing-lista" id="ing-lista"></div>
+      <button type="button" class="btn-add" onclick="agregarIngrediente()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
+        Agregar ingrediente
+      </button>
+
+      <div class="costo-box" id="costo-box">
+        <div>
+          <div class="costo-label">Costo total de la receta</div>
+          <div style="font-size:11px;color:var(--muted);" id="costo-por-porcion">Por porción: ₡0</div>
+        </div>
+        <div class="costo-valor" id="costo-total">₡0</div>
+      </div>
+    </div>
+
+    <div class="submit-area">
+      <button class="btn-secondary" onclick="limpiarForm()">Cancelar</button>
+      <button class="btn-primary" onclick="guardar()">Guardar receta</button>
+    </div>
+
+  </div>
+
+  <div class="status-bar">
+    <span class="sdot"></span>
+    <span id="status-msg">—</span>
+    <span class="ssep"></span>
+    <span style="margin-left:auto;">v1.0 · Costos · Grupo del Sol</span>
+  </div>
+</main>
+
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+const STORAGE_KEY = 'costos_recetas';
+const APPS_SCRIPT_COSTOS = 'TODO_APPS_SCRIPT_COSTOS_LORITO'; // Pegá la URL del Apps Script de costos
+const hoy = new Date();
+document.getElementById('date-chip').textContent =
+  hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
+
+const fmt  = n => '₡' + Number(n).toLocaleString('es-CR', {minimumFractionDigits:2});
+const fmt2 = n => Number(n).toFixed(2);
+
+// ── STORAGE ───────────────────────────────────────────────────────
+function getRecetas() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch { return []; }
+}
+function saveRecetas(lista) { localStorage.setItem(STORAGE_KEY, JSON.stringify(lista)); }
+
+// ── OBTENER FUENTES (productos + subrecetas) ───────────────────────
+function getFuentes() {
+  const productos = JSON.parse(localStorage.getItem('costos_productos') || '[]');
+  const recetas   = getRecetas();
+  const subrecetas = recetas.filter(r => r.tipo === 'subreceta').map(r => ({
+    id:       'SUB-' + r.id,
+    nombre:   r.nombre + ' (subreceta)',
+    unidad:   r.unidad || 'porciones',
+    costo:    r.costo_porcion || 0,
+    rendimiento: 100,
+    esSub:    true,
+    refId:    r.id,
+  }));
+  return [...productos, ...subrecetas];
+}
+
+// ── CÁLCULO DE COSTO ──────────────────────────────────────────────
+function calcularCostoIngrediente(fuente, cantidad) {
+  if (!fuente || !cantidad) return 0;
+  const costoReal = fuente.costo / ((fuente.rendimiento || 100) / 100);
+  return costoReal * cantidad;
+}
+
+// ── TIPO ──────────────────────────────────────────────────────────
+function setTipo(tipo) {
+  document.getElementById('r-tipo').value = tipo;
+  document.getElementById('tipo-receta').className    = 'tipo-btn' + (tipo==='receta'    ? ' sel-receta'    : '');
+  document.getElementById('tipo-subreceta').className = 'tipo-btn' + (tipo==='subreceta' ? ' sel-subreceta' : '');
+  document.getElementById('unidad-wrap').style.display = tipo==='subreceta' ? 'block' : 'none';
+  // Si es subreceta, forzar nombre personalizado
+  if (tipo === 'subreceta') {
+    const sel = document.getElementById('r-nombre');
+    if (sel.value !== '__custom__') {
+      sel.value = '__custom__';
+      document.getElementById('r-nombre-custom').style.display = 'block';
+    }
+  }
+}
+
+// ── POBLAR PLATOS ─────────────────────────────────────────────────
+function poblarPlatos() {
+  const platos = JSON.parse(localStorage.getItem('costos_menu') || '[]');
+
+  // Alimentar el selector de nombre
+  const selNombre = document.getElementById('r-nombre');
+  const valorActual = selNombre.dataset.valorActual || '';
+  selNombre.innerHTML = '<option value="" disabled>Seleccioná un plato del menú…</option>';
+  platos.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p.nombre;
+    o.dataset.platoId = p.id;
+    o.textContent = p.nombre + (p.categoria ? ` · ${p.categoria}` : '');
+    if (p.nombre === valorActual) o.selected = true;
+    selNombre.appendChild(o);
+  });
+  // Opción para subreceta (sin plato)
+  const oSub = document.createElement('option');
+  oSub.value = '__custom__'; oSub.textContent = '— Nombre personalizado (subreceta) —';
+  selNombre.appendChild(oSub);
+}
+
+function onNombreChange() {
+  const sel = document.getElementById('r-nombre');
+  const val = sel.value;
+  const customWrap = document.getElementById('r-nombre-custom');
+  if (val === '__custom__') {
+    customWrap.style.display = 'block';
+    customWrap.focus();
+    document.getElementById('r-plato').value = '';
+  } else {
+    customWrap.style.display = 'none';
+    const opt = sel.options[sel.selectedIndex];
+    document.getElementById('r-plato').value = opt ? (opt.dataset.platoId || '') : '';
+  }
+  // Si es receta, cambiar tipo automáticamente
+  if (val && val !== '__custom__') setTipo('receta');
+}
+
+function onCustomNombre() {
+  // cuando escribe nombre custom, limpiar plato asociado
+  document.getElementById('r-plato').value = '';
+}
+
+// ── INGREDIENTES DINÁMICOS ────────────────────────────────────────
+let ingCount = 0;
+
+function agregarIngrediente(nombre='', cantidad='', fuenteId='') {
+  ingCount++;
+  const id  = ingCount;
+  const fuentes = getFuentes();
+
+  const opts = fuentes.map(f =>
+    `<option value="${f.id}" ${f.id===fuenteId?'selected':''}>${f.nombre} (${f.unidad})</option>`
+  ).join('');
+
+  const div = document.createElement('div');
+  div.className = 'ing-row';
+  div.dataset.id = id;
+  div.innerHTML = `
+    <div class="field">
+      ${id===1 ? '<label>Ingrediente / Subreceta</label>' : ''}
+      <select onchange="recalcular()" id="ing-fuente-${id}">
+        <option value="" disabled selected>Seleccioná…</option>
+        ${opts}
+      </select>
+    </div>
+    <div class="field">
+      ${id===1 ? '<label>Cantidad</label>' : ''}
+      <input type="number" id="ing-cant-${id}" min="0" step="0.001" placeholder="0"
+        value="${cantidad}" oninput="recalcular()">
+    </div>
+    <div class="field">
+      ${id===1 ? '<label>Unidad</label>' : ''}
+      <input type="text" id="ing-unit-${id}" placeholder="kg / ml…" style="background:var(--surface);pointer-events:none;color:var(--muted);" readonly>
+    </div>
+    <div class="field">
+      ${id===1 ? '<label>Costo línea</label>' : ''}
+      <div id="ing-costo-${id}" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:13px;color:var(--muted);min-height:39px;">—</div>
+    </div>
+    <div class="field">
+      ${id===1 ? '<label>% del total</label>' : ''}
+      <div id="ing-pct-${id}" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:13px;color:var(--muted);min-height:39px;">—</div>
+    </div>
+    <button type="button" class="btn-rm" onclick="removeIng(this)">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>
+    </button>`;
+
+    document.getElementById('ing-lista').appendChild(div);
+
+  // Si viene con fuente preseleccionada
+  if (fuenteId) {
+    const sel = document.getElementById(`ing-fuente-${id}`);
+    sel.value = fuenteId;
+    actualizarUnidad(id);
+  }
+
+  // Escuchar cambio de fuente para actualizar unidad
+  document.getElementById(`ing-fuente-${id}`).addEventListener('change', () => {
+    actualizarUnidad(id);
+    recalcular();
+  });
+}
+
+function actualizarUnidad(id) {
+  const fuenteId = document.getElementById(`ing-fuente-${id}`)?.value;
+  const fuente   = getFuentes().find(f => f.id === fuenteId);
+  if (fuente) document.getElementById(`ing-unit-${id}`).value = fuente.unidad || '';
+}
+
+function removeIng(btn) {
+  btn.closest('.ing-row').remove();
+  if (document.querySelectorAll('.ing-row').length === 0) agregarIngrediente();
+  recalcular();
+}
+
+function recalcular() {
+  const fuentes   = getFuentes();
+  const porciones = parseFloat(document.getElementById('r-porciones').value) || 1;
+
+  // Primera pasada: calcular todos los costos
+  const costos = [];
+  document.querySelectorAll('.ing-row').forEach(row => {
+    const id       = row.dataset.id;
+    const fuenteId = document.getElementById(`ing-fuente-${id}`)?.value;
+    const cantidad = parseFloat(document.getElementById(`ing-cant-${id}`)?.value) || 0;
+    const fuente   = fuentes.find(f => f.id === fuenteId);
+    const costoLin = calcularCostoIngrediente(fuente, cantidad);
+    costos.push({ id, costoLin, fuente, cantidad });
+  });
+
+  const total = costos.reduce((a, c) => a + c.costoLin, 0);
+
+  // Segunda pasada: actualizar displays con costo y %
+  costos.forEach(({ id, costoLin, fuente, cantidad }) => {
+    const costoEl = document.getElementById(`ing-costo-${id}`);
+    const pctEl   = document.getElementById(`ing-pct-${id}`);
+    if (costoEl) {
+      if (fuente && cantidad) {
+        costoEl.textContent = fmt(costoLin);
+        costoEl.style.color = 'var(--purple)';
+        costoEl.style.fontWeight = '600';
+      } else {
+        costoEl.textContent = '—';
+        costoEl.style.color = 'var(--muted)';
+        costoEl.style.fontWeight = '400';
+      }
+    }
+    if (pctEl) {
+      if (total > 0 && costoLin > 0) {
+        const pct = (costoLin / total * 100).toFixed(1);
+        const col = pct > 30 ? 'var(--red)' : pct > 15 ? 'var(--amber)' : 'var(--muted)';
+        pctEl.textContent = pct + '%';
+        pctEl.style.color = col;
+        pctEl.style.fontWeight = '600';
+      } else {
+        pctEl.textContent = '—';
+        pctEl.style.color = 'var(--muted)';
+        pctEl.style.fontWeight = '400';
+      }
+    }
+  });
+
+  const unidad = document.getElementById('r-unidad').value || 'porción';
+  document.getElementById('costo-total').textContent = fmt(total);
+  document.getElementById('costo-por-porcion').textContent =
+    `Por ${unidad}: ${fmt(total / porciones)}`;
+}
+
+// ── GUARDAR ───────────────────────────────────────────────────────
+async function guardar() {
+  const selNom = document.getElementById('r-nombre');
+  const customNom = document.getElementById('r-nombre-custom').value.trim();
+  const nombre = (selNom.value === '__custom__' || selNom.value === '')
+    ? customNom
+    : selNom.value;
+  const tipo      = document.getElementById('r-tipo').value;
+  const porciones = parseFloat(document.getElementById('r-porciones').value) || 1;
+  const plato     = document.getElementById('r-plato').value;
+  const unidad    = document.getElementById('r-unidad').value;
+  const editId    = document.getElementById('edit-id').value;
+
+  if (!nombre) { showToast('Ingresá el nombre.', 'error'); return; }
+
+  const fuentes = getFuentes();
+  const ingredientes = [];
+  let costoTotal = 0;
+
+  document.querySelectorAll('.ing-row').forEach(row => {
+    const id       = row.dataset.id;
+    const fuenteId = document.getElementById(`ing-fuente-${id}`)?.value;
+    const cantidad = parseFloat(document.getElementById(`ing-cant-${id}`)?.value) || 0;
+    const fuente   = fuentes.find(f => f.id === fuenteId);
+    if (fuente && cantidad > 0) {
+      const costoLinea = calcularCostoIngrediente(fuente, cantidad);
+      costoTotal += costoLinea;
+      ingredientes.push({
+        fuenteId, nombre: fuente.nombre, unidad: fuente.unidad,
+        cantidad, costo_linea: costoLinea, esSub: fuente.esSub || false
+      });
+    }
+  });
+
+  if (!ingredientes.length) { showToast('Agregá al menos un ingrediente.', 'error'); return; }
+
+  const registro = {
+    id: editId || 'REC-' + Date.now(),
+    nombre, tipo, porciones, plato_id: plato,
+    unidad: tipo === 'subreceta' ? unidad : 'porciones',
+    ingredientes, costo_total: costoTotal,
+    costo_porcion: costoTotal / porciones,
+    actualizado: new Date().toISOString()
+  };
+
+  const lista = getRecetas();
+  if (editId) {
+    const idx = lista.findIndex(r => r.id === editId);
+    if (idx > -1) lista[idx] = registro;
+  } else {
+    lista.push(registro);
+  }
+  saveRecetas(lista);
+
+  if (APPS_SCRIPT_COSTOS) {
+    try { await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'receta', ...registro }) }) }); }
+    catch(e) {}
+  }
+
+  showToast(`${nombre} ${editId ? 'actualizado' : 'guardado'}`, 'success');
+  limpiarForm();
+  switchTab('lista', document.querySelectorAll('.tab')[0]);
+  renderLista();
+}
+
+// ── RENDER LISTA ──────────────────────────────────────────────────
+function renderLista() {
+  const busq  = document.getElementById('search').value.toLowerCase();
+  const ftipo = document.getElementById('f-tipo').value;
+  let lista   = getRecetas().filter(r =>
+    (!busq  || r.nombre.toLowerCase().includes(busq))
+ && (!ftipo || r.tipo === ftipo)
+  );
+
+  document.getElementById('status-msg').textContent =
+    `${getRecetas().length} receta${getRecetas().length!==1?'s':''}`;
+
+  if (!lista.length) {
+    document.getElementById('lista-recetas').innerHTML =
+      '<div class="empty">No hay recetas. Agregá la primera.</div>';
+    return;
+  }
+
+  const cards = lista.map(r => {
+    const isSub = r.tipo === 'subreceta';
+    const badge = isSub
+      ? '<span class="badge-sub">Subreceta</span>'
+      : '<span class="badge-rec">Receta</span>';
+    const metaText = isSub
+      ? `Rinde ${r.porciones} ${r.unidad} · Costo/u: ${fmt(r.costo_porcion)}`
+      : `${r.porciones} porción${r.porciones!==1?'es':''} · Costo/porción: ${fmt(r.costo_porcion)}`;
+
+    const filasDet = (r.ingredientes||[]).map(ing => `
+      <tr>
+        <td>${ing.nombre} ${ing.esSub?'<span class="badge-sub">sub</span>':''}</td>
+        <td class="det-num">${ing.cantidad} ${ing.unidad}</td>
+        <td class="det-num">${fmt(ing.costo_linea)}</td>
+      </tr>`).join('');
+
+    const rowId = 'rec-' + r.id;
+    return `
+      <div class="receta-card">
+        <div class="receta-head" onclick="toggleDet('${rowId}')">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="receta-nombre">${r.nombre}</span>${badge}
+            </div>
+            <div class="receta-meta">${metaText}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span class="receta-costo">${fmt(r.costo_total)}</span>
+            <svg class="receta-arrow" id="${rowId}-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+          </div>
+        </div>
+        <div class="receta-detail" id="${rowId}">
+          <table class="det-table">
+            <thead><tr><th>Ingrediente</th><th style="text-align:right;">Cantidad</th><th style="text-align:right;">Costo</th></tr></thead>
+            <tbody>${filasDet}</tbody>
+          </table>
+          <div style="display:flex;gap:6px;margin-top:10px;">
+            <button class="btn-primary" style="flex:none;padding:6px 14px;font-size:12px;" onclick="editar('${r.id}')">Editar</button>
+            <button style="padding:6px 14px;font-size:12px;border-radius:7px;border:1px solid var(--red-lt);background:var(--red-bg);color:var(--red);cursor:pointer;" onclick="eliminar('${r.id}')">Eliminar</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('lista-recetas').innerHTML =
+    `<div class="recetas-lista">${cards}</div>`;
+}
+
+function toggleDet(id) {
+  const el  = document.getElementById(id);
+  const ico = document.getElementById(id + '-ico');
+  const open = !el.classList.contains('open');
+  el.classList.toggle('open', open);
+  ico.classList.toggle('open', open);
+}
+
+function editar(id) {
+  const r = getRecetas().find(r => r.id === id);
+  if (!r) return;
+
+  document.getElementById('edit-id').value    = r.id;
+  // Restaurar nombre en el selector
+  const selN = document.getElementById('r-nombre');
+  selN.dataset.valorActual = r.nombre;
+  // Si no es un plato del menú, usar campo custom
+  const esPlato = Array.from(selN.options).some(o => o.value === r.nombre);
+  if (esPlato) {
+    selN.value = r.nombre;
+    document.getElementById('r-nombre-custom').style.display = 'none';
+  } else {
+    selN.value = '__custom__';
+    document.getElementById('r-nombre-custom').value = r.nombre;
+    document.getElementById('r-nombre-custom').style.display = 'block';
+  }
+  document.getElementById('r-porciones').value= r.porciones;
+  document.getElementById('r-plato').value    = r.plato_id || '';
+  document.getElementById('r-unidad').value   = r.unidad || 'porciones';
+  setTipo(r.tipo);
+
+  // Limpiar y repoblar ingredientes
+  document.getElementById('ing-lista').innerHTML = '';
+  ingCount = 0;
+  (r.ingredientes||[]).forEach(ing => agregarIngrediente(ing.nombre, ing.cantidad, ing.fuenteId));
+  recalcular();
+  switchTab('nueva', document.querySelectorAll('.tab')[1]);
+}
+
+async function eliminar(id) {
+  saveRecetas(getRecetas().filter(r => r.id !== id));
+  if (APPS_SCRIPT_COSTOS) {
+    try { await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'eliminar', tipo:'recetas', id }) }) }); }
+    catch(e) {}
+  }
+  renderLista();
+  showToast('Receta eliminada', 'success');
+}
+
+function limpiarForm() {
+  document.getElementById('edit-id').value     = '';
+  document.getElementById('r-nombre').value    = '';
+  document.getElementById('r-porciones').value = '1';
+  document.getElementById('r-plato').value     = '';
+  document.getElementById('ing-lista').innerHTML = '';
+  ingCount = 0;
+  setTipo('receta');
+  agregarIngrediente();
+  recalcular();
+}
+
+function switchTab(tab, el) {
+  document.getElementById('tab-lista').style.display = tab==='lista' ? 'block':'none';
+  document.getElementById('tab-nueva').style.display = tab==='nueva' ? 'block':'none';
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  if (tab==='nueva') { poblarPlatos(); if(!document.querySelectorAll('.ing-row').length) agregarIngrediente(); }
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').innerHTML = type==='success'
+    ? '<polyline points="3 8 7 12 13 4"/>'
+    : '<line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = `toast ${type}`;
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// INIT
+poblarPlatos();
+agregarIngrediente();
+renderLista();
+</script>
+</body>
+</html>

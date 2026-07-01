@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Base de Productos · Costos · Grupo del Sol</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#fff;
+      --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --purple:#6a3a9a; --purple-bg:#f3eefb; --purple-lt:#d4b8f0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
+      --amber:#c87820; --amber-bg:#fdf6e3;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+    header { height:56px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; background:var(--bg); position:sticky; top:0; z-index:20; }
+    .nav-left { display:flex; align-items:center; gap:10px; }
+    .back-btn { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); }
+    .back-btn:hover { color:var(--text); border-color:var(--border-h); }
+    .back-btn svg { width:13px; height:13px; }
+    .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
+    .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 10px; }
+    main { max-width:960px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .page-header { margin-bottom:1.5rem; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .page-header h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+    .page-header p { font-size:13px; color:var(--muted); }
+    .tabs { display:flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:4px; margin-bottom:1.5rem; width:fit-content; }
+    .tab { font-size:13px; font-weight:500; padding:6px 16px; border-radius:7px; border:none; cursor:pointer; background:transparent; color:var(--muted); transition:background .15s,color .15s; }
+    .tab.active { background:var(--card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.4rem 1.5rem; margin-bottom:12px; }
+    .card-title { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:1.1rem; }
+    .field { margin-bottom:1rem; }
+    .field:last-child { margin-bottom:0; }
+    .field-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .field-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+    label { display:block; font-size:13px; font-weight:500; color:var(--text); margin-bottom:5px; }
+    .req { color:var(--red); margin-left:2px; }
+    input, select, textarea { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--font-b); font-size:14px; padding:9px 12px; outline:none; appearance:none; transition:border-color .15s,box-shadow .15s; }
+    input:focus, select:focus { border-color:var(--purple); box-shadow:0 0 0 3px rgba(106,58,154,.1); }
+    input::placeholder { color:var(--subtle); }
+    select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:36px; cursor:pointer; }
+    .submit-area { display:flex; gap:10px; margin-top:1.25rem; }
+    .btn-primary { flex:1; background:var(--purple); color:#fff; border:none; border-radius:9px; font-family:var(--font-d); font-size:15px; font-weight:700; padding:12px; cursor:pointer; transition:opacity .15s; }
+    .btn-primary:hover { opacity:.9; }
+    .btn-primary:disabled { opacity:.4; cursor:not-allowed; }
+    .btn-secondary { padding:12px 16px; border-radius:9px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; cursor:pointer; }
+    .btn-secondary:hover { color:var(--text); border-color:var(--border-h); }
+    .toolbar { display:flex; gap:8px; margin-bottom:1rem; flex-wrap:wrap; }
+    .search-wrap { position:relative; flex:1; min-width:180px; }
+    .search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--subtle); pointer-events:none; }
+    .search-input { padding-left:32px; font-size:13px; }
+    .filter-sel { font-size:13px; padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--text); outline:none; cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:30px; }
+    .tabla-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th { text-align:left; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:0 12px 10px 0; border-bottom:1px solid var(--border); white-space:nowrap; }
+    td { padding:10px 12px 10px 0; border-bottom:1px solid var(--border); vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:var(--surface); }
+    .num { text-align:right; font-variant-numeric:tabular-nums; }
+    .badge { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:500; padding:3px 8px; border-radius:20px; }
+    .btn-edit { font-size:11px; padding:4px 10px; border-radius:6px; border:1px solid var(--purple-lt); background:var(--purple-bg); color:var(--purple); cursor:pointer; font-weight:500; }
+    .btn-edit:hover { background:var(--purple); color:#fff; }
+    .btn-del { font-size:11px; padding:4px 10px; border-radius:6px; border:1px solid var(--red-lt); background:var(--red-bg); color:var(--red); cursor:pointer; font-weight:500; }
+    .btn-del:hover { background:var(--red); color:#fff; }
+    .empty { text-align:center; padding:2.5rem; color:var(--subtle); font-size:13px; }
+    .spinner { display:inline-block; width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--purple); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
+    .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+    .sdot.off { background:var(--subtle); }
+    .ssep { width:1px; height:14px; background:var(--border); }
+    .toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px); background:var(--card); border:1px solid var(--border); border-radius:10px; padding:11px 18px; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s; opacity:0; z-index:100; box-shadow:0 4px 20px rgba(0,0,0,.08); }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+    .toast.success { border-color:var(--green); color:var(--green); }
+    .toast.error { border-color:var(--red); color:var(--red); }
+    .toast svg { width:16px; height:16px; }
+    @media (max-width:600px) { header{padding:0 1rem;} main{padding:1.5rem 1rem 3rem;} .field-row,.field-row-3{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Base de productos</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<main>
+  <div class="page-header">
+    <div>
+      <h1>Base de productos</h1>
+      <p>Ingredientes y materias primas para el cálculo de recetas.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn-primary" style="width:auto;padding:10px 20px;font-size:13px;" onclick="switchTab('nuevo', document.querySelectorAll('.tab')[1])">+ Nuevo producto</button>
+      <button onclick="triggerCargaMasiva()" style="padding:10px 16px;border-radius:9px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M8 2v8M5 7l3 3 3-3"/><rect x="2" y="11" width="12" height="3" rx="1"/></svg>
+        Carga masiva (.xlsx)
+      </button>
+      <a href="plantilla_productos.xlsx" download style="padding:10px 16px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;text-decoration:none;">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M8 2v8M5 7l3 3 3-3"/><rect x="2" y="11" width="12" height="3" rx="1"/></svg>
+        Descargar plantilla
+      </a>
+      <input type="file" id="input-carga" accept=".xlsx,.csv" style="display:none;" onchange="procesarArchivo(event)">
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('lista',this)">Productos</button>
+    <button class="tab" onclick="switchTab('nuevo',this)">Nuevo producto</button>
+    <button class="tab" onclick="switchTab('config',this)">⚙ Configuración</button>
+  </div>
+
+  <!-- LISTA -->
+  <div id="tab-lista">
+    <div class="card">
+      <div class="toolbar">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" class="search-input" id="search" placeholder="Buscar producto…" oninput="renderLista()">
+        </div>
+        <select class="filter-sel" id="f-area" onchange="renderLista()">
+          <option value="">Todas las áreas</option>
+        </select>
+        <select class="filter-sel" id="f-cat" onchange="renderLista()">
+          <option value="">Todas las categorías</option>
+        </select>
+        <select class="filter-sel" id="f-en-uso" onchange="renderLista()">
+          <option value="">Todos los estados</option>
+          <option value="true">En uso</option>
+          <option value="false">Sin uso</option>
+        </select>
+        <select class="filter-sel" id="f-agrupar" onchange="renderLista()">
+          <option value="">Sin agrupar</option>
+          <option value="area">Agrupar por área</option>
+          <option value="categoria">Agrupar por categoría</option>
+        </select>
+      </div>
+      <div class="tabla-wrap" id="tabla-lista">
+        <div class="empty"><span class="spinner"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NUEVO / EDITAR -->
+  <div id="tab-nuevo" style="display:none;">
+    <input type="hidden" id="edit-id">
+
+    <!-- SECCIÓN 1: Identificación -->
+    <div class="card" style="margin-bottom:12px;">
+      <p class="card-title" id="form-title" style="margin-bottom:1.1rem;">Nuevo producto</p>
+      <div class="field-row-3">
+        <div class="field">
+          <label for="p-nombre">Nombre <span class="req">*</span></label>
+          <input type="text" id="p-nombre" list="sugerencias-productos" placeholder="Escribí o seleccioná…" autocomplete="off">
+          <datalist id="sugerencias-productos"></datalist>
+        </div>
+        <div class="field">
+          <label for="p-area">Área de negocio <span class="req">*</span></label>
+          <select id="p-area">
+            <option value="" disabled selected>Seleccioná…</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="p-categoria">Categoría <span class="req">*</span></label>
+          <select id="p-categoria">
+            <option value="" disabled selected>Seleccioná…</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:1rem;">
+        <label style="font-size:13px;font-weight:500;margin-bottom:8px;display:block;">En uso</label>
+        <div style="display:flex;gap:8px;">
+          <button type="button" id="toggle-activo" onclick="setEnUso(true)"
+            style="padding:8px 20px;border-radius:8px;border:2px solid var(--green);background:var(--green);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">
+            ✓ Sí
+          </button>
+          <button type="button" id="toggle-inactivo" onclick="setEnUso(false)"
+            style="padding:8px 20px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;">
+            ✕ No
+          </button>
+        </div>
+        <input type="hidden" id="p-en-uso" value="true">
+      </div>
+    </div>
+
+    <!-- SECCIÓN 2: Precio -->
+    <div class="card" style="margin-bottom:12px;">
+      <p class="card-title" style="margin-bottom:1rem;">Precio de compra</p>
+      <div class="field-row">
+        <div class="field">
+          <label for="p-precio-sin-iva">Precio de compra sin impuestos (₡) <span class="req">*</span></label>
+          <input type="number" id="p-precio-sin-iva" min="0" step="1" placeholder="0" oninput="calcularCostos()">
+        </div>
+        <div class="field">
+          <label for="p-iva">% IVA</label>
+          <select id="p-iva" onchange="calcularCostos()">
+            <option value="0">0% — Exento</option>
+            <option value="1">1%</option>
+            <option value="4">4%</option>
+            <option value="13" selected>13%</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN 3: Información de compra -->
+    <div class="card" style="margin-bottom:12px;">
+      <p class="card-title" style="margin-bottom:1rem;">Información de compra</p>
+      <div class="field-row-3">
+        <div class="field">
+          <label for="p-presentacion">Presentación del proveedor</label>
+          <input type="text" id="p-presentacion" list="presentacion-opciones" placeholder="Ej. Bolsa, Caja, Botella…" autocomplete="off">
+          <datalist id="presentacion-opciones"></datalist>
+        </div>
+        <div class="field">
+          <label for="p-tamano">Tamaño / Peso por presentación</label>
+          <input type="text" id="p-tamano" placeholder="Ej. 1 kg, 500 ml, 12 u…" oninput="sugerirConversion()">
+        </div>
+        <div class="field">
+          <label for="p-proveedor" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <span>Proveedor habitual</span>
+            <a href="proveedores.html?nuevo=1" target="_blank" rel="noopener" style="font-size:11px;font-weight:500;color:var(--purple);text-decoration:none;white-space:nowrap;">+ Nuevo proveedor</a>
+          </label>
+          <select id="p-proveedor">
+            <option value="">Seleccioná…</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row" style="margin-top:1rem;">
+        <div class="field">
+          <label for="p-stock-minimo">Stock mínimo esperado</label>
+          <input type="number" id="p-stock-minimo" min="0" step="1" placeholder="0" oninput="actualizarHintStock()">
+          <div id="p-stock-minimo-hint" style="font-size:11px;color:var(--muted);margin-top:4px;">En unidades de presentación de compra</div>
+        </div>
+        <div class="field" style="display:flex;flex-direction:column;justify-content:flex-end;">
+          <div id="p-stock-minimo-equiv" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--muted);min-height:39px;"></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Equivalente en unidad de receta</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN 4: Información para recetas -->
+    <div class="card" style="margin-bottom:12px;">
+      <p class="card-title" style="margin-bottom:1rem;">Información para recetas</p>
+
+      <div class="field-row" style="margin-bottom:1rem;">
+        <div class="field">
+          <label for="p-unidad">Unidad de medida para receta <span class="req">*</span></label>
+          <select id="p-unidad" onchange="sugerirConversion(); calcularCostos()">
+            <option value="" disabled selected>Seleccioná…</option>
+          </select>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">La unidad con la que medís el ingrediente en tus recetas</div>
+        </div>
+        <div class="field">
+          <label for="p-cantidad-presentacion">
+            Cantidad en presentación
+            <span id="lbl-cantidad-hint" style="font-weight:400;color:var(--muted);"></span>
+          </label>
+          <input type="number" id="p-cantidad-presentacion" min="0" step="0.001" placeholder="0" value="1" oninput="calcularCostos()">
+          <div id="conversion-sugerida" style="font-size:11px;color:var(--purple);margin-top:4px;display:none;"></div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div class="field">
+          <label>Costo por unidad de medida</label>
+          <div id="p-costo-display" style="background:var(--purple-bg);border:1px solid var(--purple-lt);border-radius:8px;padding:9px 12px;font-family:var(--font-d);font-size:16px;font-weight:700;color:var(--purple);">₡0.00</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Precio sin IVA ÷ cantidad</div>
+          <input type="hidden" id="p-costo">
+        </div>
+        <div class="field">
+          <label for="p-rendimiento">Rendimiento (%)</label>
+          <input type="number" id="p-rendimiento" min="1" max="100" step="1" placeholder="100" value="100" oninput="calcularCostos()">
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">% utilizable tras limpieza/merma</div>
+        </div>
+        <div class="field">
+          <label>Costo real por unidad</label>
+          <div id="p-costo-real-display" style="background:var(--green-bg);border:1px solid var(--green-lt);border-radius:8px;padding:9px 12px;font-family:var(--font-d);font-size:16px;font-weight:700;color:var(--green);">₡0.00</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Costo/u ÷ rendimiento</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="submit-area">
+      <button class="btn-secondary" onclick="limpiarForm()">Cancelar</button>
+      <button class="btn-primary" id="btn-guardar" onclick="guardar()">Guardar producto</button>
+    </div>
+  </div>
+
+  <!-- CONFIGURACIÓN -->
+  <div id="tab-config" style="display:none;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;">
+
+      <div class="card">
+        <p class="card-title">Categorías</p>
+        <div id="cfg-cat-lista" style="margin-bottom:10px;"></div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="cfg-cat-nueva" placeholder="Nueva categoría…" style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key==='Enter')addItem('cat')">
+          <button onclick="addItem('cat')" style="padding:7px 12px;border-radius:8px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;font-weight:600;white-space:nowrap;">+ Agregar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Unidades de medida</p>
+        <div id="cfg-uni-lista" style="margin-bottom:10px;"></div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="cfg-uni-nueva" placeholder="Nueva unidad…" style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key==='Enter')addItem('uni')">
+          <button onclick="addItem('uni')" style="padding:7px 12px;border-radius:8px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;font-weight:600;white-space:nowrap;">+ Agregar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Áreas de negocio</p>
+        <div id="cfg-area-lista" style="margin-bottom:10px;"></div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="cfg-area-nueva" placeholder="Nueva área…" style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key==='Enter')addItem('area')">
+          <button onclick="addItem('area')" style="padding:7px 12px;border-radius:8px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;font-weight:600;white-space:nowrap;">+ Agregar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Presentaciones del proveedor</p>
+        <div id="cfg-pre-lista" style="margin-bottom:10px;"></div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="cfg-pre-nueva" placeholder="Nueva presentación…" style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key==='Enter')addItem('pre')">
+          <button onclick="addItem('pre')" style="padding:7px 12px;border-radius:8px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;font-weight:600;white-space:nowrap;">+ Agregar</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL CARGA MASIVA -->
+  <div id="modal-carga" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;">
+    <div style="background:var(--card);border-radius:var(--radius);padding:2rem;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.2);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <h2 style="font-family:var(--font-d);font-size:18px;font-weight:700;">Carga masiva de productos</h2>
+        <button onclick="cerrarModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);">×</button>
+      </div>
+      <div id="modal-contenido"></div>
+      <div id="modal-acciones" style="display:flex;gap:8px;margin-top:1rem;"></div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div style="display:flex;align-items:center;gap:6px;"><span class="sdot" id="conn-dot"></span><span id="conn-label">Cargando…</span></div>
+    <span class="ssep"></span>
+    <span id="status-msg">—</span>
+    <span class="ssep"></span>
+    <span style="margin-left:auto;">v1.0 · Costos · Grupo del Sol</span>
+  </div>
+</main>
+
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+const STORAGE_KEY = 'costos_productos';
+const APPS_SCRIPT_COSTOS = 'TODO_APPS_SCRIPT_COSTOS_LORITO'; // Pegá la URL del Apps Script de costos
+const hoy = new Date();
+document.getElementById('date-chip').textContent =
+  hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
+
+const fmt = n => '₡' + Number(n).toLocaleString('es-CR', {minimumFractionDigits:2});
+
+
+
+// ── EN USO ────────────────────────────────────────────────────────
+function setEnUso(activo) {
+  document.getElementById('p-en-uso').value = activo ? 'true' : 'false';
+  const btnSi = document.getElementById('toggle-activo');
+  const btnNo = document.getElementById('toggle-inactivo');
+  if (activo) {
+    btnSi.style.cssText = 'padding:8px 20px;border-radius:8px;border:2px solid var(--green);background:var(--green);color:#fff;font-size:13px;font-weight:600;cursor:pointer;';
+    btnNo.style.cssText = 'padding:8px 20px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;';
+  } else {
+    btnSi.style.cssText = 'padding:8px 20px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;';
+    btnNo.style.cssText = 'padding:8px 20px;border-radius:8px;border:2px solid var(--red);background:var(--red);color:#fff;font-size:13px;font-weight:600;cursor:pointer;';
+  }
+}
+// ── HINT STOCK MÍNIMO ─────────────────────────────────────────────
+function actualizarHintStock() {
+  const stockMin  = parseFloat(document.getElementById('p-stock-minimo').value) || 0;
+  const cantidad  = parseFloat(document.getElementById('p-cantidad-presentacion').value) || 1;
+  const unidad    = document.getElementById('p-unidad').value;
+  const presentacion = document.getElementById('p-presentacion').value;
+  const tamano    = document.getElementById('p-tamano').value;
+  const hintEl   = document.getElementById('p-stock-minimo-hint');
+  const equivEl  = document.getElementById('p-stock-minimo-equiv');
+
+  // Actualizar hint del campo
+  const pres = [presentacion, tamano].filter(Boolean).join(' ');
+  hintEl.textContent = pres
+    ? `Unidades de presentación (${pres})`
+    : 'En unidades de presentación de compra';
+
+  // Equivalente en unidad de receta
+  if (stockMin > 0 && cantidad > 0 && unidad) {
+    const equiv = stockMin * cantidad;
+    equivEl.textContent = `${stockMin} presentaciones = ${equiv} ${unidad}`;
+    equivEl.style.color = 'var(--purple)';
+    equivEl.style.fontWeight = '600';
+  } else {
+    equivEl.textContent = '';
+  }
+}
+
+// ── CONVERSIÓN AUTOMÁTICA DE UNIDADES ────────────────────────────
+// Mapa de conversiones: presentación → unidad de receta → cantidad
+const CONVERSIONES = {
+  // Peso
+  'kg':   { 'g': 1000, 'kg': 1, 'lb': 2.20462 },
+  'lb':   { 'g': 453.592, 'kg': 0.453592, 'lb': 1 },
+  'g':    { 'g': 1, 'kg': 0.001 },
+  // Volumen
+  'L':    { 'ml': 1000, 'L': 1, 'litros': 1 },
+  'litros':{ 'ml': 1000, 'L': 1, 'litros': 1 },
+  'ml':   { 'ml': 1, 'L': 0.001 },
+  'gal':  { 'ml': 3785.41, 'L': 3.78541, 'litros': 3.78541 },
+  'galón':{ 'ml': 3785.41, 'L': 3.78541, 'litros': 3.78541 },
+  // Unidad sin conversión
+  'unidad': { 'unidad': 1, 'unidades': 1, 'piezas': 1 },
+  'unidades': { 'unidad': 1, 'unidades': 1, 'piezas': 1 },
+  'piezas': { 'unidad': 1, 'unidades': 1, 'piezas': 1 },
+};
+
+function sugerirConversion() {
+  const tamano   = document.getElementById('p-tamano').value.trim().toLowerCase();
+  const unidadR  = document.getElementById('p-unidad').value.toLowerCase();
+  const convDiv  = document.getElementById('conversion-sugerida');
+  const lbl      = document.getElementById('lbl-cantidad-hint');
+
+  if (!tamano || !unidadR) { convDiv.style.display = 'none'; lbl.textContent = ''; return; }
+
+  // Extraer número y unidad del campo tamaño (ej "1 kg", "500 ml", "2.5 lb")
+  const match = tamano.match(/^([\d.,]+)\s*([a-záéíóúü]+)$/i);
+  if (!match) { convDiv.style.display = 'none'; lbl.textContent = ''; return; }
+
+  const cantidad   = parseFloat(match[1].replace(',', '.'));
+  const unidadComp = match[2].toLowerCase();
+
+  const mapa = CONVERSIONES[unidadComp];
+  if (!mapa || !mapa[unidadR]) {
+    convDiv.style.display = 'none';
+    lbl.textContent = '';
+    return;
+  }
+
+  const resultado = Math.round(cantidad * mapa[unidadR] * 10000) / 10000;
+  lbl.textContent = '';
+  convDiv.style.display = 'block';
+  convDiv.innerHTML = `💡 Conversión sugerida: ${cantidad} ${unidadComp} = <strong>${resultado} ${unidadR}</strong>
+    <button type="button" onclick="aplicarConversion(${resultado})"
+      style="margin-left:8px;font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;">
+      Usar este valor
+    </button>`;
+}
+
+function aplicarConversion(val) {
+  document.getElementById('p-cantidad-presentacion').value = val;
+  calcularCostos();
+  document.getElementById('conversion-sugerida').style.display = 'none';
+}
+
+// ── CÁLCULO EN TIEMPO REAL ────────────────────────────────────────
+function calcularCostos() {
+  const precioSinIva  = parseFloat(document.getElementById('p-precio-sin-iva').value) || 0;
+  const cantidad      = parseFloat(document.getElementById('p-cantidad-presentacion').value) || 1;
+  const rendimiento   = parseFloat(document.getElementById('p-rendimiento').value) || 100;
+
+  const costoU     = cantidad > 0 ? precioSinIva / cantidad : 0;
+  const costoReal  = rendimiento > 0 ? costoU / (rendimiento / 100) : costoU;
+
+  document.getElementById('p-costo').value = costoU.toFixed(4);
+  document.getElementById('p-costo-display').textContent     = fmt(costoU);
+  document.getElementById('p-costo-real-display').textContent = fmt(costoReal);
+  actualizarHintStock();
+}
+
+
+
+// ── CARGA MASIVA ──────────────────────────────────────────────────
+function triggerCargaMasiva() { document.getElementById('input-carga').click(); }
+
+function cerrarModal() {
+  document.getElementById('modal-carga').style.display = 'none';
+}
+
+async function procesarArchivo(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  document.getElementById('modal-carga').style.display = 'flex';
+  document.getElementById('modal-contenido').innerHTML =
+    '<div class="empty"><span class="spinner"></span> Leyendo archivo…</div>';
+  document.getElementById('modal-acciones').innerHTML = '';
+  e.target.value = ''; // reset para permitir subir el mismo archivo
+
+  try {
+    let productos = [];
+
+    if (file.name.endsWith('.csv')) {
+      productos = await leerCSV(file);
+    } else {
+      productos = await leerXLSX(file);
+    }
+
+    mostrarPrevia(productos);
+  } catch(err) {
+    document.getElementById('modal-contenido').innerHTML =
+      `<div style="color:var(--red);padding:1rem;">Error al leer el archivo: ${err.message}</div>`;
+  }
+}
+
+// Leer CSV
+async function leerCSV(file) {
+  const text = await file.text();
+  const rows = text.split('\n').filter(r => r.trim());
+  const headers = rows[0].split(',').map(h => h.trim().replace(/"/g,''));
+  return rows.slice(1).map(row => {
+    const vals = row.split(',').map(v => v.trim().replace(/"/g,''));
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = vals[i] || '');
+    return obj;
+  }).filter(p => p['Nombre *'] || p['Nombre']);
+}
+
+// Leer XLSX usando FileReader + parseo manual de zip/xml
+async function leerXLSX(file) {
+  // Usar SheetJS via CDN
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    script.onload = () => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const wb  = XLSX.read(e.target.result, { type: 'array' });
+          const ws  = wb.Sheets[wb.SheetNames[0]]; // primera hoja
+          const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+          resolve(rows);
+        } catch(err) { reject(err); }
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    };
+    script.onerror = () => reject(new Error('No se pudo cargar el lector de Excel.'));
+    if (!window.XLSX) document.head.appendChild(script);
+    else {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const wb  = XLSX.read(e.target.result, { type: 'array' });
+          const ws  = wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+          resolve(rows);
+        } catch(err) { reject(err); }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  });
+}
+
+// Mapear columnas del Excel/CSV al formato interno
+function mapearProducto(row) {
+  const nombre = (row['Nombre *'] || row['Nombre'] || '').toString().trim();
+  if (!nombre) return null;
+  const costo = parseFloat(row['Precio sin IVA *'] || row['Precio sin IVA'] || 0);
+  const cantidad = parseFloat(row['Cantidad presentación'] || 1) || 1;
+  const costoU  = costo / cantidad;
+  return {
+    id:                    'PRD-' + Date.now() + '-' + Math.random().toString(36).slice(2,6),
+    nombre,
+    categoria:             (row['Categoría *'] || row['Categoría'] || '').toString().trim(),
+    area:                  (row['Área de negocio *'] || row['Área de negocio'] || '').toString().trim(),
+    unidad:                (row['Unidad *'] || row['Unidad'] || '').toString().trim(),
+    presentacion:          (row['Presentación'] || '').toString().trim(),
+    tamano:                (row['Tamaño'] || '').toString().trim(),
+    precio_sin_iva:        costo,
+    iva:                   parseFloat(row['IVA (%)'] || 13),
+    cantidad_presentacion: cantidad,
+    costo:                 costoU,
+    rendimiento:           parseFloat(row['Rendimiento (%)'] || 100) || 100,
+    proveedor:             (row['Proveedor'] || '').toString().trim(),
+  };
+}
+
+function mostrarPrevia(rows) {
+  const productos = rows.map(mapearProducto).filter(Boolean);
+
+  if (!productos.length) {
+    document.getElementById('modal-contenido').innerHTML =
+      '<div style="color:var(--red);padding:1rem;">No se encontraron productos válidos en el archivo. Verificá que el formato sea correcto.</div>';
+    return;
+  }
+
+  // Detectar errores
+  const errores = productos.filter(p => !p.nombre || !p.categoria || !p.unidad || !p.precio_sin_iva);
+  const validos  = productos.filter(p => p.nombre && p.categoria && p.unidad && p.precio_sin_iva);
+
+  const filas = productos.map(p => {
+    const ok = p.nombre && p.categoria && p.unidad && p.precio_sin_iva;
+    return `<tr style="background:${ok?'':'var(--red-bg)'}">
+      <td style="padding:6px 8px;font-size:12px;border-bottom:1px solid var(--border);">${p.nombre||'—'}</td>
+      <td style="padding:6px 8px;font-size:12px;border-bottom:1px solid var(--border);">${p.categoria||'—'}</td>
+      <td style="padding:6px 8px;font-size:12px;border-bottom:1px solid var(--border);">${p.area||'—'}</td>
+      <td style="padding:6px 8px;font-size:12px;border-bottom:1px solid var(--border);">${p.unidad||'—'}</td>
+      <td style="padding:6px 8px;font-size:12px;border-bottom:1px solid var(--border);text-align:right;">₡${Number(p.precio_sin_iva).toLocaleString('es-CR')}</td>
+      <td style="padding:6px 8px;font-size:11px;border-bottom:1px solid var(--border);">${ok ? '✓' : '⚠ Faltan datos'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('modal-contenido').innerHTML = `
+    <div style="margin-bottom:12px;font-size:13px;">
+      <span style="color:var(--green);font-weight:600;">✓ ${validos.length} producto${validos.length!==1?'s':''} válido${validos.length!==1?'s':''}</span>
+      ${errores.length ? `&nbsp;·&nbsp;<span style="color:var(--red);">⚠ ${errores.length} con datos incompletos</span>` : ''}
+    </div>
+    <div style="overflow-x:auto;max-height:300px;overflow-y:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr style="background:var(--surface);">
+          <th style="padding:6px 8px;text-align:left;font-size:11px;">Nombre</th>
+          <th style="padding:6px 8px;text-align:left;font-size:11px;">Categoría</th>
+          <th style="padding:6px 8px;text-align:left;font-size:11px;">Área</th>
+          <th style="padding:6px 8px;text-align:left;font-size:11px;">Unidad</th>
+          <th style="padding:6px 8px;text-align:right;font-size:11px;">Precio s/IVA</th>
+          <th style="padding:6px 8px;font-size:11px;">Estado</th>
+        </tr></thead>
+        <tbody>${filas}</tbody>
+      </table>
+    </div>
+    ${errores.length ? '<div style="font-size:11px;color:var(--muted);margin-top:8px;">Las filas en rojo no se importarán.</div>' : ''}
+  `;
+
+  // Guardar para usar al confirmar
+  window._cargaPendiente = validos;
+
+  document.getElementById('modal-acciones').innerHTML = `
+    <button onclick="cerrarModal()" style="padding:10px 16px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;cursor:pointer;">Cancelar</button>
+    <button onclick="confirmarCarga()" style="flex:1;padding:10px 16px;border-radius:9px;background:var(--purple);color:#fff;border:none;font-family:var(--font-d);font-size:14px;font-weight:700;cursor:pointer;">
+      Importar ${validos.length} producto${validos.length!==1?'s':''}
+    </button>
+  `;
+}
+
+async function confirmarCarga() {
+  const nuevos  = window._cargaPendiente || [];
+  if (!nuevos.length) return;
+
+  document.getElementById('modal-contenido').innerHTML =
+    '<div class="empty"><span class="spinner"></span> Guardando productos…</div>';
+  document.getElementById('modal-acciones').innerHTML = '';
+
+  // Guardar en localStorage
+  const lista = getProductos();
+  let guardados = 0;
+  for (const p of nuevos) {
+    lista.push(p);
+    guardados++;
+    // Sincronizar con Sheet si está configurado
+    if (APPS_SCRIPT_COSTOS) {
+      try {
+        await fetch(APPS_SCRIPT_COSTOS, {
+          method: 'POST',
+          body: new URLSearchParams({ data: JSON.stringify({ modulo: 'producto', ...p }) })
+        });
+      } catch(e) {}
+    }
+  }
+  saveProductos(lista);
+
+  document.getElementById('modal-contenido').innerHTML = `
+    <div style="text-align:center;padding:1.5rem;">
+      <div style="font-size:40px;margin-bottom:12px;">✓</div>
+      <div style="font-family:var(--font-d);font-size:18px;font-weight:700;color:var(--green);">${guardados} productos importados</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:6px;">Los datos ya están disponibles en la lista.</div>
+    </div>`;
+  document.getElementById('modal-acciones').innerHTML =
+    '<button onclick="cerrarModal();renderLista();" style="flex:1;padding:10px 16px;border-radius:9px;background:var(--green);color:#fff;border:none;font-family:var(--font-d);font-size:14px;font-weight:700;cursor:pointer;">Ver productos</button>';
+
+  renderLista();
+}
+
+// ── CONFIGURACIÓN ─────────────────────────────────────────────────
+const CFG_DEFAULTS = {
+  cat: ['Carnes','Mariscos','Aves','Lácteos','Frutas y Verduras','Granos y Cereales',
+        'Bebidas','Condimentos y Especias','Aceites y Grasas','Panadería','Limpieza','Otros'],
+  uni: ['kg','g','lb','L','ml','unidad','paquete','caja','lata','botella','galón','saco'],
+  pre: ['Caja','Bolsa','Bandeja','Botella','Lata','Paquete','Frasco','Balde','Galón','Saco','Unidad','Rollo'],
+  area: ['Cocina','Bar','Consumible','Otro']
+};
+
+function getCfg(tipo) {
+  try {
+    const stored = JSON.parse(localStorage.getItem('cfg_productos_' + tipo) || 'null');
+    return stored || CFG_DEFAULTS[tipo];
+  } catch { return CFG_DEFAULTS[tipo]; }
+}
+
+function saveCfg(tipo, lista) {
+  localStorage.setItem('cfg_productos_' + tipo, JSON.stringify(lista));
+}
+
+function renderCfgLista(tipo) {
+  const lista = getCfg(tipo);
+  const cont  = document.getElementById('cfg-' + tipo + '-lista');
+  cont.innerHTML = lista.map((item, i) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:7px;background:var(--surface);margin-bottom:4px;font-size:13px;">
+      <span>${item}</span>
+      <button onclick="removeItem('${tipo}',${i})" style="background:none;border:none;color:var(--subtle);cursor:pointer;font-size:16px;line-height:1;padding:0 4px;" title="Eliminar">×</button>
+    </div>`).join('');
+}
+
+function addItem(tipo) {
+  const input = document.getElementById('cfg-' + tipo + '-nueva');
+  const val   = input.value.trim();
+  if (!val) return;
+  const lista = getCfg(tipo);
+  if (lista.includes(val)) { showToast('Ya existe en la lista.', 'error'); return; }
+  lista.push(val);
+  saveCfg(tipo, lista);
+  input.value = '';
+  renderCfgLista(tipo);
+  aplicarConfiguracion();
+  showToast(`"${val}" agregado`, 'success');
+}
+
+function removeItem(tipo, idx) {
+  const lista = getCfg(tipo);
+  lista.splice(idx, 1);
+  saveCfg(tipo, lista);
+  renderCfgLista(tipo);
+  aplicarConfiguracion();
+}
+
+function aplicarConfiguracion() {
+  // Actualizar select de categorías
+  const cats = getCfg('cat');
+  const selCat = document.getElementById('p-categoria');
+  if (selCat) {
+    const valActual = selCat.value;
+    selCat.innerHTML = '<option value="" disabled selected>Seleccioná…</option>' +
+      cats.map(c => `<option${c===valActual?' selected':''}>${c}</option>`).join('');
+  }
+
+  // Actualizar select de unidades
+  const unis = getCfg('uni');
+  const selUni = document.getElementById('p-unidad');
+  if (selUni) {
+    const valActual = selUni.value;
+    selUni.innerHTML = '<option value="" disabled selected>Seleccioná…</option>' +
+      unis.map(u => `<option${u===valActual?' selected':''}>${u}</option>`).join('');
+  }
+
+  // Actualizar filtro de área en lista
+  const fArea = document.getElementById('f-area');
+  if (fArea) {
+    const vA = fArea.value;
+    fArea.innerHTML = '<option value="">Todas las áreas</option>' +
+      getCfg('area').map(a => `<option${a===vA?' selected':''}>${a}</option>`).join('');
+  }
+
+  // Actualizar select de área de negocio
+  const areas = getCfg('area');
+  const selArea = document.getElementById('p-area');
+  if (selArea) {
+    const valActual = selArea.value;
+    selArea.innerHTML = '<option value="" disabled selected>Seleccioná…</option>' +
+      areas.map(a => `<option${a===valActual?' selected':''}>${a}</option>`).join('');
+  }
+
+  // Actualizar datalist de presentaciones
+  const pres = getCfg('pre');
+  const dlPre = document.getElementById('presentacion-opciones');
+  if (dlPre) {
+    dlPre.innerHTML = pres.map(p => `<option value="${p}">`).join('');
+  }
+
+  // Actualizar select de proveedor habitual (base de datos de proveedores)
+  const selProv = document.getElementById('p-proveedor');
+  if (selProv) {
+    const valActual = selProv.value;
+    const nombres = getProveedores()
+      .map(p => p.nombre_comercial || p.nombre_juridico)
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b));
+    selProv.innerHTML = '<option value="">Seleccioná…</option>' +
+      nombres.map(n => `<option${n===valActual?' selected':''}>${n}</option>`).join('');
+    // Si el producto tenía un proveedor guardado que ya no existe en la lista, conservarlo igual
+    if (valActual && !nombres.includes(valActual)) {
+      selProv.innerHTML += `<option selected>${valActual}</option>`;
+    }
+  }
+
+  // Actualizar filtro de categorías en la lista
+  const filtCat = document.getElementById('f-cat');
+  if (filtCat) {
+    const valActual = filtCat.value;
+    filtCat.innerHTML = '<option value="">Todas las categorías</option>' +
+      cats.map(c => `<option${c===valActual?' selected':''}>${c}</option>`).join('');
+  }
+}
+
+function initConfig() {
+  renderCfgLista('cat');
+  renderCfgLista('uni');
+  renderCfgLista('pre');
+  renderCfgLista('area');
+  aplicarConfiguracion();
+  // Llenar datalist de nombres normalizados
+  const dl = document.getElementById('sugerencias-productos');
+  if (dl) {
+    const NOMBRES = ["Aceite de Ajonjolí","Aceite de Oliva","Aceite para Freír","Agua Tónica","Aguacate Hass","Apio Verde","Arrachera","Bandeja desechable 9x9","Camarón Cultivo PYD 26/30","Camote","Carne Molida de Res Angus","Cas","Cebolla Morada","Cebolla Seca","Chile Dulce","Chile jalapeño mitades","Cloro Duty 1 Galón","Coca-Cola 350ml Vidrio","Coca-Cola Sin Azúcar 350ml Vidrio","Culantro Castilla","Desengrasante Duty 1 Galón","Empanizador Panko","Frijol Tierno","Garbanzos","Ginger Beer","Hielo en bolsa 10kg","Hierba Buena","Hongo Champiñón","Harina Nacarina","Huevo","Jugo natural de limón","Jugo natural de naranja","Ketchup","Lechuga Americana","Lechuga Romana","Limón Mandarino","Limón Mesino","Lomito de Res Fresco","Maíz Dulce","Mango Tommy","Maracuyá","Mejillón Media Concha","Mora","Nachos","Naranja Nacional","On top vainilla","Pan Hamburguesa Brioche","Pan Mediterráneo","Papa Amarilla","Papa Corte Recto","Paprika","Pechuga de pollo","Perejil","Piña Jumbo","Plátano Maduro","Posta de cerdo","Puerro","Queso Crema","Queso Mozzarella Rallado","Queso Parmesano","Romero","Sal fina","Sal molida","Salchicha Frankfurt","Salsa Barbacoa","Salsa Búfalo","Sandía","Tallarín","Tamarindo","Tocineta Ahumada Rebanada","Tomate","Tomate Cherry","Tomate Grande","Tomillo","Tortilla sal","Vinagre","Zanahoria","Zucchini"];
+    dl.innerHTML = NOMBRES.map(n => `<option value="${n}">`).join('');
+  }
+}
+
+// Storage
+function getProductos() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch { return []; }
+}
+function saveProductos(lista) { localStorage.setItem(STORAGE_KEY, JSON.stringify(lista)); }
+
+// Base de datos de proveedores (compartida con proveedores.html)
+function getProveedores() {
+  try { return JSON.parse(localStorage.getItem('proveedores') || '[]'); }
+  catch { return []; }
+}
+
+// Trae la lista de proveedores desde el Sheet (hoja "Proveedores") vía JSONP
+// y la deja en localStorage con el mismo formato que usa proveedores.html.
+function cargarProveedoresDesdeSheet() {
+  if (!APPS_SCRIPT_COSTOS) return;
+  const cbName = 'cbProveedores_' + Date.now();
+  const script = document.createElement('script');
+
+  window[cbName] = function(resp) {
+    if (resp && resp.ok && Array.isArray(resp.registros)) {
+      const proveedores = resp.registros.map(r => ({
+        id:                r['ID'] || '',
+        nombre_juridico:   r['Nombre jurídico'] || '',
+        nombre_comercial:  r['Nombre comercial'] || '',
+        categoria:         r['Categoría'] || '',
+        contacto:          r['Contacto'] || '',
+        telefono:          r['Teléfono'] || '',
+        correo:            r['Correo'] || '',
+        dia_pedido:        r['Días de pedido'] || '',
+        dias_pedido:       (r['Días de pedido'] || '').split(',').map(s=>s.trim()).filter(Boolean),
+        notas_contacto:    r['Notas contacto'] || '',
+        cuenta:            r['Cuenta/IBAN'] || '',
+        condicion_pago:    r['Condición de pago (días)'] || 0,
+        notas_pago:        r['Notas pago'] || '',
+        actualizado:       r['Actualizado'] || ''
+      }));
+      localStorage.setItem('proveedores', JSON.stringify(proveedores));
+      aplicarConfiguracion();
+    }
+    delete window[cbName];
+    script.remove();
+  };
+
+  script.src = `${APPS_SCRIPT_COSTOS}?modulo=proveedores&callback=${cbName}`;
+  script.onerror = () => { delete window[cbName]; script.remove(); };
+  document.body.appendChild(script);
+}
+
+// Exponer globalmente para recetas
+window.getProductos = getProductos;
+
+// Categoría color
+const CAT_COLORS = {
+  'Carnes':'#c84a20','Mariscos':'#185fa5','Aves':'#c87820',
+  'Lácteos':'#6a3a9a','Frutas y Verduras':'#1a7a4a','Granos y Cereales':'#0e7a7a',
+  'Bebidas':'#185fa5','Condimentos y Especias':'#c84a20','Aceites y Grasas':'#c87820',
+  'Panadería':'#854F0B','Limpieza':'#4a5568','Otros':'#5a8a6a'
+};
+function catBadge(cat) {
+  const col = (cat && CAT_COLORS[cat]) ? CAT_COLORS[cat] : '#5a8a6a';
+  const label = cat || '—';
+  return `<span class="badge" style="background:${col}20;color:${col};">${label}</span>`;
+}
+
+// Render agrupado
+function renderListaAgrupada(lista, campo) {
+  const grupos = {};
+  lista.forEach(p => {
+    const clave = (campo === 'area' ? p.area : p.categoria) || 'Sin clasificar';
+    if (!grupos[clave]) grupos[clave] = [];
+    grupos[clave].push(p);
+  });
+
+  const thead = `<thead><tr>
+    <th>Producto</th><th>Categoría</th><th>Área</th><th>Unidad</th>
+    <th style="text-align:right;">Precio sin IVA</th>
+    <th style="text-align:right;">IVA</th>
+    <th style="text-align:right;">Costo/u</th>
+    <th style="text-align:right;">Rendimiento</th>
+    <th style="text-align:right;">Costo real/u</th>
+    <th style="text-align:right;">Stock mín.</th>
+    <th>Proveedor</th><th>Presentación</th><th></th>
+  </tr></thead>`;
+
+  const bloques = Object.keys(grupos).sort().map(clave => {
+    const items = grupos[clave];
+    const filas = items.map(p => buildFila(p)).join('');
+    const totalItems = items.length;
+    return `
+      <tr style="background:var(--surface);">
+        <td colspan="11" style="padding:8px 12px 8px 0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--purple);">${clave}</span>
+            <span style="font-size:11px;color:var(--muted);">${totalItems} producto${totalItems!==1?'s':''}</span>
+          </div>
+        </td>
+      </tr>
+      ${filas}`;
+  }).join('');
+
+  document.getElementById('tabla-lista').innerHTML =
+    `<table>${thead}<tbody>${bloques}</tbody></table>`;
+}
+
+function buildFila(p) {
+  const costoRaw  = parseFloat(p.costo) || 0;
+  const rendRaw   = parseFloat(p.rendimiento) || 100;
+  const costoReal = rendRaw > 0 ? costoRaw / (rendRaw / 100) : costoRaw;
+  const enUsoVal = p.en_uso === false || p.en_uso === 'false' ? false : true;
+  const enUsoBadge = enUsoVal
+    ? '<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:var(--green-bg);color:var(--green);font-weight:500;">En uso</span>'
+    : '<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:var(--surface);color:var(--subtle);font-weight:500;">Sin uso</span>';
+  return `<tr style="opacity:${enUsoVal ? 1 : 0.5}">
+    <td style="font-weight:500;">${p.nombre} ${enUsoBadge}</td>
+    <td>${catBadge(p.categoria)}</td>
+    <td style="color:var(--muted);font-size:12px;">${p.area||'—'}</td>
+    <td style="color:var(--muted);">${p.unidad}</td>
+    <td class="num">${fmt(parseFloat(p.precio_sin_iva||p.costo)||0)}</td>
+    <td class="num" style="color:var(--muted);">${p.iva || 0}%</td>
+    <td class="num" style="font-weight:600;color:var(--purple);">${fmt(parseFloat(p.costo)||0)}</td>
+    <td class="num" style="color:var(--muted);">${p.rendimiento||100}%</td>
+    <td class="num" style="font-weight:700;color:var(--green);">${fmt(costoReal)}</td>
+    <td class="num" style="color:var(--muted);">${p.stock_minimo > 0 ? p.stock_minimo + ' pres.' : '—'}</td>
+    <td style="color:var(--muted);font-size:12px;">${p.proveedor||'—'}</td>
+    <td style="color:var(--muted);font-size:12px;">${p.presentacion ? p.presentacion + (p.tamano ? ' · ' + p.tamano : '') : '—'}</td>
+    <td><div style="display:flex;gap:4px;">
+      <button class="btn-edit" onclick="editar('${p.id}')">Editar</button>
+      <button class="btn-del" onclick="eliminar('${p.id}')">✕</button>
+    </div></td>
+  </tr>`;
+}
+
+// Render lista
+function renderLista() {
+  const busq    = document.getElementById('search').value.toLowerCase();
+  const cat     = document.getElementById('f-cat').value;
+  const area    = document.getElementById('f-area').value;
+  const agrupar = document.getElementById('f-agrupar').value;
+  const enUso   = document.getElementById('f-en-uso').value;
+
+  let lista = getProductos().filter(p =>
+    (!busq || (p.nombre||'').toLowerCase().includes(busq))
+ && (!cat  || p.categoria === cat)
+ && (!area || p.area === area)
+ && (enUso === '' || String(p.en_uso ?? true) === enUso)
+  );
+
+  document.getElementById('status-msg').textContent =
+    `${lista.length} de ${getProductos().length} producto${getProductos().length!==1?'s':''}`;
+  document.getElementById('conn-dot').classList.remove('off');
+  document.getElementById('conn-label').textContent = 'Datos locales';
+
+  if (!lista.length) {
+    document.getElementById('tabla-lista').innerHTML =
+      '<div class="empty">No hay productos que coincidan con los filtros.</div>';
+    return;
+  }
+
+  // Si hay agrupación, renderizar con grupos
+  if (agrupar) {
+    renderListaAgrupada(lista, agrupar);
+    return;
+  }
+
+  const filas = lista.map(p => {
+    const costoRaw = parseFloat(p.costo) || 0;
+    const rendRaw  = parseFloat(p.rendimiento) || 100;
+    const costoReal = rendRaw > 0 ? costoRaw / (rendRaw / 100) : costoRaw;
+    return `<tr>
+      <td style="font-weight:500;">${p.nombre}</td>
+      <td>${catBadge(p.categoria)}</td>
+      <td style="color:var(--muted);">${p.unidad}</td>
+      <td class="num">${fmt(parseFloat(p.precio_sin_iva||p.costo)||0)}</td>
+      <td class="num" style="color:var(--muted);">${p.iva || 0}%</td>
+      <td class="num">${p.cantidad_presentacion || 1} ${p.unidad}</td>
+      <td class="num" style="font-weight:600;color:var(--purple);">${fmt(p.costo)}</td>
+      <td class="num" style="color:var(--muted);">${p.rendimiento}%</td>
+      <td class="num" style="font-weight:700;color:var(--green);">${fmt(costoReal)}</td>
+      <td style="color:var(--muted);font-size:12px;">${p.area||'—'}</td>
+      <td class="num" style="color:var(--muted);">${p.stock_minimo > 0 ? p.stock_minimo + ' pres.' : '—'}</td>
+      <td style="color:var(--muted);font-size:12px;">${p.proveedor||'—'}</td>
+      <td style="color:var(--muted);font-size:12px;">${p.presentacion ? p.presentacion + (p.tamano ? ' · ' + p.tamano : '') : '—'}</td>
+      <td>
+        <div style="display:flex;gap:4px;">
+          <button class="btn-edit" onclick="editar('${p.id}')">Editar</button>
+          <button class="btn-del"  onclick="eliminar('${p.id}')">✕</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tabla-lista').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Producto</th><th>Categoría</th><th>Unidad</th>
+        <th style="text-align:right;">Precio sin IVA</th>
+        <th style="text-align:right;">IVA</th>
+        <th style="text-align:right;">Costo/u</th>
+        <th style="text-align:right;">Rendimiento</th>
+        <th style="text-align:right;">Costo real/u</th>
+        <th style="text-align:right;">Stock mín.</th>
+        <th>Proveedor</th><th>Presentación</th><th></th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+}
+
+// Guardar
+async function guardar() {
+  const nombre               = document.getElementById('p-nombre').value.trim();
+  const categoria            = document.getElementById('p-categoria').value;
+  const unidad               = document.getElementById('p-unidad').value;
+  const precioSinIva         = parseFloat(document.getElementById('p-precio-sin-iva').value) || 0;
+  const iva                  = parseFloat(document.getElementById('p-iva').value) || 0;
+  const cantidadPresentacion = parseFloat(document.getElementById('p-cantidad-presentacion').value) || 1;
+  const costo                = parseFloat(document.getElementById('p-costo').value) || 0;
+  const rendimiento          = parseFloat(document.getElementById('p-rendimiento').value) || 100;
+  const proveedor            = document.getElementById('p-proveedor').value.trim();
+  const presentacion         = document.getElementById('p-presentacion').value.trim();
+  const tamano               = document.getElementById('p-tamano').value.trim();
+  const area                 = document.getElementById('p-area').value;
+  const editId               = document.getElementById('edit-id').value;
+
+  if (!nombre)      { showToast('Ingresá el nombre.', 'error'); return; }
+  if (!categoria)   { showToast('Seleccioná una categoría.', 'error'); return; }
+  if (!unidad)      { showToast('Seleccioná la unidad.', 'error'); return; }
+  if (!precioSinIva){ showToast('Ingresá el precio de compra.', 'error'); return; }
+  if (!area)        { showToast('Seleccioná el área de negocio.', 'error'); return; }
+
+  const id = editId || 'PRD-' + Date.now();
+  const registro = {
+    id, nombre, categoria, unidad,
+    precio_sin_iva: precioSinIva,
+    iva,
+    cantidad_presentacion: cantidadPresentacion,
+    costo,
+    rendimiento,
+    proveedor,
+    presentacion,
+    tamano,
+    area,
+    en_uso: document.getElementById('p-en-uso').value === 'true',
+    stock_minimo: parseFloat(document.getElementById('p-stock-minimo').value) || 0
+  };
+
+  const lista = getProductos();
+  if (editId) {
+    const idx = lista.findIndex(p => p.id === editId);
+    if (idx > -1) lista[idx] = registro;
+  } else {
+    lista.push(registro);
+  }
+  saveProductos(lista);
+
+  // Sincronizar con Google Sheets
+  if (APPS_SCRIPT_COSTOS) {
+    try {
+      await fetch(APPS_SCRIPT_COSTOS, {
+        method: 'POST',
+        body: new URLSearchParams({ data: JSON.stringify({ modulo: 'producto', ...registro }) })
+      });
+    } catch(e) { console.warn('Sin conexión al Sheet:', e); }
+  }
+
+  showToast(`${nombre} ${editId ? 'actualizado' : 'agregado'}`, 'success');
+  limpiarForm();
+  switchTab('lista', document.querySelectorAll('.tab')[0]);
+  renderLista();
+}
+
+function editar(id) {
+  const p = getProductos().find(p => p.id === id);
+  if (!p) return;
+  document.getElementById('edit-id').value                  = p.id;
+  document.getElementById('p-nombre').value                 = p.nombre;
+  document.getElementById('p-categoria').value              = p.categoria;
+  document.getElementById('p-unidad').value                 = p.unidad;
+  document.getElementById('p-precio-sin-iva').value         = p.precio_sin_iva || p.costo || '';
+  document.getElementById('p-iva').value                    = p.iva ?? 13;
+  document.getElementById('p-cantidad-presentacion').value  = p.cantidad_presentacion || 1;
+  document.getElementById('p-rendimiento').value            = p.rendimiento || 100;
+  document.getElementById('p-proveedor').value              = p.proveedor || '';
+  document.getElementById('p-area').value = p.area || '';
+  setEnUso(p.en_uso === false || p.en_uso === 'false' ? false : true);
+  document.getElementById('p-stock-minimo').value = p.stock_minimo || '';
+  actualizarHintStock();
+  document.getElementById('p-presentacion').value           = p.presentacion || '';
+  document.getElementById('p-tamano').value                 = p.tamano || '';
+  document.getElementById('form-title').textContent         = 'Editar producto';
+  calcularCostos();
+  switchTab('nuevo', document.querySelectorAll('.tab')[1]);
+}
+
+async function eliminar(id) {
+  saveProductos(getProductos().filter(p => p.id !== id));
+  if (APPS_SCRIPT_COSTOS) {
+    try { await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'eliminar', tipo:'productos', id }) }) }); }
+    catch(e) {}
+  }
+  document.addEventListener("DOMContentLoaded", () => {
+  initConfig();
+  renderLista();
+});
+  showToast('Producto eliminado', 'success');
+}
+
+function limpiarForm() {
+  document.getElementById('edit-id').value                  = '';
+  document.getElementById('p-nombre').value                 = '';
+  document.getElementById('p-categoria').value              = '';
+  document.getElementById('p-unidad').value                 = '';
+  document.getElementById('p-precio-sin-iva').value         = '';
+  document.getElementById('p-iva').value                    = '13';
+  document.getElementById('p-cantidad-presentacion').value  = '1';
+  document.getElementById('p-costo').value                  = '';
+  document.getElementById('p-rendimiento').value            = '100';
+  document.getElementById('p-proveedor').value              = '';
+  document.getElementById('p-area').value = '';
+  setEnUso(true);
+  document.getElementById('p-stock-minimo').value = '';
+  document.getElementById('p-stock-minimo-equiv').textContent = '';
+  document.getElementById('p-presentacion').value           = '';
+  document.getElementById('p-tamano').value                 = '';
+  document.getElementById('p-costo-display').textContent    = '₡0.00';
+  document.getElementById('p-costo-real-display').textContent = '₡0.00';
+  document.getElementById('form-title').textContent         = 'Nuevo producto';
+}
+
+function switchTab(tab, el) {
+  document.getElementById('tab-lista').style.display  = tab==='lista'  ? 'block':'none';
+  document.getElementById('tab-nuevo').style.display  = tab==='nuevo'  ? 'block':'none';
+  document.getElementById('tab-config').style.display = tab==='config' ? 'block':'none';
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  if (tab==='config') { renderCfgLista('cat'); renderCfgLista('uni'); renderCfgLista('pre'); renderCfgLista('area'); }
+  if (tab==='nuevo')  { aplicarConfiguracion(); }
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').innerHTML = type==='success'
+    ? '<polyline points="3 8 7 12 13 4"/>'
+    : '<line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = `toast ${type}`;
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  initConfig();
+  renderLista();
+  cargarProveedoresDesdeSheet();
+});
+</script>
+</body>
+</html>

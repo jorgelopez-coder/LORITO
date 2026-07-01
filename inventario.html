@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventario · Grupo del Sol</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#fff;
+      --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --purple:#6a3a9a; --purple-bg:#f3eefb; --purple-lt:#d4b8f0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
+      --amber:#c87820; --amber-bg:#fdf6e3; --amber-lt:#f0d890;
+      --teal:#0e7a7a; --teal-bg:#eaf6f6; --teal-lt:#a8d8d8;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+    header { height:56px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; background:var(--bg); position:sticky; top:0; z-index:20; }
+    .nav-left { display:flex; align-items:center; gap:10px; }
+    .back-btn { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); }
+    .back-btn:hover { color:var(--text); border-color:var(--border-h); }
+    .back-btn svg { width:13px; height:13px; }
+    .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
+    .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 10px; }
+    main { max-width:1100px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .page-header { margin-bottom:1.5rem; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .page-header h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+    .page-header p { font-size:13px; color:var(--muted); }
+    .tabs { display:flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:4px; margin-bottom:1.25rem; width:fit-content; }
+    .tab { font-size:13px; font-weight:500; padding:6px 16px; border-radius:7px; border:none; cursor:pointer; background:transparent; color:var(--muted); transition:background .15s,color .15s; white-space:nowrap; }
+    .tab.active { background:var(--card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; }
+    .card-head { padding:1rem 1.25rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    .card-title { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); }
+    .toolbar { display:flex; gap:8px; padding:1rem 1.25rem; border-bottom:1px solid var(--border); flex-wrap:wrap; align-items:center; }
+    .search-wrap { position:relative; flex:1; min-width:180px; }
+    .search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--subtle); pointer-events:none; }
+    .search-input { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--font-b); font-size:13px; padding:8px 12px 8px 32px; outline:none; }
+    .search-input:focus { border-color:var(--teal); }
+    .filter-sel { font-size:13px; padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--text); outline:none; cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:30px; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th { text-align:left; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:10px 10px; border-bottom:1px solid var(--border); background:var(--surface); white-space:nowrap; }
+    td { padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    .num { text-align:right; font-variant-numeric:tabular-nums; }
+    .grupo-header td { background:var(--teal-bg); padding:8px 12px; font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--teal); border-bottom:1px solid var(--teal-lt); border-top:1px solid var(--teal-lt); }
+    .qty-input { width:80px; background:var(--surface); border:1px solid var(--border); border-radius:7px; color:var(--text); font-family:var(--font-b); font-size:13px; padding:5px 8px; outline:none; text-align:right; transition:border-color .15s; }
+    .qty-input:focus { border-color:var(--teal); box-shadow:0 0 0 3px rgba(14,122,122,.1); }
+    .qty-input.ok { border-color:var(--green); background:var(--green-bg); }
+    .badge { display:inline-flex; align-items:center; gap:3px; font-size:11px; font-weight:600; padding:4px 10px; border-radius:20px; white-space:nowrap; }
+    .b-proceso { background:var(--amber-bg); color:var(--amber); border:1px solid var(--amber-lt); }
+    .b-finalizado { background:var(--green-bg); color:var(--green); border:1px solid var(--green-lt); }
+    .btn-primary { background:var(--teal); color:#fff; border:none; border-radius:9px; font-family:var(--font-d); font-size:14px; font-weight:700; padding:10px 20px; cursor:pointer; transition:opacity .15s; white-space:nowrap; }
+    .btn-primary:hover { opacity:.9; }
+    .btn-primary:disabled { opacity:.4; cursor:not-allowed; }
+    .btn-sec { padding:10px 16px; border-radius:9px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; cursor:pointer; white-space:nowrap; }
+    .btn-sec:hover { color:var(--text); border-color:var(--border-h); }
+    .btn-danger { padding:9px 16px; border-radius:9px; border:1px solid var(--red-lt); background:var(--red-bg); color:var(--red); font-size:13px; font-weight:600; cursor:pointer; }
+    .hist-item { padding:1rem 1.25rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:12px; cursor:pointer; transition:background .12s; }
+    .hist-item:hover { background:var(--surface); }
+    .hist-item:last-child { border-bottom:none; }
+    .status-proceso { display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:var(--amber); }
+    .status-proceso::before { content:''; display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--amber); }
+    .status-fin { display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:var(--green); }
+    .status-fin::before { content:''; display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--green); }
+    input[type="date"] { background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--font-b); font-size:14px; padding:8px 12px; outline:none; }
+    input[type="date"]:focus { border-color:var(--teal); }
+    .valor-box { display:flex; align-items:center; justify-content:space-between; padding:.75rem 1.25rem; background:var(--teal-bg); border-bottom:1px solid var(--teal-lt); }
+    .empty { text-align:center; padding:3rem; color:var(--subtle); font-size:13px; }
+    .spinner { display:inline-block; width:18px; height:18px; border:2px solid var(--border); border-top-color:var(--teal); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
+    .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+    .ssep { width:1px; height:14px; background:var(--border); }
+    .toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px); background:var(--card); border:1px solid var(--border); border-radius:10px; padding:11px 18px; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s; opacity:0; z-index:100; box-shadow:0 4px 20px rgba(0,0,0,.08); white-space:nowrap; }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+    .toast.success { border-color:var(--green); color:var(--green); }
+    .toast.error { border-color:var(--red); color:var(--red); }
+    .toast svg { width:16px; height:16px; }
+    @media (max-width:700px) { header{padding:0 1rem;} main{padding:1.5rem 1rem 3rem;} }
+  </style>
+</head>
+<body>
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Inventario</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<main>
+  <div class="page-header">
+    <div>
+      <h1>Toma de inventario</h1>
+      <p>Conteo físico periódico · Valorización por costo de compra</p>
+    </div>
+    <button class="btn-primary" onclick="iniciaNuevaToma()">+ Nueva toma de inventario</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('tomas',this)">Tomas</button>
+    <button class="tab" id="tab-btn-actual" onclick="switchTab('actual',this)" style="display:none;">Toma actual</button>
+    <button class="tab" onclick="switchTab('historial',this)">Historial</button>
+  </div>
+
+  <!-- ══ TAB TOMAS (lista) ══════════════════════════════════════ -->
+  <div id="tab-tomas">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Tomas de inventario</div>
+      </div>
+      <div id="lista-tomas">
+        <div class="empty">No hay tomas registradas. Iniciá una con el botón de arriba.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB ACTUAL (toma en proceso) ═════════════════════════ -->
+  <div id="tab-actual" style="display:none;">
+
+    <!-- Info de la toma -->
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span class="card-title" id="actual-id-label">—</span>
+            <span id="actual-estado-badge"></span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px;" id="actual-info"></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:13px;font-weight:500;">Fecha de toma:</label>
+            <input type="date" id="fecha-toma" onchange="guardarFechaToma()">
+          </div>
+          <button class="btn-sec" onclick="imprimirFormato()">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;margin-right:4px;vertical-align:middle;"><path d="M4 4V2h8v2M4 11H3a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1M4 8h.01M4 11v3h8v-3H4z"/></svg>
+            Imprimir formato
+          </button>
+          <button class="btn-primary" style="background:var(--green);" id="btn-finalizar" onclick="finalizarToma()">
+            ✓ Finalizar toma
+          </button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" class="search-input" id="s-actual" placeholder="Buscar producto…" oninput="renderActual()">
+        </div>
+        <select class="filter-sel" id="f-actual-area" onchange="renderActual()">
+          <option value="">Todas las áreas</option>
+        </select>
+        <select class="filter-sel" id="f-actual-grupo" onchange="renderActual()">
+          <option value="area">Agrupar por área</option>
+          <option value="categoria">Agrupar por categoría</option>
+          <option value="area_categoria">Área → Categoría</option>
+        </select>
+      </div>
+
+      <!-- Totalizadores -->
+      <div style="border-bottom:1px solid var(--teal-lt);">
+        <div class="valor-box">
+          <span style="font-size:13px;color:var(--teal);font-weight:500;">Valorización total</span>
+          <span id="valor-live" style="font-family:var(--font-d);font-size:22px;font-weight:700;color:var(--teal);">₡0</span>
+        </div>
+        <div id="totales-area" style="display:flex;gap:0;flex-wrap:wrap;border-top:1px solid var(--teal-lt);"></div>
+      </div>
+
+      <div style="overflow-x:auto;" id="tabla-actual">
+        <div class="empty"><span class="spinner"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB HISTORIAL ════════════════════════════════════════ -->
+  <div id="tab-historial" style="display:none;">
+    <div class="card">
+      <div class="card-head"><div class="card-title">Tomas finalizadas</div></div>
+      <div id="lista-historial">
+        <div class="empty">Sin tomas finalizadas.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <span class="sdot"></span>
+    <span id="status-msg">Cargando…</span>
+    <span class="ssep"></span>
+    <span style="margin-left:auto;">v1.0 · Inventario · Grupo del Sol</span>
+  </div>
+</main>
+
+<!-- FORMATO IMPRESIÓN -->
+<div id="print-area" style="display:none;">
+  <style>
+    @media print {
+      body > * { display:none !important; }
+      #print-area { display:block !important; }
+      @page { margin:1.5cm; size:A4 portrait; }
+      .print-page-break { page-break-after:always; }
+    }
+    #print-area { font-family:Arial,sans-serif; font-size:11px; color:#000; }
+    .pr-header { border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:14px; }
+    .pr-logo { font-weight:700; font-size:16px; }
+    .pr-meta { font-size:10px; color:#444; margin-top:4px; }
+    .pr-area-title { background:#1c3a28; color:#fff; padding:5px 10px; font-weight:700; font-size:12px; margin:14px 0 6px; }
+    .pr-table { width:100%; border-collapse:collapse; font-size:10px; }
+    .pr-table th { background:#f0f0f0; border:1px solid #ccc; padding:5px 6px; text-align:left; font-size:9px; text-transform:uppercase; letter-spacing:.04em; }
+    .pr-table td { border:1px solid #ccc; padding:5px 6px; vertical-align:middle; }
+    .pr-table td.espacio { background:#f9f9f9; }
+    .pr-firma { margin-top:30px; display:flex; gap:40px; }
+    .pr-firma-line { flex:1; border-top:1px solid #000; padding-top:5px; font-size:10px; text-align:center; }
+  </style>
+  <div id="print-contenido"></div>
+</div>
+
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────
+const EMAIL_GERENCIA     = 'TODO_GERENCIA_LORITO@pendiente.com';
+const APPS_SCRIPT_RRHH   = 'TODO_APPS_SCRIPT_RRHH_LORITO';
+const APPS_SCRIPT_COSTOS = 'TODO_APPS_SCRIPT_COSTOS_LORITO';
+// ─────────────────────────────────────────────────────────────────
+
+const hoy = new Date();
+const pad = n => String(n).padStart(2,'0');
+const fechaHoy = `${hoy.getFullYear()}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`;
+const fmt  = n => '₡' + Number(n||0).toLocaleString('es-CR', {minimumFractionDigits:0});
+const fmt2 = n => '₡' + Number(n||0).toLocaleString('es-CR', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+document.getElementById('date-chip').textContent =
+  hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
+
+// ── STORAGE ───────────────────────────────────────────────────────
+let tomas    = [];  // todas las tomas
+let tomaActual = null;
+let productos  = [];
+
+function getTomas()   { try { return JSON.parse(localStorage.getItem('inv_tomas')||'[]'); } catch { return []; } }
+function saveTomas(t) { localStorage.setItem('inv_tomas', JSON.stringify(t)); }
+function genId()      { return 'INV-' + hoy.getFullYear() + pad(hoy.getMonth()+1) + pad(hoy.getDate()) + '-' + Math.floor(Math.random()*9000+1000); }
+
+// Mapear encabezados del Sheet a campos internos
+function normalizarProducto(r) {
+  return {
+    id:                   r['ID']                   || '',
+    nombre:               r['Nombre']               || '',
+    en_uso:               (r['En uso']||'Sí') !== 'No',
+    categoria:            r['Categoría']            || '',
+    area:                 r['Área de negocio']      || '',
+    unidad:               r['Unidad']               || '',
+    presentacion:         r['Presentación']         || '',
+    tamano:               r['Tamaño']               || '',
+    precio_sin_iva:       parseFloat(r['Precio sin IVA'])          || 0,
+    iva:                  parseFloat(r['IVA (%)'])                  || 0,
+    cantidad_presentacion:parseFloat(r['Cantidad presentación'])   || 1,
+    costo:                parseFloat(r['Costo/u'])                  || 0,
+    rendimiento:          parseFloat(r['Rendimiento (%)'])          || 100,
+    costo_real:           parseFloat(r['Costo real/u'])             || 0,
+    proveedor:            r['Proveedor']            || '',
+    stock_minimo:         parseFloat(r['Stock mínimo (presentaciones)']) || 0,
+  };
+}
+
+// ID del Sheet de costos y nombre exacto de la hoja
+const COSTOS_SHEET_ID  = '1PtT9AHv2drY7oLygHKWMhHQgeOuT20_cD_igqu6ijyA';
+const COSTOS_HOJA_PROD = 'Productos';
+
+// Leer via API pública de Google Sheets (gviz) — no requiere auth ni Apps Script
+async function cargarProductosSheet() {
+  try {
+    const url  = `https://docs.google.com/spreadsheets/d/${COSTOS_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(COSTOS_HOJA_PROD)}`;
+    const resp = await fetch(url);
+    const text = await resp.text();
+    // gviz devuelve un JSON envuelto: /*O_o*/\ngoogle.visualization.Query.setResponse({...})
+    const json = JSON.parse(text.replace(/^[^{]*/, '').replace(/[^}]*$/, ''));
+    const cols = json.table.cols.map(c => c.label);
+    const rows = (json.table.rows || []).map(row => {
+      const obj = {};
+      cols.forEach((col, i) => {
+        const cell = row.c ? row.c[i] : null;
+        obj[col] = cell ? (cell.f ?? cell.v ?? '') : '';
+      });
+      return obj;
+    });
+
+    const normalizados = rows.map(normalizarProducto).filter(p => p.en_uso && p.nombre);
+    localStorage.setItem('costos_productos', JSON.stringify(normalizados));
+    document.getElementById('status-msg').textContent =
+      `${normalizados.length} productos cargados desde Google Sheets · ${tomas.length} toma${tomas.length!==1?'s':''}`;
+    return normalizados;
+
+  } catch(e) {
+    console.warn('gviz falló, usando caché local:', e);
+    document.getElementById('status-msg').textContent =
+      'Sin conexión — usando datos en caché local';
+  }
+
+  // Fallback: caché local
+  return JSON.parse(localStorage.getItem('costos_productos')||'[]')
+    .filter(p => p.en_uso !== false && p.en_uso !== 'false');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────
+async function init() {
+  tomas    = getTomas();
+
+  // Mostrar spinner mientras carga
+  document.getElementById('lista-tomas').innerHTML = '<div class="empty"><span class="spinner"></span> Cargando productos del Sheet…</div>';
+  document.getElementById('status-msg').textContent = 'Cargando productos desde Google Sheets…';
+
+  productos = await cargarProductosSheet();
+
+  // Poblar filtro de áreas
+  const areas = [...new Set(productos.map(p=>p.area).filter(Boolean))].sort();
+  const selA  = document.getElementById('f-actual-area');
+  selA.innerHTML = '<option value="">Todas las áreas</option>' +
+    areas.map(a=>`<option>${a}</option>`).join('');
+
+  // ¿Hay una toma en proceso?
+  tomaActual = tomas.find(t => t.estado === 'en_proceso') || null;
+  if (tomaActual) {
+    document.getElementById('tab-btn-actual').style.display = 'block';
+  }
+
+  renderListaTomas();
+  renderHistorial();
+  const fuente = navigator.onLine ? 'Google Sheets' : 'caché local';
+  document.getElementById('status-msg').textContent =
+    `${productos.length} productos cargados desde ${fuente} · ${tomas.length} toma${tomas.length!==1?'s':''}`;
+}
+
+// ── NUEVA TOMA ────────────────────────────────────────────────────
+function iniciaNuevaToma() {
+  if (tomaActual) {
+    if (!confirm('Ya hay una toma en proceso. ¿Querés abandonarla e iniciar una nueva?')) return;
+    tomaActual.estado = 'cancelada';
+  }
+
+  const id = genId();
+  tomaActual = {
+    id,
+    fecha_inicio: new Date().toISOString(),
+    fecha_toma:   fechaHoy,
+    estado:       'en_proceso',
+    lineas:       {},  // { productoId: { cerrado, abierto } }
+    valor_total:  0,
+  };
+
+  tomas.unshift(tomaActual);
+  saveTomas(tomas);
+
+  document.getElementById('tab-btn-actual').style.display = 'block';
+  switchTab('actual', document.getElementById('tab-btn-actual'));
+  renderActualMeta();
+  renderActual();
+  renderListaTomas();
+  showToast(`Toma ${id} iniciada`, 'success');
+}
+
+// ── RENDER META ───────────────────────────────────────────────────
+function renderActualMeta() {
+  if (!tomaActual) return;
+  document.getElementById('actual-id-label').textContent = tomaActual.id;
+  document.getElementById('actual-estado-badge').innerHTML =
+    `<span class="badge b-proceso">● En proceso</span>`;
+  document.getElementById('actual-info').textContent =
+    `Iniciada: ${new Date(tomaActual.fecha_inicio).toLocaleString('es-CR')}`;
+  document.getElementById('fecha-toma').value = tomaActual.fecha_toma || fechaHoy;
+}
+
+function guardarFechaToma() {
+  if (!tomaActual) return;
+  tomaActual.fecha_toma = document.getElementById('fecha-toma').value;
+  saveTomas(tomas);
+}
+
+// ── RENDER TABLA CONTEO ───────────────────────────────────────────
+function renderActual() {
+  if (!tomaActual) { document.getElementById('tabla-actual').innerHTML = '<div class="empty">Sin toma activa.</div>'; return; }
+
+  const busq  = document.getElementById('s-actual').value.toLowerCase();
+  const area  = document.getElementById('f-actual-area').value;
+  const grupo = document.getElementById('f-actual-grupo').value;
+
+  let lista = productos.filter(p =>
+    (!busq || (p.nombre||'').toLowerCase().includes(busq))
+ && (!area || p.area === area)
+  );
+
+  if (!lista.length) {
+    document.getElementById('tabla-actual').innerHTML = '<div class="empty">Sin productos que coincidan.</div>';
+    actualizarValorLive(); return;
+  }
+
+  const thead = `<table><thead><tr>
+    <th>Producto</th>
+    <th>Presentación compra</th>
+    <th>Precio compra s/IVA</th>
+    <th style="text-align:right;">Cerrado / Completo</th>
+    <th style="text-align:right;">En uso / Abierto</th>
+    <th style="text-align:right;">Valorización</th>
+  </tr></thead><tbody>`;
+
+  let content = thead;
+
+  if (grupo === 'area') {
+    const grupos = agruparLista(lista, p => p.area || 'Sin área');
+    Object.keys(grupos).sort().forEach(k => {
+      const sub = calcSubtotal(grupos[k]);
+      content += headerGrupo(k, grupos[k].length, sub, 6);
+      grupos[k].forEach(p => { content += buildFilaToma(p); });
+      content += footerSubtotal(sub, 6);
+    });
+
+  } else if (grupo === 'categoria') {
+    const grupos = agruparLista(lista, p => p.categoria || 'Sin categoría');
+    Object.keys(grupos).sort().forEach(k => {
+      const sub = calcSubtotal(grupos[k]);
+      content += headerGrupo(k, grupos[k].length, sub, 6);
+      grupos[k].forEach(p => { content += buildFilaToma(p); });
+      content += footerSubtotal(sub, 6);
+    });
+
+  } else { // area_categoria
+    const porArea = agruparLista(lista, p => p.area || 'Sin área');
+    Object.keys(porArea).sort().forEach(areaKey => {
+      const subArea = calcSubtotal(porArea[areaKey]);
+      content += `<tr style="background:var(--teal-bg);"><td colspan="6" style="padding:9px 12px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);border-top:1px solid var(--teal-lt);border-bottom:1px solid var(--teal-lt);">
+        ${areaKey} · ${porArea[areaKey].length} productos &nbsp;·&nbsp; <span style="font-weight:400;">${fmt(subArea)}</span>
+      </td></tr>`;
+      const porCat = agruparLista(porArea[areaKey], p => p.categoria || 'Sin categoría');
+      Object.keys(porCat).sort().forEach(catKey => {
+        const subCat = calcSubtotal(porCat[catKey]);
+        content += `<tr style="background:#f7f2fd;"><td colspan="6" style="padding:6px 20px;font-size:11px;font-weight:600;color:var(--purple);border-bottom:1px solid var(--purple-lt);">
+          ${catKey} · ${porCat[catKey].length} productos &nbsp;·&nbsp; ${fmt(subCat)}
+        </td></tr>`;
+        porCat[catKey].forEach(p => { content += buildFilaToma(p); });
+      });
+      content += footerSubtotal(subArea, 6, 'Subtotal ' + areaKey);
+    });
+  }
+
+  content += '</tbody></table>';
+  document.getElementById('tabla-actual').innerHTML = content;
+  actualizarValorLive();
+}
+
+function agruparLista(lista, fn) {
+  const g = {};
+  lista.forEach(p => { const k = fn(p); if (!g[k]) g[k]=[]; g[k].push(p); });
+  return g;
+}
+
+function calcSubtotal(lista) {
+  return lista.reduce((acc, p) => {
+    const l = (tomaActual.lineas||{})[p.id]||{};
+    return acc + (parseFloat(l.cerrado)||0)*(parseFloat(p.precio_sin_iva)||0)
+               + (parseFloat(l.abierto)||0)*(parseFloat(p.costo)||0);
+  }, 0);
+}
+
+function headerGrupo(titulo, n, subtotal, cols) {
+  return `<tr class="grupo-header"><td colspan="${cols}">${titulo} · ${n} producto${n!==1?'s':''} <span style="font-weight:400;font-size:11px;margin-left:8px;opacity:.8;">${fmt(subtotal)}</span></td></tr>`;
+}
+
+function footerSubtotal(val, cols, label='Subtotal') {
+  return `<tr style="background:var(--surface);">
+    <td colspan="${cols-1}" style="padding:7px 12px;font-size:12px;font-weight:600;color:var(--muted);text-align:right;">${label}</td>
+    <td style="padding:7px 12px;text-align:right;font-family:var(--font-d);font-size:14px;font-weight:700;color:var(--teal);">${fmt(val)}</td>
+  </tr>`;
+}
+function buildFilaToma(p) {
+  const linea   = (tomaActual.lineas || {})[p.id] || {};
+  const cerrado = linea.cerrado !== undefined ? linea.cerrado : '';
+  const abierto = linea.abierto !== undefined ? linea.abierto : '';
+  const precioU = parseFloat(p.costo) || 0;          // costo por unidad de medida
+  const precioC = parseFloat(p.precio_sin_iva) || 0; // precio de compra (presentación completa)
+  const cantPres= parseFloat(p.cantidad_presentacion) || 1;
+
+  // Valor: cerrado × precio_presentacion + abierto × costo_unidad
+  const valCerrado = (parseFloat(cerrado)||0) * precioC;
+  const valAbierto  = (parseFloat(abierto)||0) * precioU;
+  const valor       = valCerrado + valAbierto;
+  const tieneData   = cerrado !== '' || abierto !== '';
+
+  const presentacion = [p.presentacion, p.tamano].filter(Boolean).join(' ') || '—';
+
+  return `<tr>
+    <td>
+      <div style="font-weight:500;">${p.nombre}</div>
+      <div style="font-size:11px;color:var(--muted);">${p.categoria||''}</div>
+    </td>
+    <td style="font-size:12px;color:var(--muted);">${presentacion}</td>
+    <td class="num" style="font-size:12px;color:var(--muted);">${fmt2(precioC)}</td>
+    <td class="num">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
+        <input type="number" class="qty-input ${cerrado!==''?'ok':''}" min="0" step="1"
+          id="c-${p.id}" value="${cerrado}" placeholder="0"
+          title="Unidades cerradas / completas (en presentación)"
+          oninput="onLinea('${p.id}','cerrado',this)">
+        <div style="font-size:10px;color:var(--muted);">unidades completas</div>
+      </div>
+    </td>
+    <td class="num">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
+        <input type="number" class="qty-input ${abierto!==''?'ok':''}" min="0" step="0.01"
+          id="a-${p.id}" value="${abierto}" placeholder="0"
+          title="Cantidad en uso / abierto (en ${p.unidad||'unidades de medida'})"
+          oninput="onLinea('${p.id}','abierto',this)">
+        <div style="font-size:10px;color:var(--muted);">${p.unidad||'unidades'} en uso</div>
+      </div>
+    </td>
+    <td class="num" style="font-weight:600;color:var(--teal);" id="val-${p.id}">
+      ${tieneData ? fmt(valor) : '—'}
+    </td>
+  </tr>`;
+}
+
+function onLinea(id, campo, input) {
+  if (!tomaActual.lineas) tomaActual.lineas = {};
+  if (!tomaActual.lineas[id]) tomaActual.lineas[id] = {};
+
+  const val = input.value;
+  if (val === '') {
+    delete tomaActual.lineas[id][campo];
+  } else {
+    tomaActual.lineas[id][campo] = parseFloat(val) || 0;
+    input.classList.add('ok');
+  }
+
+  // Recalcular valorización de la línea
+  const p = productos.find(x=>x.id===id);
+  if (p) {
+    const linea    = tomaActual.lineas[id];
+    const precioC  = parseFloat(p.precio_sin_iva)||0;
+    const precioU  = parseFloat(p.costo)||0;
+    const valC     = (parseFloat(linea.cerrado)||0) * precioC;
+    const valA     = (parseFloat(linea.abierto)||0) * precioU;
+    const valEl    = document.getElementById('val-' + id);
+    if (valEl) valEl.textContent = (linea.cerrado!==undefined||linea.abierto!==undefined) ? fmt(valC+valA) : '—';
+  }
+
+  saveTomas(tomas);
+  actualizarValorLive();
+}
+
+function actualizarValorLive() {
+  if (!tomaActual) { document.getElementById('valor-live').textContent = '₡0'; return; }
+
+  let total = 0;
+  const porArea = {};
+
+  productos.forEach(p => {
+    const linea   = (tomaActual.lineas||{})[p.id] || {};
+    const precioC = parseFloat(p.precio_sin_iva)||0;
+    const precioU = parseFloat(p.costo)||0;
+    const valor   = (parseFloat(linea.cerrado)||0)*precioC + (parseFloat(linea.abierto)||0)*precioU;
+    total += valor;
+    if (valor > 0) {
+      const area = p.area || 'Sin área';
+      porArea[area] = (porArea[area]||0) + valor;
+    }
+  });
+
+  tomaActual.valor_total = total;
+  document.getElementById('valor-live').textContent = fmt(total);
+
+  // Totales por área
+  const totalesEl = document.getElementById('totales-area');
+  if (totalesEl && Object.keys(porArea).length) {
+    totalesEl.innerHTML = Object.keys(porArea).sort().map(area => `
+      <div style="flex:1;min-width:140px;padding:8px 14px;border-right:1px solid var(--teal-lt);">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--teal);font-weight:600;">${area}</div>
+        <div style="font-family:var(--font-d);font-size:15px;font-weight:700;color:var(--teal);">${fmt(porArea[area])}</div>
+      </div>`).join('');
+  } else if (totalesEl) {
+    totalesEl.innerHTML = '';
+  }
+}
+
+// ── IMPRIMIR FORMATO ─────────────────────────────────────────────
+function imprimirFormato() {
+  if (!tomaActual) { showToast('Sin toma activa.','error'); return; }
+
+  const fecha     = tomaActual.fecha_toma || fechaHoy;
+  const id        = tomaActual.id;
+  const areas     = [...new Set(productos.map(p=>p.area||'Sin área'))].sort();
+
+  let html = `
+    <div class="pr-header">
+      <div class="pr-logo">GRUPO DEL SOL — LORITO</div>
+      <div class="pr-meta">
+        Toma de inventario &nbsp;|&nbsp; ID: <strong>${id}</strong> &nbsp;|&nbsp; Fecha: <strong>${fecha}</strong>
+      </div>
+    </div>`;
+
+  areas.forEach(area => {
+    const prods = productos.filter(p=>(p.area||'Sin área')===area);
+    if (!prods.length) return;
+    html += `<div class="pr-area-title">${area}</div>
+    <table class="pr-table">
+      <thead><tr>
+        <th style="width:28%">Producto</th>
+        <th style="width:15%">Presentación</th>
+        <th style="width:12%">Unidad receta</th>
+        <th style="width:12%">Precio c/s IVA</th>
+        <th style="width:16%;text-align:center;">Unidades completas<br><span style="font-weight:400;font-size:8px;">(pres. cerrada)</span></th>
+        <th style="width:17%;text-align:center;">Cant. en uso<br><span style="font-weight:400;font-size:8px;">(${area==='Bar'?'ml/u':'g/ml/u'} abierto)</span></th>
+      </tr></thead>
+      <tbody>`;
+    prods.forEach(p => {
+      const presentacion = [p.presentacion, p.tamano].filter(Boolean).join(' ') || '—';
+      html += `<tr>
+        <td><strong>${p.nombre}</strong><br><span style="font-size:9px;color:#555;">${p.categoria||''}</span></td>
+        <td>${presentacion}</td>
+        <td>${p.unidad||'—'}</td>
+        <td>${fmt2(parseFloat(p.precio_sin_iva)||0)}</td>
+        <td class="espacio" style="text-align:center;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td class="espacio" style="text-align:center;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+  });
+
+  html += `<div class="pr-firma">
+    <div class="pr-firma-line">Responsable del conteo</div>
+    <div class="pr-firma-line">Verificado por</div>
+    <div class="pr-firma-line">Fecha de entrega</div>
+  </div>`;
+
+  document.getElementById('print-contenido').innerHTML = html;
+  document.getElementById('print-area').style.display = 'block';
+  window.print();
+  document.getElementById('print-area').style.display = 'none';
+}
+
+// ── FINALIZAR TOMA ────────────────────────────────────────────────
+async function finalizarToma() {
+  if (!tomaActual) return;
+  const lineasContadas = Object.keys(tomaActual.lineas||{}).length;
+  if (!lineasContadas) { showToast('Ingresá al menos una cantidad antes de finalizar.','error'); return; }
+
+  if (!confirm(`¿Finalizar la toma ${tomaActual.id}?\n\nSe generará el resumen y se enviará a ${EMAIL_GERENCIA}.\n\nProductos contados: ${lineasContadas}\nValorización: ${fmt(tomaActual.valor_total)}`)) return;
+
+  tomaActual.estado          = 'finalizada';
+  tomaActual.fecha_fin       = new Date().toISOString();
+  tomaActual.lineas_contadas = lineasContadas;
+  saveTomas(tomas);
+
+  // Guardar en Drive
+  await guardarTemaEnDrive(tomaActual);
+
+  // Enviar por correo
+  await enviarResumenPorCorreo(tomaActual);
+
+  tomaActual = null;
+  document.getElementById('tab-btn-actual').style.display = 'none';
+  switchTab('historial', document.querySelectorAll('.tab')[2]);
+  renderListaTomas();
+  renderHistorial();
+  showToast('Toma finalizada, guardada en Drive y enviada a gerencia ✓', 'success');
+}
+
+async function guardarTemaEnDrive(toma) {
+  // Construir array de líneas con toda la info
+  const lineas = productos
+    .filter(p => toma.lineas[p.id])
+    .map(p => {
+      const l         = toma.lineas[p.id] || {};
+      const precioC   = parseFloat(p.precio_sin_iva) || 0;
+      const precioU   = parseFloat(p.costo) || 0;
+      const cerrado   = parseFloat(l.cerrado) || 0;
+      const abierto   = parseFloat(l.abierto) || 0;
+      const valC      = cerrado * precioC;
+      const valA      = abierto * precioU;
+      return {
+        nombre:       p.nombre,
+        area:         p.area || '',
+        categoria:    p.categoria || '',
+        unidad:       p.unidad || '',
+        presentacion: [p.presentacion, p.tamano].filter(Boolean).join(' '),
+        precio_sin_iva: precioC,
+        cerrado, abierto,
+        val_cerrado: valC,
+        val_abierto: valA,
+        valor: valC + valA,
+      };
+    });
+
+  const payload = {
+    modulo:           'inventario',
+    id:               toma.id,
+    fecha_toma:       toma.fecha_toma || '',
+    fecha_inicio:     toma.fecha_inicio || '',
+    fecha_fin:        toma.fecha_fin || '',
+    estado:           toma.estado,
+    lineas_contadas:  toma.lineas_contadas,
+    valor_total:      toma.valor_total || 0,
+    lineas,
+  };
+
+  try {
+    await fetch(APPS_SCRIPT_COSTOS, {
+      method: 'POST',
+      body: new URLSearchParams({ data: JSON.stringify(payload) })
+    });
+    console.log('Inventario guardado en Drive ✓');
+  } catch(e) {
+    console.warn('No se pudo guardar en Drive:', e);
+  }
+}
+
+async function enviarResumenPorCorreo(toma) {
+  // Construir resumen HTML para el correo
+  const areas = [...new Set(productos.map(p=>p.area||'Sin área'))].sort();
+  let cuerpo = `<h2>Toma de inventario ${toma.id}</h2>
+    <p><b>Fecha de toma:</b> ${toma.fecha_toma} | <b>Finalizada:</b> ${new Date(toma.fecha_fin).toLocaleString('es-CR')}</p>
+    <p><b>Productos contados:</b> ${toma.lineas_contadas} | <b>Valorización total:</b> ${fmt(toma.valor_total)}</p><hr>`;
+
+  areas.forEach(area => {
+    const prods = productos.filter(p=>(p.area||'Sin área')===area && toma.lineas[p.id]);
+    if (!prods.length) return;
+    cuerpo += `<h3>${area}</h3><table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;width:100%;font-size:12px;">
+      <tr style="background:#1c3a28;color:#fff;"><th>Producto</th><th>Completos</th><th>En uso</th><th>Valor</th></tr>`;
+    prods.forEach(p => {
+      const l = toma.lineas[p.id]||{};
+      const v = (parseFloat(l.cerrado)||0)*(parseFloat(p.precio_sin_iva)||0) +
+                (parseFloat(l.abierto)||0)*(parseFloat(p.costo)||0);
+      cuerpo += `<tr><td>${p.nombre}</td><td>${l.cerrado??'—'}</td><td>${l.abierto??'—'} ${p.unidad||''}</td><td>${fmt(v)}</td></tr>`;
+    });
+    cuerpo += '</table>';
+  });
+
+  try {
+    await fetch(APPS_SCRIPT_RRHH, {
+      method: 'POST',
+      body: new URLSearchParams({ data: JSON.stringify({
+        modulo:   'enviar_correo',
+        para:     EMAIL_GERENCIA,
+        asunto:   `Toma de inventario ${toma.id} — ${toma.fecha_toma}`,
+        cuerpo,
+        tipo_html: true
+      })})
+    });
+  } catch(e) { console.warn('Correo no enviado:', e); }
+}
+
+// ── RENDER LISTA TOMAS ────────────────────────────────────────────
+function renderListaTomas() {
+  const cont = document.getElementById('lista-tomas');
+  const todas = getTomas().filter(t => t.estado !== 'cancelada');
+  if (!todas.length) { cont.innerHTML = '<div class="empty">Sin tomas registradas.</div>'; return; }
+
+  cont.innerHTML = todas.map(t => {
+    const enProceso = t.estado === 'en_proceso';
+    const statusEl  = enProceso
+      ? `<span class="status-proceso">En proceso</span>`
+      : `<span class="status-fin">Finalizada</span>`;
+    const fecha = t.fecha_toma || t.fecha_inicio?.substring(0,10) || '—';
+    return `<div class="hist-item" onclick="${enProceso ? 'abrirToma()' : 'verDetalle(\''+t.id+'\')'}">
+      <div>
+        <div style="font-weight:600;font-size:14px;">${t.id}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">Fecha: ${fecha} · ${t.lineas_contadas||0} productos contados</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        ${statusEl}
+        <div style="font-family:var(--font-d);font-size:18px;font-weight:700;color:var(--teal);">${fmt(t.valor_total||0)}</div>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;color:var(--subtle);"><path d="M6 4l4 4-4 4"/></svg>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function abrirToma() {
+  tomaActual = tomas.find(t => t.estado === 'en_proceso');
+  if (!tomaActual) return;
+  document.getElementById('tab-btn-actual').style.display = 'block';
+  switchTab('actual', document.getElementById('tab-btn-actual'));
+  renderActualMeta();
+  renderActual();
+}
+
+// ── RENDER HISTORIAL ──────────────────────────────────────────────
+async function renderHistorial() {
+  const cont = document.getElementById('lista-historial');
+  cont.innerHTML = '<div class="empty"><span class="spinner"></span> Cargando historial del Sheet…</div>';
+
+  // Leer tomas del Sheet via gviz
+  let tomasSheet = [];
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/1PtT9AHv2drY7oLygHKWMhHQgeOuT20_cD_igqu6ijyA/gviz/tq?tqx=responseHandler:_invHist&sheet=${encodeURIComponent('HISTORIAL_inventario')}`;
+    const rows = await new Promise((resolve, reject) => {
+      const cb = '_invHist';
+      const s  = document.createElement('script');
+      const t  = setTimeout(() => { cleanup(); reject(new Error('timeout')); }, 12000);
+      function cleanup() { clearTimeout(t); try{delete window[cb];}catch(e){} try{if(s.parentNode)document.body.removeChild(s);}catch(e){} }
+      window[cb] = (data) => {
+        cleanup();
+        const cols = (data.table.cols||[]).map(c=>c.label||c.id||'');
+        const rows = (data.table.rows||[]).filter(r=>r&&r.c).map(row=>{
+          const obj={};
+          cols.forEach((col,i)=>{ const cell=row.c[i]; obj[col]=cell?(cell.f!=null?cell.f:(cell.v!=null?cell.v:'')):'' });
+          return obj;
+        });
+        resolve(rows);
+      };
+      s.onerror = ()=>{ cleanup(); reject(new Error('script error')); };
+      s.src = url;
+      document.body.appendChild(s);
+    });
+
+    // Agrupar líneas por Toma ID
+    const tomasMap = {};
+    rows.forEach(r => {
+      const id = String(r['Toma ID']||'').trim();
+      if (!id) return;
+      if (!tomasMap[id]) tomasMap[id] = { id, fecha: String(r['Fecha toma']||'').trim(), lineas: [] };
+      tomasMap[id].lineas.push(r);
+    });
+    tomasSheet = Object.values(tomasMap).sort((a,b) => b.id.localeCompare(a.id));
+  } catch(e) {
+    console.warn('No se pudo cargar historial del Sheet:', e.message);
+    // Fallback a localStorage
+    tomasSheet = getTomas().filter(t=>t.estado==='finalizada').reverse().map(t => ({
+      id: t.id,
+      fecha: t.fecha_toma,
+      lineas: []
+    }));
+  }
+
+  if (!tomasSheet.length) {
+    cont.innerHTML = '<div class="empty">Sin tomas finalizadas.</div>';
+    return;
+  }
+
+  cont.innerHTML = tomasSheet.map(t => {
+    const areas  = [...new Set(t.lineas.map(l=>l['Área']||'Sin área'))].filter(Boolean);
+    const total  = t.lineas.reduce((a,l) => a + (parseFloat(l['Valor total línea'])||0), 0);
+    const filas  = t.lineas.map(l => `
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:5px 8px;font-size:12px;">${l['Producto']||'—'}</td>
+        <td style="padding:5px 8px;font-size:12px;color:var(--muted);">${l['Área']||'—'}</td>
+        <td style="padding:5px 8px;text-align:right;font-size:12px;">${l['Cant. completos']||0}</td>
+        <td style="padding:5px 8px;text-align:right;font-size:12px;">${l['Cant. en uso']||0} ${l['Unidad']||''}</td>
+        <td style="padding:5px 8px;text-align:right;font-size:12px;font-weight:600;color:var(--teal);">${fmt(parseFloat(l['Valor total línea'])||0)}</td>
+      </tr>`).join('');
+
+    return `<div style="border-bottom:1px solid var(--border);">
+      <div class="hist-item" onclick="toggleDetalleHist('det-${t.id}')">
+        <div>
+          <div style="font-weight:600;">${t.id}</div>
+          <div style="font-size:12px;color:var(--muted);">${t.fecha} · ${t.lineas.length} líneas · ${areas.join(', ')}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <span class="status-fin">Finalizada</span>
+          <div style="font-family:var(--font-d);font-size:18px;font-weight:700;color:var(--teal);">${fmt(total)}</div>
+        </div>
+      </div>
+      <div id="det-${t.id}" style="display:none;padding:0 1.25rem 1rem;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;">
+          <thead><tr style="background:var(--surface);">
+            <th style="padding:5px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--muted);">Producto</th>
+            <th style="padding:5px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--muted);">Área</th>
+            <th style="padding:5px 8px;text-align:right;font-size:10px;text-transform:uppercase;color:var(--muted);">Completos</th>
+            <th style="padding:5px 8px;text-align:right;font-size:10px;text-transform:uppercase;color:var(--muted);">En uso</th>
+            <th style="padding:5px 8px;text-align:right;font-size:10px;text-transform:uppercase;color:var(--muted);">Valorización</th>
+          </tr></thead>
+          <tbody>${filas}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleDetalleHist(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = el.style.display==='none' ? 'block' : 'none';
+}
+
+function buildDetalleHistorial(t) {
+  const areas = [...new Set(productos.map(p=>p.area||'Sin área'))].sort();
+  let html = '';
+  areas.forEach(area => {
+    const prods = productos.filter(p=>(p.area||'Sin área')===area && t.lineas[p.id]);
+    if (!prods.length) return;
+    html += `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--teal);margin:10px 0 4px;">${area}</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr style="background:var(--surface);">
+        <th style="padding:5px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:var(--muted);">Producto</th>
+        <th style="padding:5px 8px;text-align:right;font-size:10px;text-transform:uppercase;color:var(--muted);">Completos</th>
+        <th style="padding:5px 8px;text-align:right;font-size:10px;text-transform:uppercase;color:var(--muted);">En uso</th>
+        <th style="padding:5px 8px;text-align:right;font-size:10px;text-transform:uppercase;color:var(--muted);">Valorización</th>
+      </tr></thead><tbody>`;
+    prods.forEach(p => {
+      const l = t.lineas[p.id]||{};
+      const v = (parseFloat(l.cerrado)||0)*(parseFloat(p.precio_sin_iva)||0) +
+                (parseFloat(l.abierto)||0)*(parseFloat(p.costo)||0);
+      html += `<tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:5px 8px;">${p.nombre}</td>
+        <td style="padding:5px 8px;text-align:right;">${l.cerrado!==undefined?l.cerrado:'—'}</td>
+        <td style="padding:5px 8px;text-align:right;">${l.abierto!==undefined?l.abierto+' '+p.unidad:'—'}</td>
+        <td style="padding:5px 8px;text-align:right;font-weight:600;color:var(--teal);">${fmt(v)}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+  });
+  return html || '<div style="font-size:12px;color:var(--subtle);padding:8px 0;">Sin detalle.</div>';
+}
+
+// ── TABS ──────────────────────────────────────────────────────────
+function switchTab(tab, el) {
+  ['tomas','actual','historial'].forEach(t => {
+    const d = document.getElementById('tab-'+t);
+    if (d) d.style.display = t===tab ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (tab==='actual') { renderActualMeta(); renderActual(); }
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').innerHTML = type==='success'
+    ? '<polyline points="3 8 7 12 13 4"/>'
+    : '<line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = `toast ${type}`;
+  requestAnimationFrame(()=>t.classList.add('show'));
+  setTimeout(()=>t.classList.remove('show'), 4000);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
