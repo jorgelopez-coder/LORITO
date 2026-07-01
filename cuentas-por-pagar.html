@@ -109,6 +109,12 @@
     .filtro-badge { display:inline-flex; align-items:center; justify-content:center; min-width:16px; height:16px; padding:0 4px; border-radius:20px; background:var(--green); color:#fff; font-size:10px; font-weight:700; }
 
     .proj-input { width:130px; font-size:12px; padding:5px 7px; }
+    .proy-wrap { display:inline-block; }
+    .proy-wrap .proj-input { display:none; }
+    .proy-wrap.open .proy-toggle { display:none; }
+    .proy-wrap.open .proj-input { display:inline-block; }
+    .proy-toggle { display:flex; align-items:center; gap:4px; font-size:12px; color:var(--muted); background:transparent; border:1px solid var(--border); border-radius:7px; padding:5px 8px; cursor:pointer; white-space:nowrap; }
+    .proy-toggle:hover { color:var(--text); border-color:var(--border-h); }
 
     /* Arrow toggle */
     .toggle-arrow { width:16px; height:16px; transition:transform .2s; color:var(--subtle); }
@@ -242,6 +248,10 @@
         Filtros
         <span class="filtro-badge" id="filtro-count" style="display:none;">0</span>
         <svg class="toggle-arrow" id="filtro-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><path d="M4 6l4 4 4-4"/></svg>
+      </button>
+      <button class="btn-mini" onclick="descargarReporte()" style="display:flex;align-items:center;gap:6px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+        Descargar reporte
       </button>
     </div>
 
@@ -494,37 +504,43 @@ function buscarProveedor(nombreFactura) {
 
 // ── CONSTRUIR DATASET: hoja "Registro Facturas" + proveedores ────
 function construirFacturasAP() {
-  // Conteo para detectar duplicados (mismo número de Factura repetido)
+  const parsed = dataFacturas.filter(r => (r['Factura']||'').trim()).map(r => ({
+    r,
+    numero: r['Factura'].trim(),
+    proveedorNombre: r['Proveedor'] || '',
+    fechaFactura: isoDate(r['Lorito_Brewhouse Fecha'])
+  }));
+
+  // Duplicado = mismo número de factura + misma fecha + mismo proveedor.
+  const claveDup = p => p.numero + '||' + p.fechaFactura + '||' + p.proveedorNombre.trim().toLowerCase();
   const conteo = {};
-  dataFacturas.forEach(r => {
-    const num = (r['Factura']||'').trim();
-    if (!num) return;
-    conteo[num] = (conteo[num]||0) + 1;
-  });
-  const duplicados = Object.keys(conteo).filter(k => conteo[k] > 1);
+  parsed.forEach(p => { const k = claveDup(p); conteo[k] = (conteo[k]||0) + 1; });
+
+  const numerosDuplicados = [...new Set(parsed.filter(p => conteo[claveDup(p)] > 1).map(p => p.numero))];
   const bannerDup = document.getElementById('banner-duplicados');
-  if (duplicados.length) {
+  if (numerosDuplicados.length) {
     bannerDup.style.display = 'flex';
     document.getElementById('banner-duplicados-msg').textContent =
-      ' Revisá: ' + duplicados.slice(0,8).join(', ') + (duplicados.length>8 ? ' y ' + (duplicados.length-8) + ' más…' : '');
+      ' Revisá: ' + numerosDuplicados.slice(0,8).join(', ') + (numerosDuplicados.length>8 ? ' y ' + (numerosDuplicados.length-8) + ' más…' : '');
   } else {
     bannerDup.style.display = 'none';
   }
   const dupTabBadge = document.getElementById('dup-tab-count');
-  if (duplicados.length) {
-    dupTabBadge.textContent = duplicados.length;
+  if (numerosDuplicados.length) {
+    dupTabBadge.textContent = numerosDuplicados.length;
     dupTabBadge.style.display = 'inline-flex';
   } else {
     dupTabBadge.style.display = 'none';
   }
 
+  // El ordinal identifica la posición física de cada fila entre las que
+  // comparten número de Factura (así el backend borra la copia correcta),
+  // independientemente de si califican como duplicado por fecha/proveedor.
   const contadorOrdinal = {};
-  facturasAP = dataFacturas.filter(r => (r['Factura']||'').trim()).map(r => {
-    const numero = r['Factura'].trim();
+  facturasAP = parsed.map(p => {
+    const { r, numero, proveedorNombre, fechaFactura } = p;
     contadorOrdinal[numero] = (contadorOrdinal[numero]||0) + 1;
 
-    const proveedorNombre = r['Proveedor'] || '';
-    const fechaFactura    = isoDate(r['Lorito_Brewhouse Fecha']);
     const monto           = limpiarMonto(r['TOTAL']);
     const moneda          = r['Moneda'] || 'CRC';
     const fechaProyectada = isoDate(r['Fecha de pago proyectada']);
@@ -549,7 +565,7 @@ function construirFacturasAP() {
     return {
       numero, proveedor: proveedorNombre, fechaFactura, monto, moneda,
       sinProveedor, fechaProyectada, fechaRealPago, referenciaPago, medioPago,
-      saldoPendiente, estado, duplicada: (conteo[numero]||0) > 1, ordinal: contadorOrdinal[numero]
+      saldoPendiente, estado, duplicada: conteo[claveDup(p)] > 1, ordinal: contadorOrdinal[numero]
     };
   });
 }
@@ -655,7 +671,8 @@ function actualizarContadorFiltros() {
   }
 }
 
-function _renderFacturas() {
+// Filtro compartido entre el render de la tabla y la descarga del reporte.
+function obtenerFacturasFiltradas() {
   const busq      = document.getElementById('s-fact').value.toLowerCase();
   const estado    = document.getElementById('f-estado').value;
   const proveedor = document.getElementById('f-proveedor').value;
@@ -664,9 +681,7 @@ function _renderFacturas() {
   const desde     = document.getElementById('f-desde').value;
   const hasta     = document.getElementById('f-hasta').value;
 
-  actualizarContadorFiltros();
-
-  let lista = facturasAP.filter(f => {
+  return facturasAP.filter(f => {
     const matchBusq      = !busq || f.numero.toLowerCase().includes(busq) || f.proveedor.toLowerCase().includes(busq);
     const matchEstado    = !estado || f.estado === estado;
     const matchProveedor = !proveedor || f.proveedor === proveedor;
@@ -676,6 +691,36 @@ function _renderFacturas() {
     const matchHasta     = !hasta || (f.fechaFactura && f.fechaFactura <= hasta);
     return matchBusq && matchEstado && matchProveedor && matchAnio && matchMes && matchDesde && matchHasta;
   }).sort((a,b) => (b.fechaFactura||'').localeCompare(a.fechaFactura||''));
+}
+
+// ── DESCARGAR REPORTE (CSV, respeta los filtros activos) ──────────
+function descargarReporte() {
+  const lista = obtenerFacturasFiltradas();
+  if (!lista.length) { showToast('No hay facturas para exportar con los filtros actuales.', 'error'); return; }
+
+  const encabezados = ['Fecha factura','Factura','Proveedor','Moneda','Monto','Estado','Fecha proyectada','Fecha real de pago','Medio de pago','Referencia'];
+  const csvEscape = v => `"${String(v??'').replace(/"/g,'""')}"`;
+  const filas = lista.map(f => [
+    f.fechaFactura, f.numero, f.proveedor, f.moneda, f.monto, f.estado,
+    f.fechaProyectada, f.fechaRealPago, f.medioPago, f.referenciaPago
+  ].map(csvEscape).join(','));
+  const csv = '\uFEFF' + [encabezados.map(csvEscape).join(','), ...filas].join('\r\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `cuentas-por-pagar_${hoyISO}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function _renderFacturas() {
+  actualizarContadorFiltros();
+
+  let lista = obtenerFacturasFiltradas();
 
   const total  = lista.length;
   const inicio = (pagFacturas-1) * POR_PAGINA;
@@ -718,13 +763,18 @@ function _renderFacturas() {
         <td class="num" style="font-weight:600;">${fmt(f.monto)}</td>
         <td>${badgeEstado(f.estado)}</td>
         <td onclick="event.stopPropagation()">
-          <input type="date" class="proj-input" value="${f.fechaProyectada||''}" ${!puedeAccionar?'disabled':''}
-            onchange="guardarProyeccionFactura('${f.numero}', this.value)">
-        </td>
-        <td class="num" style="font-weight:600;">${fmt(f.saldoPendiente)}</td>
-        <td onclick="event.stopPropagation()">
           <div class="row-actions">
             <button class="btn-mini pago" ${!puedeAccionar?'disabled':''} onclick="abrirModalPago('${f.numero}')">Pago total</button>
+          </div>
+        </td>
+        <td onclick="event.stopPropagation()">
+          <div class="proy-wrap" id="proy-${rowId}">
+            <button type="button" class="proy-toggle" onclick="toggleProyEdit('${rowId}')">
+              <span class="proy-txt">${f.fechaProyectada || 'Sin definir'}</span>
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;"><path d="M4 6l4 4 4-4"/></svg>
+            </button>
+            <input type="date" class="proj-input" value="${f.fechaProyectada||''}" ${!puedeAccionar?'disabled':''}
+              onchange="guardarProyeccionFactura('${f.numero}', this.value, '${rowId}')">
           </div>
         </td>
       </tr>
@@ -743,7 +793,7 @@ function _renderFacturas() {
         <th><input type="checkbox" id="chk-all" ${todasMarcadasEnPagina?'checked':''} onchange="toggleSeleccionarTodos(this.checked)"></th>
         <th></th><th>Fecha</th><th>Factura</th><th>Proveedor</th>
         <th style="text-align:right;">Monto</th><th>Estado</th>
-        <th>Fecha proyectada</th><th style="text-align:right;">Saldo</th><th>Acciones</th>
+        <th>Acciones</th><th>Fecha proyectada</th>
       </tr></thead>
       <tbody>${filas}</tbody>
     </table>`;
@@ -759,6 +809,18 @@ function toggleDetalle(id) {
   const open = !el.classList.contains('open');
   el.classList.toggle('open', open);
   if (ico) ico.classList.toggle('open', open);
+}
+
+// ── CELDA COLAPSABLE: fecha proyectada de pago ────────────────────
+function toggleProyEdit(rowId) {
+  const wrap = document.getElementById('proy-' + rowId);
+  if (!wrap) return;
+  const abrir = !wrap.classList.contains('open');
+  wrap.classList.toggle('open', abrir);
+  if (abrir) {
+    const input = wrap.querySelector('input');
+    if (input) input.focus();
+  }
 }
 
 // ── SELECCIÓN DE FACTURAS (checkboxes) ────────────────────────────
@@ -1018,7 +1080,7 @@ async function postAP(payload) {
 
 function facturaPorNumero(numero) { return facturasAP.find(f => f.numero === numero); }
 
-async function guardarProyeccionFactura(numero, fecha) {
+async function guardarProyeccionFactura(numero, fecha, rowId) {
   const f = facturaPorNumero(numero);
   if (!f) return;
   try {
@@ -1029,6 +1091,14 @@ async function guardarProyeccionFactura(numero, fecha) {
     });
     f.fechaProyectada = fecha;
     showToast('Fecha proyectada guardada ✓', 'success');
+    if (rowId) {
+      const wrap = document.getElementById('proy-' + rowId);
+      if (wrap) {
+        wrap.classList.remove('open');
+        const txt = wrap.querySelector('.proy-txt');
+        if (txt) txt.textContent = fecha || 'Sin definir';
+      }
+    }
     renderProyeccion();
   } catch(e) {
     showToast('No se pudo guardar: ' + e.message, 'error');
