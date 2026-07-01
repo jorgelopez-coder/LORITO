@@ -97,23 +97,12 @@
     .b-dup       { background:var(--red-bg);   color:var(--red); }
     .b-dot { width:5px; height:5px; border-radius:50%; background:currentColor; }
 
-    /* Categoría / cuenta de gasto chips */
-    .cat-chip { display:inline-block; font-size:11px; padding:2px 7px; border-radius:20px; font-weight:500; margin:1px; }
-    .cat-frutas     { background:#eef8f2; color:#1a7a4a; }
-    .cat-bebidas    { background:#eef4fb; color:#185fa5; }
-    .cat-lacteos    { background:#fdf6e3; color:#c87820; }
-    .cat-granos     { background:#f3eefb; color:#6a3a9a; }
-    .cat-condimentos{ background:#fdf0eb; color:#c84a20; }
-    .cat-otro       { background:var(--surface); color:var(--muted); }
-
     /* Botones de acción de fila */
     .row-actions { display:flex; gap:6px; }
     .btn-mini { font-size:11.5px; font-weight:600; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; white-space:nowrap; }
     .btn-mini:hover { border-color:var(--border-h); color:var(--text); }
     .btn-mini.pago  { border-color:var(--green-lt); background:var(--green-bg); color:var(--green); }
     .btn-mini.pago:hover { background:var(--green); color:#fff; }
-    .btn-mini.abono { border-color:var(--amber-lt); background:var(--amber-bg); color:var(--amber); }
-    .btn-mini.abono:hover { background:var(--amber); color:#fff; }
     .btn-mini:disabled { opacity:.4; cursor:default; }
 
     #btn-toggle-filtros.activo { border-color:var(--green-lt); background:var(--green-bg); color:var(--green); }
@@ -262,11 +251,7 @@
           <option value="">Todos los estados</option>
           <option value="A tiempo">A tiempo</option>
           <option value="Vencida">Vencida</option>
-          <option value="Abono">Abono</option>
           <option value="Cancelada">Cancelada</option>
-        </select>
-        <select class="filter-sel" id="f-cuenta" onchange="renderFacturas()">
-          <option value="">Todas las cuentas de gasto</option>
         </select>
         <select class="filter-sel" id="f-proveedor" onchange="renderFacturas()">
           <option value="">Todos los proveedores</option>
@@ -326,7 +311,7 @@
   <div id="tab-historial" style="display:none;">
     <div class="card">
       <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:1rem 1.25rem;border-bottom:1px solid var(--border);">
-        Pagos y abonos registrados
+        Pagos registrados
       </div>
       <div class="tabla-wrap" id="tabla-historial">
         <div class="empty"><span class="spinner"></span></div>
@@ -340,7 +325,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       <div>
         Estas facturas comparten el mismo número y probablemente se cargaron dos veces desde el archivo de Drive.
-        Revisá cada grupo y eliminá la copia que sobra directamente del origen (hojas <strong>Resumen</strong>, <strong>Facturas</strong> y <strong>Control</strong>).
+        Revisá cada grupo y eliminá la copia que sobra directamente del origen (hoja <strong>Registro Facturas</strong>).
         Esta acción no se puede deshacer.
       </div>
     </div>
@@ -386,39 +371,6 @@
   </div>
 </div>
 
-<!-- MODAL ABONO PARCIAL -->
-<div class="modal-bg" id="modal-abono">
-  <div class="modal">
-    <div class="modal-head">
-      <div>
-        <div class="modal-title">Abono parcial</div>
-        <div class="modal-sub" id="abono-sub">Factura —</div>
-      </div>
-      <button class="close-btn" onclick="cerrarModal('modal-abono')">×</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="abono-numero">
-      <div class="field">
-        <label for="abono-fecha">Fecha del abono</label>
-        <input type="date" id="abono-fecha">
-      </div>
-      <div class="field">
-        <label for="abono-monto">Monto abonado</label>
-        <input type="number" step="0.01" id="abono-monto" placeholder="0.00">
-        <div class="field-hint" id="abono-saldo-hint"></div>
-      </div>
-      <div class="field">
-        <label for="abono-referencia">Referencia bancaria</label>
-        <input type="text" id="abono-referencia" placeholder="Nº de transferencia / comprobante">
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn-sec" onclick="cerrarModal('modal-abono')">Cancelar</button>
-      <button class="btn-save" onclick="guardarAbono()">Guardar abono</button>
-    </div>
-  </div>
-</div>
-
 <div class="toast" id="toast">
   <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
   <span id="toast-msg"></span>
@@ -440,26 +392,12 @@ const hoyISO = hoy.toISOString().slice(0,10);
 
 const fmt  = n => '₡' + Number(n||0).toLocaleString('es-CR', { minimumFractionDigits:2, maximumFractionDigits:2 });
 
-let dataResumen  = [];   // hoja Resumen (una fila por factura)
-let dataFacturas = [];   // hoja Facturas (líneas, para cuenta de gasto)
-let dataAP       = [];   // hoja CuentasPorPagar (proyección / pago real / abonado)
-let dataAbonos   = [];   // hoja Abonos (historial de abonos)
+let dataFacturas = [];   // hoja "Registro Facturas" (una fila por factura)
 let proveedores  = [];   // localStorage 'proveedores'
-let facturasAP   = [];   // dataset ya unido y calculado
+let facturasAP   = [];   // dataset ya calculado (estado, saldo, etc.)
 let pagFacturas  = 1;
 const POR_PAGINA = 15;
 const seleccionadas = new Set(); // números de factura marcados con check
-
-// ── CATEGORÍA (cuenta de gasto) → CSS ─────────────────────────────
-function catClass(cat) {
-  const c = (cat||'').toLowerCase();
-  if (c.includes('fruta') || c.includes('verdura')) return 'cat-frutas';
-  if (c.includes('bebida')) return 'cat-bebidas';
-  if (c.includes('lácteo') || c.includes('lacteo')) return 'cat-lacteos';
-  if (c.includes('grano') || c.includes('cereal')) return 'cat-granos';
-  if (c.includes('condimento') || c.includes('especia')) return 'cat-condimentos';
-  return 'cat-otro';
-}
 
 // ── GVIZ: leer hoja pública del Sheet de compras ──────────────────
 // Nota: si la hoja solicitada no existe todavía (p.ej. "CuentasPorPagar"
@@ -507,25 +445,17 @@ function getProveedores() { try { return JSON.parse(localStorage.getItem('provee
 async function cargarDatos() {
   document.getElementById('status-carga').innerHTML = '<span class="spinner"></span> Conectando con Google Sheets…';
   try {
-    const [dR, dF, dAP, dAb] = await Promise.all([
-      gvizLoad('Resumen', 'Número de factura'),
-      gvizLoad('Facturas', 'Categoría'),
-      gvizLoad('CuentasPorPagar', 'Fecha proyectada de pago'),
-      gvizLoad('Abonos', 'Referencia bancaria')
-    ]);
+    const dF = await gvizLoad('Registro Facturas', 'Factura');
 
-    if (!dR.length && !dF.length) throw new Error('Sin datos en la hoja de compras');
+    if (!dF.length) throw new Error('Sin datos en la hoja de facturas');
 
-    dataResumen  = dR;
     dataFacturas = dF;
-    dataAP       = dAP;
-    dataAbonos   = dAb;
     proveedores  = getProveedores();
 
     document.getElementById('conn-dot').classList.remove('off');
     document.getElementById('conn-label').textContent = 'Conectado · Google Sheets';
     document.getElementById('status-carga').innerHTML =
-      '<span style="color:var(--green);">✓</span> ' + dataResumen.length + ' facturas cargadas';
+      '<span style="color:var(--green);">✓</span> ' + dataFacturas.length + ' facturas cargadas';
 
     construirFacturasAP();
     inicializar();
@@ -545,13 +475,12 @@ async function cargarDatos() {
 
 function limpiarMonto(v) { return parseFloat(String(v||'0').replace(/[,₡\s]/g,'')) || 0; }
 
-function sumarDias(fechaISO, dias) {
-  if (!fechaISO) return null;
-  const f = String(fechaISO).substring(0,10);
-  const d = new Date(f + 'T00:00:00');
-  if (isNaN(d.getTime())) return null;
-  d.setDate(d.getDate() + (parseInt(dias)||0));
-  return d.toISOString().slice(0,10);
+// Convierte fechas formateadas por gviz como "D/M/YYYY" a ISO "YYYY-MM-DD".
+function isoDate(str) {
+  const m = String(str||'').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return '';
+  const [, d, mo, y] = m;
+  return y + '-' + mo.padStart(2,'0') + '-' + d.padStart(2,'0');
 }
 
 function buscarProveedor(nombreFactura) {
@@ -563,26 +492,12 @@ function buscarProveedor(nombreFactura) {
   ) || null;
 }
 
-// ── CONSTRUIR DATASET UNIDO: Resumen + Facturas(categoría) + CuentasPorPagar + proveedores ──
+// ── CONSTRUIR DATASET: hoja "Registro Facturas" + proveedores ────
 function construirFacturasAP() {
-  // Cuenta de gasto por factura = categorías únicas de sus líneas
-  const cuentaGastoMap = {};
-  dataFacturas.forEach(f => {
-    const num = f['Número de factura'] || '';
-    const cat = f['Categoría'] || '';
-    if (!num) return;
-    if (!cuentaGastoMap[num]) cuentaGastoMap[num] = new Set();
-    if (cat) cuentaGastoMap[num].add(cat);
-  });
-
-  // Index de la hoja CuentasPorPagar por número de factura
-  const apMap = {};
-  dataAP.forEach(r => { apMap[r['Número de factura']] = r; });
-
-  // Conteo para detectar duplicados
+  // Conteo para detectar duplicados (mismo número de Factura repetido)
   const conteo = {};
-  dataResumen.forEach(r => {
-    const num = r['Número de factura'] || '';
+  dataFacturas.forEach(r => {
+    const num = (r['Factura']||'').trim();
     if (!num) return;
     conteo[num] = (conteo[num]||0) + 1;
   });
@@ -603,48 +518,40 @@ function construirFacturasAP() {
     dupTabBadge.style.display = 'none';
   }
 
-  facturasAP = dataResumen.filter(r => r['Número de factura']).map(r => {
-    const numero  = r['Número de factura'];
+  const contadorOrdinal = {};
+  facturasAP = dataFacturas.filter(r => (r['Factura']||'').trim()).map(r => {
+    const numero = r['Factura'].trim();
+    contadorOrdinal[numero] = (contadorOrdinal[numero]||0) + 1;
+
     const proveedorNombre = r['Proveedor'] || '';
-    const fechaFactura = String(r['Fecha de factura']||'').substring(0,10);
-    const monto   = limpiarMonto(r['Total']);
-    const cuentas = [...(cuentaGastoMap[numero] || [])];
-    const apRow   = apMap[numero] || null;
+    const fechaFactura    = isoDate(r['Lorito_Brewhouse Fecha']);
+    const monto           = limpiarMonto(r['TOTAL']);
+    const moneda          = r['Moneda'] || 'CRC';
+    const fechaProyectada = isoDate(r['Fecha de pago proyectada']);
+    const fechaRealPago   = isoDate(r['Fecha de pago']);
+    const medioPago       = r['Medio de pago'] || '';
+    const referenciaPago  = r['Referencia Referencia'] || '';
 
-    const prov    = buscarProveedor(proveedorNombre);
-    const diasCredito = prov ? (parseInt(prov.condicion_pago)||0) : 0;
+    const prov = buscarProveedor(proveedorNombre);
     const sinProveedor = !prov;
-
-    const fechaVencimiento = sumarDias(fechaFactura, diasCredito);
-    const fechaProyectada  = apRow ? String(apRow['Fecha proyectada de pago']||'').substring(0,10) : '';
-    const fechaRealPago    = apRow ? String(apRow['Fecha real de pago']||'').substring(0,10) : '';
-    const referenciaPago   = apRow ? String(apRow['Referencia de pago']||'') : '';
-    const totalAbonado     = apRow ? (parseFloat(apRow['Total abonado'])||0) : 0;
-    const saldoPendiente   = Math.round((monto - totalAbonado) * 100) / 100;
 
     let estado;
     if (fechaRealPago) {
       estado = 'Cancelada';
-    } else if (totalAbonado > 0 && saldoPendiente > 0.01) {
-      estado = 'Abono';
-    } else if (totalAbonado > 0 && saldoPendiente <= 0.01) {
-      estado = 'Cancelada';
-    } else if (fechaVencimiento && hoyISO > fechaVencimiento) {
+    } else if (fechaProyectada && hoyISO > fechaProyectada) {
       estado = 'Vencida';
     } else {
       estado = 'A tiempo';
     }
 
+    const saldoPendiente = estado === 'Cancelada' ? 0 : monto;
+
     return {
-      numero, proveedor: proveedorNombre, fechaFactura, monto, cuentas,
-      diasCredito, sinProveedor, fechaVencimiento, fechaProyectada, fechaRealPago, referenciaPago,
-      totalAbonado, saldoPendiente, estado, duplicada: (conteo[numero]||0) > 1
+      numero, proveedor: proveedorNombre, fechaFactura, monto, moneda,
+      sinProveedor, fechaProyectada, fechaRealPago, referenciaPago, medioPago,
+      saldoPendiente, estado, duplicada: (conteo[numero]||0) > 1, ordinal: contadorOrdinal[numero]
     };
   });
-}
-
-function abonosDeFactura(numero) {
-  return dataAbonos.filter(a => a['Número de factura'] === numero);
 }
 
 // ── INICIALIZAR ───────────────────────────────────────────────────
@@ -654,33 +561,21 @@ function inicializar() {
   const vencidas = facturasAP.filter(f => f.estado === 'Vencida').length;
 
   const en7dias = facturasAP.filter(f => {
-    if (f.estado !== 'A tiempo' || !f.fechaVencimiento) return false;
-    const dias = (new Date(f.fechaVencimiento) - new Date(hoyISO)) / 86400000;
+    if (f.estado !== 'A tiempo' || !f.fechaProyectada) return false;
+    const dias = (new Date(f.fechaProyectada) - new Date(hoyISO)) / 86400000;
     return dias >= 0 && dias <= 7;
   }).length;
 
-  // Pagado este mes: pagos totales (fecha real) + abonos registrados en el mes en curso
   const mesActual = hoyISO.substring(0,7);
-  const pagosCompletos = facturasAP
+  const pagadoMes = facturasAP
     .filter(f => f.fechaRealPago && f.fechaRealPago.substring(0,7) === mesActual)
-    .reduce((a,f) => a + (f.monto - (f.totalAbonado||0)), 0);
-  const abonosDelMes = dataAbonos
-    .filter(a => String(a['Fecha de abono']||'').substring(0,7) === mesActual)
-    .reduce((a,r) => a + (parseFloat(r['Monto abonado'])||0), 0);
-  const pagadoMes = pagosCompletos + abonosDelMes;
+    .reduce((a,f) => a + f.monto, 0);
 
   document.getElementById('kpi-total').textContent     = fmt(totalPorPagar);
   document.getElementById('kpi-vencidas').textContent  = vencidas;
   document.getElementById('kpi-porvencer').textContent = en7dias;
   document.getElementById('kpi-pagado-mes').textContent = fmt(pagadoMes);
   document.getElementById('status-msg').textContent    = `${facturasAP.length} facturas · Por pagar: ${fmt(totalPorPagar)}`;
-
-  // Filtro de cuentas de gasto
-  const cuentas = [...new Set(facturasAP.flatMap(f => f.cuentas))].sort();
-  const selCuenta = document.getElementById('f-cuenta');
-  const valCuenta = selCuenta.value;
-  selCuenta.innerHTML = '<option value="">Todas las cuentas de gasto</option>' +
-    cuentas.map(c => `<option value="${c}"${c===valCuenta?' selected':''}>${c}</option>`).join('');
 
   // Filtro de proveedores
   const provsUnicos = [...new Set(facturasAP.map(f => f.proveedor).filter(Boolean))].sort();
@@ -713,7 +608,6 @@ function badgeEstado(estado) {
   const map = {
     'A tiempo':  ['b-tiempo', '●'],
     'Vencida':   ['b-vencida', '●'],
-    'Abono':     ['b-abono', '●'],
     'Cancelada': ['b-cancelada', '✓']
   };
   const [cls, dot] = map[estado] || ['b-tiempo','●'];
@@ -738,7 +632,6 @@ function toggleFiltros(forzarAbierto) {
 function limpiarTodosFiltros() {
   document.getElementById('s-fact').value = '';
   document.getElementById('f-estado').value = '';
-  document.getElementById('f-cuenta').value = '';
   document.getElementById('f-proveedor').value = '';
   document.getElementById('f-anio').value = '';
   document.getElementById('f-mes').value = '';
@@ -748,7 +641,7 @@ function limpiarTodosFiltros() {
 }
 
 function actualizarContadorFiltros() {
-  const ids = ['f-estado','f-cuenta','f-proveedor','f-anio','f-mes','f-desde','f-hasta'];
+  const ids = ['f-estado','f-proveedor','f-anio','f-mes','f-desde','f-hasta'];
   const activos = ids.filter(id => document.getElementById(id).value).length;
   const badge = document.getElementById('filtro-count');
   const btn   = document.getElementById('btn-toggle-filtros');
@@ -765,7 +658,6 @@ function actualizarContadorFiltros() {
 function _renderFacturas() {
   const busq      = document.getElementById('s-fact').value.toLowerCase();
   const estado    = document.getElementById('f-estado').value;
-  const cuenta    = document.getElementById('f-cuenta').value;
   const proveedor = document.getElementById('f-proveedor').value;
   const anio      = document.getElementById('f-anio').value;
   const mes       = document.getElementById('f-mes').value;
@@ -777,13 +669,12 @@ function _renderFacturas() {
   let lista = facturasAP.filter(f => {
     const matchBusq      = !busq || f.numero.toLowerCase().includes(busq) || f.proveedor.toLowerCase().includes(busq);
     const matchEstado    = !estado || f.estado === estado;
-    const matchCuenta    = !cuenta || f.cuentas.includes(cuenta);
     const matchProveedor = !proveedor || f.proveedor === proveedor;
     const matchAnio      = !anio || f.fechaFactura.substring(0,4) === anio;
     const matchMes       = !mes || f.fechaFactura.substring(5,7) === mes;
     const matchDesde     = !desde || (f.fechaFactura && f.fechaFactura >= desde);
     const matchHasta     = !hasta || (f.fechaFactura && f.fechaFactura <= hasta);
-    return matchBusq && matchEstado && matchCuenta && matchProveedor && matchAnio && matchMes && matchDesde && matchHasta;
+    return matchBusq && matchEstado && matchProveedor && matchAnio && matchMes && matchDesde && matchHasta;
   }).sort((a,b) => (b.fechaFactura||'').localeCompare(a.fechaFactura||''));
 
   const total  = lista.length;
@@ -798,42 +689,18 @@ function _renderFacturas() {
 
   const filas = pagina.map((f, idx) => {
     const rowId = 'frow-' + (inicio + idx);
-    const cuentaChips = f.cuentas.length
-      ? f.cuentas.map(c => `<span class="cat-chip ${catClass(c)}">${c}</span>`).join('')
-      : '<span class="cat-chip cat-otro">Sin categoría</span>';
     const dupBadge = f.duplicada ? `<span class="badge b-dup" style="margin-left:6px;">⚠ Duplicada</span>` : '';
     const sinProvBadge = f.sinProveedor ? `<span title="Proveedor sin registrar en la base de proveedores" style="font-size:10px;color:var(--red);margin-left:4px;">⚠</span>` : '';
 
     const puedeAccionar = f.estado !== 'Cancelada';
-    const abonos = abonosDeFactura(f.numero);
 
     const detalleHtml = `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div>
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;">Fechas clave</div>
-          <div style="font-size:12px;color:var(--muted);line-height:2;">
-            Fecha factura: <strong style="color:var(--text);">${f.fechaFactura||'—'}</strong><br>
-            Días de crédito: <strong style="color:var(--text);">${f.diasCredito}</strong><br>
-            Vence: <strong style="color:var(--text);">${f.fechaVencimiento||'—'}</strong><br>
-            Fecha proyectada de pago: <strong style="color:var(--text);">${f.fechaProyectada||'Sin definir'}</strong><br>
-            Fecha real de pago: <strong style="color:var(--text);">${f.fechaRealPago||'—'}</strong><br>
-            ${f.fechaRealPago ? `Referencia bancaria: <strong style="color:var(--text);">${f.referenciaPago||'—'}</strong>` : ''}
-          </div>
-        </div>
-        <div>
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;">Abonos registrados</div>
-          ${abonos.length ? `
-            <table class="detail-table">
-              <thead><tr><th>Fecha</th><th>Referencia</th><th style="text-align:right;">Monto</th></tr></thead>
-              <tbody>
-                ${abonos.map(a => `<tr>
-                  <td>${String(a['Fecha de abono']||'').substring(0,10)}</td>
-                  <td style="color:var(--muted);">${a['Referencia bancaria']||'—'}</td>
-                  <td class="num">${fmt(a['Monto abonado'])}</td>
-                </tr>`).join('')}
-              </tbody>
-            </table>` : '<div style="font-size:12px;color:var(--subtle);">Sin abonos registrados.</div>'}
-        </div>
+      <div style="font-size:12px;color:var(--muted);line-height:2;">
+        Fecha factura: <strong style="color:var(--text);">${f.fechaFactura||'—'}</strong><br>
+        Moneda: <strong style="color:var(--text);">${f.moneda||'—'}</strong><br>
+        Fecha proyectada de pago: <strong style="color:var(--text);">${f.fechaProyectada||'Sin definir'}</strong><br>
+        Fecha real de pago: <strong style="color:var(--text);">${f.fechaRealPago||'—'}</strong><br>
+        ${f.fechaRealPago ? `Medio de pago: <strong style="color:var(--text);">${f.medioPago||'—'}</strong><br>Referencia: <strong style="color:var(--text);">${f.referenciaPago||'—'}</strong>` : ''}
       </div>`;
 
     return `
@@ -848,10 +715,7 @@ function _renderFacturas() {
         <td style="color:var(--muted);font-size:12px;">${f.fechaFactura||'—'}</td>
         <td style="font-size:12px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.numero}${dupBadge}</td>
         <td style="font-weight:500;">${f.proveedor}${sinProvBadge}</td>
-        <td>${cuentaChips}</td>
         <td class="num" style="font-weight:600;">${fmt(f.monto)}</td>
-        <td class="num" style="color:var(--muted);">${f.diasCredito}d</td>
-        <td style="font-size:12px;color:${f.estado==='Vencida'?'var(--red)':'var(--muted)'};">${f.fechaVencimiento||'—'}</td>
         <td>${badgeEstado(f.estado)}</td>
         <td onclick="event.stopPropagation()">
           <input type="date" class="proj-input" value="${f.fechaProyectada||''}" ${!puedeAccionar?'disabled':''}
@@ -861,12 +725,11 @@ function _renderFacturas() {
         <td onclick="event.stopPropagation()">
           <div class="row-actions">
             <button class="btn-mini pago" ${!puedeAccionar?'disabled':''} onclick="abrirModalPago('${f.numero}')">Pago total</button>
-            <button class="btn-mini abono" ${!puedeAccionar?'disabled':''} onclick="abrirModalAbono('${f.numero}')">Abono</button>
           </div>
         </td>
       </tr>
       <tr class="tr-detail" id="${rowId}">
-        <td class="detail-cell" colspan="12">
+        <td class="detail-cell" colspan="9">
           <div class="detail-inner">${detalleHtml}</div>
         </td>
       </tr>`;
@@ -878,8 +741,8 @@ function _renderFacturas() {
     <table>
       <thead><tr>
         <th><input type="checkbox" id="chk-all" ${todasMarcadasEnPagina?'checked':''} onchange="toggleSeleccionarTodos(this.checked)"></th>
-        <th></th><th>Fecha</th><th>Factura</th><th>Proveedor</th><th>Cuenta de gasto</th>
-        <th style="text-align:right;">Monto</th><th>Crédito</th><th>Vence</th><th>Estado</th>
+        <th></th><th>Fecha</th><th>Factura</th><th>Proveedor</th>
+        <th style="text-align:right;">Monto</th><th>Estado</th>
         <th>Fecha proyectada</th><th style="text-align:right;">Saldo</th><th>Acciones</th>
       </tr></thead>
       <tbody>${filas}</tbody>
@@ -995,71 +858,46 @@ function renderProyeccion() {
     </table>`;
 }
 
-// ── RENDER HISTORIAL (pagos totales + abonos) ─────────────────────
+// ── RENDER HISTORIAL (pagos registrados) ──────────────────────────
 function renderHistorial() {
   const pagos = facturasAP.filter(f => f.fechaRealPago).map(f => ({
-    fecha: f.fechaRealPago, tipo: 'Pago total', numero: f.numero, proveedor: f.proveedor,
-    monto: f.monto - (f.totalAbonado||0), referencia: f.referenciaPago || '—'
-  }));
-  const abonos = dataAbonos.map(a => ({
-    fecha: String(a['Fecha de abono']||'').substring(0,10), tipo: 'Abono', numero: a['Número de factura'],
-    proveedor: (facturasAP.find(f => f.numero === a['Número de factura'])||{}).proveedor || '—',
-    monto: parseFloat(a['Monto abonado'])||0, referencia: a['Referencia bancaria']||'—'
-  }));
+    fecha: f.fechaRealPago, numero: f.numero, proveedor: f.proveedor,
+    monto: f.monto, referencia: f.referenciaPago || '—', medio: f.medioPago || '—'
+  })).sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
 
-  const todos = [...pagos, ...abonos].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
-
-  if (!todos.length) {
-    document.getElementById('tabla-historial').innerHTML = '<div class="empty">Aún no se han registrado pagos ni abonos.</div>';
+  if (!pagos.length) {
+    document.getElementById('tabla-historial').innerHTML = '<div class="empty">Aún no se han registrado pagos.</div>';
     return;
   }
 
-  const filas = todos.map(r => `
+  const filas = pagos.map(r => `
     <tr>
       <td style="color:var(--muted);font-size:12px;">${r.fecha||'—'}</td>
-      <td>${r.tipo === 'Pago total' ? '<span class="badge b-cancelada"><span class="b-dot"></span>Pago total</span>' : '<span class="badge b-abono"><span class="b-dot"></span>Abono</span>'}</td>
       <td style="font-size:12px;color:var(--muted);">${r.numero}</td>
       <td>${r.proveedor}</td>
+      <td style="color:var(--muted);">${r.medio}</td>
       <td style="color:var(--muted);">${r.referencia}</td>
       <td class="num" style="font-weight:600;">${fmt(r.monto)}</td>
     </tr>`).join('');
 
   document.getElementById('tabla-historial').innerHTML = `
     <table>
-      <thead><tr><th>Fecha</th><th>Tipo</th><th>Factura</th><th>Proveedor</th><th>Referencia</th><th style="text-align:right;">Monto</th></tr></thead>
+      <thead><tr><th>Fecha</th><th>Factura</th><th>Proveedor</th><th>Medio de pago</th><th>Referencia</th><th style="text-align:right;">Monto</th></tr></thead>
       <tbody>${filas}</tbody>
     </table>`;
 }
 
 // ── DUPLICADOS ────────────────────────────────────────────────────
-// Agrupa por Número de factura los registros repetidos en la hoja Resumen
-// y calcula el "ordinal" (1ra, 2da... aparición) que identifica a cada
-// copia de forma estable, ya que el backend borra por posición y no por ID.
+// Agrupa por número de Factura los registros repetidos en la hoja
+// "Registro Facturas" (ya calculado en facturasAP con el campo `ordinal`,
+// que identifica de forma estable cada copia ya que el backend borra por
+// posición y no por ID).
 function obtenerDuplicados() {
-  const conteo = {};
-  dataResumen.forEach(r => {
-    const num = r['Número de factura'] || '';
-    if (!num) return;
-    conteo[num] = (conteo[num]||0) + 1;
-  });
-  const numsDuplicados = new Set(Object.keys(conteo).filter(k => conteo[k] > 1));
-
-  const contadorOrdinal = {};
   const grupos = {};
-  dataResumen.forEach(r => {
-    const num = r['Número de factura'] || '';
-    if (!num || !numsDuplicados.has(num)) return;
-    contadorOrdinal[num] = (contadorOrdinal[num]||0) + 1;
-    if (!grupos[num]) grupos[num] = [];
-    grupos[num].push({
-      ordinal: contadorOrdinal[num],
-      proveedor: r['Proveedor'] || '—',
-      cliente: r['Cliente'] || '—',
-      tipo: r['Tipo de documento'] || '—',
-      fechaFactura: String(r['Fecha de factura']||'').substring(0,10),
-      total: limpiarMonto(r['Total']),
-      fechaCarga: String(r['Fecha de carga']||'')
-    });
+  facturasAP.forEach(f => {
+    if (!f.duplicada) return;
+    if (!grupos[f.numero]) grupos[f.numero] = [];
+    grupos[f.numero].push(f);
   });
   return grupos;
 }
@@ -1081,10 +919,9 @@ function renderDuplicados() {
         <td style="font-size:12px;color:var(--muted);">Copia ${o.ordinal}</td>
         <td style="color:var(--muted);">${o.fechaFactura||'—'}</td>
         <td>${o.proveedor}</td>
-        <td style="color:var(--muted);">${o.cliente}</td>
-        <td style="color:var(--muted);font-size:12px;">${o.tipo}</td>
-        <td style="color:var(--muted);font-size:12px;">${o.fechaCarga||'—'}</td>
-        <td class="num" style="font-weight:600;">${fmt(o.total)}</td>
+        <td style="color:var(--muted);font-size:12px;">${o.moneda}</td>
+        <td>${badgeEstado(o.estado)}</td>
+        <td class="num" style="font-weight:600;">${fmt(o.monto)}</td>
         <td onclick="event.stopPropagation()">
           <button class="btn-mini" style="border-color:var(--red-lt);background:var(--red-bg);color:var(--red);"
             onclick="eliminarFacturaDuplicada('${numero}', ${o.ordinal})">Eliminar esta copia</button>
@@ -1102,7 +939,7 @@ function renderDuplicados() {
         <div class="tabla-wrap">
           <table>
             <thead><tr>
-              <th></th><th>Fecha factura</th><th>Proveedor</th><th>Cliente</th><th>Tipo</th><th>Fecha de carga</th>
+              <th></th><th>Fecha factura</th><th>Proveedor</th><th>Moneda</th><th>Estado</th>
               <th style="text-align:right;">Total</th><th>Acción</th>
             </tr></thead>
             <tbody>${filas}</tbody>
@@ -1120,8 +957,8 @@ function irATabDuplicados() {
 async function eliminarFacturaDuplicada(numero, ordinal) {
   const grupo = obtenerDuplicados()[numero] || [];
   const copia = grupo.find(o => o.ordinal === ordinal);
-  const detalle = copia ? `${copia.fechaFactura} · ${copia.proveedor} · ${fmt(copia.total)}` : numero;
-  if (!confirm(`¿Eliminar esta copia de la factura ${numero}?\n\n${detalle}\n\nSe borrará de las hojas Resumen, Facturas y Control en el archivo de Drive. Esta acción no se puede deshacer.`)) return;
+  const detalle = copia ? `${copia.fechaFactura} · ${copia.proveedor} · ${fmt(copia.monto)}` : numero;
+  if (!confirm(`¿Eliminar esta copia de la factura ${numero}?\n\n${detalle}\n\nSe borrará de la hoja Registro Facturas en el archivo de Drive. Esta acción no se puede deshacer.`)) return;
 
   try {
     await postAP({ modulo: 'eliminar_factura', numero_factura: numero, ordinal: ordinal });
@@ -1188,7 +1025,7 @@ async function guardarProyeccionFactura(numero, fecha) {
     await postAP({
       modulo: 'guardar_proyeccion',
       numero_factura: numero, proveedor: f.proveedor, fecha_factura: f.fechaFactura,
-      monto: f.monto, cuenta_gasto: f.cuentas.join(', '), fecha_proyectada: fecha
+      monto: f.monto, fecha_proyectada: fecha
     });
     f.fechaProyectada = fecha;
     showToast('Fecha proyectada guardada ✓', 'success');
@@ -1220,7 +1057,7 @@ async function guardarPago() {
     await postAP({
       modulo: 'registrar_pago',
       numero_factura: numero, proveedor: f.proveedor, fecha_factura: f.fechaFactura,
-      monto: f.monto, cuenta_gasto: f.cuentas.join(', '), fecha_pago: fecha, referencia_pago: referencia
+      monto: f.monto, fecha_pago: fecha, referencia_pago: referencia
     });
     f.fechaRealPago = fecha;
     f.referenciaPago = referencia;
@@ -1231,49 +1068,6 @@ async function guardarPago() {
     inicializar();
   } catch(e) {
     showToast('No se pudo registrar el pago: ' + e.message, 'error');
-  }
-}
-
-// ── MODAL ABONO PARCIAL ────────────────────────────────────────────
-function abrirModalAbono(numero) {
-  const f = facturaPorNumero(numero);
-  if (!f) return;
-  document.getElementById('abono-numero').value = numero;
-  document.getElementById('abono-sub').textContent = `${numero} · ${f.proveedor}`;
-  document.getElementById('abono-fecha').value = hoyISO;
-  document.getElementById('abono-monto').value = '';
-  document.getElementById('abono-monto').max = f.saldoPendiente;
-  document.getElementById('abono-referencia').value = '';
-  document.getElementById('abono-saldo-hint').textContent = `Saldo pendiente: ${fmt(f.saldoPendiente)}`;
-  document.getElementById('modal-abono').classList.add('open');
-}
-
-async function guardarAbono() {
-  const numero = document.getElementById('abono-numero').value;
-  const fecha  = document.getElementById('abono-fecha').value;
-  const monto  = parseFloat(document.getElementById('abono-monto').value);
-  const referencia = document.getElementById('abono-referencia').value.trim();
-  if (!fecha) { showToast('Ingresá la fecha del abono.', 'error'); return; }
-  if (!monto || monto <= 0) { showToast('Ingresá un monto de abono válido.', 'error'); return; }
-
-  const f = facturaPorNumero(numero);
-  if (!f) return;
-  try {
-    const result = await postAP({
-      modulo: 'registrar_abono',
-      numero_factura: numero, proveedor: f.proveedor, fecha_factura: f.fechaFactura,
-      monto: f.monto, cuenta_gasto: f.cuentas.join(', '),
-      fecha_abono: fecha, monto_abono: monto, referencia: referencia
-    });
-    dataAbonos.push({ 'Número de factura': numero, 'Fecha de abono': fecha, 'Monto abonado': monto, 'Referencia bancaria': referencia });
-    f.totalAbonado = result.total_abonado != null ? result.total_abonado : (f.totalAbonado||0) + monto;
-    f.saldoPendiente = Math.round((f.monto - f.totalAbonado) * 100) / 100;
-    f.estado = f.saldoPendiente > 0.01 ? 'Abono' : 'Cancelada';
-    cerrarModal('modal-abono');
-    showToast('Abono registrado ✓', 'success');
-    inicializar();
-  } catch(e) {
-    showToast('No se pudo registrar el abono: ' + e.message, 'error');
   }
 }
 
