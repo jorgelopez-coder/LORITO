@@ -379,7 +379,16 @@ function jsonpFetch(url) {
 }
 
 // ── GVIZ: leer Sheet de compras (público, sin CORS) ─────────────
-const COMPRAS_SHEET_ID = '1Hd1CuITuquWIhSmT5CHIDliymUN0GwKhI8hvRc5ZAIQ';
+// Sheet "Registro compras LORITO_Brewhouse - IA".
+const COMPRAS_SHEET_ID = '1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw';
+
+// Convierte fechas formateadas por gviz como "D/M/YYYY" a ISO "YYYY-MM-DD".
+function isoDate(str) {
+  const m = String(str||'').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return '';
+  const [, d, mo, y] = m;
+  return y + '-' + mo.padStart(2,'0') + '-' + d.padStart(2,'0');
+}
 
 function gvizLoadCompras(hoja) {
   return new Promise(function(resolve, reject) {
@@ -415,21 +424,55 @@ function gvizLoadCompras(hoja) {
   });
 }
 
+// Agrupa las líneas de Desglose_IA por factura para construir el resumen
+// por factura (equivalente a la antigua hoja "Resumen").
+function construirResumen(lineas) {
+  const grupos = {};
+  lineas.forEach(l => {
+    const num = l['Número de factura'] || '';
+    if (!num) return;
+    if (!grupos[num]) grupos[num] = [];
+    grupos[num].push(l);
+  });
+
+  return Object.keys(grupos).map(num => {
+    const grp = grupos[num];
+    const primero = grp[0];
+    const filaConTotal = grp.find(l => l['Total factura'] !== '' && l['Total factura'] != null);
+    const totalLineas = grp.reduce((a,l) => a + (parseFloat(String(l['Total línea']||0).replace(/,/g,''))||0), 0);
+    const impuestos   = grp.reduce((a,l) => a + (parseFloat(String(l['Impuesto']||0).replace(/,/g,''))||0), 0);
+    const total = filaConTotal
+      ? (parseFloat(String(filaConTotal['Total factura']).replace(/,/g,'')) || 0)
+      : totalLineas;
+
+    return {
+      'Cliente': primero['Cliente'] || '',
+      'Tipo de documento': primero['Tipo de documento'] || '',
+      'Moneda': primero['Moneda'] || '',
+      'Número de factura': num,
+      'Fecha de factura': primero['Fecha de factura'] || '',
+      'Proveedor': primero['Proveedor'] || '',
+      'Subtotal': totalLineas - impuestos,
+      'Impuestos': impuestos,
+      'Total': total
+    };
+  });
+}
+
 async function cargarDatos() {
   document.getElementById('status-carga').innerHTML = '<span class="spinner"></span> Conectando con Google Sheets…';
 
   try {
-    const [dF, dR, dC] = await Promise.all([
-      gvizLoadCompras('Facturas'),
-      gvizLoadCompras('Resumen').catch(() => ({ ok: true, registros: [] })),
-      gvizLoadCompras('Control').catch(() => ({ ok: true, registros: [] }))
+    const [dD, dC] = await Promise.all([
+      gvizLoadCompras('Desglose_IA'),
+      gvizLoadCompras('Control_IA').catch(() => ({ ok: true, registros: [] }))
     ]);
 
-    if (!dF.ok) throw new Error('Error leyendo hoja Facturas');
+    if (!dD.ok) throw new Error('Error leyendo hoja Desglose_IA');
 
-    dataFacturas = dF.registros || [];
-    dataResumen  = dR.registros || [];
+    dataFacturas = (dD.registros || []).map(r => ({ ...r, 'Fecha de factura': isoDate(r['Fecha de factura']) }));
     dataControl  = dC.registros || [];
+    dataResumen  = construirResumen(dataFacturas);
 
     document.getElementById('conn-dot').classList.remove('off');
     document.getElementById('conn-label').textContent = 'Conectado · Google Sheets';
@@ -588,9 +631,8 @@ function _renderFacturas() {
         <td style="color:var(--muted);font-size:12px;">${fecha}</td>
         <td style="font-weight:500;">${prov}</td>
         <td style="font-size:12px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${num}</td>
-
         <td class="num" style="font-weight:600;">${fmt(total)}</td>
-        
+        <td><span class="badge" style="background:${ok?'var(--green-bg)':'var(--red-bg)'};color:${ok?'var(--green)':'var(--red)'};">${est || '—'}</span></td>
       </tr>
       <tr class="tr-detail" id="${rowId}">
         <td class="detail-cell" colspan="6">
@@ -601,7 +643,7 @@ function _renderFacturas() {
 
   document.getElementById('tabla-facturas').innerHTML = `
     <table>
-      <thead><tr><th></th><th>Fecha</th><th>Proveedor</th><th>Factura</th><th>Categorías</th><th style="text-align:right;">Total</th><th>Estado</th></tr></thead>
+      <thead><tr><th></th><th>Fecha</th><th>Proveedor</th><th>Factura</th><th style="text-align:right;">Total</th><th>Estado</th></tr></thead>
       <tbody>${filas}</tbody>
     </table>`;
 
