@@ -271,7 +271,7 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
       </div>
       <div class="field">
         <label for="f-tarjeta">Ventas con Tarjeta (₡)</label>
-        <input type="number" id="f-tarjeta" placeholder="0" min="0" oninput="actualizarResumen()"/>
+        <input type="number" id="f-tarjeta" placeholder="0" min="0" oninput="actualizarResumen();calcRevisionTarjeta()"/>
       </div>
       <div class="field">
         <label for="f-sinpe">Transferencia / SINPE (₡)</label>
@@ -287,12 +287,30 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
         <input type="text" id="f-plataformas-desc" placeholder="Ej: Uber Eats, Rappi…" style="margin-top:5px;font-size:12px;padding:6px 10px"/>
       </div>
       <div class="field">
-        <label for="f-servicio">10% Servicio (₡)</label>
-        <input type="number" id="f-servicio" placeholder="0" min="0" oninput="actualizarResumen()"/>
-      </div>
-      <div class="field">
         <label for="f-otras">Otras Ventas (₡)</label>
         <input type="number" id="f-otras" placeholder="0" min="0" oninput="actualizarResumen()"/>
+      </div>
+    </div>
+
+    <div class="denom-section">
+      <p class="denom-group-title">🧾 Propinas por forma de pago</p>
+      <div class="field-row-3">
+        <div class="field">
+          <label for="f-propina-efectivo">Propina Efectivo (₡)</label>
+          <input type="number" id="f-propina-efectivo" placeholder="0" min="0" oninput="actualizarResumen()"/>
+        </div>
+        <div class="field">
+          <label for="f-propina-tarjeta">Propina Tarjeta (₡)</label>
+          <input type="number" id="f-propina-tarjeta" placeholder="0" min="0" oninput="actualizarResumen();calcRevisionTarjeta()"/>
+        </div>
+        <div class="field">
+          <label for="f-propina-credito">Propina Crédito (₡)</label>
+          <input type="number" id="f-propina-credito" placeholder="0" min="0" oninput="actualizarResumen()"/>
+        </div>
+        <div class="field">
+          <label for="f-propina-otro">Propina Otro (₡)</label>
+          <input type="number" id="f-propina-otro" placeholder="0" min="0" oninput="actualizarResumen()"/>
+        </div>
       </div>
     </div>
 
@@ -324,6 +342,23 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
         <span>Total ventas</span>
         <span class="v" id="resumen-total">₡0</span>
       </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Revisión de Tarjeta</p>
+    <div class="field" style="max-width:260px">
+      <label for="f-datafono-total">Total procesado en datáfono (₡)</label>
+      <input type="number" id="f-datafono-total" placeholder="0" min="0" oninput="calcRevisionTarjeta()"/>
+    </div>
+    <div class="cuadre-card">
+      <div class="cuadre-row"><label>Tarjeta reportada (ventas + propina)</label><span class="val" id="rt-reportado">₡0</span></div>
+      <div class="cuadre-row"><label>Total datáfono</label><span class="val" id="rt-datafono">₡0</span></div>
+      <div class="cuadre-total">
+        <span>Diferencia</span>
+        <span class="val" id="rt-diff">₡0</span>
+      </div>
+      <div id="rt-badge" style="margin-top:10px"></div>
     </div>
   </div>
 
@@ -380,6 +415,7 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
         <span>Diferencia de caja (₡)</span>
         <span class="val" id="cuadre-diff">₡0</span>
       </div>
+      <div id="cuadre-badge" style="margin-top:10px"></div>
     </div>
   </div>
 
@@ -444,9 +480,9 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────
-const SHEETS_URL      = 'TODO_APPS_SCRIPT_CIERRES_LORITO';
+const SHEETS_URL      = 'https://script.google.com/macros/s/AKfycbzZptmtaSsNwc-3YnSWolrScvuieJBbJfyngTjVwNZ-N0_EIPmIq3JlWww909a0EkNMYw/exec';
 const APPS_SCRIPT_RRHH = 'TODO_APPS_SCRIPT_RRHH_LORITO';
-const EXTRACTOR_URL   = ''; // pegar acá la URL /exec del proyecto "cierre-extractor" una vez desplegado
+const EXTRACTOR_URL   = 'https://script.google.com/a/macros/casaaguizotes.com/s/AKfycbz9ZitIaHQJ6U5wPBGH8NsHyvgugCr_2IyAjdwJv6PmxAbmvFtAxewCWWOFyXN65nzV/exec';
 const PUNTO_VENTA     = 'Lorito'; // valor fijo, sin selección en UI
 
 // ── DENOMINACIONES ────────────────────────────────────────────────
@@ -587,8 +623,12 @@ function aplicarExtraccionIA(d) {
   setIfNum('f-credito', d.ventasCredito);
   setIfNum('f-sinpe', d.ventasSinpe);
   setIfNum('f-otras', d.ventasOtros);
-  setIfNum('f-servicio', d.propinaTotal);
-  actualizarResumen(); calcCuadre();
+  setIfNum('f-propina-efectivo', d.propinaEfectivo);
+  setIfNum('f-propina-tarjeta', d.propinaTarjeta);
+  setIfNum('f-propina-credito', d.propinaCredito);
+  setIfNum('f-propina-otro', d.propinaOtros);
+  setIfNum('f-datafono-total', d.datafonoTotalGlobal);
+  actualizarResumen(); calcCuadre(); calcRevisionTarjeta();
 
   const resultBox = document.getElementById('ia-resultado');
   resultBox.style.display = 'block';
@@ -697,9 +737,16 @@ function getTotales() {
   const otras       = v('f-otras');
   const credito     = v('f-credito');
   const plataformas = v('f-plataformas');
-  const servicio    = v('f-servicio');
+  const propinaEfectivo = v('f-propina-efectivo');
+  const propinaTarjeta  = v('f-propina-tarjeta');
+  const propinaCredito  = v('f-propina-credito');
+  const propinaOtro     = v('f-propina-otro');
+  const servicio    = propinaEfectivo + propinaTarjeta + propinaCredito + propinaOtro;
+  const datafonoTotal = v('f-datafono-total');
   const totalVentas = efectivo + tarjeta + sinpe + otras + credito + plataformas + servicio + usdTotalCrc;
-  return {efectivo,tarjeta,sinpe,otras,credito,plataformas,servicio,usdE,usdT,tc,usdTotalCrc,totalVentas};
+  return {efectivo,tarjeta,sinpe,otras,credito,plataformas,servicio,
+    propinaEfectivo,propinaTarjeta,propinaCredito,propinaOtro,datafonoTotal,
+    usdE,usdT,tc,usdTotalCrc,totalVentas};
 }
 
 function actualizarResumen() {
@@ -707,7 +754,7 @@ function actualizarResumen() {
   const items = [
     ['Efectivo ₡', t.efectivo],['Tarjeta ₡', t.tarjeta],
     ['SINPE ₡', t.sinpe],['Crédito ₡', t.credito],
-    ['Plataformas ₡', t.plataformas],['10% Servicio ₡', t.servicio],
+    ['Plataformas ₡', t.plataformas],['Propinas ₡', t.servicio],
     ['Otras ₡', t.otras],['USD en ₡', t.usdTotalCrc],
   ].filter(([,v]) => v > 0);
 
@@ -725,6 +772,27 @@ function calcDolares() {
   const total = (usdE + usdT) * tc;
   document.getElementById('f-usd-total-crc').value =
     tc > 0 ? '₡' + Math.round(total).toLocaleString('es-CR') : '(configure TC)';
+}
+
+function calcRevisionTarjeta() {
+  const tarjeta = parseFloat(document.getElementById('f-tarjeta')?.value) || 0;
+  const propinaTarjeta = parseFloat(document.getElementById('f-propina-tarjeta')?.value) || 0;
+  const datafono = parseFloat(document.getElementById('f-datafono-total')?.value) || 0;
+  const reportado = tarjeta + propinaTarjeta;
+  const diff = datafono - reportado;
+
+  document.getElementById('rt-reportado').textContent = fmtCRC(reportado);
+  document.getElementById('rt-datafono').textContent = fmtCRC(datafono);
+  const diffEl = document.getElementById('rt-diff');
+  diffEl.textContent = (diff >= 0 ? '+' : '') + fmtCRC(diff);
+  diffEl.className = 'val ' + (Math.abs(diff) <= 500 ? 'diff-ok' : 'diff-warn');
+
+  const badge = document.getElementById('rt-badge');
+  if (!datafono && !reportado) { badge.innerHTML = ''; return; }
+  const cuadra = Math.abs(diff) <= 500;
+  badge.innerHTML = cuadra
+    ? `<div class="ia-box ia-ok">✅ Cuadra — diferencia dentro de tolerancia (±₡500)</div>`
+    : `<div class="ia-box ia-warn">⚠️ No cuadra — diferencia de ${fmtCRC(Math.abs(diff))} (tolerancia ±₡500)</div>`;
 }
 
 function calcCuadre() {
@@ -761,6 +829,16 @@ function calcCuadre() {
   diffEl.textContent = (diff >= 0 ? '+' : '') + fmtCRC(diff);
   diffEl.className = 'val ' + (diff === 0 ? 'diff-ok' : Math.abs(diff) <= 500 ? 'diff-minor' : 'diff-warn');
 
+  const badge = document.getElementById('cuadre-badge');
+  if (efectivo || fondo || total) {
+    const cuadra = Math.abs(diff) <= 500;
+    badge.innerHTML = cuadra
+      ? `<div class="ia-box ia-ok">✅ Cuadra — diferencia dentro de tolerancia (±₡500)</div>`
+      : `<div class="ia-box ia-warn">⚠️ No cuadra — diferencia de ${fmtCRC(Math.abs(diff))} (tolerancia ±₡500)</div>`;
+  } else {
+    badge.innerHTML = '';
+  }
+
   const usdRow  = document.getElementById('usd-diff-row');
   const usdDiffEl = document.getElementById('cuadre-usd-diff');
   if (usdEfectivo > 0 || totalUsd > 0) {
@@ -779,7 +857,11 @@ async function submitCierre() {
   if (!encargado) { showToast('Seleccioná un encargado', 'error'); return; }
   if (!turno)     { showToast('Seleccioná el turno', 'error'); return; }
 
-  const {efectivo,tarjeta,sinpe,otras,credito,plataformas,servicio,usdE,usdT,tc,usdTotalCrc,totalVentas} = getTotales();
+  const {efectivo,tarjeta,sinpe,otras,credito,plataformas,servicio,
+    propinaEfectivo,propinaTarjeta,propinaCredito,propinaOtro,datafonoTotal,
+    usdE,usdT,tc,usdTotalCrc,totalVentas} = getTotales();
+  const diferenciaTarjeta = datafonoTotal - (tarjeta + propinaTarjeta);
+  const tarjetaCuadra = Math.abs(diferenciaTarjeta) <= 500;
   const fondo = parseFloat(document.getElementById('f-fondo').value) || 0;
   const obs   = document.getElementById('f-obs').value.trim();
   const plataformasDesc = document.getElementById('f-plataformas-desc').value.trim();
@@ -801,6 +883,8 @@ async function submitCierre() {
     fecha, hora: new Date().toLocaleTimeString('es-CR',{hour:'2-digit',minute:'2-digit'}),
     punto: PUNTO_VENTA, encargado, turno,
     efectivo, tarjeta, sinpe, otras, credito, plataformas, plataformasDesc, servicio,
+    propinaEfectivo, propinaTarjeta, propinaCredito, propinaOtro,
+    datafonoTotal, diferenciaTarjeta, tarjetaCuadra,
     totalVentas, fondo, caja, diferencia, obs,
     usdEfectivo: usdE, usdTarjeta: usdT, tc, usdTotalCrc,
     d50000: denomDetalle[50000]||0, d20000: denomDetalle[20000]||0,
@@ -847,21 +931,29 @@ const WA_NUMERO_DEFAULT = '50688301564';
 
 function buildWAMessage(r) {
   const fecha = new Date((r.fecha||hoy())+'T12:00:00').toLocaleDateString('es-CR',{day:'numeric',month:'long',year:'numeric'});
-  const difSigno = r.diferencia >= 0 ? '+' : '';
-  const difEmoji = Math.abs(r.diferencia) <= 500 ? '✅' : '⚠️';
-  return `📊 *Cierre de Caja — ${r.punto}*
-📅 ${fecha} | 🕐 ${r.hora}
-👤 ${r.encargado} · ${r.turno}
 
-💰 *Ventas del Día*
+  const difCaja = r.diferencia || 0;
+  const efectivoCuadra = Math.abs(difCaja) <= 500;
+  const efectivoEmoji = efectivoCuadra ? '✅' : '⚠️';
+
+  const difTarjeta = r.diferenciaTarjeta || 0;
+  const tarjetaCuadra = !!r.tarjetaCuadra;
+  const tarjetaEmoji = tarjetaCuadra ? '✅' : '⚠️';
+  const tieneTarjetaRev = !!(r.datafonoTotal || r.tarjeta || r.propinaTarjeta);
+
+  return `📊 *Cierre de Caja*
+🏪 Punto de venta: ${r.punto}
+📅 Fecha: ${fecha}
+🕐 Turno: ${r.turno}
+👤 Encargado: ${r.encargado}
+
+💰 *Ventas Totales: ₡${(r.totalVentas||0).toLocaleString('es-CR')}*
 • Efectivo: ₡${(r.efectivo||0).toLocaleString('es-CR')}
 • Tarjeta: ₡${(r.tarjeta||0).toLocaleString('es-CR')}
-• SINPE: ₡${(r.sinpe||0).toLocaleString('es-CR')}${r.credito?`\n• Crédito: ₡${r.credito.toLocaleString('es-CR')}`:''}${r.plataformas?`\n• Plataformas: ₡${r.plataformas.toLocaleString('es-CR')}${r.plataformasDesc?' ('+r.plataformasDesc+')':''}`:''}${r.servicio?`\n• 10% Servicio: ₡${r.servicio.toLocaleString('es-CR')}`:''}${r.otras?`\n• Otras: ₡${r.otras.toLocaleString('es-CR')}`:''}
-• *Total: ₡${(r.totalVentas||0).toLocaleString('es-CR')}*${(r.usdEfectivo||r.usdTarjeta)?`\n• 💵 USD: $${((r.usdEfectivo||0)+(r.usdTarjeta||0)).toFixed(2)} (TC: ₡${(r.tc||0).toLocaleString('es-CR')})`:''}
+• Crédito: ₡${(r.credito||0).toLocaleString('es-CR')}${r.sinpe?`\n• SINPE: ₡${r.sinpe.toLocaleString('es-CR')}`:''}${r.plataformas?`\n• Plataformas: ₡${r.plataformas.toLocaleString('es-CR')}${r.plataformasDesc?' ('+r.plataformasDesc+')':''}`:''}${r.otras?`\n• Otras: ₡${r.otras.toLocaleString('es-CR')}`:''}${r.servicio?`\n• Propinas: ₡${r.servicio.toLocaleString('es-CR')}`:''}${(r.usdEfectivo||r.usdTarjeta)?`\n• 💵 USD: $${((r.usdEfectivo||0)+(r.usdTarjeta||0)).toFixed(2)} (TC ₡${(r.tc||0).toLocaleString('es-CR')})`:''}
 
-🏧 *Cuadre de Caja*
-• Caja contada: ₡${(r.caja||0).toLocaleString('es-CR')}
-• ${difEmoji} Diferencia: ${difSigno}₡${(r.diferencia||0).toLocaleString('es-CR')}${r.obs?`\n\n📝 *Observaciones:* ${r.obs}`:''}`;
+${tieneTarjetaRev ? `💳 *Revisión Tarjeta:* ${tarjetaEmoji} ${tarjetaCuadra ? 'Cuadra' : 'No cuadra'} (dif. ₡${Math.abs(difTarjeta).toLocaleString('es-CR')})\n` : ''}💵 *Revisión Efectivo:* ${efectivoEmoji} ${efectivoCuadra ? 'Cuadra' : 'No cuadra'} (dif. ₡${Math.abs(difCaja).toLocaleString('es-CR')})
+${r.obs?`\n📝 *Observaciones:* ${r.obs}`:''}`;
 }
 
 function mostrarWhatsApp(payload) {
@@ -944,14 +1036,15 @@ function renderHistorial() {
 function limpiarForm() {
   ['f-encargado','f-obs'].forEach(id => { const el=document.getElementById(id); if(el)el.value=''; });
   ['f-efectivo','f-tarjeta','f-sinpe','f-otras','f-credito','f-plataformas','f-plataformas-desc',
-   'f-servicio','f-usd-efectivo','f-usd-tarjeta','f-fondo'].forEach(id => {
+   'f-propina-efectivo','f-propina-tarjeta','f-propina-credito','f-propina-otro','f-datafono-total',
+   'f-usd-efectivo','f-usd-tarjeta','f-fondo'].forEach(id => {
     const el=document.getElementById(id); if(el)el.value='';
   });
   document.getElementById('f-fecha').value = hoy();
   resetTurno();
   DENOMS_CRC.forEach(d => { const el=document.getElementById('d-'+d); if(el)el.value=''; });
   DENOMS_USD.forEach(({id}) => { const el=document.getElementById('d-'+id); if(el)el.value=''; });
-  calcCuadre(); actualizarResumen();
+  calcCuadre(); actualizarResumen(); calcRevisionTarjeta();
   document.getElementById('f-usd-total-crc').value = '';
   document.getElementById('wa-section').style.display = 'none';
   quitarFoto('sistema'); quitarFoto('datafono');
@@ -971,6 +1064,7 @@ document.getElementById('f-fecha').value = hoy();
 updateTCDisplay();
 cargarEncargados();
 actualizarResumen();
+calcRevisionTarjeta();
 document.getElementById('input-foto-sistema').addEventListener('change', e => handleFotoSelect('sistema', e.target.files[0]));
 document.getElementById('input-foto-datafono').addEventListener('change', e => handleFotoSelect('datafono', e.target.files[0]));
 

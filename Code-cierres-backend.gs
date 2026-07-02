@@ -12,6 +12,13 @@
 // 3. Después de pegar esto, corré UNA VEZ la función agregarEncabezados() desde el
 //    editor (▶ con agregarEncabezados seleccionado) para que la fila de encabezados
 //    existente incluya las 2 columnas nuevas.
+//
+// Actualización posterior:
+// 4. Se agregaron 7 columnas más al final (propina por forma de pago, total
+//    datáfono, diferencia y si tarjeta cuadra) — volvé a correr agregarEncabezados().
+// 5. Las fotos ya NO se guardan en una carpeta derivada del Sheet: se guardan
+//    directo en la carpeta fija "Cierres de caja" (FOLDER_ID_CIERRES más abajo),
+//    con una subcarpeta por fecha (YYYY-MM-DD) dentro de ella.
 
 const HEADERS = [
   'ID', 'Fecha', 'Hora', 'Punto de Venta', 'Encargado', 'Turno',
@@ -26,7 +33,9 @@ const HEADERS = [
   'Total USD Contado $',
   'Caja Total Contada ₡', 'Fondo Caja Inicial ₡', 'Efectivo Esperado ₡', 'Diferencia Caja ₡',
   'USD Total Contado $', 'USD Reportado Ventas $', 'Diferencia USD $',
-  'Foto Cierre Sistema (URL)', 'Foto Cierre Datáfono (URL)'
+  'Foto Cierre Sistema (URL)', 'Foto Cierre Datáfono (URL)',
+  'Propina Efectivo ₡', 'Propina Tarjeta ₡', 'Propina Crédito ₡', 'Propina Otro ₡',
+  'Total Datáfono ₡', 'Diferencia Tarjeta ₡', 'Tarjeta Cuadra'
 ];
 
 function doPost(e) {
@@ -114,7 +123,14 @@ function doPost(e) {
       data.usdReportadoVentas,  // AV - USD Reportado Ventas $
       data.diferenciaUsd,       // AW - Diferencia USD $
       fotoUrls.fotoSistemaUrl  || '',  // AX - Foto Cierre Sistema (URL)
-      fotoUrls.fotoDatafonoUrl || ''   // AY - Foto Cierre Datáfono (URL)
+      fotoUrls.fotoDatafonoUrl || '',  // AY - Foto Cierre Datáfono (URL)
+      data.propinaEfectivo || 0,       // AZ - Propina Efectivo ₡
+      data.propinaTarjeta  || 0,       // BA - Propina Tarjeta ₡
+      data.propinaCredito  || 0,       // BB - Propina Crédito ₡
+      data.propinaOtro     || 0,       // BC - Propina Otro ₡
+      data.datafonoTotal    || 0,      // BD - Total Datáfono ₡
+      data.diferenciaTarjeta || 0,     // BE - Diferencia Tarjeta ₡
+      data.tarjetaCuadra ? 'SI' : 'NO' // BF - Tarjeta Cuadra
     ]);
 
     return ContentService.createTextOutput(JSON.stringify({result:'ok'}))
@@ -194,13 +210,12 @@ function getOrCreateCarpetaDia(fecha) {
   return existing.hasNext() ? existing.next() : root.createFolder(nombreCarpeta);
 }
 
+// Carpeta fija "Cierres de caja" en Drive:
+// https://drive.google.com/drive/u/0/folders/1s0hjm5NmtgSgkZhmThpogZRhFZcr527j
+const FOLDER_ID_CIERRES = '1s0hjm5NmtgSgkZhmThpogZRhFZcr527j';
+
 function getRootFolderFotos() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const file = DriveApp.getFileById(ss.getId());
-  const parents = file.getParents();
-  const parentFolder = parents.hasNext() ? parents.next() : DriveApp.getRootFolder();
-  const existing = parentFolder.getFoldersByName('Cierres - Fotos');
-  return existing.hasNext() ? existing.next() : parentFolder.createFolder('Cierres - Fotos');
+  return DriveApp.getFolderById(FOLDER_ID_CIERRES);
 }
 
 function guardarImagenBase64(folder, base64, mimeType, fileName) {
