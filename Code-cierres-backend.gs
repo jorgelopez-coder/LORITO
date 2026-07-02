@@ -19,6 +19,20 @@
 // 5. Las fotos ya NO se guardan en una carpeta derivada del Sheet: se guardan
 //    directo en la carpeta fija "Cierres de caja" (FOLDER_ID_CIERRES más abajo),
 //    con una subcarpeta por fecha (YYYY-MM-DD) dentro de ella.
+//
+// Actualización — módulo de Depósitos (depositos.html):
+// 6. Se agregó doPost({type:'deposito'}) que escribe en una hoja nueva "Depositos"
+//    (se crea sola si no existe) y doGet(?action=depositos) que la lee. Las fotos
+//    de comprobante se guardan en una carpeta "Depósitos - Comprobantes" (se crea
+//    sola, hermana de "Cierres de caja"). Después de pegar esto, corré UNA VEZ
+//    agregarEncabezadosDepositos() desde el editor.
+
+const HEADERS_DEPOSITOS = [
+  'ID', 'Fecha registro', 'Fecha depósito', 'Número de referencia',
+  'Monto CRC comprobante', 'Monto USD comprobante', 'Fechas cubiertas',
+  'Monto CRC calculado', 'Monto USD calculado', 'Diferencia CRC', 'Diferencia USD',
+  'Foto comprobante (URL)', 'Notas'
+];
 
 const HEADERS = [
   'ID', 'Fecha', 'Hora', 'Punto de Venta', 'Encargado', 'Turno',
@@ -59,6 +73,10 @@ function doPost(e) {
       configSheet.getRange(1,1).setValue(JSON.stringify(data.config));
       return ContentService.createTextOutput(JSON.stringify({result:'ok'}))
         .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (data.type === 'deposito') {
+      return guardarDeposito(ss, data);
     }
 
     let sheet = ss.getSheetByName('Cierres');
@@ -156,6 +174,18 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 
+  if (e && e.parameter && e.parameter.action === 'depositos') {
+    const depSheet = ss.getSheetByName('Depositos');
+    if (!depSheet || depSheet.getLastRow() === 0) {
+      return ContentService.createTextOutput(JSON.stringify({records: []}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    const rows = depSheet.getDataRange().getValues();
+    const records = rows.slice(1);
+    return ContentService.createTextOutput(JSON.stringify({records}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   let sheet = ss.getSheetByName('Cierres');
   if (!sheet) sheet = ss.getActiveSheet();
   const rows = sheet.getDataRange().getValues();
@@ -167,7 +197,7 @@ function doGet(e) {
 function agregarEncabezados() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName('Cierres');
-  if (!sheet) sheet = ss.getActiveSheet();
+  if (!sheet) sheet = ss.insertSheet('Cierres');
   if (sheet.getLastRow() === 0) {
     sheet.appendRow(HEADERS);
   } else {
@@ -175,6 +205,66 @@ function agregarEncabezados() {
   }
   sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold');
   sheet.setFrozenRows(1);
+}
+
+function agregarEncabezadosDepositos() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('Depositos');
+  if (!sheet) sheet = ss.insertSheet('Depositos');
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(HEADERS_DEPOSITOS);
+  } else {
+    sheet.getRange(1, 1, 1, HEADERS_DEPOSITOS.length).setValues([HEADERS_DEPOSITOS]);
+  }
+  sheet.getRange(1, 1, 1, HEADERS_DEPOSITOS.length).setFontWeight('bold');
+  sheet.setFrozenRows(1);
+}
+
+// ── DEPÓSITOS BANCARIOS ───────────────────────────────────────────
+function guardarDeposito(ss, data) {
+  let sheet = ss.getSheetByName('Depositos');
+  if (!sheet) sheet = ss.insertSheet('Depositos');
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(HEADERS_DEPOSITOS);
+    sheet.getRange(1, 1, 1, HEADERS_DEPOSITOS.length).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+  }
+
+  let fotoUrl = '';
+  if (data.fotoComprobante) {
+    const carpeta = getOrCreateCarpetaComprobantes();
+    const nombre = `${data.fechaDeposito || hoyCR()}_${data.referencia || 'sin-ref'}_${data.id || Date.now()}.jpg`
+      .replace(/[^\w\-\.]+/g, '_');
+    fotoUrl = guardarImagenBase64(carpeta, data.fotoComprobante, data.fotoComprobanteMime || 'image/jpeg', nombre);
+  }
+
+  sheet.appendRow([
+    data.id || Date.now(),                    // ID
+    hoyCR(),                                  // Fecha registro
+    data.fechaDeposito || '',                 // Fecha depósito
+    data.referencia || '',                    // Número de referencia
+    data.montoCrcComprobante || 0,             // Monto CRC comprobante
+    data.montoUsdComprobante || 0,             // Monto USD comprobante
+    JSON.stringify(data.fechasCubiertas || []),// Fechas cubiertas
+    data.montoCrcCalculado || 0,               // Monto CRC calculado
+    data.montoUsdCalculado || 0,               // Monto USD calculado
+    data.diferenciaCrc || 0,                   // Diferencia CRC
+    data.diferenciaUsd || 0,                   // Diferencia USD
+    fotoUrl,                                   // Foto comprobante (URL)
+    data.notas || ''                           // Notas
+  ]);
+
+  return ContentService.createTextOutput(JSON.stringify({result:'ok'}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getOrCreateCarpetaComprobantes() {
+  const padre = getRootFolderFotos().getParents().hasNext()
+    ? getRootFolderFotos().getParents().next()
+    : getRootFolderFotos();
+  const nombre = 'Depósitos - Comprobantes';
+  const existing = padre.getFoldersByName(nombre);
+  return existing.hasNext() ? existing.next() : padre.createFolder(nombre);
 }
 
 // ── FOTOS DE CIERRE → GOOGLE DRIVE ───────────────────────────────
