@@ -413,7 +413,7 @@ const fmt  = n => '₡' + Number(n||0).toLocaleString('es-CR', { minimumFraction
 const fmtN = n => Number(n||0).toLocaleString('es-CR', { minimumFractionDigits:2, maximumFractionDigits:2 });
 
 let dataFacturas = [];   // hoja "Registro Facturas" (una fila por factura)
-let proveedores  = [];   // localStorage 'proveedores'
+let proveedores  = [];   // hoja "proveedores" del Sheet
 let facturasAP   = [];   // dataset ya calculado (estado, saldo, etc.)
 let pagFacturas  = 1;
 const POR_PAGINA = 15;
@@ -460,17 +460,26 @@ function gvizLoad(hoja, expectedCol) {
   });
 }
 
-function getProveedores() { try { return JSON.parse(localStorage.getItem('proveedores')||'[]'); } catch { return []; } }
+function filaAProveedor(r) {
+  return {
+    id: r['ID'] || '',
+    nombre_juridico: r['Nombre jurídico'] || '',
+    nombre_comercial: r['Nombre comercial'] || ''
+  };
+}
 
 async function cargarDatos() {
   document.getElementById('status-carga').innerHTML = '<span class="spinner"></span> Conectando con Google Sheets…';
   try {
-    const dF = await gvizLoad('Registro Facturas', 'Factura');
+    const [dF, dP] = await Promise.all([
+      gvizLoad('Registro Facturas', 'Factura'),
+      gvizLoad('proveedores', 'ID').catch(() => [])
+    ]);
 
     if (!dF.length) throw new Error('Sin datos en la hoja de facturas');
 
     dataFacturas = dF;
-    proveedores  = getProveedores();
+    proveedores  = dP.filter(r => r['ID']).map(filaAProveedor);
 
     document.getElementById('conn-dot').classList.remove('off');
     document.getElementById('conn-label').textContent = 'Conectado · Google Sheets';
@@ -750,7 +759,10 @@ function _renderFacturas() {
   const filas = pagina.map((f, idx) => {
     const rowId = 'frow-' + (inicio + idx);
     const dupBadge = f.duplicada ? `<span class="badge b-dup" style="margin-left:6px;">⚠ Duplicada</span>` : '';
-    const sinProvBadge = f.sinProveedor ? `<span title="Proveedor sin registrar en la base de proveedores" style="font-size:10px;color:var(--red);margin-left:4px;">⚠</span>` : '';
+    const sinProvBadge = f.sinProveedor ? `<span onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:5px;margin-left:4px;">
+        <span title="Proveedor sin registrar en la base de proveedores" style="font-size:10px;color:var(--red);">⚠</span>
+        <button type="button" class="btn-mini" style="padding:2px 8px;font-size:10.5px;border-color:var(--red-lt);background:var(--red-bg);color:var(--red);" onclick="agregarProveedorRapido('${f.proveedor.replace(/'/g,"\\'")}', this)">+ Agregar</button>
+      </span>` : '';
 
     const puedeAccionar = f.estado !== 'Cancelada';
 
@@ -1114,6 +1126,22 @@ async function postAP(payload) {
   const json = await resp.json();
   if (!json.ok) throw new Error(json.error || 'Error al guardar');
   return json.result;
+}
+
+// Alta rápida de un proveedor que aparece en facturas pero no está en la base.
+// Queda con categoría "Otro"; se puede completar el resto en proveedores.html.
+async function agregarProveedorRapido(nombre, btn) {
+  if (btn) btn.disabled = true;
+  try {
+    const result = await postAP({ modulo: 'guardar_proveedor', nombre_juridico: nombre, categoria: 'Otro' });
+    proveedores.push({ id: result.id, nombre_juridico: nombre, nombre_comercial: '' });
+    construirFacturasAP();
+    inicializar();
+    showToast(`"${nombre}" agregado a proveedores ✓`, 'success');
+  } catch(e) {
+    showToast('No se pudo agregar: ' + e.message, 'error');
+    if (btn) btn.disabled = false;
+  }
 }
 
 function facturaPorNumero(numero) { return facturasAP.find(f => f.numero === numero); }

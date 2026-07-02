@@ -70,6 +70,15 @@
     .empty-state { text-align:center; padding:4rem 2rem; color:var(--subtle); }
     .empty-icon { font-size:40px; margin-bottom:12px; }
 
+    /* Por agregar */
+    .filtro-badge { display:inline-flex; align-items:center; justify-content:center; min-width:16px; height:16px; padding:0 4px; border-radius:20px; background:var(--red); color:#fff; font-size:10px; font-weight:700; }
+    .missing-row { display:flex; align-items:center; justify-content:space-between; gap:12px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:.85rem 1.25rem; margin-bottom:8px; flex-wrap:wrap; }
+    .missing-row .nombre { font-weight:600; }
+    .missing-row .meta { font-size:12px; color:var(--muted); }
+    .btn-add-rapido { padding:7px 14px; border-radius:8px; border:1px solid var(--green-lt); background:var(--green-bg); color:var(--green); font-size:12.5px; font-weight:600; cursor:pointer; white-space:nowrap; }
+    .btn-add-rapido:hover { background:var(--green); color:#fff; }
+    .btn-add-rapido:disabled { opacity:.5; cursor:default; }
+
     /* MODAL */
     .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:50; align-items:flex-start; justify-content:center; padding:1.5rem 1rem; overflow-y:auto; }
     .modal-bg.open { display:flex; }
@@ -143,11 +152,12 @@
   <!-- Tabs -->
   <div class="tabs">
     <button class="tab active" onclick="switchTab('lista',this)">Proveedores</button>
+    <button class="tab" onclick="switchTab('por-agregar',this)">Por agregar <span class="filtro-badge" id="por-agregar-count" style="display:none;"></span></button>
     <button class="tab" onclick="switchTab('nuevo',this)">+ Nuevo</button>
   </div>
 
   <!-- Toolbar -->
-  <div class="toolbar">
+  <div class="toolbar" id="toolbar-lista">
     <div class="search-wrap">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input class="search-input" id="buscar" placeholder="Buscar proveedor…" oninput="renderLista()">
@@ -170,6 +180,14 @@
         <p>Sin proveedores registrados aún.<br>Hacé clic en <strong>Nuevo proveedor</strong> para empezar.</p>
       </div>
     </div>
+  </div>
+
+  <!-- Por agregar -->
+  <div id="tab-por-agregar" style="display:none;">
+    <p style="font-size:12.5px;color:var(--muted);margin-bottom:1rem;">
+      Proveedores que aparecen en el Registro de Facturas pero todavía no están en la base de datos.
+    </p>
+    <div id="lista-por-agregar"></div>
   </div>
 
   <div class="status-bar">
@@ -195,34 +213,7 @@
         <label for="p-nombre-juridico">Nombre jurídico <span style="color:var(--red);">*</span></label>
         <input type="text" id="p-nombre-juridico" list="sugerencias-proveedores"
           placeholder="Escribí o seleccioná de facturas…" autocomplete="off">
-        <datalist id="sugerencias-proveedores">
-          <option value="Auto Mercado S.A. (GUACHIPELÍN)">
-          <option value="Auto Mercado S.A. (YOSES)">
-          <option value="Blue Flame Fuel Technology Corporation S A">
-          <option value="COCA-COLA FEMSA DE COSTA RICA">
-          <option value="COMPANIA NACIONAL DE FUERZA Y LUZ">
-          <option value="CORPORACION SUPERMERCADOS UNIDOS S.R.L.">
-          <option value="Compañía Nacional de Fuerza y Luz, S.A.">
-          <option value="DEL FRUTO SRL">
-          <option value="Distribuidora Isleña de Alimentos, S.A.">
-          <option value="Distribuidora Kasoca">
-          <option value="Distribuidora La Florida S.A.">
-          <option value="El Lugar de la Carne SA">
-          <option value="EXPORTADORA PMT S.A.">
-          <option value="Gracia Bebidas SA">
-          <option value="INVERSIONES AM PM SOCIEDAD ANONIMA">
-          <option value="Industrias del Maiz S.A.">
-          <option value="JOHNNATAN ELIECER RAMIREZ ARIAS DELICARNES">
-          <option value="Jean Franco Aguilar">
-          <option value="Locoto Imports">
-          <option value="Mayca Auto Servicio S.A.">
-          <option value="Mayca Distribuidores, S.A.">
-          <option value="Mayca Food Service">
-          <option value="Mayca Foodservice">
-          <option value="PEDRO ALEXIS HERRERA SOLIS">
-          <option value="Prismar de Costa Rica S.A.">
-          <option value="Randall Carlo Sudasassi Chacon">
-        </datalist>
+        <datalist id="sugerencias-proveedores"></datalist>
         <div class="field-hint">Sugerencias basadas en facturas registradas</div>
       </div>
       <div class="field-row">
@@ -329,11 +320,92 @@
 
 <script>
 // ── CONFIG ───────────────────────────────────────────────────────
-const APPS_SCRIPT_COSTOS = 'TODO_APPS_SCRIPT_COSTOS_LORITO';
+// Misma hoja que cuentas-por-pagar.html / compras.html.
+const SHEET_ID = '1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw';
+// Pegá aquí la URL del Web App de Apps Script (Code-compras-backend.gs).
+const APPS_SCRIPT_AP = 'https://script.google.com/macros/s/AKfycbyqdI4EGUgcahTiyz_GBwvUQLWORT_TUVBvFMPGdMve1-3q3ge8mioZ458_zsbMbUqa/exec';
 
-// ── STORAGE ───────────────────────────────────────────────────────
-function getProveedores()   { try { return JSON.parse(localStorage.getItem('proveedores')||'[]'); } catch { return []; } }
-function saveProveedores(d) { localStorage.setItem('proveedores', JSON.stringify(d)); }
+// ── GVIZ: leer hojas públicas del Sheet ───────────────────────────
+function gvizLoad(hoja) {
+  return new Promise(function(resolve) {
+    var cb    = '_prov_' + Math.random().toString(36).slice(2,10);
+    var url   = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
+              + '/gviz/tq?tqx=responseHandler:' + cb
+              + '&sheet=' + encodeURIComponent(hoja);
+    var timer = setTimeout(function() { cleanup(); resolve([]); }, 15000);
+    function cleanup() {
+      clearTimeout(timer);
+      try { delete window[cb]; } catch(e) {}
+      try { if (s && s.parentNode) document.body.removeChild(s); } catch(e) {}
+    }
+    window[cb] = function(data) {
+      cleanup();
+      try {
+        var cols = (data.table.cols||[]).map(function(c){ return c.label||c.id||''; });
+        var rows = (data.table.rows||[]).filter(function(r){ return r&&r.c; }).map(function(row){
+          var obj = {};
+          cols.forEach(function(col,i){
+            var cell = row.c[i];
+            obj[col] = cell ? (cell.f!=null?cell.f:(cell.v!=null?cell.v:'')) : '';
+          });
+          return obj;
+        });
+        resolve(rows);
+      } catch(e2) { resolve([]); }
+    };
+    var s = document.createElement('script');
+    s.onerror = function(){ cleanup(); resolve([]); };
+    s.src = url;
+    document.body.appendChild(s);
+  });
+}
+
+async function postAP(payload) {
+  const resp = await fetch(APPS_SCRIPT_AP, {
+    method: 'POST',
+    body: new URLSearchParams({ data: JSON.stringify(payload) })
+  });
+  const json = await resp.json();
+  if (!json.ok) throw new Error(json.error || 'Error al guardar');
+  return json.result;
+}
+
+// ── DATOS: hoja "proveedores" (base compartida) + "Registro Facturas" ──
+let proveedoresCache = [];
+let dataFacturasProv  = []; // solo para detectar proveedores faltantes
+function getProveedores() { return proveedoresCache; }
+
+function filaAProveedor(r) {
+  return {
+    id:                r['ID'] || '',
+    nombre_juridico:   r['Nombre jurídico'] || '',
+    nombre_comercial:  r['Nombre comercial'] || '',
+    categoria:         r['Categoría'] || '',
+    contacto:          r['Contacto'] || '',
+    telefono:          r['Teléfono'] || '',
+    correo:            r['Correo'] || '',
+    dias_pedido:       (r['Días de pedido'] || '').split(',').map(s=>s.trim()).filter(Boolean),
+    dia_pedido:        r['Días de pedido'] || '',
+    notas_contacto:    r['Notas de contacto'] || '',
+    cuenta:            r['Cuenta'] || '',
+    condicion_pago:    r['Condición de pago'] || '0',
+    notas_pago:        r['Notas de pago'] || '',
+    actualizado:       r['Actualizado'] || ''
+  };
+}
+
+async function cargarDatos() {
+  document.getElementById('status-msg').textContent = 'Conectando con Google Sheets…';
+  const [provRows, factRows] = await Promise.all([
+    gvizLoad('proveedores'),
+    gvizLoad('Registro Facturas')
+  ]);
+  proveedoresCache = provRows.filter(r => r['ID']).map(filaAProveedor);
+  dataFacturasProv = factRows;
+  actualizarFiltros();
+  renderLista();
+  renderPorAgregar();
+}
 
 const DIAS_COLORES = {
   'Lunes':'var(--blue)', 'Martes':'var(--blue)', 'Miércoles':'var(--blue)',
@@ -411,7 +483,7 @@ function renderLista() {
 }
 
 // ── GUARDAR ───────────────────────────────────────────────────────
-function guardar() {
+async function guardar() {
   const nombre_juridico  = document.getElementById('p-nombre-juridico').value.trim();
   const nombre_comercial = document.getElementById('p-nombre-comercial').value.trim();
   const categoria        = document.getElementById('p-categoria').value;
@@ -421,7 +493,7 @@ function guardar() {
 
   const editId = document.getElementById('edit-id').value;
   const registro = {
-    id:                editId || 'PROV-' + Date.now(),
+    id:                editId || null,
     nombre_juridico,
     nombre_comercial,
     categoria,
@@ -433,34 +505,28 @@ function guardar() {
     notas_contacto:    document.getElementById('p-notas-contacto').value.trim(),
     cuenta:            document.getElementById('p-cuenta').value.trim(),
     condicion_pago:    document.getElementById('p-condicion-pago').value,
-    notas_pago:        document.getElementById('p-notas-pago').value.trim(),
-    actualizado:       new Date().toISOString()
+    notas_pago:        document.getElementById('p-notas-pago').value.trim()
   };
 
-  const lista = getProveedores();
-  if (editId) {
-    const idx = lista.findIndex(p => p.id === editId);
-    if (idx > -1) lista[idx] = registro;
-  } else {
-    lista.push(registro);
-  }
-  saveProveedores(lista);
-  actualizarFiltros();
-  renderLista();
-  cerrarModal();
-  showToast((editId ? 'Proveedor actualizado' : 'Proveedor guardado') + ' ✓', 'success');
-
-  // Sincronizar con Google Sheets
-  syncProveedor(registro);
-}
-
-async function syncProveedor(registro) {
+  const btn = document.querySelector('#modal-prov .btn-save');
+  btn.disabled = true;
   try {
-    await fetch(APPS_SCRIPT_COSTOS, {
-      method: 'POST',
-      body: new URLSearchParams({ data: JSON.stringify({ modulo: 'proveedor', ...registro }) })
-    });
-  } catch(e) { console.warn('Sin conexión al Sheet:', e.message); }
+    const result = await postAP({ modulo: 'guardar_proveedor', ...registro });
+    registro.id = result.id;
+    registro.actualizado = new Date().toISOString();
+    const lista = getProveedores();
+    const idx = lista.findIndex(p => p.id === registro.id);
+    if (idx > -1) lista[idx] = registro; else lista.push(registro);
+    actualizarFiltros();
+    renderLista();
+    renderPorAgregar();
+    cerrarModal();
+    showToast((editId ? 'Proveedor actualizado' : 'Proveedor guardado') + ' ✓', 'success');
+  } catch(e) {
+    showToast('No se pudo guardar: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ── EDITAR / ELIMINAR ─────────────────────────────────────────────
@@ -505,20 +571,19 @@ function cerrarModal() {
   document.getElementById('modal-prov').classList.remove('open');
 }
 
-function eliminar(id) {
+async function eliminar(id) {
   const p = getProveedores().find(x => x.id === id);
   if (!confirm(`¿Eliminar a "${p?.nombre_juridico}"?`)) return;
-  saveProveedores(getProveedores().filter(x => x.id !== id));
-  actualizarFiltros();
-  renderLista();
-  showToast('Proveedor eliminado', 'success');
-  // Sincronizar con Google Sheets
   try {
-    fetch(APPS_SCRIPT_COSTOS, {
-      method: 'POST',
-      body: new URLSearchParams({ data: JSON.stringify({ modulo: 'eliminar_proveedor', id }) })
-    });
-  } catch(e) {}
+    await postAP({ modulo: 'eliminar_proveedor', id });
+    proveedoresCache = getProveedores().filter(x => x.id !== id);
+    actualizarFiltros();
+    renderLista();
+    renderPorAgregar();
+    showToast('Proveedor eliminado', 'success');
+  } catch(e) {
+    showToast('No se pudo eliminar: ' + e.message, 'error');
+  }
 }
 
 // ── FILTROS ───────────────────────────────────────────────────────
@@ -528,13 +593,91 @@ function actualizarFiltros() {
   const val  = sel.value;
   sel.innerHTML = '<option value="">Todas las categorías</option>' +
     cats.map(c => `<option${c===val?' selected':''}>${c}</option>`).join('');
+
+  const dl = document.getElementById('sugerencias-proveedores');
+  const nombres = [...new Set(dataFacturasProv.map(r => r['Proveedor']||'').filter(Boolean))].sort();
+  dl.innerHTML = nombres.map(n => `<option value="${n}">`).join('');
+}
+
+// ── PROVEEDORES POR AGREGAR (aparecen en facturas, no en la base) ─
+function nombreNormalizado(s) {
+  return (s||'').trim().toLowerCase();
+}
+
+function proveedorRegistrado(nombreFactura) {
+  const nombre = nombreNormalizado(nombreFactura);
+  if (!nombre) return true;
+  return getProveedores().some(p =>
+    nombreNormalizado(p.nombre_juridico) === nombre || nombreNormalizado(p.nombre_comercial) === nombre
+  );
+}
+
+function obtenerFaltantes() {
+  const conteo = {};
+  dataFacturasProv.forEach(r => {
+    const nombre = (r['Proveedor']||'').trim();
+    if (!nombre) return;
+    conteo[nombre] = (conteo[nombre]||0) + 1;
+  });
+  return Object.keys(conteo)
+    .filter(n => !proveedorRegistrado(n))
+    .sort((a,b) => conteo[b]-conteo[a])
+    .map(n => ({ nombre: n, facturas: conteo[n] }));
+}
+
+function renderPorAgregar() {
+  const faltantes = obtenerFaltantes();
+  const badge = document.getElementById('por-agregar-count');
+  if (faltantes.length) {
+    badge.textContent = faltantes.length;
+    badge.style.display = 'inline-flex';
+  } else {
+    badge.style.display = 'none';
+  }
+
+  const cont = document.getElementById('lista-por-agregar');
+  if (!cont) return;
+  if (!faltantes.length) {
+    cont.innerHTML = `<div class="empty-state"><div class="empty-icon">✓</div><p>Todos los proveedores de las facturas ya están en la base de datos.</p></div>`;
+    return;
+  }
+  cont.innerHTML = faltantes.map(f => `
+    <div class="missing-row">
+      <div>
+        <div class="nombre">${f.nombre}</div>
+        <div class="meta">${f.facturas} factura${f.facturas!==1?'s':''} registrada${f.facturas!==1?'s':''}</div>
+      </div>
+      <button class="btn-add-rapido" onclick="agregarProveedorRapido('${f.nombre.replace(/'/g,"\\'")}', this)">+ Agregar</button>
+    </div>`).join('');
+}
+
+async function agregarProveedorRapido(nombre, btn) {
+  if (btn) btn.disabled = true;
+  try {
+    const result = await postAP({ modulo: 'guardar_proveedor', nombre_juridico: nombre, categoria: 'Otro' });
+    proveedoresCache.push({
+      id: result.id, nombre_juridico: nombre, nombre_comercial: '', categoria: 'Otro',
+      contacto: '', telefono: '', correo: '', dias_pedido: [], dia_pedido: '',
+      notas_contacto: '', cuenta: '', condicion_pago: '0', notas_pago: '', actualizado: new Date().toISOString()
+    });
+    actualizarFiltros();
+    renderLista();
+    renderPorAgregar();
+    showToast(`"${nombre}" agregado. Editalo para completar sus datos.`, 'success');
+  } catch(e) {
+    showToast('No se pudo agregar: ' + e.message, 'error');
+    if (btn) btn.disabled = false;
+  }
 }
 
 // ── TABS ──────────────────────────────────────────────────────────
 function switchTab(tab, el) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
-  if (tab === 'nuevo') { abrirNuevo(); el.classList.remove('active'); document.querySelectorAll('.tab')[0].classList.add('active'); }
+  if (tab === 'nuevo') { abrirNuevo(); el.classList.remove('active'); document.querySelectorAll('.tab')[0].classList.add('active'); return; }
+  document.getElementById('tab-lista').style.display = tab === 'lista' ? '' : 'none';
+  document.getElementById('toolbar-lista').style.display = tab === 'lista' ? 'flex' : 'none';
+  document.getElementById('tab-por-agregar').style.display = tab === 'por-agregar' ? '' : 'none';
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────
@@ -555,9 +698,8 @@ document.getElementById('modal-prov').addEventListener('click', e => {
 });
 
 // ── INIT ──────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  actualizarFiltros();
-  renderLista();
+document.addEventListener('DOMContentLoaded', async () => {
+  await cargarDatos();
   if (new URLSearchParams(location.search).get('nuevo') === '1') abrirNuevo();
 });
 </script>
