@@ -401,7 +401,7 @@
 const COMPRAS_SHEET_ID = '1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw';
 // Pegá aquí la URL del Web App del Apps Script de facturas-extractor
 // (Implementar > Nueva implementación > Aplicación web > Acceso: Cualquiera).
-const APPS_SCRIPT_AP = 'TODO_APPS_SCRIPT_COMPRAS_LORITO';
+const APPS_SCRIPT_AP = 'https://script.google.com/macros/s/AKfycbxtacwaDwYTn2muSqqnJNiKO3KfdDIegkm5X5DzuZiPYZ6lfLwPqoQJdVmzN9E47gy2pA/exec';
 // ─────────────────────────────────────────────────────────────────
 
 const hoy = new Date();
@@ -758,7 +758,19 @@ function _renderFacturas() {
       <div style="font-size:12px;color:var(--muted);line-height:2;">
         Fecha factura: <strong style="color:var(--text);">${f.fechaFactura||'—'}</strong><br>
         Moneda: <strong style="color:var(--text);">${f.moneda||'—'}</strong><br>
-        Fecha proyectada de pago: <strong style="color:var(--text);">${f.fechaProyectada||'Sin definir'}</strong><br>
+        Fecha proyectada de pago:
+        <span class="proy-placeholder" id="proyph-${rowId}" style="${seleccionadas.has(f.numero)?'display:none;':''}">
+          <strong style="color:var(--text);">${f.fechaProyectada||'Sin definir'}</strong>
+          <span style="font-size:11px;color:var(--subtle);">(marcá el check de la fila para editar)</span>
+        </span>
+        <span class="proy-wrap" id="proy-${rowId}" style="${seleccionadas.has(f.numero)?'':'display:none;'}">
+          <button type="button" class="proy-toggle" onclick="toggleProyEdit('${rowId}')">
+            <span class="proy-txt">${f.fechaProyectada || 'Sin definir'}</span>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;"><path d="M4 6l4 4 4-4"/></svg>
+          </button>
+          <input type="date" class="proj-input" value="${f.fechaProyectada||''}" ${!puedeAccionar?'disabled':''}
+            onchange="guardarProyeccionFactura('${f.numero}', this.value, '${rowId}')">
+        </span><br>
         Fecha real de pago: <strong style="color:var(--text);">${f.fechaRealPago||'—'}</strong><br>
         ${f.fechaRealPago ? `Medio de pago: <strong style="color:var(--text);">${f.medioPago||'—'}</strong><br>Referencia: <strong style="color:var(--text);">${f.referenciaPago||'—'}</strong>` : ''}
       </div>`;
@@ -766,11 +778,8 @@ function _renderFacturas() {
     return `
       <tr class="tr-main" onclick="toggleDetalle('${rowId}')">
         <td onclick="event.stopPropagation()">
-          <input type="checkbox" class="chk-fila" data-numero="${f.numero}" ${seleccionadas.has(f.numero)?'checked':''}
-            onchange="toggleSeleccionFila('${f.numero}', this.checked)">
-        </td>
-        <td>
-          <svg class="toggle-arrow" id="${rowId}-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+          <input type="checkbox" class="chk-fila" data-numero="${f.numero}" data-rowid="${rowId}" ${seleccionadas.has(f.numero)?'checked':''}
+            onchange="toggleSeleccionFila('${f.numero}', this.checked, '${rowId}')">
         </td>
         <td style="color:var(--muted);font-size:12px;white-space:nowrap;min-width:90px;">${f.fechaFactura||'—'}</td>
         <td style="font-size:12px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.numero}${dupBadge}</td>
@@ -790,19 +799,9 @@ function _renderFacturas() {
             <button class="btn-mini pago" ${!puedeAccionar?'disabled':''} onclick="abrirModalPago('${f.numero}')">Pago total</button>
           </div>
         </td>
-        <td onclick="event.stopPropagation()">
-          <div class="proy-wrap" id="proy-${rowId}">
-            <button type="button" class="proy-toggle" onclick="toggleProyEdit('${rowId}')">
-              <span class="proy-txt">${f.fechaProyectada || 'Sin definir'}</span>
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;"><path d="M4 6l4 4 4-4"/></svg>
-            </button>
-            <input type="date" class="proj-input" value="${f.fechaProyectada||''}" ${!puedeAccionar?'disabled':''}
-              onchange="guardarProyeccionFactura('${f.numero}', this.value, '${rowId}')">
-          </div>
-        </td>
       </tr>
       <tr class="tr-detail" id="${rowId}">
-        <td class="detail-cell" colspan="9">
+        <td class="detail-cell" colspan="7">
           <div class="detail-inner">${detalleHtml}</div>
         </td>
       </tr>`;
@@ -814,9 +813,9 @@ function _renderFacturas() {
     <table>
       <thead><tr>
         <th><input type="checkbox" id="chk-all" ${todasMarcadasEnPagina?'checked':''} onchange="toggleSeleccionarTodos(this.checked)"></th>
-        <th></th><th>Fecha</th><th>Factura</th><th>Proveedor</th>
+        <th>Fecha</th><th>Factura</th><th>Proveedor</th>
         <th style="text-align:right;">Monto</th><th>Estado</th>
-        <th>Acciones</th><th>Fecha proyectada</th>
+        <th>Acciones</th>
       </tr></thead>
       <tbody>${filas}</tbody>
     </table>`;
@@ -847,21 +846,37 @@ function toggleProyEdit(rowId) {
 }
 
 // ── SELECCIÓN DE FACTURAS (checkboxes) ────────────────────────────
-function toggleSeleccionFila(numero, marcado) {
+// Muestra/oculta la celda de "Fecha proyectada" de una fila según si está
+// marcado su checkbox (se mantiene oculta para no saturar la tabla).
+function mostrarProyFila(rowId, mostrar) {
+  const wrap = document.getElementById('proy-' + rowId);
+  const ph   = document.getElementById('proyph-' + rowId);
+  if (wrap) wrap.style.display = mostrar ? '' : 'none';
+  if (ph)   ph.style.display   = mostrar ? 'none' : '';
+}
+
+function toggleSeleccionFila(numero, marcado, rowId) {
   if (marcado) seleccionadas.add(numero); else seleccionadas.delete(numero);
+  if (rowId) mostrarProyFila(rowId, marcado);
   actualizarBarraSeleccion();
 }
 
 function toggleSeleccionarTodos(marcado) {
   const numeros = window._paginaActualNumeros || [];
   numeros.forEach(n => { if (marcado) seleccionadas.add(n); else seleccionadas.delete(n); });
-  document.querySelectorAll('.chk-fila').forEach(chk => { chk.checked = marcado; });
+  document.querySelectorAll('.chk-fila').forEach(chk => {
+    chk.checked = marcado;
+    if (chk.dataset.rowid) mostrarProyFila(chk.dataset.rowid, marcado);
+  });
   actualizarBarraSeleccion();
 }
 
 function limpiarSeleccion() {
   seleccionadas.clear();
-  document.querySelectorAll('.chk-fila').forEach(chk => { chk.checked = false; });
+  document.querySelectorAll('.chk-fila').forEach(chk => {
+    chk.checked = false;
+    if (chk.dataset.rowid) mostrarProyFila(chk.dataset.rowid, false);
+  });
   const chkAll = document.getElementById('chk-all');
   if (chkAll) chkAll.checked = false;
   actualizarBarraSeleccion();
