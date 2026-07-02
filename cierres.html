@@ -117,6 +117,31 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 .badge-minor{background:var(--amber-bg);color:var(--amber)}
 .empty-state{text-align:center;padding:3rem 1rem;color:var(--subtle);font-size:13px}
 
+/* Dashboard mensual */
+.dashboard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.dashboard-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.75rem 1rem}
+.dashboard-item .dm-mes{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.dashboard-item .dm-total{font-family:var(--font-m);font-size:17px;font-weight:700;color:var(--green)}
+.dashboard-item .dm-count{font-size:11px;color:var(--subtle);margin-top:2px}
+
+/* Iconos de cuadre en historial */
+.cuadre-icons{display:flex;gap:6px}
+.cuadre-icon{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:500;padding:2px 7px;border-radius:20px}
+.cuadre-icon.ok{background:var(--green-bg);color:var(--green)}
+.cuadre-icon.warn{background:var(--red-bg);color:var(--red)}
+
+/* Detalle expandible */
+.hist-detail{background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:1rem 1.25rem;margin-top:-9px;margin-bottom:8px;font-size:12px;display:none}
+.hist-detail.open{display:block}
+.hist-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px}
+.hist-detail-section{margin-bottom:10px}
+.hist-detail-section:last-child{margin-bottom:0}
+.hist-detail-title{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.hist-detail-item{display:flex;justify-content:space-between;padding:2px 0;color:var(--muted)}
+.hist-detail-item .v{font-family:var(--font-m);color:var(--text);font-weight:500}
+.hist-detail-fotos{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.hist-detail-fotos a{font-size:11px;color:var(--blue);text-decoration:none;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px}
+
 /* USD section */
 .usd-section{border-top:1px solid var(--border);padding-top:1.25rem;margin-top:1.25rem}
 
@@ -414,8 +439,18 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 
 <!-- ── TAB HISTORIAL ── -->
 <div class="page" id="tab-historial">
+
+  <div class="card" id="hist-dashboard">
+    <p class="card-title">Ventas por mes</p>
+    <div class="dashboard-grid" id="hist-dashboard-grid"></div>
+  </div>
+
   <div class="hist-filters">
-    <input type="text" id="hist-buscar" placeholder="Buscar encargado…" style="width:180px" oninput="renderHistorial()"/>
+    <input type="text" id="hist-buscar" placeholder="Buscar encargado…" style="width:170px" oninput="renderHistorial()"/>
+    <select id="hist-anio" onchange="renderHistorial()" style="width:100px"><option value="">Año</option></select>
+    <select id="hist-mes" onchange="renderHistorial()" style="width:120px"><option value="">Mes</option></select>
+    <select id="hist-semana" onchange="renderHistorial()" style="width:130px"><option value="">Semana</option></select>
+    <select id="hist-dia" onchange="renderHistorial()" style="width:130px"><option value="">Día de semana</option></select>
     <button class="btn-secondary" onclick="cargarHistorial()" style="padding:8px 14px;font-size:12px">↻ Actualizar</button>
     <span style="font-size:12px;color:var(--muted);margin-left:auto" id="hist-count"></span>
   </div>
@@ -894,21 +929,52 @@ function actualizarWhatsAppBtn() {
 }
 
 // ── HISTORIAL ─────────────────────────────────────────────────────
+// Sheets a veces devuelve la fecha como datetime completo (celda tipo Date);
+// nos quedamos solo con los primeros 10 caracteres (YYYY-MM-DD).
+function soloFecha(fecha) {
+  return fecha ? String(fecha).slice(0, 10) : '';
+}
+function semanaDelAnio(fechaYMD) {
+  const d = new Date(fechaYMD + 'T12:00:00');
+  const start = new Date(d.getFullYear(), 0, 1);
+  const diff = (d - start) / 86400000;
+  return Math.ceil((diff + start.getDay() + 1) / 7);
+}
+
 async function cargarHistorial() {
   document.getElementById('hist-lista').innerHTML = '<div class="empty-state">Cargando…</div>';
   document.getElementById('hist-count').textContent = '';
   try {
     const resp = await fetch(SHEETS_URL + '?action=read');
     const data = await resp.json();
-    historialData = (data.records || []).map(r => ({
-      id: r[0], fecha: r[1], hora: r[2], encargado: r[4],
-      efectivo:    +r[6]||0, tarjeta: +r[7]||0, sinpe: +r[8]||0,
-      otras:       +r[9]||0, credito: +r[10]||0, plataformas: +r[11]||0,
-      plataformasDesc: r[12]||'', servicio: +r[13]||0,
-      totalVentas: +r[14]||0, fondo: +r[15]||0, caja: +r[16]||0,
-      diferencia:  +r[17]||0, obs: r[18]||'',
-      usdEfectivo: +r[32]||0, usdTarjeta: +r[33]||0, tc: +r[34]||0,
-    })).reverse(); // más reciente primero
+    historialData = (data.records || []).map(r => {
+      const fecha = soloFecha(r[1]);
+      let anio = '', mes = '', semana = '', diaSemana = '';
+      if (fecha) {
+        const d = new Date(fecha + 'T12:00:00');
+        if (!isNaN(d)) {
+          anio = d.getFullYear();
+          mes = d.getMonth() + 1;
+          semana = semanaDelAnio(fecha);
+          diaSemana = d.getDay();
+        }
+      }
+      return {
+        id: r[0], fecha, hora: r[2], encargado: r[4],
+        efectivo:    +r[6]||0, tarjeta: +r[7]||0, sinpe: +r[8]||0,
+        otras:       +r[9]||0, credito: +r[10]||0, plataformas: +r[11]||0,
+        plataformasDesc: r[12]||'', servicio: +r[13]||0,
+        totalVentas: +r[14]||0, fondo: +r[15]||0, caja: +r[16]||0,
+        diferencia:  +r[17]||0, obs: r[18]||'',
+        usdEfectivo: +r[31]||0, usdTarjeta: +r[32]||0, tc: +r[33]||0, usdTotalCrc: +r[34]||0,
+        fotoSistemaUrl: r[49]||'', fotoDatafonoUrl: r[50]||'',
+        propinaEfectivo: +r[51]||0, propinaTarjeta: +r[52]||0, propinaCredito: +r[53]||0, propinaOtro: +r[54]||0,
+        datafonoTotal: +r[55]||0, diferenciaTarjeta: +r[56]||0, tarjetaCuadra: r[57]==='SI',
+        anio, mes, semana, diaSemana,
+      };
+    }).filter(r => r.id).reverse(); // más reciente primero, descarta filas vacías
+    poblarFiltrosHistorial();
+    renderDashboardMensual();
     renderHistorial();
   } catch(e) {
     document.getElementById('hist-lista').innerHTML =
@@ -916,27 +982,77 @@ async function cargarHistorial() {
   }
 }
 
+function poblarFiltrosHistorial() {
+  const anios = [...new Set(historialData.map(r => r.anio).filter(Boolean))].sort((a,b) => b - a);
+  document.getElementById('hist-anio').innerHTML = '<option value="">Año</option>'
+    + anios.map(a => `<option value="${a}">${a}</option>`).join('');
+
+  const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('hist-mes').innerHTML = '<option value="">Mes</option>'
+    + MESES.map((m,i) => `<option value="${i+1}">${m}</option>`).join('');
+
+  const semanas = [...new Set(historialData.map(r => r.semana ? r.anio+'-'+r.semana : null).filter(Boolean))]
+    .sort((a,b) => b.localeCompare(a));
+  document.getElementById('hist-semana').innerHTML = '<option value="">Semana</option>'
+    + semanas.map(s => { const [a,sem] = s.split('-'); return `<option value="${s}">Sem. ${sem} · ${a}</option>`; }).join('');
+
+  const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  document.getElementById('hist-dia').innerHTML = '<option value="">Día de semana</option>'
+    + DIAS.map((d,i) => `<option value="${i}">${d}</option>`).join('');
+}
+
+function renderDashboardMensual() {
+  const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const grupos = {};
+  historialData.forEach(r => {
+    if (!r.anio || !r.mes) return;
+    const key = r.anio + '-' + String(r.mes).padStart(2,'0');
+    if (!grupos[key]) grupos[key] = { total: 0, count: 0, anio: r.anio, mes: r.mes };
+    grupos[key].total += r.totalVentas;
+    grupos[key].count += 1;
+  });
+  const keys = Object.keys(grupos).sort((a,b) => b.localeCompare(a));
+  const grid = document.getElementById('hist-dashboard-grid');
+  if (!keys.length) { grid.innerHTML = '<div class="empty-state" style="padding:1rem">Sin datos aún.</div>'; return; }
+  grid.innerHTML = keys.map(k => {
+    const g = grupos[k];
+    return `<div class="dashboard-item">
+      <div class="dm-mes">${MESES[g.mes-1]} ${g.anio}</div>
+      <div class="dm-total">${fmtCRC(g.total)}</div>
+      <div class="dm-count">${g.count} cierre${g.count===1?'':'s'}</div>
+    </div>`;
+  }).join('');
+}
+
 function renderHistorial() {
-  const busq  = (document.getElementById('hist-buscar')?.value||'').toLowerCase();
+  const busq   = (document.getElementById('hist-buscar')?.value||'').toLowerCase();
+  const anio   = document.getElementById('hist-anio')?.value||'';
+  const mes    = document.getElementById('hist-mes')?.value||'';
+  const semana = document.getElementById('hist-semana')?.value||'';
+  const dia    = document.getElementById('hist-dia')?.value;
+
   let lista = historialData.filter(r =>
-    !busq || (r.encargado||'').toLowerCase().includes(busq)
+    (!busq   || (r.encargado||'').toLowerCase().includes(busq)) &&
+    (!anio   || String(r.anio) === anio) &&
+    (!mes    || String(r.mes) === mes) &&
+    (!semana || (r.anio+'-'+r.semana) === semana) &&
+    (!dia    || String(r.diaSemana) === dia)
   );
   document.getElementById('hist-count').textContent = lista.length + ' de ' + historialData.length + ' cierres';
   if (!lista.length) {
     document.getElementById('hist-lista').innerHTML = '<div class="empty-state">Sin resultados.</div>';
     return;
   }
-  document.getElementById('hist-lista').innerHTML = lista.map(r => {
-    const diff = r.diferencia || 0;
-    const diffBadge = diff === 0
-      ? `<span class="badge badge-ok">Cuadrado</span>`
-      : Math.abs(diff) <= 500
-        ? `<span class="badge badge-minor">${diff > 0 ? '+' : ''}₡${diff.toLocaleString('es-CR')}</span>`
-        : `<span class="badge badge-warn">${diff > 0 ? '+' : ''}₡${diff.toLocaleString('es-CR')}</span>`;
+  document.getElementById('hist-lista').innerHTML = lista.map((r, i) => {
+    const efectivoCuadra = Math.abs(r.diferencia || 0) <= 500;
+    const tieneTarjetaRev = !!(r.datafonoTotal || r.tarjeta || r.propinaTarjeta);
     const fechaLbl = r.fecha
       ? new Date(r.fecha+'T12:00:00').toLocaleDateString('es-CR',{weekday:'short',day:'2-digit',month:'short'})
       : '—';
-    return `<div class="hist-card">
+    const iconTarjeta = tieneTarjetaRev
+      ? `<span class="cuadre-icon ${r.tarjetaCuadra?'ok':'warn'}">${r.tarjetaCuadra?'✅':'⚠️'} Tarjeta</span>` : '';
+    const iconEfectivo = `<span class="cuadre-icon ${efectivoCuadra?'ok':'warn'}">${efectivoCuadra?'✅':'⚠️'} Efectivo</span>`;
+    return `<div class="hist-card" onclick="toggleDetalle(${i})">
       <div class="hist-head">
         <div>
           <div class="hist-fecha">${fechaLbl} · ${r.hora||'—'}</div>
@@ -945,14 +1061,70 @@ function renderHistorial() {
         <div class="hist-total">${fmtCRC(r.totalVentas)}</div>
       </div>
       <div class="hist-row">
-        ${diffBadge}
-        ${r.efectivo?`<span>💵 ₡${r.efectivo.toLocaleString('es-CR')}</span>`:''}
-        ${r.tarjeta?`<span>💳 ₡${r.tarjeta.toLocaleString('es-CR')}</span>`:''}
-        ${r.sinpe?`<span>📱 ₡${r.sinpe.toLocaleString('es-CR')}</span>`:''}
+        <div class="cuadre-icons">${iconTarjeta}${iconEfectivo}</div>
         ${r.obs?`<span title="${r.obs.replace(/"/g,'')}" style="color:var(--amber)">📝 Observación</span>`:''}
       </div>
-    </div>`;
+    </div>
+    <div class="hist-detail" id="hist-detail-${i}">${renderDetalleCierre(r)}</div>`;
   }).join('');
+}
+
+function toggleDetalle(i) {
+  const el = document.getElementById('hist-detail-'+i);
+  if (el) el.classList.toggle('open');
+}
+
+function renderDetalleCierre(r) {
+  const item = (label, val) => `<div class="hist-detail-item"><span>${label}</span><span class="v">${val}</span></div>`;
+  const tarjetaReportada = (r.tarjeta||0) + (r.propinaTarjeta||0);
+  const efectivoEsperado = (r.efectivo||0) + (r.fondo||0);
+  return `
+    <div class="hist-detail-section">
+      <div class="hist-detail-title">Ventas</div>
+      <div class="hist-detail-grid">
+        ${item('Efectivo', fmtCRC(r.efectivo))}
+        ${item('Tarjeta', fmtCRC(r.tarjeta))}
+        ${item('Crédito', fmtCRC(r.credito))}
+        ${item('SINPE', fmtCRC(r.sinpe))}
+        ${item('Plataformas', fmtCRC(r.plataformas) + (r.plataformasDesc?` (${r.plataformasDesc})`:''))}
+        ${item('Otras', fmtCRC(r.otras))}
+        ${item('Propinas', fmtCRC(r.servicio))}
+        ${(r.usdEfectivo||r.usdTarjeta) ? item('USD', '$'+((r.usdEfectivo||0)+(r.usdTarjeta||0)).toFixed(2) + ' (TC ₡'+(r.tc||0).toLocaleString('es-CR')+')') : ''}
+      </div>
+    </div>
+    <div class="hist-detail-section">
+      <div class="hist-detail-title">Propinas por forma de pago</div>
+      <div class="hist-detail-grid">
+        ${item('Efectivo', fmtCRC(r.propinaEfectivo))}
+        ${item('Tarjeta', fmtCRC(r.propinaTarjeta))}
+        ${item('Crédito', fmtCRC(r.propinaCredito))}
+        ${item('Otro', fmtCRC(r.propinaOtro))}
+      </div>
+    </div>
+    <div class="hist-detail-section">
+      <div class="hist-detail-title">Revisión de Tarjeta</div>
+      <div class="hist-detail-grid">
+        ${item('Tarjeta reportada', fmtCRC(tarjetaReportada))}
+        ${item('Total datáfono', fmtCRC(r.datafonoTotal))}
+        ${item('Diferencia', (r.diferenciaTarjeta>=0?'+':'')+fmtCRC(r.diferenciaTarjeta))}
+        ${item('Cuadra', r.tarjetaCuadra ? '✅ Sí' : '⚠️ No')}
+      </div>
+    </div>
+    <div class="hist-detail-section">
+      <div class="hist-detail-title">Revisión de Efectivo</div>
+      <div class="hist-detail-grid">
+        ${item('Caja contada', fmtCRC(r.caja))}
+        ${item('Efectivo esperado', fmtCRC(efectivoEsperado))}
+        ${item('Diferencia', (r.diferencia>=0?'+':'')+fmtCRC(r.diferencia))}
+        ${item('Cuadra', Math.abs(r.diferencia||0)<=500 ? '✅ Sí' : '⚠️ No')}
+      </div>
+    </div>
+    ${r.obs ? `<div class="hist-detail-section"><div class="hist-detail-title">Observaciones</div><div style="color:var(--text)">${r.obs}</div></div>` : ''}
+    ${(r.fotoSistemaUrl||r.fotoDatafonoUrl) ? `<div class="hist-detail-section"><div class="hist-detail-title">Fotos</div><div class="hist-detail-fotos">
+      ${r.fotoSistemaUrl?`<a href="${r.fotoSistemaUrl}" target="_blank">📷 Sistema</a>`:''}
+      ${r.fotoDatafonoUrl?`<a href="${r.fotoDatafonoUrl}" target="_blank">📷 Datáfono</a>`:''}
+    </div></div>` : ''}
+  `;
 }
 
 // ── LIMPIAR FORM ──────────────────────────────────────────────────
