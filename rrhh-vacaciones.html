@@ -213,7 +213,7 @@
 
 <script>
 // ─── CONFIGURACIÓN ──────────────────────────────────────────────
-const APPS_SCRIPT_URL  = 'TODO_APPS_SCRIPT_RRHH_LORITO'; // URL de tu Apps Script
+const APPS_SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbz0Awt-S-Kl9p0WtH9z9nnMkDhbLlPwxv7-p8wG4fM6hKJex3HAV_eAsbz-Qpot_OAY/exec'; // URL de tu Apps Script
 const EMAIL_GERENCIA   = ''; // Correo de gerencia para notificaciones
 // ────────────────────────────────────────────────────────────────
 
@@ -335,12 +335,51 @@ function getSolicitudes() {
   catch { return []; }
 }
 
-function renderHistorial() {
-  const lista = getSolicitudes();
-  const cont  = document.getElementById('historial-container');
-  if (!lista.length) { cont.innerHTML='<div class="empty-state">No hay solicitudes registradas.</div>'; return; }
+// Trae el historial real del Sheet (fuente compartida entre dispositivos/usuarios).
+async function fetchSolicitudesServidor() {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('TODO_') === 0) return [];
+  try {
+    const resp = await fetch(APPS_SCRIPT_URL + '?modulo=vacaciones');
+    const data = await resp.json();
+    if (!data.ok || !Array.isArray(data.registros)) return [];
+    return data.registros.map(r => ({
+      id: r['ID'] || r.id,
+      colaborador: r['Colaborador'] || r.colaborador || '',
+      fecha_inicio: r['Fecha inicio'] || r.fecha_inicio || '',
+      fecha_fin: r['Fecha fin'] || r.fecha_fin || '',
+      dias: r['Días'] || r.dias || 0,
+      observaciones: r['Observaciones'] || r.observaciones || '',
+      estado: r['Estado'] || r.estado || 'Pendiente',
+      registrado: r['Registrado'] || r.registrado || ''
+    }));
+  } catch (err) {
+    console.error('Error cargando solicitudes del servidor:', err);
+    return [];
+  }
+}
 
-  const filas = lista.map((s,i) => `
+let solicitudesCache = [];
+
+async function renderHistorial() {
+  const cont = document.getElementById('historial-container');
+  cont.innerHTML = '<div class="empty-state">Cargando solicitudes…</div>';
+
+  const servidor = await fetchSolicitudesServidor();
+  const locales  = getSolicitudes();
+  const porId = new Map();
+  locales.forEach(s => porId.set(String(s.id), s));
+  servidor.forEach(s => porId.set(String(s.id), s)); // el Sheet manda si hay conflicto
+  solicitudesCache = Array.from(porId.values())
+    .sort((a,b) => new Date(b.registrado||0) - new Date(a.registrado||0));
+
+  pintarHistorial();
+}
+
+function pintarHistorial() {
+  const cont = document.getElementById('historial-container');
+  if (!solicitudesCache.length) { cont.innerHTML='<div class="empty-state">No hay solicitudes registradas.</div>'; return; }
+
+  const filas = solicitudesCache.map((s,i) => `
     <tr>
       <td style="font-weight:500">${s.colaborador}</td>
       <td>${s.fecha_inicio}</td>
@@ -364,20 +403,25 @@ function renderHistorial() {
 }
 
 function cambiarEstado(idx, estado) {
-  const lista = getSolicitudes();
-  lista[idx].estado = estado;
-  localStorage.setItem('solicitudes_vac', JSON.stringify(lista));
+  const item = solicitudesCache[idx];
+  if (!item) return;
+  item.estado = estado;
+
+  const locales = getSolicitudes();
+  const i = locales.findIndex(s => String(s.id) === String(item.id));
+  if (i >= 0) locales[i] = item; else locales.unshift(item);
+  localStorage.setItem('solicitudes_vac', JSON.stringify(locales));
 
   if (APPS_SCRIPT_URL) {
     fetch(APPS_SCRIPT_URL, {
       method:'POST', mode:'no-cors',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ modulo:'vacaciones_estado', id: lista[idx].id, estado })
+      body: JSON.stringify({ modulo:'vacaciones_estado', id: item.id, estado })
     }).catch(()=>{});
   }
 
   showToast(`Solicitud ${estado.toLowerCase()} correctamente`, estado==='Aprobado'?'success':'error');
-  renderHistorial();
+  pintarHistorial();
 }
 
 async function enviarSolicitud() {

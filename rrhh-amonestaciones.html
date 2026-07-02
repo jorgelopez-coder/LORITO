@@ -274,7 +274,7 @@
 
 <script>
 // ─── CONFIGURACIÓN ────────────────────────────────────────────────
-const APPS_SCRIPT_URL = 'TODO_APPS_SCRIPT_RRHH_LORITO';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz0Awt-S-Kl9p0WtH9z9nnMkDhbLlPwxv7-p8wG4fM6hKJex3HAV_eAsbz-Qpot_OAY/exec';
 // ─────────────────────────────────────────────────────────────────
 
 const hoy = new Date();
@@ -309,7 +309,7 @@ async function cargarColaboradores() {
     document.getElementById('conn-dot').classList.add('off');
     document.getElementById('conn-label').textContent = 'Sin conexión — modo local';
   }
-  renderHistorial();
+  cargarAmonestaciones();
 }
 
 // ── TIPO ──────────────────────────────────────────────────────────
@@ -327,13 +327,49 @@ function switchTab(tab, el) {
   document.getElementById('tab-historial').style.display = tab === 'historial' ? 'block' : 'none';
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  if (tab === 'historial') renderHistorial();
+  if (tab === 'historial') cargarAmonestaciones();
 }
 
 // ── STORAGE ───────────────────────────────────────────────────────
 function getRegistros() {
   try { return JSON.parse(localStorage.getItem('amonestaciones') || '[]'); }
   catch { return []; }
+}
+
+// Trae el historial real del Sheet (fuente compartida entre dispositivos/usuarios)
+// y lo fusiona con lo que haya quedado solo en localStorage (p.ej. por falta de red).
+async function fetchAmonestacionesServidor() {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('TODO_') === 0) return [];
+  try {
+    const resp = await fetch(APPS_SCRIPT_URL + '?modulo=amonestaciones');
+    const data = await resp.json();
+    if (!data.ok || !Array.isArray(data.registros)) return [];
+    return data.registros.map(r => ({
+      tipo: r['Tipo'] || r.tipo || '',
+      colaborador: r['Colaborador'] || r.colaborador || '',
+      fecha: r['Fecha'] || r.fecha || '',
+      motivo: r['Motivo'] || r.motivo || '',
+      observaciones: r['Observaciones'] || r.observaciones || '',
+      susp_desde: r['Suspensión desde'] || r.susp_desde || '',
+      susp_hasta: r['Suspensión hasta'] || r.susp_hasta || '',
+      registrado_en: r['Registrado'] || r.registrado_en || ''
+    }));
+  } catch (err) {
+    console.error('Error cargando amonestaciones del servidor:', err);
+    return [];
+  }
+}
+
+let amonestacionesCache = [];
+
+async function cargarAmonestaciones() {
+  const servidor = await fetchAmonestacionesServidor();
+  const locales  = getRegistros();
+  const porClave = new Map();
+  locales.forEach(r => porClave.set(r.registrado_en || JSON.stringify(r), r));
+  servidor.forEach(r => porClave.set(r.registrado_en || JSON.stringify(r), r)); // el Sheet manda si hay conflicto
+  amonestacionesCache = Array.from(porClave.values());
+  renderHistorial();
 }
 
 // ── HISTORIAL ─────────────────────────────────────────────────────
@@ -348,13 +384,13 @@ function badgeClass(tipo) {
 function renderHistorial() {
   const busq  = (document.getElementById('search')?.value || '').toLowerCase();
   const ftipo = document.getElementById('f-tipo')?.value || '';
-  let lista   = getRegistros();
+  let lista   = amonestacionesCache;
 
   if (busq)  lista = lista.filter(r => (r.colaborador||'').toLowerCase().includes(busq));
   if (ftipo) lista = lista.filter(r => r.tipo === ftipo);
 
   // KPIs
-  const todos = getRegistros();
+  const todos = amonestacionesCache;
   document.getElementById('k-total').textContent  = todos.length;
   document.getElementById('k-verbal').textContent = todos.filter(r => r.tipo === 'Amonestación verbal').length;
   document.getElementById('k-escrita').textContent= todos.filter(r => r.tipo === 'Amonestación escrita').length;
