@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Factura manual · Lorito</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#ffffff;
+      --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
+      --amber:#c87820; --amber-bg:#fdf6e3; --amber-lt:#f0d890;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+
+    header { height:56px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; background:var(--bg); position:sticky; top:0; z-index:20; }
+    .nav-left { display:flex; align-items:center; gap:10px; }
+    .back-btn { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); transition:color .15s,border-color .15s; }
+    .back-btn:hover { color:var(--text); border-color:var(--border-h); }
+    .back-btn svg { width:13px; height:13px; }
+    .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
+    .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 10px; }
+
+    main { max-width:640px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .page-header { margin-bottom:1.5rem; }
+    .page-header h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+    .page-header p { font-size:13px; color:var(--muted); }
+
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; }
+    .field { margin-bottom:1.1rem; }
+    .field label { font-size:13px; font-weight:500; display:block; margin-bottom:5px; }
+    .field input, .field select, .field textarea {
+      width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px;
+      color:var(--text); font-family:var(--font-b); font-size:13px; padding:9px 12px; outline:none; transition:border-color .15s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color:var(--green); }
+    .field textarea { resize:vertical; min-height:80px; }
+    .field-hint { font-size:11px; color:var(--muted); margin-top:4px; }
+    .row-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+    .banner-nota { display:flex; align-items:flex-start; gap:10px; padding:.85rem 1.1rem; border-radius:var(--radius); font-size:12.5px; margin-bottom:1.25rem; border:1px solid var(--amber-lt); background:var(--amber-bg); color:var(--amber); }
+    .banner-nota svg { width:16px; height:16px; flex-shrink:0; margin-top:1px; }
+
+    .form-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:1.25rem; }
+    .btn-sec { padding:9px 16px; border-radius:9px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; cursor:pointer; }
+    .btn-sec:hover { color:var(--text); border-color:var(--border-h); }
+    .btn-save { padding:10px 22px; border-radius:9px; background:var(--green); color:#fff; border:none; font-family:var(--font-d); font-size:14px; font-weight:700; cursor:pointer; }
+    .btn-save:hover { opacity:.9; }
+    .btn-save:disabled { opacity:.5; cursor:default; }
+
+    .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
+    .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+    .sdot.off { background:var(--subtle); }
+
+    .toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px); background:var(--card); border:1px solid var(--border); border-radius:10px; padding:11px 18px; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s; opacity:0; z-index:100; box-shadow:0 4px 20px rgba(0,0,0,.08); }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+    .toast.success { border-color:var(--green); color:var(--green); }
+    .toast.error   { border-color:var(--red);   color:var(--red); }
+    .toast svg { width:16px; height:16px; flex-shrink:0; }
+
+    @media (max-width:700px) {
+      header { padding:0 1rem; } main { padding:1.5rem 1rem 3rem; }
+      .row-2 { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Factura manual</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<main>
+  <div class="page-header">
+    <h1>Ingresar factura manual</h1>
+    <p>Para facturas que no llegaron por correo o no se leyeron automáticamente.</p>
+  </div>
+
+  <div class="banner-nota">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <div>Esta factura quedará marcada como <strong>ingresada manualmente</strong> en la hoja Registro Facturas, para diferenciarla de las que se leen automáticamente del correo.</div>
+  </div>
+
+  <div class="card">
+    <form id="form-factura" onsubmit="return false;">
+      <div class="field">
+        <label for="f-numero">Número de factura o ID</label>
+        <input type="text" id="f-numero" placeholder="Ej. 00100001010000012345 o un ID interno" required>
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label for="f-proveedor">Proveedor</label>
+          <input type="text" id="f-proveedor" list="lista-proveedores" placeholder="Nombre del proveedor" required>
+          <datalist id="lista-proveedores"></datalist>
+        </div>
+        <div class="field">
+          <label for="f-moneda">Moneda</label>
+          <select id="f-moneda">
+            <option value="CRC">CRC — Colones</option>
+            <option value="USD">USD — Dólares</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-total">Total</label>
+        <input type="number" id="f-total" step="0.01" min="0" placeholder="0.00" required>
+      </div>
+      <div class="field">
+        <label for="f-detalle">Detalle</label>
+        <textarea id="f-detalle" placeholder="Descripción de la compra"></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-sec" onclick="limpiarFormulario()">Limpiar</button>
+        <button type="button" class="btn-save" id="btn-guardar" onclick="guardarFacturaManual()">Guardar factura</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="status-bar">
+    <div style="display:flex;align-items:center;gap:6px;"><span class="sdot" id="conn-dot"></span><span id="conn-label">Listo para registrar</span></div>
+  </div>
+</main>
+
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ─── CONFIGURACIÓN ────────────────────────────────────────────────
+// Mismo backend que cuentas-por-pagar.html (escriben en la misma hoja
+// "Registro Facturas"). Pegá aquí la URL del Web App de Apps Script
+// (Implementar > Nueva implementación > Aplicación web > Acceso: Cualquiera).
+const APPS_SCRIPT_AP = 'TODO_APPS_SCRIPT_COMPRAS_LORITO';
+// ─────────────────────────────────────────────────────────────────
+
+const hoy = new Date();
+document.getElementById('date-chip').textContent =
+  hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
+
+function getProveedores() { try { return JSON.parse(localStorage.getItem('proveedores')||'[]'); } catch { return []; } }
+
+(function cargarProveedores() {
+  const dl = document.getElementById('lista-proveedores');
+  getProveedores().forEach(p => {
+    const nombre = p.nombre_comercial || p.nombre_juridico;
+    if (!nombre) return;
+    const o = document.createElement('option');
+    o.value = nombre;
+    dl.appendChild(o);
+  });
+})();
+
+async function postAP(payload) {
+  const resp = await fetch(APPS_SCRIPT_AP, {
+    method: 'POST',
+    body: new URLSearchParams({ data: JSON.stringify(payload) })
+  });
+  const json = await resp.json();
+  if (!json.ok) throw new Error(json.error || 'Error al guardar');
+  return json.result;
+}
+
+function limpiarFormulario() {
+  document.getElementById('f-numero').value = '';
+  document.getElementById('f-proveedor').value = '';
+  document.getElementById('f-moneda').value = 'CRC';
+  document.getElementById('f-total').value = '';
+  document.getElementById('f-detalle').value = '';
+  document.getElementById('f-numero').focus();
+}
+
+async function guardarFacturaManual() {
+  const numero    = document.getElementById('f-numero').value.trim();
+  const proveedor = document.getElementById('f-proveedor').value.trim();
+  const moneda    = document.getElementById('f-moneda').value;
+  const total     = parseFloat(document.getElementById('f-total').value);
+  const detalle   = document.getElementById('f-detalle').value.trim();
+
+  if (!numero)    { showToast('Ingresá el número de factura o ID.', 'error'); return; }
+  if (!proveedor) { showToast('Ingresá el proveedor.', 'error'); return; }
+  if (!total || total <= 0) { showToast('Ingresá un total válido.', 'error'); return; }
+
+  const btn = document.getElementById('btn-guardar');
+  btn.disabled = true;
+  try {
+    await postAP({
+      modulo: 'registrar_factura_manual',
+      numero_factura: numero, proveedor, moneda, total, detalle
+    });
+    document.getElementById('conn-dot').classList.remove('off');
+    document.getElementById('conn-label').textContent = 'Factura guardada en Registro Facturas';
+    showToast('Factura guardada ✓', 'success');
+    limpiarFormulario();
+  } catch(e) {
+    document.getElementById('conn-dot').classList.add('off');
+    document.getElementById('conn-label').textContent = 'Error de conexión';
+    showToast('No se pudo guardar: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').innerHTML = type==='success'
+    ? '<polyline points="3 8 7 12 13 4"/>'
+    : '<line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = `toast ${type}`;
+  requestAnimationFrame(()=>t.classList.add('show'));
+  setTimeout(()=>t.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>
