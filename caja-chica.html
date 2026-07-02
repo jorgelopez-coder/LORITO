@@ -422,7 +422,8 @@ function renderPeriodoActual() {
 
     <div class="toolbar-caja">
       <span class="badge b-abierto">● Período abierto</span>
-      <button class="btn-mini" style="margin-left:auto;" onclick="abrirModalConteo('arqueo')">Hacer arqueo</button>
+      <button class="btn-mini" style="margin-left:auto;color:var(--red);" onclick="eliminarPeriodo()" title="Solo si se abrió con datos equivocados">Eliminar período</button>
+      <button class="btn-mini" onclick="abrirModalConteo('arqueo')">Hacer arqueo</button>
       <button class="btn-primary rojo" onclick="abrirModalConteo('cierre')">Cerrar período</button>
     </div>
 
@@ -500,6 +501,18 @@ async function abrirPeriodo() {
     showToast('No se pudo abrir el período: ' + e.message, 'error');
   } finally {
     btn.disabled = false;
+  }
+}
+
+async function eliminarPeriodo() {
+  if (!periodoAbierto) return;
+  if (!confirm('¿Eliminar este período abierto? Se borrará junto con sus arqueos. Esta acción no se puede deshacer.')) return;
+  try {
+    await postAP({ modulo: 'eliminar_periodo_caja', periodo_id: periodoAbierto.id });
+    showToast('Período eliminado', 'success');
+    await cargarDatos();
+  } catch(e) {
+    showToast('No se pudo eliminar: ' + e.message, 'error');
   }
 }
 
