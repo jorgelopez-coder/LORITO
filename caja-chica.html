@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Caja Chica · Lorito</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#ffffff;
+      --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
+      --amber:#c87820; --amber-bg:#fdf6e3; --amber-lt:#f0d890;
+      --blue:#185fa5; --blue-bg:#eef4fb; --blue-lt:#b8d0f0;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+
+    header { height:56px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; background:var(--bg); position:sticky; top:0; z-index:20; }
+    .nav-left { display:flex; align-items:center; gap:10px; }
+    .back-btn { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); transition:color .15s,border-color .15s; }
+    .back-btn:hover { color:var(--text); border-color:var(--border-h); }
+    .back-btn svg { width:13px; height:13px; }
+    .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
+    .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 10px; }
+
+    main { max-width:1000px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .page-header { margin-bottom:1.5rem; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .page-header h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+    .page-header p { font-size:13px; color:var(--muted); }
+
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:1.25rem; overflow:hidden; }
+    .card-pad { padding:1.25rem 1.5rem; }
+    .card-head { padding:1rem 1.25rem; border-bottom:1px solid var(--border); font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); }
+
+    .kpi-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:1.25rem; }
+    .kpi-box { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; }
+    .kpi-val { font-family:var(--font-d); font-size:20px; font-weight:700; letter-spacing:-.02em; color:var(--text); }
+    .kpi-lbl { font-size:11px; color:var(--muted); margin-top:2px; }
+    .kpi-val.verde { color:var(--green); } .kpi-val.rojo { color:var(--red); } .kpi-val.ambar { color:var(--amber); }
+
+    .btn-primary { background:var(--green); color:#fff; border:none; border-radius:9px; font-family:var(--font-d); font-size:14px; font-weight:700; padding:10px 20px; cursor:pointer; white-space:nowrap; display:inline-flex; align-items:center; gap:6px; }
+    .btn-primary:hover { opacity:.9; }
+    .btn-primary.rojo { background:var(--red); }
+    .btn-sec { padding:9px 16px; border-radius:9px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; cursor:pointer; }
+    .btn-sec:hover { color:var(--text); border-color:var(--border-h); }
+    .btn-mini { font-size:11.5px; font-weight:600; padding:6px 12px; border-radius:7px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; }
+    .btn-mini:hover { border-color:var(--border-h); color:var(--text); }
+    button:disabled { opacity:.5; cursor:default; }
+
+    .toolbar-caja { display:flex; gap:8px; margin-bottom:1.25rem; flex-wrap:wrap; }
+
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th { text-align:left; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:9px 12px; border-bottom:1px solid var(--border); white-space:nowrap; background:var(--surface); }
+    td { padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    .num { text-align:right; font-variant-numeric:tabular-nums; }
+    .empty { text-align:center; padding:2.5rem; color:var(--subtle); font-size:13px; }
+    .spinner { display:inline-block; width:18px; height:18px; border:2px solid var(--border); border-top-color:var(--green); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .badge { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; white-space:nowrap; }
+    .b-abierto { background:var(--green-bg); color:var(--green); }
+    .b-cerrado { background:var(--surface); color:var(--muted); }
+    .b-ok { background:var(--green-bg); color:var(--green); }
+    .b-dif { background:var(--red-bg); color:var(--red); }
+
+    /* MODAL */
+    .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:50; align-items:flex-start; justify-content:center; padding:1.5rem 1rem; overflow-y:auto; }
+    .modal-bg.open { display:flex; }
+    .modal { background:var(--card); border-radius:16px; width:100%; max-width:560px; margin:auto; }
+    .modal-head { padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .modal-title { font-family:var(--font-d); font-size:18px; font-weight:700; }
+    .modal-sub { font-size:12px; color:var(--muted); margin-top:2px; }
+    .close-btn { background:none; border:none; font-size:22px; cursor:pointer; color:var(--muted); line-height:1; }
+    .modal-body { padding:1.25rem 1.5rem; max-height:70vh; overflow-y:auto; }
+    .field { margin-bottom:1rem; }
+    .field label { font-size:13px; font-weight:500; display:block; margin-bottom:5px; }
+    .field input { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--font-b); font-size:13px; padding:8px 12px; outline:none; transition:border-color .15s; }
+    .field input:focus { border-color:var(--green); }
+    .field-hint { font-size:11px; color:var(--muted); margin-top:3px; }
+    .modal-foot { padding:1rem 1.5rem; border-top:1px solid var(--border); display:flex; gap:8px; justify-content:flex-end; }
+    .btn-save { padding:10px 22px; border-radius:9px; background:var(--green); color:#fff; border:none; font-family:var(--font-d); font-size:14px; font-weight:700; cursor:pointer; }
+    .btn-save:hover { opacity:.9; }
+
+    .denom-section-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:1rem 0 .5rem; }
+    .denom-section-label:first-child { margin-top:0; }
+    .denom-row { display:grid; grid-template-columns:1fr 90px 110px; gap:10px; align-items:center; margin-bottom:6px; }
+    .denom-row .denom-label { font-size:13px; font-weight:500; }
+    .denom-row input { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:6px 8px; font-size:13px; text-align:center; }
+    .denom-row .denom-sub { text-align:right; font-size:12.5px; color:var(--muted); font-variant-numeric:tabular-nums; }
+
+    .resumen-conteo { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; margin-top:1rem; }
+    .resumen-conteo .fila { display:flex; justify-content:space-between; padding:4px 0; font-size:13px; }
+    .resumen-conteo .fila.total { font-weight:700; border-top:1px solid var(--border); margin-top:6px; padding-top:8px; }
+
+    .toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px); background:var(--card); border:1px solid var(--border); border-radius:10px; padding:11px 18px; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s; opacity:0; z-index:100; box-shadow:0 4px 20px rgba(0,0,0,.08); }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+    .toast.success { border-color:var(--green); color:var(--green); }
+    .toast.error   { border-color:var(--red);   color:var(--red); }
+
+    .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
+    .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+    .sdot.off { background:var(--subtle); }
+
+    @media (max-width:700px) {
+      header { padding:0 1rem; } main { padding:1.5rem 1rem 3rem; }
+      .kpi-strip { grid-template-columns:1fr 1fr; }
+      .denom-row { grid-template-columns:1fr 70px 90px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Caja Chica</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<main>
+  <div class="page-header">
+    <div>
+      <h1>Caja Chica</h1>
+      <p>Control de saldo, gastos y arqueos del fondo de caja chica</p>
+    </div>
+    <div id="status-carga" style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;">
+      <span class="spinner"></span> Cargando…
+    </div>
+  </div>
+
+  <div id="contenido">
+    <div class="empty"><span class="spinner"></span></div>
+  </div>
+
+  <div class="card-head" style="border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;">Historial de períodos</div>
+  <div class="card" style="border-top:none;border-radius:0 0 var(--radius) var(--radius);margin-top:-1px;">
+    <div id="tabla-historial-periodos"><div class="empty"><span class="spinner"></span></div></div>
+  </div>
+
+  <div class="status-bar">
+    <div style="display:flex;align-items:center;gap:6px;"><span class="sdot" id="conn-dot"></span><span id="conn-label">Conectando…</span></div>
+    <span style="margin-left:auto;">v1.0 · Caja Chica · Lorito</span>
+  </div>
+</main>
+
+<!-- MODAL ABRIR PERIODO -->
+<div class="modal-bg" id="modal-abrir">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Abrir período de caja chica</div>
+      <button class="close-btn" onclick="cerrarModal('modal-abrir')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label for="ap-fecha">Fecha inicial</label>
+        <input type="date" id="ap-fecha">
+      </div>
+      <div class="field">
+        <label for="ap-monto">Monto de apertura</label>
+        <input type="number" id="ap-monto" step="0.01" min="0" placeholder="0.00">
+        <div class="field-hint">Monto en colones con el que arranca el período</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="cerrarModal('modal-abrir')">Cancelar</button>
+      <button class="btn-save" id="btn-abrir" onclick="abrirPeriodo()">Abrir período</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONTEO DE DENOMINACIONES (arqueo / cierre) -->
+<div class="modal-bg" id="modal-conteo">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="conteo-titulo">Arqueo de caja chica</div>
+        <div class="modal-sub" id="conteo-sub"></div>
+      </div>
+      <button class="close-btn" onclick="cerrarModal('modal-conteo')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field" id="campo-fecha-cierre" style="display:none;">
+        <label for="cc-fecha-cierre">Fecha de cierre</label>
+        <input type="date" id="cc-fecha-cierre" onchange="recalcularConteo()">
+      </div>
+
+      <div class="denom-section-label">Billetes</div>
+      <div id="denom-billetes"></div>
+      <div class="denom-section-label">Monedas</div>
+      <div id="denom-monedas"></div>
+
+      <div class="field" style="margin-top:1rem;">
+        <label for="cc-notas">Notas (opcional)</label>
+        <input type="text" id="cc-notas" placeholder="Observaciones del conteo…">
+      </div>
+
+      <div class="resumen-conteo">
+        <div class="fila"><span>Balance teórico</span><strong id="rc-teorico">₡0,00</strong></div>
+        <div class="fila total"><span>Total contado</span><strong id="rc-contado">₡0,00</strong></div>
+        <div class="fila"><span>Diferencia</span><strong id="rc-diferencia">₡0,00</strong></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="cerrarModal('modal-conteo')">Cancelar</button>
+      <button class="btn-save" id="btn-guardar-conteo" onclick="guardarConteo()">Guardar arqueo</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ─── CONFIGURACIÓN ────────────────────────────────────────────────
+const SHEET_ID = '1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw';
+const APPS_SCRIPT_AP = 'https://script.google.com/macros/s/AKfycbyqdI4EGUgcahTiyz_GBwvUQLWORT_TUVBvFMPGdMve1-3q3ge8mioZ458_zsbMbUqa/exec';
+// ─────────────────────────────────────────────────────────────────
+
+const BILLETES = [50000, 20000, 10000, 5000, 2000, 1000];
+const MONEDAS  = [500, 100, 50, 25, 10, 5];
+
+const hoy = new Date();
+document.getElementById('date-chip').textContent =
+  hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
+const hoyISO = hoy.toISOString().slice(0,10);
+
+const fmt = n => '₡' + Number(n||0).toLocaleString('es-CR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+
+let dataFacturas   = [];
+let dataPeriodos   = [];
+let dataArqueos    = [];
+let periodoAbierto = null;
+let modoConteo     = 'arqueo'; // 'arqueo' | 'cierre'
+
+// ── GVIZ ──────────────────────────────────────────────────────────
+function gvizLoad(hoja, expectedCol) {
+  return new Promise(function(resolve) {
+    var cb    = '_cc_' + Math.random().toString(36).slice(2,10);
+    var url   = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
+              + '/gviz/tq?tqx=responseHandler:' + cb
+              + '&sheet=' + encodeURIComponent(hoja);
+    var timer = setTimeout(function() { cleanup(); resolve([]); }, 15000);
+    function cleanup() {
+      clearTimeout(timer);
+      try { delete window[cb]; } catch(e) {}
+      try { if (s && s.parentNode) document.body.removeChild(s); } catch(e) {}
+    }
+    window[cb] = function(data) {
+      cleanup();
+      try {
+        var cols = (data.table.cols||[]).map(function(c){ return c.label||c.id||''; });
+        if (expectedCol && cols.indexOf(expectedCol) === -1) { resolve([]); return; }
+        var rows = (data.table.rows||[]).filter(function(r){ return r&&r.c; }).map(function(row){
+          var obj = {};
+          cols.forEach(function(col,i){
+            var cell = row.c[i];
+            obj[col] = cell ? (cell.f!=null?cell.f:(cell.v!=null?cell.v:'')) : '';
+          });
+          return obj;
+        });
+        resolve(rows);
+      } catch(e2) { resolve([]); }
+    };
+    var s = document.createElement('script');
+    s.onerror = function(){ cleanup(); resolve([]); };
+    s.src = url;
+    document.body.appendChild(s);
+  });
+}
+
+async function postAP(payload) {
+  const resp = await fetch(APPS_SCRIPT_AP, {
+    method: 'POST',
+    body: new URLSearchParams({ data: JSON.stringify(payload) })
+  });
+  const json = await resp.json();
+  if (!json.ok) throw new Error(json.error || 'Error al guardar');
+  return json.result;
+}
+
+function limpiarMonto(v) { return parseFloat(String(v||'0').replace(/[,₡\s]/g,'')) || 0; }
+
+function isoDate(str) {
+  const m = String(str||'').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return '';
+  const [, d, mo, y] = m;
+  return y + '-' + mo.padStart(2,'0') + '-' + d.padStart(2,'0');
+}
+
+// ── CARGA ─────────────────────────────────────────────────────────
+async function cargarDatos() {
+  document.getElementById('status-carga').innerHTML = '<span class="spinner"></span> Conectando con Google Sheets…';
+  try {
+    const [dF, dP, dA] = await Promise.all([
+      gvizLoad('Registro Facturas', 'Factura'),
+      gvizLoad('CajaChica_Periodos', 'ID').catch(() => []),
+      gvizLoad('CajaChica_Arqueos', 'ID').catch(() => [])
+    ]);
+
+    dataFacturas = dF.filter(r => (r['Medio de pago']||'').trim().toLowerCase() === 'caja chica').map(r => ({
+      numero: r['Factura'] || '',
+      proveedor: r['Proveedor'] || '',
+      moneda: r['Moneda'] || 'CRC',
+      monto: limpiarMonto(r['TOTAL']),
+      fechaPago: isoDate(r['Fecha de pago'])
+    })).filter(g => g.fechaPago);
+
+    dataPeriodos = dP.filter(r => r['ID']).map(r => ({
+      id: r['ID'],
+      fechaInicio: isoDate(r['Fecha inicio']),
+      montoInicial: limpiarMonto(r['Monto inicial']),
+      fechaCierre: isoDate(r['Fecha cierre']),
+      montoContado: limpiarMonto(r['Monto contado cierre']),
+      diferencia: limpiarMonto(r['Diferencia cierre']),
+      estado: r['Estado'] || ''
+    }));
+
+    dataArqueos = dA.filter(r => r['ID']).map(r => ({
+      id: r['ID'],
+      periodoId: r['Periodo ID'],
+      fecha: r['Fecha'] || '',
+      balanceTeorico: limpiarMonto(r['Balance teórico']),
+      montoContado: limpiarMonto(r['Monto contado']),
+      diferencia: limpiarMonto(r['Diferencia']),
+      notas: r['Notas'] || ''
+    }));
+
+    periodoAbierto = dataPeriodos.find(p => p.estado === 'Abierto') || null;
+
+    document.getElementById('conn-dot').classList.remove('off');
+    document.getElementById('conn-label').textContent = 'Conectado · Google Sheets';
+    document.getElementById('status-carga').innerHTML = '<span style="color:var(--green);">✓</span> Datos actualizados';
+
+    render();
+  } catch(e) {
+    console.error('Error cargando caja chica:', e.message);
+    document.getElementById('conn-dot').classList.add('off');
+    document.getElementById('conn-label').textContent = 'Error de conexión';
+    document.getElementById('status-carga').innerHTML = '<span style="color:var(--red);">✕</span> ' + e.message;
+  }
+}
+
+// Gastos de caja chica dentro de un rango de fechas [desde, hasta] (ISO, inclusive).
+function gastosDelPeriodo(desde, hasta) {
+  return dataFacturas.filter(g => g.fechaPago >= desde && (!hasta || g.fechaPago <= hasta));
+}
+
+function totalGastos(gastos) {
+  return gastos.reduce((a,g) => a + g.monto, 0);
+}
+
+// ── RENDER PRINCIPAL ──────────────────────────────────────────────
+function render() {
+  renderPeriodoActual();
+  renderHistorialPeriodos();
+}
+
+function renderPeriodoActual() {
+  const cont = document.getElementById('contenido');
+
+  if (!periodoAbierto) {
+    cont.innerHTML = `
+      <div class="card">
+        <div class="empty">
+          <p style="margin-bottom:1rem;">No hay un período de caja chica abierto.</p>
+          <button class="btn-primary" onclick="abrirModalAbrir()" style="margin:0 auto;">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
+            Abrir período de caja chica
+          </button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const gastos = gastosDelPeriodo(periodoAbierto.fechaInicio, null);
+  const gastado = totalGastos(gastos);
+  const balanceTeorico = periodoAbierto.montoInicial - gastado;
+  const arqueosPeriodo = dataArqueos.filter(a => a.periodoId === periodoAbierto.id)
+    .sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
+
+  const dias = Math.max(1, Math.round((new Date(hoyISO) - new Date(periodoAbierto.fechaInicio)) / 86400000) + 1);
+
+  const filasGastos = gastos.length ? gastos.map(g => `
+    <tr>
+      <td style="color:var(--muted);font-size:12px;">${g.fechaPago}</td>
+      <td style="font-size:12px;color:var(--muted);">${g.numero}</td>
+      <td>${g.proveedor}</td>
+      <td class="num" style="font-weight:600;">${g.moneda==='USD' ? 'US$'+g.monto.toFixed(2)+' ⚠' : fmt(g.monto)}</td>
+    </tr>`).join('') : '<tr><td colspan="4" class="empty">Sin gastos de caja chica en este período.</td></tr>';
+
+  const filasArqueos = arqueosPeriodo.length ? arqueosPeriodo.map(a => {
+    const ok = Math.abs(a.diferencia) < 1;
+    return `<tr>
+      <td style="color:var(--muted);font-size:12px;">${a.fecha}</td>
+      <td class="num">${fmt(a.balanceTeorico)}</td>
+      <td class="num">${fmt(a.montoContado)}</td>
+      <td class="num"><span class="badge ${ok?'b-ok':'b-dif'}">${fmt(a.diferencia)}</span></td>
+      <td style="color:var(--muted);font-size:12px;">${a.notas||'—'}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="5" class="empty">Sin arqueos registrados todavía.</td></tr>';
+
+  cont.innerHTML = `
+    <div class="kpi-strip">
+      <div class="kpi-box"><div class="kpi-val">${fmt(periodoAbierto.montoInicial)}</div><div class="kpi-lbl">Monto inicial · ${periodoAbierto.fechaInicio}</div></div>
+      <div class="kpi-box"><div class="kpi-val rojo">${fmt(gastado)}</div><div class="kpi-lbl">Gastado (${gastos.length} facturas)</div></div>
+      <div class="kpi-box"><div class="kpi-val verde">${fmt(balanceTeorico)}</div><div class="kpi-lbl">Balance teórico</div></div>
+      <div class="kpi-box"><div class="kpi-val ambar">${dias}</div><div class="kpi-lbl">Días abierto</div></div>
+    </div>
+
+    <div class="toolbar-caja">
+      <span class="badge b-abierto">● Período abierto</span>
+      <button class="btn-mini" style="margin-left:auto;" onclick="abrirModalConteo('arqueo')">Hacer arqueo</button>
+      <button class="btn-primary rojo" onclick="abrirModalConteo('cierre')">Cerrar período</button>
+    </div>
+
+    <div class="card">
+      <div class="card-head">Gastos del período (medio de pago: Caja chica)</div>
+      <table>
+        <thead><tr><th>Fecha</th><th>Factura</th><th>Proveedor</th><th style="text-align:right;">Monto</th></tr></thead>
+        <tbody>${filasGastos}</tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-head">Arqueos de este período</div>
+      <table>
+        <thead><tr><th>Fecha</th><th style="text-align:right;">Balance teórico</th><th style="text-align:right;">Contado</th><th style="text-align:right;">Diferencia</th><th>Notas</th></tr></thead>
+        <tbody>${filasArqueos}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderHistorialPeriodos() {
+  const cerrados = dataPeriodos.filter(p => p.estado === 'Cerrado').sort((a,b) => (b.fechaCierre||'').localeCompare(a.fechaCierre||''));
+  const cont = document.getElementById('tabla-historial-periodos');
+  if (!cerrados.length) {
+    cont.innerHTML = '<div class="empty">Todavía no hay períodos cerrados.</div>';
+    return;
+  }
+  const filas = cerrados.map(p => {
+    const gastos = gastosDelPeriodo(p.fechaInicio, p.fechaCierre);
+    const gastado = totalGastos(gastos);
+    const teorico = p.montoInicial - gastado;
+    const ok = Math.abs(p.diferencia) < 1;
+    return `<tr>
+      <td style="color:var(--muted);font-size:12px;">${p.fechaInicio}</td>
+      <td style="color:var(--muted);font-size:12px;">${p.fechaCierre}</td>
+      <td class="num">${fmt(p.montoInicial)}</td>
+      <td class="num">${fmt(gastado)}</td>
+      <td class="num">${fmt(teorico)}</td>
+      <td class="num">${fmt(p.montoContado)}</td>
+      <td class="num"><span class="badge ${ok?'b-ok':'b-dif'}">${fmt(p.diferencia)}</span></td>
+    </tr>`;
+  }).join('');
+  cont.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Inicio</th><th>Cierre</th><th style="text-align:right;">Monto inicial</th>
+        <th style="text-align:right;">Gastado</th><th style="text-align:right;">Balance teórico</th>
+        <th style="text-align:right;">Contado</th><th style="text-align:right;">Diferencia</th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+}
+
+// ── MODAL: ABRIR PERÍODO ──────────────────────────────────────────
+function abrirModalAbrir() {
+  document.getElementById('ap-fecha').value = hoyISO;
+  document.getElementById('ap-monto').value = '';
+  document.getElementById('modal-abrir').classList.add('open');
+}
+
+async function abrirPeriodo() {
+  const fecha = document.getElementById('ap-fecha').value;
+  const monto = parseFloat(document.getElementById('ap-monto').value);
+  if (!fecha) { showToast('Ingresá la fecha inicial.', 'error'); return; }
+  if (!monto || monto <= 0) { showToast('Ingresá un monto de apertura válido.', 'error'); return; }
+
+  const btn = document.getElementById('btn-abrir');
+  btn.disabled = true;
+  try {
+    await postAP({ modulo: 'abrir_periodo_caja', fecha_inicio: fecha, monto_inicial: monto });
+    showToast('Período de caja chica abierto ✓', 'success');
+    cerrarModal('modal-abrir');
+    await cargarDatos();
+  } catch(e) {
+    showToast('No se pudo abrir el período: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── MODAL: CONTEO DE DENOMINACIONES (arqueo / cierre) ─────────────
+function filaDenom(valor) {
+  return `
+    <div class="denom-row" data-valor="${valor}">
+      <div class="denom-label">${fmt(valor)}</div>
+      <input type="number" min="0" step="1" value="0" oninput="recalcularConteo()">
+      <div class="denom-sub" data-sub>${fmt(0)}</div>
+    </div>`;
+}
+
+function abrirModalConteo(modo) {
+  if (!periodoAbierto) return;
+  modoConteo = modo;
+  document.getElementById('denom-billetes').innerHTML = BILLETES.map(filaDenom).join('');
+  document.getElementById('denom-monedas').innerHTML  = MONEDAS.map(filaDenom).join('');
+  document.getElementById('cc-notas').value = '';
+
+  const esCierre = modo === 'cierre';
+  document.getElementById('conteo-titulo').textContent = esCierre ? 'Cerrar período de caja chica' : 'Arqueo de caja chica';
+  document.getElementById('conteo-sub').textContent = 'Desde ' + periodoAbierto.fechaInicio;
+  document.getElementById('campo-fecha-cierre').style.display = esCierre ? '' : 'none';
+  document.getElementById('cc-fecha-cierre').value = hoyISO;
+  document.getElementById('cc-fecha-cierre').min = periodoAbierto.fechaInicio;
+  document.getElementById('btn-guardar-conteo').textContent = esCierre ? 'Confirmar cierre' : 'Guardar arqueo';
+  document.getElementById('btn-guardar-conteo').className = esCierre ? 'btn-save' : 'btn-save';
+
+  recalcularConteo();
+  document.getElementById('modal-conteo').classList.add('open');
+}
+
+function leerDenominaciones() {
+  const denom = {};
+  document.querySelectorAll('#denom-billetes .denom-row, #denom-monedas .denom-row').forEach(row => {
+    const valor = row.dataset.valor;
+    const cant = parseInt(row.querySelector('input').value) || 0;
+    if (cant > 0) denom[valor] = cant;
+    row.querySelector('[data-sub]').textContent = fmt(cant * Number(valor));
+  });
+  return denom;
+}
+
+function balanceTeoricoActual() {
+  if (!periodoAbierto) return 0;
+  const hasta = modoConteo === 'cierre' ? (document.getElementById('cc-fecha-cierre').value || hoyISO) : null;
+  const gastos = gastosDelPeriodo(periodoAbierto.fechaInicio, hasta);
+  return periodoAbierto.montoInicial - totalGastos(gastos);
+}
+
+function recalcularConteo() {
+  const denom = leerDenominaciones();
+  const totalContado = Object.keys(denom).reduce((a,v) => a + Number(v)*denom[v], 0);
+  const teorico = balanceTeoricoActual();
+  const diferencia = totalContado - teorico;
+
+  document.getElementById('rc-teorico').textContent  = fmt(teorico);
+  document.getElementById('rc-contado').textContent   = fmt(totalContado);
+  const rcDif = document.getElementById('rc-diferencia');
+  rcDif.textContent = fmt(diferencia);
+  rcDif.style.color = Math.abs(diferencia) < 1 ? 'var(--green)' : 'var(--red)';
+}
+
+async function guardarConteo() {
+  const denom = leerDenominaciones();
+  const totalContado = Object.keys(denom).reduce((a,v) => a + Number(v)*denom[v], 0);
+  const teorico = balanceTeoricoActual();
+  const diferencia = totalContado - teorico;
+  const notas = document.getElementById('cc-notas').value.trim();
+
+  const btn = document.getElementById('btn-guardar-conteo');
+  btn.disabled = true;
+  try {
+    if (modoConteo === 'arqueo') {
+      await postAP({
+        modulo: 'guardar_arqueo_caja', periodo_id: periodoAbierto.id,
+        balance_teorico: teorico, monto_contado: totalContado, diferencia, denominaciones: denom, notas
+      });
+      showToast('Arqueo guardado ✓', 'success');
+    } else {
+      const fechaCierre = document.getElementById('cc-fecha-cierre').value;
+      if (!fechaCierre) { showToast('Ingresá la fecha de cierre.', 'error'); btn.disabled = false; return; }
+      const gastos = gastosDelPeriodo(periodoAbierto.fechaInicio, fechaCierre);
+      if (!confirm('¿Confirmar el cierre del período? Esta acción bloquea las fechas del período y envía el correo de cierre.')) {
+        btn.disabled = false; return;
+      }
+      await postAP({
+        modulo: 'cerrar_periodo_caja', periodo_id: periodoAbierto.id, fecha_cierre: fechaCierre,
+        balance_teorico: teorico, monto_contado: totalContado, diferencia, denominaciones: denom,
+        gastos: gastos.map(g => ({ fecha: g.fechaPago, factura: g.numero, proveedor: g.proveedor, monto: g.monto }))
+      });
+      showToast('Período cerrado y correo enviado ✓', 'success');
+    }
+    cerrarModal('modal-conteo');
+    await cargarDatos();
+  } catch(e) {
+    showToast('No se pudo guardar: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function cerrarModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+document.querySelectorAll('.modal-bg').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').innerHTML = type==='success'
+    ? '<polyline points="3 8 7 12 13 4"/>'
+    : '<line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = `toast ${type}`;
+  requestAnimationFrame(()=>t.classList.add('show'));
+  setTimeout(()=>t.classList.remove('show'), 3500);
+}
+
+cargarDatos();
+</script>
+</body>
+</html>
