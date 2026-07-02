@@ -58,13 +58,6 @@ textarea{resize:vertical;min-height:70px;line-height:1.5}
 select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;cursor:pointer}
 input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 
-/* Turno */
-.turno-group{display:flex;gap:8px;margin-top:4px}
-.turno-opt{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:2px solid var(--border);border-radius:9px;padding:9px 12px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .15s;user-select:none}
-.turno-opt input[type=radio]{display:none}
-.turno-opt:hover{border-color:var(--border-h);color:var(--text)}
-.turno-opt.selected{border-color:var(--green);background:var(--green-bg);color:var(--green)}
-
 /* Denominaciones */
 .denom-section{border-top:1px solid var(--border);padding-top:1.25rem;margin-top:1.25rem}
 .denom-group-title{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem}
@@ -124,14 +117,8 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 .badge-minor{background:var(--amber-bg);color:var(--amber)}
 .empty-state{text-align:center;padding:3rem 1rem;color:var(--subtle);font-size:13px}
 
-/* Config */
-.tc-row{display:flex;gap:8px;align-items:flex-end}
-.tc-row input{max-width:160px}
-
 /* USD section */
 .usd-section{border-top:1px solid var(--border);padding-top:1.25rem;margin-top:1.25rem}
-.tc-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;margin-bottom:12px}
-.tc-badge strong{color:var(--green);font-family:var(--font-m)}
 
 /* Resumen ventas antes de submit */
 .resumen-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;margin-top:1rem}
@@ -173,7 +160,6 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
   header{padding:0 1rem}main{padding:1.5rem 1rem 3rem}
   .field-row,.field-row-3{grid-template-columns:1fr}
   .denom-grid{grid-template-columns:1fr 1fr}
-  .turno-group{flex-direction:column}
   .resumen-grid{grid-template-columns:1fr}
   .foto-grid{grid-template-columns:1fr}
 }
@@ -195,47 +181,12 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 <div class="tabs">
   <button class="tab-btn active" onclick="showTab('form',this)">Registrar cierre</button>
   <button class="tab-btn" onclick="showTab('historial',this)">Historial</button>
-  <button class="tab-btn" onclick="showTab('config',this)">Configuración</button>
-  <a href="mantenimiento.html" class="tab-btn" style="text-decoration:none;display:inline-flex;align-items:center">🔧 Mantenimiento ↗</a>
 </div>
 
 <main>
 
 <!-- ── TAB REGISTRO ── -->
 <div class="page active" id="tab-form">
-
-  <div class="card">
-    <p class="card-title">Identificación</p>
-    <div class="field-row">
-      <div class="field">
-        <label for="f-encargado">Encargado <span class="req">*</span></label>
-        <select id="f-encargado">
-          <option value="" disabled selected>Cargando...</option>
-        </select>
-        <div id="enc-error" style="display:none;font-size:12px;color:var(--red);margin-top:5px;">
-          <span id="enc-error-msg"></span>
-          <a href="javascript:void(0)" onclick="cargarEncargados()" style="color:var(--green);font-weight:600;margin-left:4px;">Reintentar</a>
-        </div>
-      </div>
-      <div class="field">
-        <label for="f-fecha">Fecha <span class="req">*</span></label>
-        <input type="date" id="f-fecha"/>
-      </div>
-    </div>
-    <div class="field">
-      <label>Turno</label>
-      <div class="turno-group">
-        <label class="turno-opt" id="turno-1">
-          <input type="radio" name="turno" value="Turno 1" onchange="selectTurno(this)"/>
-          <span>🌅 Turno 1</span>
-        </label>
-        <label class="turno-opt" id="turno-2">
-          <input type="radio" name="turno" value="Turno 2" onchange="selectTurno(this)"/>
-          <span>🌙 Turno 2</span>
-        </label>
-      </div>
-    </div>
-  </div>
 
   <div class="card">
     <p class="card-title">Evidencia fotográfica</p>
@@ -257,9 +208,29 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
         <input type="file" id="input-foto-datafono" accept="image/*" capture="environment" style="display:none"/>
       </div>
     </div>
-    <p style="font-size:11px;color:var(--muted);margin-top:.75rem">Las fotos son opcionales y quedan como respaldo del cierre. Si no las tenés a mano, podés completar todo el formulario manualmente.</p>
+    <p style="font-size:11px;color:var(--muted);margin-top:.75rem">Subí las fotos y extraé los datos automático con IA. Si no las tenés a mano, podés completar todo el formulario manualmente.</p>
     <button class="btn-secondary" id="btn-extraer-ia" onclick="extraerConIA()" disabled style="margin-top:12px;width:100%">🪄 Extraer datos con IA</button>
     <div id="ia-resultado" style="display:none;margin-top:10px"></div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Identificación</p>
+    <div class="field-row">
+      <div class="field">
+        <label for="f-encargado">Encargado <span class="req">*</span></label>
+        <select id="f-encargado">
+          <option value="" disabled selected>Cargando...</option>
+        </select>
+        <div id="enc-error" style="display:none;font-size:12px;color:var(--red);margin-top:5px;">
+          <span id="enc-error-msg"></span>
+          <a href="javascript:void(0)" onclick="cargarEncargados()" style="color:var(--green);font-weight:600;margin-left:4px;">Reintentar</a>
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-fecha">Fecha <span class="req">*</span></label>
+        <input type="date" id="f-fecha"/>
+      </div>
+    </div>
   </div>
 
   <div class="card">
@@ -317,8 +288,11 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
     <!-- USD -->
     <div class="usd-section">
       <p class="denom-group-title">💵 Ventas en Dólares</p>
-      <div class="tc-badge">TC: <strong id="tc-display">—</strong> ₡/$</div>
       <div class="field-row-3">
+        <div class="field">
+          <label for="f-tc">Tipo de cambio (₡ por $1)</label>
+          <input type="number" id="f-tc" placeholder="Ej: 520" min="1" step="0.01" oninput="calcDolares();actualizarResumen();calcCuadre()"/>
+        </div>
         <div class="field">
           <label for="f-usd-efectivo">Efectivo ($)</label>
           <input type="number" id="f-usd-efectivo" placeholder="0.00" min="0" step="0.01" oninput="calcDolares();actualizarResumen()"/>
@@ -327,10 +301,10 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
           <label for="f-usd-tarjeta">Tarjeta ($)</label>
           <input type="number" id="f-usd-tarjeta" placeholder="0.00" min="0" step="0.01" oninput="calcDolares();actualizarResumen()"/>
         </div>
-        <div class="field">
-          <label>Total $ en colones</label>
-          <input type="text" id="f-usd-total-crc" placeholder="₡0" readonly/>
-        </div>
+      </div>
+      <div class="field" style="max-width:220px">
+        <label>Total $ en colones</label>
+        <input type="text" id="f-usd-total-crc" placeholder="₡0" readonly/>
       </div>
     </div>
 
@@ -422,7 +396,7 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
   <div class="card">
     <p class="card-title">Observaciones</p>
     <div class="field">
-      <textarea id="f-obs" rows="3" placeholder="Incidencias, devoluciones, notas del turno…"></textarea>
+      <textarea id="f-obs" rows="3" placeholder="Incidencias, devoluciones, notas del cierre…"></textarea>
     </div>
   </div>
 
@@ -431,7 +405,7 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
     <button class="btn-primary" id="btn-submit" onclick="submitCierre()">Guardar cierre ✓</button>
   </div>
 
-  <div id="wa-section" style="display:none;margin-top:12px">
+  <div id="wa-section" style="margin-top:12px">
     <div id="wa-buttons"></div>
   </div>
 
@@ -442,32 +416,11 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 <div class="page" id="tab-historial">
   <div class="hist-filters">
     <input type="text" id="hist-buscar" placeholder="Buscar encargado…" style="width:180px" oninput="renderHistorial()"/>
-    <select id="hist-turno" onchange="renderHistorial()" style="width:130px">
-      <option value="">Todos los turnos</option>
-      <option value="Turno 1">Turno 1</option>
-      <option value="Turno 2">Turno 2</option>
-    </select>
     <button class="btn-secondary" onclick="cargarHistorial()" style="padding:8px 14px;font-size:12px">↻ Actualizar</button>
     <span style="font-size:12px;color:var(--muted);margin-left:auto" id="hist-count"></span>
   </div>
   <div id="hist-lista">
     <div class="empty-state">Cargando historial…</div>
-  </div>
-</div>
-
-
-<!-- ── TAB CONFIGURACIÓN ── -->
-<div class="page" id="tab-config">
-  <div class="card">
-    <p class="card-title">Tipo de Cambio</p>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:1rem">Tipo de cambio del día (₡ por $1). Se aplica para convertir ventas en dólares.</p>
-    <div class="tc-row">
-      <div class="field" style="margin-bottom:0">
-        <label for="cfg-tc">₡ por $1</label>
-        <input type="number" id="cfg-tc" placeholder="Ej: 520" min="1" step="0.01" style="max-width:160px"/>
-      </div>
-      <button class="btn-primary" onclick="guardarTC()" style="margin-top:22px;flex:0;min-width:auto;padding:9px 20px;font-size:13px">Guardar</button>
-    </div>
   </div>
 </div>
 
@@ -651,10 +604,6 @@ function showTab(tab, el) {
   document.getElementById('tab-' + tab).classList.add('active');
   el.classList.add('active');
   if (tab === 'historial') cargarHistorial();
-  if (tab === 'config') {
-    const tc = getTC();
-    if (tc > 0) document.getElementById('cfg-tc').value = tc;
-  }
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────
@@ -670,19 +619,7 @@ function showToast(msg, type='success') {
 }
 
 // ── TIPO DE CAMBIO ────────────────────────────────────────────────
-function getTC() { return parseFloat(localStorage.getItem('cierre_tc') || '0') || 0; }
-function guardarTC() {
-  const val = parseFloat(document.getElementById('cfg-tc').value);
-  if (!val || val < 1) { showToast('Ingresá un tipo de cambio válido', 'error'); return; }
-  localStorage.setItem('cierre_tc', val);
-  updateTCDisplay();
-  showToast('Tipo de cambio guardado: ₡' + val.toLocaleString('es-CR') + ' por $1');
-}
-function updateTCDisplay() {
-  const tc = getTC();
-  const el = document.getElementById('tc-display');
-  if (el) el.textContent = tc > 0 ? tc.toLocaleString('es-CR') : 'No configurado';
-}
+function getTC() { return parseFloat(document.getElementById('f-tc')?.value) || 0; }
 
 // ── ENCARGADOS DESDE RRHH ─────────────────────────────────────────
 async function cargarEncargados() {
@@ -709,20 +646,6 @@ async function cargarEncargados() {
     errMsg.textContent = 'No se pudo conectar con RRHH (' + e.message + ').';
     errBox.style.display = 'block';
   }
-}
-
-// ── TURNO ─────────────────────────────────────────────────────────
-function selectTurno(radio) {
-  document.querySelectorAll('.turno-opt').forEach(l => l.classList.remove('selected'));
-  radio.closest('.turno-opt').classList.add('selected');
-}
-function getTurno() {
-  const r = document.querySelector('input[name="turno"]:checked');
-  return r ? r.value : '';
-}
-function resetTurno() {
-  document.querySelectorAll('input[name="turno"]').forEach(r => r.checked = false);
-  document.querySelectorAll('.turno-opt').forEach(l => l.classList.remove('selected'));
 }
 
 // ── TOTALES ───────────────────────────────────────────────────────
@@ -763,6 +686,7 @@ function actualizarResumen() {
     `<div class="resumen-item"><span>${lbl}</span><span class="v">${fmtCRC(val)}</span></div>`
   ).join('');
   document.getElementById('resumen-total').textContent = fmtCRC(t.totalVentas);
+  actualizarWhatsAppBtn();
 }
 
 function calcDolares() {
@@ -793,6 +717,7 @@ function calcRevisionTarjeta() {
   badge.innerHTML = cuadra
     ? `<div class="ia-box ia-ok">✅ Cuadra — diferencia dentro de tolerancia (±₡500)</div>`
     : `<div class="ia-box ia-warn">⚠️ No cuadra — diferencia de ${fmtCRC(Math.abs(diff))} (tolerancia ±₡500)</div>`;
+  actualizarWhatsAppBtn();
 }
 
 function calcCuadre() {
@@ -848,15 +773,12 @@ function calcCuadre() {
   } else {
     usdRow.style.display = 'none';
   }
+  actualizarWhatsAppBtn();
 }
 
-// ── SUBMIT ────────────────────────────────────────────────────────
-async function submitCierre() {
+// ── PAYLOAD ───────────────────────────────────────────────────────
+function construirPayload() {
   const encargado = document.getElementById('f-encargado').value.trim();
-  const turno = getTurno();
-  if (!encargado) { showToast('Seleccioná un encargado', 'error'); return; }
-  if (!turno)     { showToast('Seleccioná el turno', 'error'); return; }
-
   const {efectivo,tarjeta,sinpe,otras,credito,plataformas,servicio,
     propinaEfectivo,propinaTarjeta,propinaCredito,propinaOtro,datafonoTotal,
     usdE,usdT,tc,usdTotalCrc,totalVentas} = getTotales();
@@ -878,10 +800,10 @@ async function submitCierre() {
   const usdCajaTotalContado = DENOMS_USD.reduce((s,{id,val}) => s+(parseInt(document.getElementById('d-'+id)?.value)||0)*val, 0);
   const diferencia = caja - (efectivo + fondo);
 
-  const payload = {
+  return {
     id: Date.now(),
     fecha, hora: new Date().toLocaleTimeString('es-CR',{hour:'2-digit',minute:'2-digit'}),
-    punto: PUNTO_VENTA, encargado, turno,
+    punto: PUNTO_VENTA, encargado,
     efectivo, tarjeta, sinpe, otras, credito, plataformas, plataformasDesc, servicio,
     propinaEfectivo, propinaTarjeta, propinaCredito, propinaOtro,
     datafonoTotal, diferenciaTarjeta, tarjetaCuadra,
@@ -906,7 +828,14 @@ async function submitCierre() {
     fotoDatafono: fotos.datafono ? fotos.datafono.base64 : '',
     fotoDatafonoMime: fotos.datafono ? fotos.datafono.mime : '',
   };
+}
 
+// ── SUBMIT ────────────────────────────────────────────────────────
+async function submitCierre() {
+  const encargado = document.getElementById('f-encargado').value.trim();
+  if (!encargado) { showToast('Seleccioná un encargado', 'error'); return; }
+
+  const payload = construirPayload();
   const btn = document.getElementById('btn-submit');
   btn.disabled = true; btn.textContent = 'Guardando…';
 
@@ -917,7 +846,6 @@ async function submitCierre() {
       body: JSON.stringify(payload)
     });
     showToast('Cierre guardado correctamente');
-    mostrarWhatsApp(payload);
     limpiarForm();
   } catch(e) {
     showToast('Error al guardar — revisá la conexión', 'error');
@@ -944,7 +872,6 @@ function buildWAMessage(r) {
   return `📊 *Cierre de Caja*
 🏪 Punto de venta: ${r.punto}
 📅 Fecha: ${fecha}
-🕐 Turno: ${r.turno}
 👤 Encargado: ${r.encargado}
 
 💰 *Ventas Totales: ₡${(r.totalVentas||0).toLocaleString('es-CR')}*
@@ -956,12 +883,13 @@ ${tieneTarjetaRev ? `💳 *Revisión Tarjeta:* ${tarjetaEmoji} ${tarjetaCuadra ?
 ${r.obs?`\n📝 *Observaciones:* ${r.obs}`:''}`;
 }
 
-function mostrarWhatsApp(payload) {
-  const sec = document.getElementById('wa-section');
+const WA_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.057 23.428a.75.75 0 0 0 .916.916l5.569-1.475A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.694 9.694 0 0 1-4.953-1.356l-.355-.211-3.706.981.993-3.614-.23-.372A9.699 9.699 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg>`;
+
+function actualizarWhatsAppBtn() {
   const btns = document.getElementById('wa-buttons');
-  const WA_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.057 23.428a.75.75 0 0 0 .916.916l5.569-1.475A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.694 9.694 0 0 1-4.953-1.356l-.355-.211-3.706.981.993-3.614-.23-.372A9.699 9.699 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg>`;
+  if (!btns) return;
+  const payload = construirPayload();
   const msg = buildWAMessage(payload);
-  sec.style.display = 'block';
   btns.innerHTML = `<button class="btn-wa" onclick="window.open('https://wa.me/${WA_NUMERO_DEFAULT}?text='+encodeURIComponent(\`${msg.replace(/`/g,'\\`')}\`),'_blank')">${WA_SVG} Enviar resumen por WhatsApp</button>`;
 }
 
@@ -973,7 +901,7 @@ async function cargarHistorial() {
     const resp = await fetch(SHEETS_URL + '?action=read');
     const data = await resp.json();
     historialData = (data.records || []).map(r => ({
-      id: r[0], fecha: r[1], hora: r[2], encargado: r[4], turno: r[5],
+      id: r[0], fecha: r[1], hora: r[2], encargado: r[4],
       efectivo:    +r[6]||0, tarjeta: +r[7]||0, sinpe: +r[8]||0,
       otras:       +r[9]||0, credito: +r[10]||0, plataformas: +r[11]||0,
       plataformasDesc: r[12]||'', servicio: +r[13]||0,
@@ -990,10 +918,8 @@ async function cargarHistorial() {
 
 function renderHistorial() {
   const busq  = (document.getElementById('hist-buscar')?.value||'').toLowerCase();
-  const turno = document.getElementById('hist-turno')?.value||'';
   let lista = historialData.filter(r =>
-    (!busq  || (r.encargado||'').toLowerCase().includes(busq)) &&
-    (!turno || r.turno === turno)
+    !busq || (r.encargado||'').toLowerCase().includes(busq)
   );
   document.getElementById('hist-count').textContent = lista.length + ' de ' + historialData.length + ' cierres';
   if (!lista.length) {
@@ -1007,9 +933,6 @@ function renderHistorial() {
       : Math.abs(diff) <= 500
         ? `<span class="badge badge-minor">${diff > 0 ? '+' : ''}₡${diff.toLocaleString('es-CR')}</span>`
         : `<span class="badge badge-warn">${diff > 0 ? '+' : ''}₡${diff.toLocaleString('es-CR')}</span>`;
-    const turno = r.turno === 'Turno 1'
-      ? `<span class="badge badge-t1">Turno 1</span>`
-      : `<span class="badge badge-t2">Turno 2</span>`;
     const fechaLbl = r.fecha
       ? new Date(r.fecha+'T12:00:00').toLocaleDateString('es-CR',{weekday:'short',day:'2-digit',month:'short'})
       : '—';
@@ -1022,7 +945,7 @@ function renderHistorial() {
         <div class="hist-total">${fmtCRC(r.totalVentas)}</div>
       </div>
       <div class="hist-row">
-        ${turno} ${diffBadge}
+        ${diffBadge}
         ${r.efectivo?`<span>💵 ₡${r.efectivo.toLocaleString('es-CR')}</span>`:''}
         ${r.tarjeta?`<span>💳 ₡${r.tarjeta.toLocaleString('es-CR')}</span>`:''}
         ${r.sinpe?`<span>📱 ₡${r.sinpe.toLocaleString('es-CR')}</span>`:''}
@@ -1037,16 +960,14 @@ function limpiarForm() {
   ['f-encargado','f-obs'].forEach(id => { const el=document.getElementById(id); if(el)el.value=''; });
   ['f-efectivo','f-tarjeta','f-sinpe','f-otras','f-credito','f-plataformas','f-plataformas-desc',
    'f-propina-efectivo','f-propina-tarjeta','f-propina-credito','f-propina-otro','f-datafono-total',
-   'f-usd-efectivo','f-usd-tarjeta','f-fondo'].forEach(id => {
+   'f-tc','f-usd-efectivo','f-usd-tarjeta','f-fondo'].forEach(id => {
     const el=document.getElementById(id); if(el)el.value='';
   });
   document.getElementById('f-fecha').value = hoy();
-  resetTurno();
   DENOMS_CRC.forEach(d => { const el=document.getElementById('d-'+d); if(el)el.value=''; });
   DENOMS_USD.forEach(({id}) => { const el=document.getElementById('d-'+id); if(el)el.value=''; });
   calcCuadre(); actualizarResumen(); calcRevisionTarjeta();
   document.getElementById('f-usd-total-crc').value = '';
-  document.getElementById('wa-section').style.display = 'none';
   quitarFoto('sistema'); quitarFoto('datafono');
   document.getElementById('ia-resultado').style.display = 'none';
   // Recargar encargados por si cambió personal
@@ -1061,10 +982,10 @@ function fmtCRC(n) { return '₡' + Math.round(n||0).toLocaleString('es-CR'); }
 document.getElementById('date-chip').textContent =
   new Date().toLocaleDateString('es-CR',{weekday:'long',day:'numeric',month:'long'});
 document.getElementById('f-fecha').value = hoy();
-updateTCDisplay();
 cargarEncargados();
 actualizarResumen();
 calcRevisionTarjeta();
+calcCuadre();
 document.getElementById('input-foto-sistema').addEventListener('change', e => handleFotoSelect('sistema', e.target.files[0]));
 document.getElementById('input-foto-datafono').addEventListener('change', e => handleFotoSelect('datafono', e.target.files[0]));
 
