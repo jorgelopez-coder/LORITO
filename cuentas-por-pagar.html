@@ -369,6 +369,15 @@
         <input type="date" id="pago-fecha">
       </div>
       <div class="field">
+        <label for="pago-medio">Medio de pago</label>
+        <select id="pago-medio">
+          <option value="Transferencia">Transferencia</option>
+          <option value="Tarjeta débito">Tarjeta débito</option>
+          <option value="Caja chica">Caja chica</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div class="field">
         <label for="pago-referencia">Referencia bancaria</label>
         <input type="text" id="pago-referencia" placeholder="Nº de transferencia / comprobante">
         <div class="field-hint">Al guardar, la factura pasa a estado <strong>Cancelada</strong>.</div>
@@ -401,6 +410,7 @@ document.getElementById('date-chip').textContent =
 const hoyISO = hoy.toISOString().slice(0,10);
 
 const fmt  = n => '₡' + Number(n||0).toLocaleString('es-CR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+const fmtN = n => Number(n||0).toLocaleString('es-CR', { minimumFractionDigits:2, maximumFractionDigits:2 });
 
 let dataFacturas = [];   // hoja "Registro Facturas" (una fila por factura)
 let proveedores  = [];   // localStorage 'proveedores'
@@ -547,6 +557,11 @@ function construirFacturasAP() {
     const fechaRealPago   = isoDate(r['Fecha de pago']);
     const medioPago       = r['Medio de pago'] || '';
     const referenciaPago  = r['Referencia Referencia'] || '';
+    // Tipo de cambio: para CRC es 1; para USD se define manualmente en la UI
+    // (no hay columna confiable en el Sheet), conservando el valor ya cargado si existe.
+    const tcPrevio   = facturaPorNumero(numero);
+    const tipoCambio = moneda === 'CRC' ? 1 : (tcPrevio ? tcPrevio.tipoCambio : (limpiarMonto(r['TC']) || null));
+    const montoColones = moneda === 'CRC' ? monto : (tipoCambio ? Math.round(monto * tipoCambio * 100) / 100 : null);
 
     const prov = buscarProveedor(proveedorNombre);
     const sinProveedor = !prov;
@@ -560,10 +575,10 @@ function construirFacturasAP() {
       estado = 'A tiempo';
     }
 
-    const saldoPendiente = estado === 'Cancelada' ? 0 : monto;
+    const saldoPendiente = estado === 'Cancelada' ? 0 : (montoColones || 0);
 
     return {
-      numero, proveedor: proveedorNombre, fechaFactura, monto, moneda,
+      numero, proveedor: proveedorNombre, fechaFactura, monto, moneda, tipoCambio, montoColones,
       sinProveedor, fechaProyectada, fechaRealPago, referenciaPago, medioPago,
       saldoPendiente, estado, duplicada: conteo[claveDup(p)] > 1, ordinal: contadorOrdinal[numero]
     };
@@ -585,7 +600,7 @@ function inicializar() {
   const mesActual = hoyISO.substring(0,7);
   const pagadoMes = facturasAP
     .filter(f => f.fechaRealPago && f.fechaRealPago.substring(0,7) === mesActual)
-    .reduce((a,f) => a + f.monto, 0);
+    .reduce((a,f) => a + (f.montoColones||0), 0);
 
   document.getElementById('kpi-total').textContent     = fmt(totalPorPagar);
   document.getElementById('kpi-vencidas').textContent  = vencidas;
@@ -698,10 +713,10 @@ function descargarReporte() {
   const lista = obtenerFacturasFiltradas();
   if (!lista.length) { showToast('No hay facturas para exportar con los filtros actuales.', 'error'); return; }
 
-  const encabezados = ['Fecha factura','Factura','Proveedor','Moneda','Monto','Estado','Fecha proyectada','Fecha real de pago','Medio de pago','Referencia'];
+  const encabezados = ['Fecha factura','Factura','Proveedor','Moneda','Monto','Tipo de cambio','Monto en colones','Estado','Fecha proyectada','Fecha real de pago','Medio de pago','Referencia'];
   const csvEscape = v => `"${String(v??'').replace(/"/g,'""')}"`;
   const filas = lista.map(f => [
-    f.fechaFactura, f.numero, f.proveedor, f.moneda, f.monto, f.estado,
+    f.fechaFactura, f.numero, f.proveedor, f.moneda, f.monto, f.moneda==='USD'?f.tipoCambio:'', f.montoColones, f.estado,
     f.fechaProyectada, f.fechaRealPago, f.medioPago, f.referenciaPago
   ].map(csvEscape).join(','));
   const csv = '\uFEFF' + [encabezados.map(csvEscape).join(','), ...filas].join('\r\n');
@@ -757,10 +772,18 @@ function _renderFacturas() {
         <td>
           <svg class="toggle-arrow" id="${rowId}-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
         </td>
-        <td style="color:var(--muted);font-size:12px;">${f.fechaFactura||'—'}</td>
+        <td style="color:var(--muted);font-size:12px;white-space:nowrap;min-width:90px;">${f.fechaFactura||'—'}</td>
         <td style="font-size:12px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.numero}${dupBadge}</td>
         <td style="font-weight:500;">${f.proveedor}${sinProvBadge}</td>
-        <td class="num" style="font-weight:600;">${fmt(f.monto)}</td>
+        <td class="num" style="font-weight:600;">
+          ${f.moneda === 'USD' ? `
+            <div>US$${fmtN(f.monto)}</div>
+            <div onclick="event.stopPropagation()" style="display:flex;align-items:center;justify-content:flex-end;gap:4px;font-weight:400;font-size:11px;color:var(--muted);margin-top:2px;">
+              TC <input type="number" step="0.01" min="0" class="tc-input" style="width:64px;" value="${f.tipoCambio||''}" placeholder="0.00"
+                onchange="guardarTipoCambio('${f.numero}', this.value)">
+              <span>${f.montoColones!=null ? '= '+fmt(f.montoColones) : '(falta TC)'}</span>
+            </div>` : fmt(f.monto)}
+        </td>
         <td>${badgeEstado(f.estado)}</td>
         <td onclick="event.stopPropagation()">
           <div class="row-actions">
@@ -850,7 +873,7 @@ function actualizarBarraSeleccion() {
   if (!seleccionadas.size) { bar.style.display = 'none'; return; }
   const total = facturasAP
     .filter(f => seleccionadas.has(f.numero))
-    .reduce((a,f) => a + f.monto, 0);
+    .reduce((a,f) => a + (f.montoColones||0), 0);
   document.getElementById('sel-count').textContent = seleccionadas.size;
   document.getElementById('sel-total').textContent = fmt(total);
   bar.style.display = 'flex';
@@ -924,7 +947,7 @@ function renderProyeccion() {
 function renderHistorial() {
   const pagos = facturasAP.filter(f => f.fechaRealPago).map(f => ({
     fecha: f.fechaRealPago, numero: f.numero, proveedor: f.proveedor,
-    monto: f.monto, referencia: f.referenciaPago || '—', medio: f.medioPago || '—'
+    monto: f.montoColones||0, referencia: f.referenciaPago || '—', medio: f.medioPago || '—'
   })).sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
 
   if (!pagos.length) {
@@ -981,9 +1004,9 @@ function renderDuplicados() {
         <td style="font-size:12px;color:var(--muted);">Copia ${o.ordinal}</td>
         <td style="color:var(--muted);">${o.fechaFactura||'—'}</td>
         <td>${o.proveedor}</td>
-        <td style="color:var(--muted);font-size:12px;">${o.moneda}</td>
+        <td style="color:var(--muted);font-size:12px;">${o.moneda}${o.moneda==='USD'?' (US$'+fmtN(o.monto)+')':''}</td>
         <td>${badgeEstado(o.estado)}</td>
-        <td class="num" style="font-weight:600;">${fmt(o.monto)}</td>
+        <td class="num" style="font-weight:600;">${o.montoColones!=null ? fmt(o.montoColones) : '(falta TC)'}</td>
         <td onclick="event.stopPropagation()">
           <button class="btn-mini" style="border-color:var(--red-lt);background:var(--red-bg);color:var(--red);"
             onclick="eliminarFacturaDuplicada('${numero}', ${o.ordinal})">Eliminar esta copia</button>
@@ -1019,7 +1042,7 @@ function irATabDuplicados() {
 async function eliminarFacturaDuplicada(numero, ordinal) {
   const grupo = obtenerDuplicados()[numero] || [];
   const copia = grupo.find(o => o.ordinal === ordinal);
-  const detalle = copia ? `${copia.fechaFactura} · ${copia.proveedor} · ${fmt(copia.monto)}` : numero;
+  const detalle = copia ? `${copia.fechaFactura} · ${copia.proveedor} · ${copia.montoColones!=null ? fmt(copia.montoColones) : 'US$'+fmtN(copia.monto)}` : numero;
   if (!confirm(`¿Eliminar esta copia de la factura ${numero}?\n\n${detalle}\n\nSe borrará de la hoja Registro Facturas en el archivo de Drive. Esta acción no se puede deshacer.`)) return;
 
   try {
@@ -1105,6 +1128,28 @@ async function guardarProyeccionFactura(numero, fecha, rowId) {
   }
 }
 
+// ── TIPO DE CAMBIO (solo facturas en USD) ─────────────────────────
+async function guardarTipoCambio(numero, valor) {
+  const f = facturaPorNumero(numero);
+  if (!f) return;
+  const tc = parseFloat(valor);
+  if (!tc || tc <= 0) { showToast('Ingresá un tipo de cambio válido.', 'error'); return; }
+  try {
+    await postAP({
+      modulo: 'guardar_tc',
+      numero_factura: numero, proveedor: f.proveedor, fecha_factura: f.fechaFactura,
+      monto: f.monto, tipo_cambio: tc
+    });
+    f.tipoCambio    = tc;
+    f.montoColones  = Math.round(f.monto * tc * 100) / 100;
+    if (f.estado !== 'Cancelada') f.saldoPendiente = f.montoColones;
+    showToast('Tipo de cambio guardado ✓', 'success');
+    inicializar();
+  } catch(e) {
+    showToast('No se pudo guardar: ' + e.message, 'error');
+  }
+}
+
 // ── MODAL PAGO TOTAL ───────────────────────────────────────────────
 function abrirModalPago(numero) {
   const f = facturaPorNumero(numero);
@@ -1112,6 +1157,7 @@ function abrirModalPago(numero) {
   document.getElementById('pago-numero').value = numero;
   document.getElementById('pago-sub').textContent = `${numero} · ${f.proveedor} · ${fmt(f.saldoPendiente)}`;
   document.getElementById('pago-fecha').value = hoyISO;
+  document.getElementById('pago-medio').value = 'Transferencia';
   document.getElementById('pago-referencia').value = '';
   document.getElementById('modal-pago').classList.add('open');
 }
@@ -1119,6 +1165,7 @@ function abrirModalPago(numero) {
 async function guardarPago() {
   const numero = document.getElementById('pago-numero').value;
   const fecha  = document.getElementById('pago-fecha').value;
+  const medio  = document.getElementById('pago-medio').value;
   const referencia = document.getElementById('pago-referencia').value.trim();
   if (!fecha) { showToast('Ingresá la fecha de pago.', 'error'); return; }
   const f = facturaPorNumero(numero);
@@ -1127,9 +1174,10 @@ async function guardarPago() {
     await postAP({
       modulo: 'registrar_pago',
       numero_factura: numero, proveedor: f.proveedor, fecha_factura: f.fechaFactura,
-      monto: f.monto, fecha_pago: fecha, referencia_pago: referencia
+      monto: f.monto, fecha_pago: fecha, medio_pago: medio, referencia_pago: referencia
     });
     f.fechaRealPago = fecha;
+    f.medioPago = medio;
     f.referenciaPago = referencia;
     f.estado = 'Cancelada';
     f.saldoPendiente = 0;
