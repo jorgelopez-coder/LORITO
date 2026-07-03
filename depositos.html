@@ -70,6 +70,14 @@ tr:last-child td{border-bottom:none}
 .th-chk,.td-chk{width:34px;text-align:center}
 .fecha-link{color:var(--text);font-weight:500;text-decoration:none;border-bottom:1px dashed var(--border-h);cursor:pointer}
 .fecha-link:hover{color:var(--green)}
+.fecha-toggle{display:inline-flex;align-items:center;gap:6px;background:none;border:none;font:inherit;font-size:13px;color:var(--text);font-weight:500;cursor:pointer;padding:2px 0}
+.fecha-toggle:hover{color:var(--green)}
+.fecha-toggle .chevron{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0;transition:transform .15s}
+.fecha-toggle.open .chevron{transform:rotate(90deg)}
+.fila-detalle{display:none}
+.fila-detalle.open{display:table-row}
+.fila-detalle td{background:var(--surface);padding:1rem 1.25rem}
+.denom-detalle-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:2px 24px;margin-bottom:.75rem}
 .empty{text-align:center;padding:2.5rem;color:var(--subtle);font-size:13px}
 .table-wrap{overflow-x:auto}
 
@@ -187,7 +195,7 @@ tr:last-child td{border-bottom:none}
 <div class="page active" id="tab-resumen">
   <div class="card">
     <p class="card-title">Efectivo ingresado por día</p>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:1rem">Marcá varias fechas para sumar su total. Hacé click sobre una fecha para ver el detalle por denominación.</p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:1rem">Marcá varias fechas para sumar su total. Hacé click sobre una fecha para desplegar el detalle por denominación.</p>
     <div class="toolbar">
       <button class="btn-mini" onclick="seleccionarTodo('resumen')">Seleccionar todo</button>
       <button class="btn-mini" onclick="limpiarSeleccion('resumen')">Limpiar selección</button>
@@ -426,6 +434,8 @@ function agregarPorFecha(records) {
 }
 
 // ── TAB 1: RESUMEN DIARIO ─────────────────────────────────────────
+function idDetalle(fecha) { return 'det-' + fecha; }
+
 function renderResumen() {
   const body = document.getElementById('tabla-resumen-body');
   if (!fechasOrdenadas.length) {
@@ -436,15 +446,33 @@ function renderResumen() {
   body.innerHTML = fechasOrdenadas.map(fecha => {
     const d = porFecha[fecha];
     const asignado = !!fechasAsignadas[fecha];
+    const id = idDetalle(fecha);
     return `<tr>
       <td class="td-chk"><input type="checkbox" class="chk-resumen" value="${fecha}" ${seleccion.resumen.has(fecha)?'checked':''} onchange="actualizarSeleccion('resumen')"></td>
-      <td><a class="fecha-link" onclick="abrirDetalleFecha('${fecha}')">${fechaLbl(fecha)}</a></td>
+      <td>
+        <button type="button" class="fecha-toggle" id="btn-${id}" onclick="toggleDetalleFecha('${fecha}')">
+          <svg class="chevron" viewBox="0 0 16 16" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 4 10 8 6 12"/></svg>
+          ${fechaLbl(fecha)}
+        </button>
+      </td>
       <td class="num">${fmtCRC(d.crc)}</td>
       <td class="num">${d.usd ? fmtUSD(d.usd) : '—'}</td>
       <td>${asignado ? '<span class="badge b-ok">✅ Asignado</span>' : '<span class="badge b-pend">⏳ Pendiente</span>'}</td>
+    </tr>
+    <tr class="fila-detalle" id="${id}">
+      <td></td>
+      <td colspan="4">${renderDenomDetalleHTML(fecha)}</td>
     </tr>`;
   }).join('');
   actualizarSeleccion('resumen');
+}
+
+function toggleDetalleFecha(fecha) {
+  const fila = document.getElementById(idDetalle(fecha));
+  const btn = document.getElementById('btn-' + idDetalle(fecha));
+  if (!fila) return;
+  fila.classList.toggle('open');
+  if (btn) btn.classList.toggle('open');
 }
 
 // ── TAB 2: FECHAS PENDIENTES ──────────────────────────────────────
@@ -499,32 +527,43 @@ function limpiarSeleccion(grupo) {
   actualizarSeleccion(grupo);
 }
 
-// ── MODAL DETALLE POR DENOMINACIÓN ────────────────────────────────
-function abrirDetalleFecha(fecha) {
+// ── DETALLE POR DENOMINACIÓN (compartido: fila desplegable + modal) ──
+function renderDenomDetalleHTML(fecha) {
   const d = porFecha[fecha];
-  if (!d) return;
-  document.getElementById('detalle-sub').textContent = fechaLbl(fecha) + (d.cierres>1 ? ' · ' + d.cierres + ' cierres' : '');
+  if (!d) return '';
 
   const filaDenom = (label, qty, val) => qty > 0
     ? `<div class="denom-detail-row"><span>${label} <span class="q">× ${qty}</span></span><span class="v">${val}</span></div>` : '';
 
-  let html = '<div class="denom-section-label">Billetes ₡</div>';
+  let html = '<div class="denom-detalle-grid">';
+  html += '<div><div class="denom-section-label">Billetes ₡</div>';
   DENOMS_BILLETES_CRC.forEach((v,i) => { html += filaDenom(fmtCRC(v), d.billetesCrc[i], fmtCRC(v*d.billetesCrc[i])); });
-  html += '<div class="denom-section-label">Monedas ₡</div>';
+  html += '</div><div><div class="denom-section-label">Monedas ₡</div>';
   DENOMS_MONEDAS_CRC.forEach((v,i) => { html += filaDenom(fmtCRC(v), d.monedasCrc[i], fmtCRC(v*d.monedasCrc[i])); });
+  html += '</div>';
   if (d.usd > 0) {
-    html += '<div class="denom-section-label">Billetes $</div>';
+    html += '<div><div class="denom-section-label">Billetes $</div>';
     DENOMS_BILLETES_USD.forEach((v,i) => { html += filaDenom('$'+v, d.billetesUsd[i], '$'+(v*d.billetesUsd[i])); });
+    html += '</div>';
   }
+  html += '</div>';
 
-  html += `<div class="cuadre-card" style="margin-top:1.25rem">
+  html += `<div class="cuadre-card" style="margin-top:.5rem">
     <div class="cuadre-row"><label>Total contado en caja (₡)</label><span class="val">${fmtCRC(d.caja)}</span></div>
     <div class="cuadre-row"><label>Fondo de caja retenido (₡)</label><span class="val">${fmtCRC(d.fondo)}</span></div>
     <div class="cuadre-total"><span>A depositar (₡)</span><span class="val">${fmtCRC(d.crc)}</span></div>
     ${d.usd > 0 ? `<div class="cuadre-row" style="margin-top:6px"><label>A depositar ($)</label><span class="val">${fmtUSD(d.usd)}</span></div>` : ''}
   </div>`;
 
-  document.getElementById('detalle-body').innerHTML = html;
+  return html;
+}
+
+// ── MODAL DETALLE POR DENOMINACIÓN (pestaña Asignar depósito) ────
+function abrirDetalleFecha(fecha) {
+  const d = porFecha[fecha];
+  if (!d) return;
+  document.getElementById('detalle-sub').textContent = fechaLbl(fecha) + (d.cierres>1 ? ' · ' + d.cierres + ' cierres' : '');
+  document.getElementById('detalle-body').innerHTML = renderDenomDetalleHTML(fecha);
   document.getElementById('modal-detalle').classList.add('open');
 }
 
