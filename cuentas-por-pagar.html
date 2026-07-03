@@ -319,11 +319,12 @@
   <div id="tab-proyeccion" style="display:none;">
     <div class="card">
       <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:1rem 1.25rem;border-bottom:1px solid var(--border);">
-        Proyección de pagos pendientes agrupada por fecha proyectada
+        Línea de tiempo de pagos proyectados
       </div>
       <div class="tabla-wrap" id="tabla-proyeccion">
         <div class="empty"><span class="spinner"></span></div>
       </div>
+      <div id="proyeccion-resumen" style="padding:.85rem 1.25rem;font-size:12px;color:var(--muted);border-top:1px solid var(--border);"></div>
     </div>
   </div>
 
@@ -1028,68 +1029,69 @@ function actualizarBarraSeleccion() {
   bar.style.display = 'flex';
 }
 
-// ── RENDER PROYECCIÓN (agrupada por fecha proyectada) ─────────────
+// ── RENDER PROYECCIÓN (línea de tiempo: columnas = fechas, filas = proveedor/factura) ──
 function renderProyeccion() {
   const pendientes = facturasAP.filter(f => f.estado !== 'Cancelada');
   const conFecha = pendientes.filter(f => f.fechaProyectada);
-  const sinFecha = pendientes.filter(f => !f.fechaProyectada);
 
-  const grupos = {};
-  conFecha.forEach(f => {
-    if (!grupos[f.fechaProyectada]) grupos[f.fechaProyectada] = [];
-    grupos[f.fechaProyectada].push(f);
-  });
-  const fechas = Object.keys(grupos).sort();
+  if (!conFecha.length) {
+    document.getElementById('tabla-proyeccion').innerHTML = '<div class="empty">Ninguna factura pendiente tiene fecha proyectada todavía.</div>';
+    document.getElementById('proyeccion-resumen').innerHTML = '';
+  } else {
+    const fechas = [...new Set(conFecha.map(f => f.fechaProyectada))].sort();
 
-  if (!fechas.length && !sinFecha.length) {
-    document.getElementById('tabla-proyeccion').innerHTML = '<div class="empty">No hay facturas pendientes de pago.</div>';
-    return;
-  }
+    const filas = [...conFecha].sort((a,b) =>
+      a.proveedor.localeCompare(b.proveedor) || a.numero.localeCompare(b.numero));
 
-  let acumulado = 0;
-  const filasFechas = fechas.map(fecha => {
-    const grupo = grupos[fecha];
-    const totalGrupo = grupo.reduce((a,f) => a + f.saldoPendiente, 0);
-    acumulado += totalGrupo;
-    const rowId = 'proy-' + fecha;
-    const detalle = `
-      <table class="detail-table">
-        <thead><tr><th>Factura</th><th>Proveedor</th><th style="text-align:right;">Saldo</th></tr></thead>
-        <tbody>
-          ${grupo.map(f => `<tr>
-            <td style="color:var(--muted);">${f.numero}</td>
-            <td>${f.proveedor}</td>
-            <td class="num">${fmt(f.saldoPendiente)}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table>`;
-    return `
-      <tr class="tr-main" onclick="toggleDetalle('${rowId}')">
-        <td><svg class="toggle-arrow" id="${rowId}-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg></td>
-        <td style="font-weight:500;">${fecha}</td>
-        <td class="num">${grupo.length} factura${grupo.length!==1?'s':''}</td>
-        <td class="num" style="font-weight:700;color:var(--green);">${fmt(totalGrupo)}</td>
-        <td class="num" style="color:var(--muted);">${fmt(acumulado)}</td>
-      </tr>
-      <tr class="tr-detail" id="${rowId}">
-        <td class="detail-cell" colspan="5"><div class="detail-inner">${detalle}</div></td>
+    const totalesPorDia = {};
+    fechas.forEach(fecha => {
+      totalesPorDia[fecha] = conFecha
+        .filter(f => f.fechaProyectada === fecha)
+        .reduce((a,f) => a + f.saldoPendiente, 0);
+    });
+    const totalGeneral = fechas.reduce((a,fecha) => a + totalesPorDia[fecha], 0);
+
+    const colFija = 'position:sticky;left:0;z-index:1;';
+
+    const headFechas = fechas.map(fecha => {
+      const d = new Date(fecha + 'T00:00:00');
+      const corto = d.toLocaleDateString('es-CR', { day:'2-digit', month:'short' });
+      return `<th style="text-align:center;min-width:100px;">${corto}<br><span style="font-weight:400;font-size:9px;color:var(--subtle);text-transform:none;letter-spacing:0;">${fecha}</span></th>`;
+    }).join('');
+
+    const filasHtml = filas.map(f => {
+      const celdas = fechas.map(fecha => f.fechaProyectada === fecha
+        ? `<td class="num" style="font-weight:600;">${fmt(f.saldoPendiente)}</td>`
+        : `<td class="num" style="color:var(--subtle);">·</td>`
+      ).join('');
+      return `<tr>
+        <td style="${colFija}background:var(--card);white-space:nowrap;">
+          <div style="font-weight:500;">${f.proveedor}</div>
+          <div style="font-size:11px;color:var(--muted);">${f.numero}</div>
+        </td>
+        ${celdas}
       </tr>`;
-  }).join('');
+    }).join('');
 
-  const filaSinFecha = sinFecha.length ? `
-    <tr>
-      <td></td>
-      <td style="font-weight:500;color:var(--red);">Sin fecha proyectada</td>
-      <td class="num">${sinFecha.length} factura${sinFecha.length!==1?'s':''}</td>
-      <td class="num" style="font-weight:700;color:var(--red);">${fmt(sinFecha.reduce((a,f)=>a+f.saldoPendiente,0))}</td>
-      <td></td>
-    </tr>` : '';
+    const filaTotal = `
+      <tr style="background:var(--surface);">
+        <td style="${colFija}background:var(--surface);font-weight:700;">Total por día</td>
+        ${fechas.map(fecha => `<td class="num" style="font-weight:700;color:var(--green);">${fmt(totalesPorDia[fecha])}</td>`).join('')}
+      </tr>`;
 
-  document.getElementById('tabla-proyeccion').innerHTML = `
-    <table>
-      <thead><tr><th></th><th>Fecha proyectada</th><th style="text-align:right;">Facturas</th><th style="text-align:right;">Total del día</th><th style="text-align:right;">Acumulado</th></tr></thead>
-      <tbody>${filasFechas}${filaSinFecha}</tbody>
-    </table>`;
+    document.getElementById('tabla-proyeccion').innerHTML = `
+      <table>
+        <thead><tr>
+          <th style="${colFija}background:var(--surface);">Proveedor / Factura</th>
+          ${headFechas}
+        </tr></thead>
+        <tbody>${filasHtml}${filaTotal}</tbody>
+      </table>`;
+
+    document.getElementById('proyeccion-resumen').innerHTML = `
+      ${fechas.length} fecha${fechas.length!==1?'s':''} proyectada${fechas.length!==1?'s':''} ·
+      ${conFecha.length} factura${conFecha.length!==1?'s':''} · Total: <strong style="color:var(--green);">${fmt(totalGeneral)}</strong>`;
+  }
 }
 
 // ── RENDER HISTORIAL (pagos registrados) ──────────────────────────
