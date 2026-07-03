@@ -110,9 +110,15 @@
     #btn-toggle-filtros.activo { border-color:var(--green-lt); background:var(--green-bg); color:var(--green); }
     .filtro-badge { display:inline-flex; align-items:center; justify-content:center; min-width:16px; height:16px; padding:0 4px; border-radius:20px; background:var(--green); color:#fff; font-size:10px; font-weight:700; }
 
-    /* Select inline compacto (cuenta de gasto) */
-    .inline-sel { font-size:12px; padding:5px 7px; border-radius:7px; border:1px solid var(--border); background:var(--card); color:var(--text); outline:none; cursor:pointer; max-width:150px; }
-    .inline-sel:focus { border-color:var(--green); }
+    /* Filtro de estado multi-selección (chips) */
+    .estado-filtro { display:flex; gap:6px; flex-wrap:wrap; }
+    .estado-chip { display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:500; padding:7px 12px; border-radius:20px; border:1px solid var(--border); background:var(--card); color:var(--muted); cursor:pointer; user-select:none; transition:background .12s,border-color .12s,color .12s; }
+    .estado-chip input { display:none; }
+    .estado-chip:hover { border-color:var(--border-h); }
+    .estado-chip.chk-tiempo.activo    { background:var(--green-bg);  border-color:var(--green-lt);  color:var(--green); }
+    .estado-chip.chk-vencida.activo   { background:var(--red-bg);    border-color:var(--red-lt);    color:var(--red); }
+    .estado-chip.chk-abono.activo     { background:var(--amber-bg); border-color:var(--amber-lt);  color:var(--amber); }
+    .estado-chip.chk-cancelada.activo { background:var(--blue-bg);   border-color:var(--blue-lt);   color:var(--blue); }
 
     .proj-input { width:130px; font-size:12px; padding:5px 7px; }
     .proy-wrap { display:inline-block; }
@@ -247,7 +253,7 @@
     <div class="toolbar">
       <div class="search-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" class="search-input" id="s-fact" placeholder="Buscar factura o proveedor…" oninput="renderFacturas()">
+        <input type="text" class="search-input" id="s-fact" placeholder="Buscar factura, proveedor o referencia de pago…" oninput="renderFacturas()">
       </div>
       <button class="btn-mini" id="btn-toggle-filtros" onclick="toggleFiltros()" style="display:flex;align-items:center;gap:6px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
@@ -262,17 +268,13 @@
     </div>
 
     <div class="card" id="panel-filtros" style="display:none;padding:1rem 1.25rem;margin-bottom:1rem;">
-      <div class="toolbar" style="margin-bottom:.75rem;">
-        <select class="filter-sel" id="f-estado" onchange="renderFacturas()">
-          <option value="">Todos los estados</option>
-          <option value="A tiempo">A tiempo</option>
-          <option value="Vencida">Vencida</option>
-          <option value="Abono">Abono</option>
-          <option value="Cancelada">Cancelada</option>
-        </select>
-        <select class="filter-sel" id="f-cuenta" onchange="renderFacturas()">
-          <option value="">Todas las cuentas de gasto</option>
-        </select>
+      <div class="toolbar" style="margin-bottom:.75rem;align-items:center;">
+        <div class="estado-filtro" id="f-estado">
+          <label class="estado-chip chk-tiempo"><input type="checkbox" value="A tiempo" onchange="toggleEstadoChip(this)"><span>A tiempo</span></label>
+          <label class="estado-chip chk-vencida"><input type="checkbox" value="Vencida" onchange="toggleEstadoChip(this)"><span>Vencida</span></label>
+          <label class="estado-chip chk-abono"><input type="checkbox" value="Abono" onchange="toggleEstadoChip(this)"><span>Abono</span></label>
+          <label class="estado-chip chk-cancelada"><input type="checkbox" value="Cancelada" onchange="toggleEstadoChip(this)"><span>Cancelada</span></label>
+        </div>
         <select class="filter-sel" id="f-proveedor" onchange="renderFacturas()">
           <option value="">Todos los proveedores</option>
         </select>
@@ -457,12 +459,6 @@ const COMPRAS_SHEET_ID = '1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw';
 const APPS_SCRIPT_AP = 'https://script.google.com/macros/s/AKfycbyqdI4EGUgcahTiyz_GBwvUQLWORT_TUVBvFMPGdMve1-3q3ge8mioZ458_zsbMbUqa/exec';
 // ─────────────────────────────────────────────────────────────────
 
-const CUENTAS_GASTO = [
-  'Frutas y Verduras','Carnes y Aves','Mariscos','Lácteos y Huevos','Bebidas','Abarrotes',
-  'Limpieza e Higiene','Empaques y Desechables','Panadería y Repostería','Aceites y Grasas',
-  'Condimentos y Especias','Servicios','Otro'
-];
-
 const hoy = new Date();
 document.getElementById('date-chip').textContent =
   hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
@@ -478,12 +474,6 @@ let facturasAP   = [];   // dataset ya calculado (estado, saldo, etc.)
 let pagFacturas  = 1;
 const POR_PAGINA = 15;
 const seleccionadas = new Set(); // números de factura marcados con check
-
-function poblarSelectsEstaticos() {
-  document.getElementById('f-cuenta').innerHTML = '<option value="">Todas las cuentas de gasto</option>' +
-    CUENTAS_GASTO.map(c => `<option value="${c}">${c}</option>`).join('');
-}
-poblarSelectsEstaticos();
 
 // ── GVIZ: leer hoja pública del Sheet de compras ──────────────────
 // Nota: si la hoja solicitada no existe todavía (p.ej. "CuentasPorPagar"
@@ -635,7 +625,6 @@ function construirFacturasAP() {
 
     const monto           = limpiarMonto(r['TOTAL']);
     const moneda          = r['Moneda'] || 'CRC';
-    const cuentaGasto     = r['Cuenta de gasto'] || '';
     const fechaProyectada = isoDate(r['Fecha proyectada de pago']);
     const fechaRealPago   = isoDate(r['Fecha de pago']);
     const medioPago       = r['Medio de pago'] || '';
@@ -668,7 +657,7 @@ function construirFacturasAP() {
     if (estado === 'Cancelada') saldoPendiente = 0;
 
     return {
-      numero, proveedor: proveedorNombre, fechaFactura, monto, moneda, tipoCambio, montoColones, cuentaGasto,
+      numero, proveedor: proveedorNombre, fechaFactura, monto, moneda, tipoCambio, montoColones,
       sinProveedor, cuentaProveedor, fechaProyectada, fechaRealPago, referenciaPago, medioPago, totalAbonado,
       saldoPendiente, estado, duplicada: conteo[claveDup(p)] > 1, ordinal: contadorOrdinal[numero]
     };
@@ -744,15 +733,27 @@ function badgeEstado(estado) {
   return `<span class="badge ${cls}"><span class="b-dot"></span>${estado}</span>`;
 }
 
-function opcionesCuentaGasto(valorActual) {
-  return '<option value=""' + (!valorActual?' selected':'') + '>Sin asignar</option>' +
-    CUENTAS_GASTO.map(c => `<option value="${c}"${c===valorActual?' selected':''}>${c}</option>`).join('');
-}
-
 function limpiarFiltroFecha() {
   document.getElementById('f-desde').value = '';
   document.getElementById('f-hasta').value = '';
   renderFacturas();
+}
+
+// ── FILTRO DE ESTADO (multi-selección) ────────────────────────────
+function toggleEstadoChip(checkbox) {
+  checkbox.closest('.estado-chip').classList.toggle('activo', checkbox.checked);
+  renderFacturas();
+}
+
+function estadosSeleccionados() {
+  return [...document.querySelectorAll('#f-estado input:checked')].map(c => c.value);
+}
+
+function limpiarEstadoFiltro() {
+  document.querySelectorAll('#f-estado input').forEach(c => {
+    c.checked = false;
+    c.closest('.estado-chip').classList.remove('activo');
+  });
 }
 
 // ── PANEL DE FILTROS (colapsable) ─────────────────────────────────
@@ -766,8 +767,7 @@ function toggleFiltros(forzarAbierto) {
 
 function limpiarTodosFiltros() {
   document.getElementById('s-fact').value = '';
-  document.getElementById('f-estado').value = '';
-  document.getElementById('f-cuenta').value = '';
+  limpiarEstadoFiltro();
   document.getElementById('f-proveedor').value = '';
   document.getElementById('f-anio').value = '';
   document.getElementById('f-mes').value = '';
@@ -777,8 +777,8 @@ function limpiarTodosFiltros() {
 }
 
 function actualizarContadorFiltros() {
-  const ids = ['f-estado','f-cuenta','f-proveedor','f-anio','f-mes','f-desde','f-hasta'];
-  const activos = ids.filter(id => document.getElementById(id).value).length;
+  const ids = ['f-proveedor','f-anio','f-mes','f-desde','f-hasta'];
+  const activos = ids.filter(id => document.getElementById(id).value).length + (estadosSeleccionados().length ? 1 : 0);
   const badge = document.getElementById('filtro-count');
   const btn   = document.getElementById('btn-toggle-filtros');
   if (activos) {
@@ -794,8 +794,7 @@ function actualizarContadorFiltros() {
 // Filtro compartido entre el render de la tabla y la descarga del reporte.
 function obtenerFacturasFiltradas() {
   const busq      = document.getElementById('s-fact').value.toLowerCase();
-  const estado    = document.getElementById('f-estado').value;
-  const cuenta    = document.getElementById('f-cuenta').value;
+  const estados   = estadosSeleccionados();
   const proveedor = document.getElementById('f-proveedor').value;
   const anio      = document.getElementById('f-anio').value;
   const mes       = document.getElementById('f-mes').value;
@@ -803,15 +802,16 @@ function obtenerFacturasFiltradas() {
   const hasta     = document.getElementById('f-hasta').value;
 
   return facturasAP.filter(f => {
-    const matchBusq      = !busq || f.numero.toLowerCase().includes(busq) || f.proveedor.toLowerCase().includes(busq);
-    const matchEstado    = !estado || f.estado === estado;
-    const matchCuenta    = !cuenta || f.cuentaGasto === cuenta;
+    const matchBusq      = !busq || f.numero.toLowerCase().includes(busq) || f.proveedor.toLowerCase().includes(busq) ||
+      (f.referenciaPago||'').toLowerCase().includes(busq) ||
+      abonosDeFactura(f.numero).some(a => (a['Referencia']||'').toLowerCase().includes(busq));
+    const matchEstado    = !estados.length || estados.includes(f.estado);
     const matchProveedor = !proveedor || f.proveedor === proveedor;
     const matchAnio      = !anio || f.fechaFactura.substring(0,4) === anio;
     const matchMes       = !mes || f.fechaFactura.substring(5,7) === mes;
     const matchDesde     = !desde || (f.fechaFactura && f.fechaFactura >= desde);
     const matchHasta     = !hasta || (f.fechaFactura && f.fechaFactura <= hasta);
-    return matchBusq && matchEstado && matchCuenta && matchProveedor && matchAnio && matchMes && matchDesde && matchHasta;
+    return matchBusq && matchEstado && matchProveedor && matchAnio && matchMes && matchDesde && matchHasta;
   }).sort((a,b) => (b.fechaFactura||'').localeCompare(a.fechaFactura||''));
 }
 
@@ -820,10 +820,10 @@ function descargarReporte() {
   const lista = obtenerFacturasFiltradas();
   if (!lista.length) { showToast('No hay facturas para exportar con los filtros actuales.', 'error'); return; }
 
-  const encabezados = ['Fecha factura','Factura','Proveedor','Cuenta de gasto','Moneda','Monto','Tipo de cambio','Monto en colones','Estado','Fecha proyectada','Total abonado','Saldo pendiente','Fecha real de pago','Medio de pago','Referencia'];
+  const encabezados = ['Fecha factura','Factura','Proveedor','Moneda','Monto','Tipo de cambio','Monto en colones','Estado','Fecha proyectada','Total abonado','Saldo pendiente','Fecha real de pago','Medio de pago','Referencia'];
   const csvEscape = v => `"${String(v??'').replace(/"/g,'""')}"`;
   const filas = lista.map(f => [
-    f.fechaFactura, f.numero, f.proveedor, f.cuentaGasto, f.moneda, f.monto, f.moneda==='USD'?f.tipoCambio:'', f.montoColones, f.estado,
+    f.fechaFactura, f.numero, f.proveedor, f.moneda, f.monto, f.moneda==='USD'?f.tipoCambio:'', f.montoColones, f.estado,
     f.fechaProyectada, f.totalAbonado, f.saldoPendiente, f.fechaRealPago, f.medioPago, f.referenciaPago
   ].map(csvEscape).join(','));
   const csv = '\uFEFF' + [encabezados.map(csvEscape).join(','), ...filas].join('\r\n');
@@ -915,11 +915,6 @@ function _renderFacturas() {
         <td style="color:var(--muted);font-size:12px;white-space:nowrap;min-width:90px;">${f.fechaFactura||'—'}</td>
         <td style="font-size:12px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.numero}${dupBadge}</td>
         <td style="font-weight:500;">${f.proveedor}${sinProvBadge}</td>
-        <td onclick="event.stopPropagation()">
-          <select class="inline-sel" ${!puedeAccionar?'disabled':''} onchange="guardarCuentaGastoFactura('${f.numero}', ${f.ordinal}, this.value)">
-            ${opcionesCuentaGasto(f.cuentaGasto)}
-          </select>
-        </td>
         <td class="num" style="font-weight:600;">
           ${f.moneda === 'USD' ? `
             <div>US$${fmtN(f.monto)}</div>
@@ -939,7 +934,7 @@ function _renderFacturas() {
         </td>
       </tr>
       <tr class="tr-detail" id="${rowId}">
-        <td class="detail-cell" colspan="9">
+        <td class="detail-cell" colspan="8">
           <div class="detail-inner">${detalleHtml}</div>
         </td>
       </tr>`;
@@ -951,7 +946,7 @@ function _renderFacturas() {
     <table>
       <thead><tr>
         <th><input type="checkbox" id="chk-all" ${todasMarcadasEnPagina?'checked':''} onchange="toggleSeleccionarTodos(this.checked)"></th>
-        <th>Fecha</th><th>Factura</th><th>Proveedor</th><th>Cuenta de gasto</th>
+        <th>Fecha</th><th>Factura</th><th>Proveedor</th>
         <th style="text-align:right;">Monto</th><th>Estado</th><th style="text-align:right;">Saldo</th>
         <th>Acciones</th>
       </tr></thead>
@@ -1323,21 +1318,6 @@ async function guardarTipoCambio(numero, valor) {
     if (f.estado !== 'Cancelada') f.saldoPendiente = Math.round((f.montoColones - (f.totalAbonado||0)) * 100) / 100;
     showToast('Tipo de cambio guardado ✓', 'success');
     inicializar();
-  } catch(e) {
-    showToast('No se pudo guardar: ' + e.message, 'error');
-  }
-}
-
-async function guardarCuentaGastoFactura(numero, ordinal, valor) {
-  const f = facturaPorNumero(numero);
-  if (!f) return;
-  try {
-    await postAP({
-      modulo: 'guardar_cuenta_gasto',
-      numero_factura: numero, ordinal: ordinal, cuenta_gasto: valor
-    });
-    f.cuentaGasto = valor;
-    showToast('Cuenta de gasto guardada ✓', 'success');
   } catch(e) {
     showToast('No se pudo guardar: ' + e.message, 'error');
   }
