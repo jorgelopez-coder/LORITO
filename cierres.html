@@ -1004,11 +1004,12 @@ async function submitCierre() {
       headers:{'Content-Type':'text/plain'},
       body: JSON.stringify(payload)
     });
-    showToast('Cierre guardado correctamente');
-    limpiarForm();
+    showToast('Cierre guardado correctamente — ya podés enviarlo por WhatsApp');
+    btn.textContent = 'Cierre guardado ✓';
+    // El botón queda deshabilitado para evitar guardar dos veces; "Limpiar" lo reactiva.
+    // El botón de WhatsApp sigue disponible para enviar el resumen de este cierre.
   } catch(e) {
     showToast('Error al guardar — revisá la conexión', 'error');
-  } finally {
     btn.disabled = false; btn.textContent = 'Guardar cierre ✓';
   }
 }
@@ -1260,6 +1261,8 @@ function limpiarForm() {
     const el=document.getElementById(id); if(el)el.value='';
   });
   document.getElementById('f-fecha').value = hoy();
+  const btnSubmit = document.getElementById('btn-submit');
+  if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.textContent = 'Guardar cierre ✓'; }
   DENOMS_CRC.forEach(d => { const el=document.getElementById('d-'+d); if(el)el.value=''; });
   DENOMS_USD.forEach(({id}) => { const el=document.getElementById('d-'+id); if(el)el.value=''; });
   calcCuadre(); actualizarResumen(); calcRevisionTarjeta();
