@@ -530,7 +530,8 @@ function filaAProveedor(r) {
   return {
     id: r['ID'] || '',
     nombre_juridico: r['Nombre jurídico'] || '',
-    nombre_comercial: r['Nombre comercial'] || ''
+    nombre_comercial: r['Nombre comercial'] || '',
+    cuenta: r['Cuenta'] || ''
   };
 }
 
@@ -648,6 +649,7 @@ function construirFacturasAP() {
 
     const prov = buscarProveedor(proveedorNombre);
     const sinProveedor = !prov;
+    const cuentaProveedor = prov ? (prov.cuenta || '') : '';
 
     let saldoPendiente = montoColones != null ? Math.round((montoColones - totalAbonado) * 100) / 100 : 0;
 
@@ -667,7 +669,7 @@ function construirFacturasAP() {
 
     return {
       numero, proveedor: proveedorNombre, fechaFactura, monto, moneda, tipoCambio, montoColones, cuentaGasto,
-      sinProveedor, fechaProyectada, fechaRealPago, referenciaPago, medioPago, totalAbonado,
+      sinProveedor, cuentaProveedor, fechaProyectada, fechaRealPago, referenciaPago, medioPago, totalAbonado,
       saldoPendiente, estado, duplicada: conteo[claveDup(p)] > 1, ordinal: contadorOrdinal[numero]
     };
   });
@@ -868,6 +870,7 @@ function _renderFacturas() {
         <div style="font-size:12px;color:var(--muted);line-height:2;">
           Fecha factura: <strong style="color:var(--text);">${f.fechaFactura||'—'}</strong><br>
           Moneda: <strong style="color:var(--text);">${f.moneda||'—'}</strong><br>
+          Número de cuenta: <strong style="color:var(--text);">${f.cuentaProveedor||'Sin registrar'}</strong><br>
           Fecha proyectada de pago:
           <span class="proy-placeholder" id="proyph-${rowId}" style="${seleccionadas.has(f.numero)?'display:none;':''}">
             <strong style="color:var(--text);">${f.fechaProyectada||'Sin definir'}</strong>
