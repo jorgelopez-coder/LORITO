@@ -325,6 +325,10 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
             <label for="f-propina-otro">Propina Otro (₡)</label>
             <input type="number" id="f-propina-otro" placeholder="0" min="0" oninput="actualizarResumen()"/>
           </div>
+          <div class="field">
+            <label for="f-propina-dolares">Propina en Dólares ($)</label>
+            <input type="number" id="f-propina-dolares" placeholder="0.00" min="0" step="0.01" oninput="calcDolares();actualizarResumen()"/>
+          </div>
         </div>
       </div>
 
@@ -333,12 +337,8 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
         <p class="denom-group-title">💵 Ventas en Dólares</p>
         <div class="field-row-3">
           <div class="field">
-            <label for="f-usd-efectivo">Efectivo ($)</label>
-            <input type="number" id="f-usd-efectivo" placeholder="0.00" min="0" step="0.01" oninput="calcDolares();actualizarResumen()"/>
-          </div>
-          <div class="field">
-            <label for="f-usd-tarjeta">Tarjeta ($)</label>
-            <input type="number" id="f-usd-tarjeta" placeholder="0.00" min="0" step="0.01" oninput="calcDolares();actualizarResumen()"/>
+            <label for="f-usd-ventas">Ventas en Dólares ($)</label>
+            <input type="number" id="f-usd-ventas" placeholder="0.00" min="0" step="0.01" oninput="calcDolares();actualizarResumen()"/>
           </div>
           <div class="field">
             <label>Total $ en colones</label>
@@ -673,8 +673,10 @@ function aplicarExtraccionIA(d) {
   setIfNum('f-propina-tarjeta', d.propinaTarjeta);
   setIfNum('f-propina-credito', d.propinaCredito);
   setIfNum('f-propina-otro', d.propinaOtros);
+  setIfNum('f-usd-ventas', d.ventasDolares);
+  setIfNum('f-propina-dolares', d.propinaDolares);
   setIfNum('f-datafono-total', d.datafonoTotalGlobal);
-  actualizarResumen(); calcCuadre(); calcRevisionTarjeta();
+  calcDolares(); actualizarResumen(); calcCuadre(); calcRevisionTarjeta();
 
   const resultBox = document.getElementById('ia-resultado');
   resultBox.style.display = 'block';
@@ -745,8 +747,8 @@ async function cargarEncargados() {
 function getTotales() {
   const v = id => parseFloat(document.getElementById(id)?.value) || 0;
   const tc = getTC();
-  const usdE = v('f-usd-efectivo'), usdT = v('f-usd-tarjeta');
-  const usdTotalCrc = Math.round((usdE + usdT) * tc);
+  const usdVentas = v('f-usd-ventas');
+  const usdTotalCrc = Math.round(usdVentas * tc);
   const efectivo    = v('f-efectivo');
   const tarjeta     = v('f-tarjeta');
   const sinpe       = v('f-sinpe');
@@ -757,12 +759,14 @@ function getTotales() {
   const propinaTarjeta  = v('f-propina-tarjeta');
   const propinaCredito  = v('f-propina-credito');
   const propinaOtro     = v('f-propina-otro');
-  const servicio    = propinaEfectivo + propinaTarjeta + propinaCredito + propinaOtro;
+  const propinaDolares  = v('f-propina-dolares');
+  const propinaDolaresCrc = Math.round(propinaDolares * tc);
+  const servicio    = propinaEfectivo + propinaTarjeta + propinaCredito + propinaOtro + propinaDolaresCrc;
   const datafonoTotal = v('f-datafono-total');
   const totalVentas = efectivo + tarjeta + sinpe + otras + credito + plataformas + servicio + usdTotalCrc;
   return {efectivo,tarjeta,sinpe,otras,credito,plataformas,servicio,
-    propinaEfectivo,propinaTarjeta,propinaCredito,propinaOtro,datafonoTotal,
-    usdE,usdT,tc,usdTotalCrc,totalVentas};
+    propinaEfectivo,propinaTarjeta,propinaCredito,propinaOtro,propinaDolares,datafonoTotal,
+    usdVentas,tc,usdTotalCrc,totalVentas};
 }
 
 function actualizarResumen() {
@@ -784,9 +788,8 @@ function actualizarResumen() {
 
 function calcDolares() {
   const tc = getTC();
-  const usdE = parseFloat(document.getElementById('f-usd-efectivo')?.value) || 0;
-  const usdT = parseFloat(document.getElementById('f-usd-tarjeta')?.value) || 0;
-  const total = (usdE + usdT) * tc;
+  const usdVentas = parseFloat(document.getElementById('f-usd-ventas')?.value) || 0;
+  const total = usdVentas * tc;
   document.getElementById('f-usd-total-crc').value =
     tc > 0 ? '₡' + Math.round(total).toLocaleString('es-CR') : '(configure TC)';
 }
@@ -851,8 +854,10 @@ function calcCuadre() {
   const fondo    = parseFloat(document.getElementById('f-fondo')?.value) || 0;
   const esperado = efectivo + fondo;
   const diff     = total - esperado;
-  const usdEfectivo = parseFloat(document.getElementById('f-usd-efectivo')?.value) || 0;
-  const usdDiff  = totalUsd - usdEfectivo;
+  const usdVentas = parseFloat(document.getElementById('f-usd-ventas')?.value) || 0;
+  const propinaDolares = parseFloat(document.getElementById('f-propina-dolares')?.value) || 0;
+  const usdEsperado = usdVentas + propinaDolares;
+  const usdDiff  = totalUsd - usdEsperado;
 
   document.getElementById('cuadre-total').textContent   = fmtCRC(total);
   document.getElementById('cuadre-esperado').textContent= fmtCRC(Math.max(0, esperado));
@@ -877,7 +882,7 @@ function calcCuadre() {
 
   const usdRow  = document.getElementById('usd-diff-row');
   const usdDiffEl = document.getElementById('cuadre-usd-diff');
-  if (usdEfectivo > 0 || totalUsd > 0) {
+  if (usdEsperado > 0 || totalUsd > 0) {
     usdRow.style.display = 'flex';
     usdDiffEl.textContent = (usdDiff >= 0 ? '+' : '') + '$' + usdDiff.toFixed(2);
     usdDiffEl.className = 'val ' + (usdDiff === 0 ? 'diff-ok' : Math.abs(usdDiff) <= 1 ? 'diff-minor' : 'diff-warn');
@@ -934,8 +939,8 @@ function irPaso1Siguiente() {
 function construirPayload() {
   const encargado = document.getElementById('f-encargado').value.trim();
   const {efectivo,tarjeta,sinpe,otras,credito,plataformas,servicio,
-    propinaEfectivo,propinaTarjeta,propinaCredito,propinaOtro,datafonoTotal,
-    usdE,usdT,tc,usdTotalCrc,totalVentas} = getTotales();
+    propinaEfectivo,propinaTarjeta,propinaCredito,propinaOtro,propinaDolares,datafonoTotal,
+    usdVentas,tc,usdTotalCrc,totalVentas} = getTotales();
   const diferenciaTarjeta = datafonoTotal - (tarjeta + propinaTarjeta);
   const tarjetaCuadra = Math.abs(diferenciaTarjeta) <= 500;
   const fondo = parseFloat(document.getElementById('f-fondo').value) || 0;
@@ -959,10 +964,10 @@ function construirPayload() {
     fecha, hora: new Date().toLocaleTimeString('es-CR',{hour:'2-digit',minute:'2-digit'}),
     punto: PUNTO_VENTA, encargado,
     efectivo, tarjeta, sinpe, otras, credito, plataformas, plataformasDesc, servicio,
-    propinaEfectivo, propinaTarjeta, propinaCredito, propinaOtro,
+    propinaEfectivo, propinaTarjeta, propinaCredito, propinaOtro, propinaDolares,
     datafonoTotal, diferenciaTarjeta, tarjetaCuadra,
     totalVentas, fondo, caja, diferencia, obs,
-    usdEfectivo: usdE, usdTarjeta: usdT, tc, usdTotalCrc,
+    usdEfectivo: usdVentas, usdTarjeta: 0, tc, usdTotalCrc,
     d50000: denomDetalle[50000]||0, d20000: denomDetalle[20000]||0,
     d10000: denomDetalle[10000]||0, d5000: denomDetalle[5000]||0,
     d2000: denomDetalle[2000]||0,   d1000: denomDetalle[1000]||0,
@@ -975,8 +980,8 @@ function construirPayload() {
     usdCajaTotalContado,
     cajaTotalContada: caja, fondoCajaInicial: fondo,
     efectivoEsperado: efectivo + fondo, diferenciaColones: diferencia,
-    usdTotalContado: usdCajaTotalContado, usdReportadoVentas: usdE,
-    diferenciaUsd: usdCajaTotalContado - usdE,
+    usdTotalContado: usdCajaTotalContado, usdReportadoVentas: usdVentas + propinaDolares,
+    diferenciaUsd: usdCajaTotalContado - (usdVentas + propinaDolares),
     fotoSistema: fotos.sistema ? fotos.sistema.base64 : '',
     fotoSistemaMime: fotos.sistema ? fotos.sistema.mime : '',
     fotoDatafono: '',
@@ -1251,8 +1256,8 @@ function renderDetalleCierre(r) {
 function limpiarForm() {
   ['f-encargado','f-obs'].forEach(id => { const el=document.getElementById(id); if(el)el.value=''; });
   ['f-efectivo','f-tarjeta','f-sinpe','f-otras','f-credito','f-plataformas','f-plataformas-desc',
-   'f-propina-efectivo','f-propina-tarjeta','f-propina-credito','f-propina-otro','f-datafono-total',
-   'f-tc','f-usd-efectivo','f-usd-tarjeta','f-fondo'].forEach(id => {
+   'f-propina-efectivo','f-propina-tarjeta','f-propina-credito','f-propina-otro','f-propina-dolares','f-datafono-total',
+   'f-tc','f-usd-ventas','f-fondo'].forEach(id => {
     const el=document.getElementById(id); if(el)el.value='';
   });
   document.getElementById('f-fecha').value = hoy();
