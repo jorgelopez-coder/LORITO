@@ -103,10 +103,16 @@
     .btn-mini:hover { border-color:var(--border-h); color:var(--text); }
     .btn-mini.pago  { border-color:var(--green-lt); background:var(--green-bg); color:var(--green); }
     .btn-mini.pago:hover { background:var(--green); color:#fff; }
+    .btn-mini.abono { border-color:var(--amber-lt); background:var(--amber-bg); color:var(--amber); }
+    .btn-mini.abono:hover { background:var(--amber); color:#fff; }
     .btn-mini:disabled { opacity:.4; cursor:default; }
 
     #btn-toggle-filtros.activo { border-color:var(--green-lt); background:var(--green-bg); color:var(--green); }
     .filtro-badge { display:inline-flex; align-items:center; justify-content:center; min-width:16px; height:16px; padding:0 4px; border-radius:20px; background:var(--green); color:#fff; font-size:10px; font-weight:700; }
+
+    /* Select inline compacto (cuenta de gasto) */
+    .inline-sel { font-size:12px; padding:5px 7px; border-radius:7px; border:1px solid var(--border); background:var(--card); color:var(--text); outline:none; cursor:pointer; max-width:150px; }
+    .inline-sel:focus { border-color:var(--green); }
 
     .proj-input { width:130px; font-size:12px; padding:5px 7px; }
     .proy-wrap { display:inline-block; }
@@ -261,7 +267,11 @@
           <option value="">Todos los estados</option>
           <option value="A tiempo">A tiempo</option>
           <option value="Vencida">Vencida</option>
+          <option value="Abono">Abono</option>
           <option value="Cancelada">Cancelada</option>
+        </select>
+        <select class="filter-sel" id="f-cuenta" onchange="renderFacturas()">
+          <option value="">Todas las cuentas de gasto</option>
         </select>
         <select class="filter-sel" id="f-proveedor" onchange="renderFacturas()">
           <option value="">Todos los proveedores</option>
@@ -390,6 +400,48 @@
   </div>
 </div>
 
+<!-- MODAL ABONO PARCIAL -->
+<div class="modal-bg" id="modal-abono">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Abono parcial</div>
+        <div class="modal-sub" id="abono-sub">Factura —</div>
+      </div>
+      <button class="close-btn" onclick="cerrarModal('modal-abono')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="abono-numero">
+      <div class="field">
+        <label for="abono-fecha">Fecha del abono</label>
+        <input type="date" id="abono-fecha">
+      </div>
+      <div class="field">
+        <label for="abono-monto">Monto abonado</label>
+        <input type="number" step="0.01" id="abono-monto" placeholder="0.00">
+        <div class="field-hint" id="abono-saldo-hint"></div>
+      </div>
+      <div class="field">
+        <label for="abono-medio">Medio de pago</label>
+        <select id="abono-medio">
+          <option value="Transferencia">Transferencia</option>
+          <option value="Tarjeta débito">Tarjeta débito</option>
+          <option value="Caja chica">Caja chica</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="abono-referencia">Referencia bancaria</label>
+        <input type="text" id="abono-referencia" placeholder="Nº de transferencia / comprobante">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="cerrarModal('modal-abono')">Cancelar</button>
+      <button class="btn-save" onclick="guardarAbono()">Guardar abono</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast">
   <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
   <span id="toast-msg"></span>
@@ -404,6 +456,12 @@ const COMPRAS_SHEET_ID = '1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw';
 const APPS_SCRIPT_AP = 'https://script.google.com/macros/s/AKfycbyqdI4EGUgcahTiyz_GBwvUQLWORT_TUVBvFMPGdMve1-3q3ge8mioZ458_zsbMbUqa/exec';
 // ─────────────────────────────────────────────────────────────────
 
+const CUENTAS_GASTO = [
+  'Frutas y Verduras','Carnes y Aves','Mariscos','Lácteos y Huevos','Bebidas','Abarrotes',
+  'Limpieza e Higiene','Empaques y Desechables','Panadería y Repostería','Aceites y Grasas',
+  'Condimentos y Especias','Servicios','Otro'
+];
+
 const hoy = new Date();
 document.getElementById('date-chip').textContent =
   hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
@@ -414,10 +472,17 @@ const fmtN = n => Number(n||0).toLocaleString('es-CR', { minimumFractionDigits:2
 
 let dataFacturas = [];   // hoja "Registro Facturas" (una fila por factura)
 let proveedores  = [];   // hoja "proveedores" del Sheet
+let dataAbonos   = [];   // hoja "Abonos" (pagos parciales)
 let facturasAP   = [];   // dataset ya calculado (estado, saldo, etc.)
 let pagFacturas  = 1;
 const POR_PAGINA = 15;
 const seleccionadas = new Set(); // números de factura marcados con check
+
+function poblarSelectsEstaticos() {
+  document.getElementById('f-cuenta').innerHTML = '<option value="">Todas las cuentas de gasto</option>' +
+    CUENTAS_GASTO.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+poblarSelectsEstaticos();
 
 // ── GVIZ: leer hoja pública del Sheet de compras ──────────────────
 // Nota: si la hoja solicitada no existe todavía (p.ej. "CuentasPorPagar"
@@ -471,15 +536,17 @@ function filaAProveedor(r) {
 async function cargarDatos() {
   document.getElementById('status-carga').innerHTML = '<span class="spinner"></span> Conectando con Google Sheets…';
   try {
-    const [dF, dP] = await Promise.all([
+    const [dF, dP, dAb] = await Promise.all([
       gvizLoad('Registro Facturas', 'Factura'),
-      gvizLoad('proveedores', 'ID').catch(() => [])
+      gvizLoad('proveedores', 'ID').catch(() => []),
+      gvizLoad('Abonos', 'Monto abonado').catch(() => [])
     ]);
 
     if (!dF.length) throw new Error('Sin datos en la hoja de facturas');
 
     dataFacturas = dF;
     proveedores  = dP.filter(r => r['ID']).map(filaAProveedor);
+    dataAbonos   = dAb;
 
     document.getElementById('conn-dot').classList.remove('off');
     document.getElementById('conn-label').textContent = 'Conectado · Google Sheets';
@@ -505,8 +572,12 @@ async function cargarDatos() {
 function limpiarMonto(v) { return parseFloat(String(v||'0').replace(/[,₡\s]/g,'')) || 0; }
 
 // Convierte fechas formateadas por gviz como "D/M/YYYY" a ISO "YYYY-MM-DD".
+// Si ya viene en ISO (p.ej. un valor que Sheets no autoconvirtió a fecha), se
+// devuelve tal cual, para no depender de si la celda quedó como texto o Date.
 function isoDate(str) {
-  const m = String(str||'').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  const s = String(str||'').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (!m) return '';
   const [, d, mo, y] = m;
   return y + '-' + mo.padStart(2,'0') + '-' + d.padStart(2,'0');
@@ -527,7 +598,7 @@ function construirFacturasAP() {
     r,
     numero: r['Factura'].trim(),
     proveedorNombre: r['Proveedor'] || '',
-    fechaFactura: isoDate(r['Lorito_Brewhouse Fecha'])
+    fechaFactura: isoDate(r['Fecha'])
   }));
 
   // Duplicado = mismo número de factura + misma fecha + mismo proveedor.
@@ -562,10 +633,12 @@ function construirFacturasAP() {
 
     const monto           = limpiarMonto(r['TOTAL']);
     const moneda          = r['Moneda'] || 'CRC';
-    const fechaProyectada = isoDate(r['Fecha de pago proyectada']);
+    const cuentaGasto     = r['Cuenta de gasto'] || '';
+    const fechaProyectada = isoDate(r['Fecha proyectada de pago']);
     const fechaRealPago   = isoDate(r['Fecha de pago']);
     const medioPago       = r['Medio de pago'] || '';
-    const referenciaPago  = r['Referencia Referencia'] || '';
+    const referenciaPago  = r['Referencia'] || '';
+    const totalAbonado    = parseFloat(r['Total abonado'])||0;
     // Tipo de cambio: para CRC es 1; para USD se define manualmente en la UI
     // (no hay columna confiable en el Sheet), conservando el valor ya cargado si existe.
     const tcPrevio   = facturaPorNumero(numero);
@@ -575,23 +648,32 @@ function construirFacturasAP() {
     const prov = buscarProveedor(proveedorNombre);
     const sinProveedor = !prov;
 
+    let saldoPendiente = montoColones != null ? Math.round((montoColones - totalAbonado) * 100) / 100 : 0;
+
     let estado;
     if (fechaRealPago) {
+      estado = 'Cancelada';
+    } else if (totalAbonado > 0 && saldoPendiente > 0.01) {
+      estado = 'Abono';
+    } else if (totalAbonado > 0 && saldoPendiente <= 0.01) {
       estado = 'Cancelada';
     } else if (fechaProyectada && hoyISO > fechaProyectada) {
       estado = 'Vencida';
     } else {
       estado = 'A tiempo';
     }
-
-    const saldoPendiente = estado === 'Cancelada' ? 0 : (montoColones || 0);
+    if (estado === 'Cancelada') saldoPendiente = 0;
 
     return {
-      numero, proveedor: proveedorNombre, fechaFactura, monto, moneda, tipoCambio, montoColones,
-      sinProveedor, fechaProyectada, fechaRealPago, referenciaPago, medioPago,
+      numero, proveedor: proveedorNombre, fechaFactura, monto, moneda, tipoCambio, montoColones, cuentaGasto,
+      sinProveedor, fechaProyectada, fechaRealPago, referenciaPago, medioPago, totalAbonado,
       saldoPendiente, estado, duplicada: conteo[claveDup(p)] > 1, ordinal: contadorOrdinal[numero]
     };
   });
+}
+
+function abonosDeFactura(numero) {
+  return dataAbonos.filter(a => a['Factura'] === numero);
 }
 
 // ── INICIALIZAR ───────────────────────────────────────────────────
@@ -607,9 +689,13 @@ function inicializar() {
   }).length;
 
   const mesActual = hoyISO.substring(0,7);
-  const pagadoMes = facturasAP
+  const pagosCompletosMes = facturasAP
     .filter(f => f.fechaRealPago && f.fechaRealPago.substring(0,7) === mesActual)
-    .reduce((a,f) => a + (f.montoColones||0), 0);
+    .reduce((a,f) => a + (f.montoColones - (f.totalAbonado||0)), 0);
+  const abonosDelMes = dataAbonos
+    .filter(a => isoDate(a['Fecha de abono']).substring(0,7) === mesActual)
+    .reduce((a,r) => a + (parseFloat(r['Monto abonado'])||0), 0);
+  const pagadoMes = pagosCompletosMes + abonosDelMes;
 
   document.getElementById('kpi-total').textContent     = fmt(totalPorPagar);
   document.getElementById('kpi-vencidas').textContent  = vencidas;
@@ -646,12 +732,18 @@ function renderFacturas() {
 
 function badgeEstado(estado) {
   const map = {
-    'A tiempo':  ['b-tiempo', '●'],
-    'Vencida':   ['b-vencida', '●'],
-    'Cancelada': ['b-cancelada', '✓']
+    'A tiempo':  'b-tiempo',
+    'Vencida':   'b-vencida',
+    'Abono':     'b-abono',
+    'Cancelada': 'b-cancelada'
   };
-  const [cls, dot] = map[estado] || ['b-tiempo','●'];
+  const cls = map[estado] || 'b-tiempo';
   return `<span class="badge ${cls}"><span class="b-dot"></span>${estado}</span>`;
+}
+
+function opcionesCuentaGasto(valorActual) {
+  return '<option value=""' + (!valorActual?' selected':'') + '>Sin asignar</option>' +
+    CUENTAS_GASTO.map(c => `<option value="${c}"${c===valorActual?' selected':''}>${c}</option>`).join('');
 }
 
 function limpiarFiltroFecha() {
@@ -672,6 +764,7 @@ function toggleFiltros(forzarAbierto) {
 function limpiarTodosFiltros() {
   document.getElementById('s-fact').value = '';
   document.getElementById('f-estado').value = '';
+  document.getElementById('f-cuenta').value = '';
   document.getElementById('f-proveedor').value = '';
   document.getElementById('f-anio').value = '';
   document.getElementById('f-mes').value = '';
@@ -681,7 +774,7 @@ function limpiarTodosFiltros() {
 }
 
 function actualizarContadorFiltros() {
-  const ids = ['f-estado','f-proveedor','f-anio','f-mes','f-desde','f-hasta'];
+  const ids = ['f-estado','f-cuenta','f-proveedor','f-anio','f-mes','f-desde','f-hasta'];
   const activos = ids.filter(id => document.getElementById(id).value).length;
   const badge = document.getElementById('filtro-count');
   const btn   = document.getElementById('btn-toggle-filtros');
@@ -699,6 +792,7 @@ function actualizarContadorFiltros() {
 function obtenerFacturasFiltradas() {
   const busq      = document.getElementById('s-fact').value.toLowerCase();
   const estado    = document.getElementById('f-estado').value;
+  const cuenta    = document.getElementById('f-cuenta').value;
   const proveedor = document.getElementById('f-proveedor').value;
   const anio      = document.getElementById('f-anio').value;
   const mes       = document.getElementById('f-mes').value;
@@ -708,12 +802,13 @@ function obtenerFacturasFiltradas() {
   return facturasAP.filter(f => {
     const matchBusq      = !busq || f.numero.toLowerCase().includes(busq) || f.proveedor.toLowerCase().includes(busq);
     const matchEstado    = !estado || f.estado === estado;
+    const matchCuenta    = !cuenta || f.cuentaGasto === cuenta;
     const matchProveedor = !proveedor || f.proveedor === proveedor;
     const matchAnio      = !anio || f.fechaFactura.substring(0,4) === anio;
     const matchMes       = !mes || f.fechaFactura.substring(5,7) === mes;
     const matchDesde     = !desde || (f.fechaFactura && f.fechaFactura >= desde);
     const matchHasta     = !hasta || (f.fechaFactura && f.fechaFactura <= hasta);
-    return matchBusq && matchEstado && matchProveedor && matchAnio && matchMes && matchDesde && matchHasta;
+    return matchBusq && matchEstado && matchCuenta && matchProveedor && matchAnio && matchMes && matchDesde && matchHasta;
   }).sort((a,b) => (b.fechaFactura||'').localeCompare(a.fechaFactura||''));
 }
 
@@ -722,11 +817,11 @@ function descargarReporte() {
   const lista = obtenerFacturasFiltradas();
   if (!lista.length) { showToast('No hay facturas para exportar con los filtros actuales.', 'error'); return; }
 
-  const encabezados = ['Fecha factura','Factura','Proveedor','Moneda','Monto','Tipo de cambio','Monto en colones','Estado','Fecha proyectada','Fecha real de pago','Medio de pago','Referencia'];
+  const encabezados = ['Fecha factura','Factura','Proveedor','Cuenta de gasto','Moneda','Monto','Tipo de cambio','Monto en colones','Estado','Fecha proyectada','Total abonado','Saldo pendiente','Fecha real de pago','Medio de pago','Referencia'];
   const csvEscape = v => `"${String(v??'').replace(/"/g,'""')}"`;
   const filas = lista.map(f => [
-    f.fechaFactura, f.numero, f.proveedor, f.moneda, f.monto, f.moneda==='USD'?f.tipoCambio:'', f.montoColones, f.estado,
-    f.fechaProyectada, f.fechaRealPago, f.medioPago, f.referenciaPago
+    f.fechaFactura, f.numero, f.proveedor, f.cuentaGasto, f.moneda, f.monto, f.moneda==='USD'?f.tipoCambio:'', f.montoColones, f.estado,
+    f.fechaProyectada, f.totalAbonado, f.saldoPendiente, f.fechaRealPago, f.medioPago, f.referenciaPago
   ].map(csvEscape).join(','));
   const csv = '\uFEFF' + [encabezados.map(csvEscape).join(','), ...filas].join('\r\n');
 
@@ -765,26 +860,46 @@ function _renderFacturas() {
       </span>` : '';
 
     const puedeAccionar = f.estado !== 'Cancelada';
+    const abonos = abonosDeFactura(f.numero);
 
     const detalleHtml = `
-      <div style="font-size:12px;color:var(--muted);line-height:2;">
-        Fecha factura: <strong style="color:var(--text);">${f.fechaFactura||'—'}</strong><br>
-        Moneda: <strong style="color:var(--text);">${f.moneda||'—'}</strong><br>
-        Fecha proyectada de pago:
-        <span class="proy-placeholder" id="proyph-${rowId}" style="${seleccionadas.has(f.numero)?'display:none;':''}">
-          <strong style="color:var(--text);">${f.fechaProyectada||'Sin definir'}</strong>
-          <span style="font-size:11px;color:var(--subtle);">(marcá el check de la fila para editar)</span>
-        </span>
-        <span class="proy-wrap" id="proy-${rowId}" style="${seleccionadas.has(f.numero)?'':'display:none;'}">
-          <button type="button" class="proy-toggle" onclick="toggleProyEdit('${rowId}')">
-            <span class="proy-txt">${f.fechaProyectada || 'Sin definir'}</span>
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;"><path d="M4 6l4 4 4-4"/></svg>
-          </button>
-          <input type="date" class="proj-input" value="${f.fechaProyectada||''}" ${!puedeAccionar?'disabled':''}
-            onchange="guardarProyeccionFactura('${f.numero}', this.value, '${rowId}')">
-        </span><br>
-        Fecha real de pago: <strong style="color:var(--text);">${f.fechaRealPago||'—'}</strong><br>
-        ${f.fechaRealPago ? `Medio de pago: <strong style="color:var(--text);">${f.medioPago||'—'}</strong><br>Referencia: <strong style="color:var(--text);">${f.referenciaPago||'—'}</strong>` : ''}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div style="font-size:12px;color:var(--muted);line-height:2;">
+          Fecha factura: <strong style="color:var(--text);">${f.fechaFactura||'—'}</strong><br>
+          Moneda: <strong style="color:var(--text);">${f.moneda||'—'}</strong><br>
+          Fecha proyectada de pago:
+          <span class="proy-placeholder" id="proyph-${rowId}" style="${seleccionadas.has(f.numero)?'display:none;':''}">
+            <strong style="color:var(--text);">${f.fechaProyectada||'Sin definir'}</strong>
+            <span style="font-size:11px;color:var(--subtle);">(marcá el check de la fila para editar)</span>
+          </span>
+          <span class="proy-wrap" id="proy-${rowId}" style="${seleccionadas.has(f.numero)?'':'display:none;'}">
+            <button type="button" class="proy-toggle" onclick="toggleProyEdit('${rowId}')">
+              <span class="proy-txt">${f.fechaProyectada || 'Sin definir'}</span>
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;"><path d="M4 6l4 4 4-4"/></svg>
+            </button>
+            <input type="date" class="proj-input" value="${f.fechaProyectada||''}" ${!puedeAccionar?'disabled':''}
+              onchange="guardarProyeccionFactura('${f.numero}', this.value, '${rowId}')">
+          </span><br>
+          Fecha real de pago: <strong style="color:var(--text);">${f.fechaRealPago||'—'}</strong><br>
+          ${f.fechaRealPago ? `Medio de pago: <strong style="color:var(--text);">${f.medioPago||'—'}</strong><br>Referencia: <strong style="color:var(--text);">${f.referenciaPago||'—'}</strong><br>` : ''}
+          Total abonado: <strong style="color:var(--text);">${fmt(f.totalAbonado||0)}</strong><br>
+          Saldo pendiente: <strong style="color:var(--text);">${fmt(f.saldoPendiente)}</strong>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;">Abonos registrados</div>
+          ${abonos.length ? `
+            <table class="detail-table">
+              <thead><tr><th>Fecha</th><th>Medio</th><th>Referencia</th><th style="text-align:right;">Monto</th></tr></thead>
+              <tbody>
+                ${abonos.map(a => `<tr>
+                  <td>${isoDate(a['Fecha de abono'])||'—'}</td>
+                  <td style="color:var(--muted);">${a['Medio de pago']||'—'}</td>
+                  <td style="color:var(--muted);">${a['Referencia']||'—'}</td>
+                  <td class="num">${fmt(a['Monto abonado'])}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>` : '<div style="font-size:12px;color:var(--subtle);">Sin abonos registrados.</div>'}
+        </div>
       </div>`;
 
     return `
@@ -796,6 +911,11 @@ function _renderFacturas() {
         <td style="color:var(--muted);font-size:12px;white-space:nowrap;min-width:90px;">${f.fechaFactura||'—'}</td>
         <td style="font-size:12px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.numero}${dupBadge}</td>
         <td style="font-weight:500;">${f.proveedor}${sinProvBadge}</td>
+        <td onclick="event.stopPropagation()">
+          <select class="inline-sel" ${!puedeAccionar?'disabled':''} onchange="guardarCuentaGastoFactura('${f.numero}', ${f.ordinal}, this.value)">
+            ${opcionesCuentaGasto(f.cuentaGasto)}
+          </select>
+        </td>
         <td class="num" style="font-weight:600;">
           ${f.moneda === 'USD' ? `
             <div>US$${fmtN(f.monto)}</div>
@@ -806,14 +926,16 @@ function _renderFacturas() {
             </div>` : fmt(f.monto)}
         </td>
         <td>${badgeEstado(f.estado)}</td>
+        <td class="num" style="font-weight:600;">${fmt(f.saldoPendiente)}</td>
         <td onclick="event.stopPropagation()">
           <div class="row-actions">
             <button class="btn-mini pago" ${!puedeAccionar?'disabled':''} onclick="abrirModalPago('${f.numero}')">Pago total</button>
+            <button class="btn-mini abono" ${!puedeAccionar?'disabled':''} onclick="abrirModalAbono('${f.numero}')">Abono</button>
           </div>
         </td>
       </tr>
       <tr class="tr-detail" id="${rowId}">
-        <td class="detail-cell" colspan="7">
+        <td class="detail-cell" colspan="9">
           <div class="detail-inner">${detalleHtml}</div>
         </td>
       </tr>`;
@@ -825,8 +947,8 @@ function _renderFacturas() {
     <table>
       <thead><tr>
         <th><input type="checkbox" id="chk-all" ${todasMarcadasEnPagina?'checked':''} onchange="toggleSeleccionarTodos(this.checked)"></th>
-        <th>Fecha</th><th>Factura</th><th>Proveedor</th>
-        <th style="text-align:right;">Monto</th><th>Estado</th>
+        <th>Fecha</th><th>Factura</th><th>Proveedor</th><th>Cuenta de gasto</th>
+        <th style="text-align:right;">Monto</th><th>Estado</th><th style="text-align:right;">Saldo</th>
         <th>Acciones</th>
       </tr></thead>
       <tbody>${filas}</tbody>
@@ -973,18 +1095,26 @@ function renderProyeccion() {
 // ── RENDER HISTORIAL (pagos registrados) ──────────────────────────
 function renderHistorial() {
   const pagos = facturasAP.filter(f => f.fechaRealPago).map(f => ({
-    fecha: f.fechaRealPago, numero: f.numero, proveedor: f.proveedor,
-    monto: f.montoColones||0, referencia: f.referenciaPago || '—', medio: f.medioPago || '—'
-  })).sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
+    fecha: f.fechaRealPago, tipo: 'Pago total', numero: f.numero, proveedor: f.proveedor,
+    monto: (f.montoColones||0) - (f.totalAbonado||0), referencia: f.referenciaPago || '—', medio: f.medioPago || '—'
+  }));
+  const abonos = dataAbonos.map(a => ({
+    fecha: isoDate(a['Fecha de abono']), tipo: 'Abono', numero: a['Factura'],
+    proveedor: (facturaPorNumero(a['Factura'])||{}).proveedor || '—',
+    monto: parseFloat(a['Monto abonado'])||0, referencia: a['Referencia'] || '—', medio: a['Medio de pago'] || '—'
+  }));
 
-  if (!pagos.length) {
-    document.getElementById('tabla-historial').innerHTML = '<div class="empty">Aún no se han registrado pagos.</div>';
+  const todos = [...pagos, ...abonos].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
+
+  if (!todos.length) {
+    document.getElementById('tabla-historial').innerHTML = '<div class="empty">Aún no se han registrado pagos ni abonos.</div>';
     return;
   }
 
-  const filas = pagos.map(r => `
+  const filas = todos.map(r => `
     <tr>
       <td style="color:var(--muted);font-size:12px;">${r.fecha||'—'}</td>
+      <td>${r.tipo === 'Pago total' ? '<span class="badge b-cancelada"><span class="b-dot"></span>Pago total</span>' : '<span class="badge b-abono"><span class="b-dot"></span>Abono</span>'}</td>
       <td style="font-size:12px;color:var(--muted);">${r.numero}</td>
       <td>${r.proveedor}</td>
       <td style="color:var(--muted);">${r.medio}</td>
@@ -994,7 +1124,7 @@ function renderHistorial() {
 
   document.getElementById('tabla-historial').innerHTML = `
     <table>
-      <thead><tr><th>Fecha</th><th>Factura</th><th>Proveedor</th><th>Medio de pago</th><th>Referencia</th><th style="text-align:right;">Monto</th></tr></thead>
+      <thead><tr><th>Fecha</th><th>Tipo</th><th>Factura</th><th>Proveedor</th><th>Medio de pago</th><th>Referencia</th><th style="text-align:right;">Monto</th></tr></thead>
       <tbody>${filas}</tbody>
     </table>`;
 }
@@ -1152,7 +1282,7 @@ async function guardarProyeccionFactura(numero, fecha, rowId) {
   try {
     await postAP({
       modulo: 'guardar_proyeccion',
-      numero_factura: numero, proveedor: f.proveedor, fecha_factura: f.fechaFactura,
+      numero_factura: numero, ordinal: f.ordinal, proveedor: f.proveedor, fecha_factura: f.fechaFactura,
       monto: f.monto, fecha_proyectada: fecha
     });
     f.fechaProyectada = fecha;
@@ -1180,14 +1310,29 @@ async function guardarTipoCambio(numero, valor) {
   try {
     await postAP({
       modulo: 'guardar_tc',
-      numero_factura: numero, proveedor: f.proveedor, fecha_factura: f.fechaFactura,
+      numero_factura: numero, ordinal: f.ordinal, proveedor: f.proveedor, fecha_factura: f.fechaFactura,
       monto: f.monto, tipo_cambio: tc
     });
     f.tipoCambio    = tc;
     f.montoColones  = Math.round(f.monto * tc * 100) / 100;
-    if (f.estado !== 'Cancelada') f.saldoPendiente = f.montoColones;
+    if (f.estado !== 'Cancelada') f.saldoPendiente = Math.round((f.montoColones - (f.totalAbonado||0)) * 100) / 100;
     showToast('Tipo de cambio guardado ✓', 'success');
     inicializar();
+  } catch(e) {
+    showToast('No se pudo guardar: ' + e.message, 'error');
+  }
+}
+
+async function guardarCuentaGastoFactura(numero, ordinal, valor) {
+  const f = facturaPorNumero(numero);
+  if (!f) return;
+  try {
+    await postAP({
+      modulo: 'guardar_cuenta_gasto',
+      numero_factura: numero, ordinal: ordinal, cuenta_gasto: valor
+    });
+    f.cuentaGasto = valor;
+    showToast('Cuenta de gasto guardada ✓', 'success');
   } catch(e) {
     showToast('No se pudo guardar: ' + e.message, 'error');
   }
@@ -1216,8 +1361,8 @@ async function guardarPago() {
   try {
     await postAP({
       modulo: 'registrar_pago',
-      numero_factura: numero, proveedor: f.proveedor, fecha_factura: f.fechaFactura,
-      monto: f.monto, fecha_pago: fecha, medio_pago: medio, referencia_pago: referencia
+      numero_factura: numero, ordinal: f.ordinal, proveedor: f.proveedor, fecha_factura: f.fechaFactura,
+      monto: f.monto, fecha_pago: fecha, medio_pago: medio, referencia: referencia
     });
     f.fechaRealPago = fecha;
     f.medioPago = medio;
@@ -1229,6 +1374,50 @@ async function guardarPago() {
     inicializar();
   } catch(e) {
     showToast('No se pudo registrar el pago: ' + e.message, 'error');
+  }
+}
+
+// ── MODAL ABONO PARCIAL ────────────────────────────────────────────
+function abrirModalAbono(numero) {
+  const f = facturaPorNumero(numero);
+  if (!f) return;
+  document.getElementById('abono-numero').value = numero;
+  document.getElementById('abono-sub').textContent = `${numero} · ${f.proveedor}`;
+  document.getElementById('abono-fecha').value = hoyISO;
+  document.getElementById('abono-monto').value = '';
+  document.getElementById('abono-monto').max = f.saldoPendiente;
+  document.getElementById('abono-medio').value = 'Transferencia';
+  document.getElementById('abono-referencia').value = '';
+  document.getElementById('abono-saldo-hint').textContent = `Saldo pendiente: ${fmt(f.saldoPendiente)}`;
+  document.getElementById('modal-abono').classList.add('open');
+}
+
+async function guardarAbono() {
+  const numero = document.getElementById('abono-numero').value;
+  const fecha  = document.getElementById('abono-fecha').value;
+  const monto  = parseFloat(document.getElementById('abono-monto').value);
+  const medio  = document.getElementById('abono-medio').value;
+  const referencia = document.getElementById('abono-referencia').value.trim();
+  if (!fecha) { showToast('Ingresá la fecha del abono.', 'error'); return; }
+  if (!monto || monto <= 0) { showToast('Ingresá un monto de abono válido.', 'error'); return; }
+
+  const f = facturaPorNumero(numero);
+  if (!f) return;
+  try {
+    const result = await postAP({
+      modulo: 'registrar_abono',
+      numero_factura: numero, ordinal: f.ordinal, fecha_factura: f.fechaFactura,
+      fecha_abono: fecha, monto_abono: monto, medio_pago: medio, referencia: referencia
+    });
+    dataAbonos.push({ 'Factura': numero, 'Fecha de abono': fecha, 'Monto abonado': monto, 'Medio de pago': medio, 'Referencia': referencia });
+    f.totalAbonado = result.total_abonado != null ? result.total_abonado : (f.totalAbonado||0) + monto;
+    f.saldoPendiente = Math.round(((f.montoColones||0) - f.totalAbonado) * 100) / 100;
+    f.estado = f.saldoPendiente > 0.01 ? 'Abono' : 'Cancelada';
+    cerrarModal('modal-abono');
+    showToast('Abono registrado ✓', 'success');
+    inicializar();
+  } catch(e) {
+    showToast('No se pudo registrar el abono: ' + e.message, 'error');
   }
 }
 
