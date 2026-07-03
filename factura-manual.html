@@ -103,9 +103,8 @@
       </div>
       <div class="row-2">
         <div class="field">
-          <label for="f-proveedor">Proveedor</label>
-          <input type="text" id="f-proveedor" list="lista-proveedores" placeholder="Nombre del proveedor" required>
-          <datalist id="lista-proveedores"></datalist>
+          <label for="f-fecha">Fecha de factura</label>
+          <input type="date" id="f-fecha" required>
         </div>
         <div class="field">
           <label for="f-moneda">Moneda</label>
@@ -114,6 +113,11 @@
             <option value="USD">USD — Dólares</option>
           </select>
         </div>
+      </div>
+      <div class="field">
+        <label for="f-proveedor">Proveedor</label>
+        <input type="text" id="f-proveedor" list="lista-proveedores" placeholder="Nombre del proveedor" required>
+        <datalist id="lista-proveedores"></datalist>
       </div>
       <div class="field">
         <label for="f-total">Total</label>
@@ -152,6 +156,8 @@ const APPS_SCRIPT_AP = 'https://script.google.com/macros/s/AKfycbyqdI4EGUgcahTiy
 const hoy = new Date();
 document.getElementById('date-chip').textContent =
   hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
+const hoyISO = hoy.toISOString().slice(0,10);
+document.getElementById('f-fecha').value = hoyISO;
 
 function getProveedores() { try { return JSON.parse(localStorage.getItem('proveedores')||'[]'); } catch { return []; } }
 
@@ -178,6 +184,7 @@ async function postAP(payload) {
 
 function limpiarFormulario() {
   document.getElementById('f-numero').value = '';
+  document.getElementById('f-fecha').value = hoyISO;
   document.getElementById('f-proveedor').value = '';
   document.getElementById('f-moneda').value = 'CRC';
   document.getElementById('f-total').value = '';
@@ -187,12 +194,14 @@ function limpiarFormulario() {
 
 async function guardarFacturaManual() {
   const numero    = document.getElementById('f-numero').value.trim();
+  const fecha     = document.getElementById('f-fecha').value;
   const proveedor = document.getElementById('f-proveedor').value.trim();
   const moneda    = document.getElementById('f-moneda').value;
   const total     = parseFloat(document.getElementById('f-total').value);
   const detalle   = document.getElementById('f-detalle').value.trim();
 
   if (!numero)    { showToast('Ingresá el número de factura o ID.', 'error'); return; }
+  if (!fecha)     { showToast('Ingresá la fecha de la factura.', 'error'); return; }
   if (!proveedor) { showToast('Ingresá el proveedor.', 'error'); return; }
   if (!total || total <= 0) { showToast('Ingresá un total válido.', 'error'); return; }
 
@@ -201,7 +210,7 @@ async function guardarFacturaManual() {
   try {
     await postAP({
       modulo: 'registrar_factura_manual',
-      numero_factura: numero, proveedor, moneda, total, detalle
+      numero_factura: numero, fecha_factura: fecha, proveedor, moneda, total, detalle
     });
     document.getElementById('conn-dot').classList.remove('off');
     document.getElementById('conn-label').textContent = 'Factura guardada en Registro Facturas';
