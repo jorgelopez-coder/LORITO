@@ -174,7 +174,6 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 .conn-dot.on{background:var(--green)}
 
 /* Fotos de respaldo */
-.foto-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .foto-label{font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px;display:block}
 .foto-box{border:2px dashed var(--border);border-radius:10px;padding:1rem;text-align:center;cursor:pointer;transition:border-color .15s;position:relative;min-height:130px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:var(--surface)}
 .foto-box:hover{border-color:var(--border-h)}
@@ -201,7 +200,6 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
   .field-row,.field-row-3{grid-template-columns:1fr}
   .denom-grid{grid-template-columns:1fr 1fr}
   .resumen-grid{grid-template-columns:1fr}
-  .foto-grid{grid-template-columns:1fr}
   .efectivo-cols{grid-template-columns:1fr}
   .paso-nav-item{font-size:11px;padding:8px 4px}
 }
@@ -241,25 +239,15 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 
     <div class="card">
       <p class="card-title">Evidencia fotográfica</p>
-      <div class="foto-grid">
-        <div class="field">
-          <label class="foto-label">Foto cierre del sistema</label>
-          <div class="foto-box" id="foto-box-sistema" onclick="document.getElementById('input-foto-sistema').click()">
-            <svg class="foto-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-2h6l2 2h3v12H4V7z"/><circle cx="12" cy="13" r="3.5"/></svg>
-            <span class="foto-hint">Tocá para tomar o subir foto del sistema</span>
-          </div>
-          <input type="file" id="input-foto-sistema" accept="image/*" capture="environment" style="display:none"/>
+      <div class="field">
+        <label class="foto-label">Foto del cierre (sistema y datáfono)</label>
+        <div class="foto-box" id="foto-box" onclick="document.getElementById('input-foto').click()">
+          <svg class="foto-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-2h6l2 2h3v12H4V7z"/><circle cx="12" cy="13" r="3.5"/></svg>
+          <span class="foto-hint">Tocá para tomar o subir una foto donde se vean el cierre del sistema y el voucher del datáfono juntos</span>
         </div>
-        <div class="field">
-          <label class="foto-label">Foto cierre del datáfono</label>
-          <div class="foto-box" id="foto-box-datafono" onclick="document.getElementById('input-foto-datafono').click()">
-            <svg class="foto-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-2h6l2 2h3v12H4V7z"/><circle cx="12" cy="13" r="3.5"/></svg>
-            <span class="foto-hint">Tocá para tomar o subir foto del datáfono</span>
-          </div>
-          <input type="file" id="input-foto-datafono" accept="image/*" capture="environment" style="display:none"/>
-        </div>
+        <input type="file" id="input-foto" accept="image/*" capture="environment" style="display:none"/>
       </div>
-      <p style="font-size:11px;color:var(--muted);margin-top:.75rem">Subí las fotos y extraé los datos automático con IA. Si no las tenés a mano, podés completar todo el formulario manualmente.</p>
+      <p style="font-size:11px;color:var(--muted);margin-top:.75rem">Con una sola foto alcanza (bajás consumo de datos). Si no la tenés a mano, podés completar todo el formulario manualmente.</p>
       <button class="btn-secondary" id="btn-extraer-ia" onclick="extraerConIA()" disabled style="margin-top:12px;width:100%">🪄 Extraer datos con IA</button>
       <div id="ia-resultado" style="display:none;margin-top:10px"></div>
     </div>
@@ -544,7 +532,7 @@ const DENOMS_USD = [
 let historialData = [];
 
 // ── FOTOS DE RESPALDO ────────────────────────────────────────────
-const fotos = { sistema: null, datafono: null }; // {base64, mime, nombre}
+const fotos = { sistema: null }; // {base64, mime, nombre} — una sola foto con ambos documentos
 
 function comprimirImagen(file, maxDim = 1600, calidad = 0.82) {
   return new Promise((resolve, reject) => {
@@ -572,13 +560,13 @@ function comprimirImagen(file, maxDim = 1600, calidad = 0.82) {
   });
 }
 
-async function handleFotoSelect(key, file) {
+async function handleFotoSelect(file) {
   if (!file) return;
   if (!file.type.startsWith('image/')) { showToast('Seleccioná una imagen válida', 'error'); return; }
   try {
     const { base64, mime } = await comprimirImagen(file);
-    fotos[key] = { base64, mime, nombre: file.name };
-    renderFotoBox(key);
+    fotos.sistema = { base64, mime, nombre: file.name };
+    renderFotoBox();
     actualizarBtnExtraer();
   } catch (e) {
     showToast('No se pudo procesar la imagen', 'error');
@@ -587,34 +575,33 @@ async function handleFotoSelect(key, file) {
 
 function actualizarBtnExtraer() {
   const btn = document.getElementById('btn-extraer-ia');
-  if (btn) btn.disabled = !(fotos.sistema || fotos.datafono);
+  if (btn) btn.disabled = !fotos.sistema;
 }
 
-function fotoBoxPlaceholder(key) {
-  const label = key === 'sistema' ? 'del sistema' : 'del datáfono';
+function fotoBoxPlaceholder() {
   return `<svg class="foto-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-2h6l2 2h3v12H4V7z"/><circle cx="12" cy="13" r="3.5"/></svg>
-    <span class="foto-hint">Tocá para tomar o subir foto ${label}</span>`;
+    <span class="foto-hint">Tocá para tomar o subir una foto donde se vean el cierre del sistema y el voucher del datáfono juntos</span>`;
 }
 
-function renderFotoBox(key) {
-  const box = document.getElementById('foto-box-' + key);
-  const f = fotos[key];
+function renderFotoBox() {
+  const box = document.getElementById('foto-box');
+  const f = fotos.sistema;
   if (!f) {
     box.classList.remove('has-img');
-    box.innerHTML = fotoBoxPlaceholder(key);
+    box.innerHTML = fotoBoxPlaceholder();
     return;
   }
   box.classList.add('has-img');
-  box.innerHTML = `<img src="data:${f.mime};base64,${f.base64}" alt="Foto ${key}"/>
-    <button type="button" class="foto-remove" onclick="event.stopPropagation();quitarFoto('${key}')">✕</button>
+  box.innerHTML = `<img src="data:${f.mime};base64,${f.base64}" alt="Foto del cierre"/>
+    <button type="button" class="foto-remove" onclick="event.stopPropagation();quitarFoto()">✕</button>
     <span class="foto-badge">✓ Cargada</span>`;
 }
 
-function quitarFoto(key) {
-  fotos[key] = null;
-  const input = document.getElementById('input-foto-' + key);
+function quitarFoto() {
+  fotos.sistema = null;
+  const input = document.getElementById('input-foto');
   if (input) input.value = '';
-  renderFotoBox(key);
+  renderFotoBox();
   actualizarBtnExtraer();
 }
 
@@ -624,8 +611,8 @@ async function extraerConIA() {
     showToast('Falta configurar EXTRACTOR_URL', 'error');
     return;
   }
-  if (!fotos.sistema && !fotos.datafono) {
-    showToast('Subí al menos una foto primero', 'error');
+  if (!fotos.sistema) {
+    showToast('Subí la foto primero', 'error');
     return;
   }
 
@@ -643,11 +630,19 @@ async function extraerConIA() {
       body: JSON.stringify({
         fotoSistema: fotos.sistema ? fotos.sistema.base64 : '',
         fotoSistemaMime: fotos.sistema ? fotos.sistema.mime : '',
-        fotoDatafono: fotos.datafono ? fotos.datafono.base64 : '',
-        fotoDatafonoMime: fotos.datafono ? fotos.datafono.mime : '',
+        fotoDatafono: '',
+        fotoDatafonoMime: '',
       })
     });
-    const json = await resp.json();
+    const raw = await resp.text();
+    let json;
+    try {
+      json = JSON.parse(raw);
+    } catch (parseErr) {
+      // El servidor devolvió HTML en vez de JSON (típico de una página de error
+      // de Google: cuota excedida, foto muy pesada, o un problema temporal del servicio).
+      throw new Error(`Respuesta inválida del servidor (HTTP ${resp.status}). Probá con una foto más liviana o intentá de nuevo en un momento.`);
+    }
     if (!json.ok) throw new Error(json.error || 'Error desconocido');
     aplicarExtraccionIA(json.data);
     showToast('Datos extraídos — revisá antes de guardar');
@@ -656,7 +651,7 @@ async function extraerConIA() {
     resultBox.innerHTML = `<div class="ia-box ia-error"><div class="ia-title">⚠️ No se pudo extraer</div>${e.message} — completá los campos manualmente.</div>`;
     showToast('Error al extraer — completá manualmente', 'error');
   } finally {
-    btn.disabled = !(fotos.sistema || fotos.datafono);
+    btn.disabled = !fotos.sistema;
     btn.textContent = textoOriginal;
   }
 }
@@ -984,8 +979,8 @@ function construirPayload() {
     diferenciaUsd: usdCajaTotalContado - usdE,
     fotoSistema: fotos.sistema ? fotos.sistema.base64 : '',
     fotoSistemaMime: fotos.sistema ? fotos.sistema.mime : '',
-    fotoDatafono: fotos.datafono ? fotos.datafono.base64 : '',
-    fotoDatafonoMime: fotos.datafono ? fotos.datafono.mime : '',
+    fotoDatafono: '',
+    fotoDatafonoMime: '',
   };
 }
 
@@ -1267,7 +1262,7 @@ function limpiarForm() {
   DENOMS_USD.forEach(({id}) => { const el=document.getElementById('d-'+id); if(el)el.value=''; });
   calcCuadre(); actualizarResumen(); calcRevisionTarjeta();
   document.getElementById('f-usd-total-crc').value = '';
-  quitarFoto('sistema'); quitarFoto('datafono');
+  quitarFoto();
   document.getElementById('ia-resultado').style.display = 'none';
   ['rt-detalle','ef-detalle'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
   document.querySelectorAll('.calc-detalle').forEach(el => {
@@ -1291,8 +1286,7 @@ cargarEncargados();
 actualizarResumen();
 calcRevisionTarjeta();
 calcCuadre();
-document.getElementById('input-foto-sistema').addEventListener('change', e => handleFotoSelect('sistema', e.target.files[0]));
-document.getElementById('input-foto-datafono').addEventListener('change', e => handleFotoSelect('datafono', e.target.files[0]));
+document.getElementById('input-foto').addEventListener('change', e => handleFotoSelect(e.target.files[0]));
 
 </script>
 </body>
