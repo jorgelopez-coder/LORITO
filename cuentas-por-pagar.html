@@ -521,7 +521,8 @@ function filaAProveedor(r) {
     id: r['ID'] || '',
     nombre_juridico: r['Nombre jurídico'] || '',
     nombre_comercial: r['Nombre comercial'] || '',
-    cuenta: r['Cuenta'] || ''
+    cuenta: r['Cuenta'] || '',
+    condicion_pago: r['Condición de pago']
   };
 }
 
@@ -573,6 +574,15 @@ function isoDate(str) {
   if (!m) return '';
   const [, d, mo, y] = m;
   return y + '-' + mo.padStart(2,'0') + '-' + d.padStart(2,'0');
+}
+
+// Suma días de crédito a una fecha ISO para obtener la fecha de vencimiento.
+function sumarDias(fechaISO, dias) {
+  if (!fechaISO) return '';
+  const d = new Date(fechaISO + 'T00:00:00');
+  if (isNaN(d.getTime())) return '';
+  d.setDate(d.getDate() + (parseInt(dias)||0));
+  return d.toISOString().slice(0,10);
 }
 
 function buscarProveedor(nombreFactura) {
@@ -639,6 +649,8 @@ function construirFacturasAP() {
     const prov = buscarProveedor(proveedorNombre);
     const sinProveedor = !prov;
     const cuentaProveedor = prov ? (prov.cuenta || '') : '';
+    const diasCredito = prov ? (parseInt(prov.condicion_pago)||0) : 0;
+    const fechaVencimiento = sumarDias(fechaFactura, diasCredito);
 
     let saldoPendiente = montoColones != null ? Math.round((montoColones - totalAbonado) * 100) / 100 : 0;
 
@@ -649,7 +661,7 @@ function construirFacturasAP() {
       estado = 'Abono';
     } else if (totalAbonado > 0 && saldoPendiente <= 0.01) {
       estado = 'Cancelada';
-    } else if (fechaProyectada && hoyISO > fechaProyectada) {
+    } else if (fechaVencimiento && hoyISO > fechaVencimiento) {
       estado = 'Vencida';
     } else {
       estado = 'A tiempo';
@@ -658,7 +670,7 @@ function construirFacturasAP() {
 
     return {
       numero, proveedor: proveedorNombre, fechaFactura, monto, moneda, tipoCambio, montoColones,
-      sinProveedor, cuentaProveedor, fechaProyectada, fechaRealPago, referenciaPago, medioPago, totalAbonado,
+      sinProveedor, cuentaProveedor, diasCredito, fechaVencimiento, fechaProyectada, fechaRealPago, referenciaPago, medioPago, totalAbonado,
       saldoPendiente, estado, duplicada: conteo[claveDup(p)] > 1, ordinal: contadorOrdinal[numero]
     };
   });
@@ -675,8 +687,8 @@ function inicializar() {
   const vencidas = facturasAP.filter(f => f.estado === 'Vencida').length;
 
   const en7dias = facturasAP.filter(f => {
-    if (f.estado !== 'A tiempo' || !f.fechaProyectada) return false;
-    const dias = (new Date(f.fechaProyectada) - new Date(hoyISO)) / 86400000;
+    if (f.estado !== 'A tiempo' || !f.fechaVencimiento) return false;
+    const dias = (new Date(f.fechaVencimiento) - new Date(hoyISO)) / 86400000;
     return dias >= 0 && dias <= 7;
   }).length;
 
@@ -859,7 +871,7 @@ function _renderFacturas() {
     const dupBadge = f.duplicada ? `<span class="badge b-dup" style="margin-left:6px;">⚠ Duplicada</span>` : '';
     const sinProvBadge = f.sinProveedor ? `<span onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:5px;margin-left:4px;">
         <span title="Proveedor sin registrar en la base de proveedores" style="font-size:10px;color:var(--red);">⚠</span>
-        <button type="button" class="btn-mini" style="padding:2px 8px;font-size:10.5px;border-color:var(--red-lt);background:var(--red-bg);color:var(--red);" onclick="agregarProveedorRapido('${f.proveedor.replace(/'/g,"\\'")}', this)">+ Agregar</button>
+        <button type="button" class="btn-mini" style="padding:2px 8px;font-size:10.5px;border-color:var(--red-lt);background:var(--red-bg);color:var(--red);" onclick="agregarProveedorRapido('${f.proveedor.replace(/'/g,"\\'")}')">+ Agregar</button>
       </span>` : '';
 
     const puedeAccionar = f.estado !== 'Cancelada';
@@ -871,6 +883,8 @@ function _renderFacturas() {
           Fecha factura: <strong style="color:var(--text);">${f.fechaFactura||'—'}</strong><br>
           Moneda: <strong style="color:var(--text);">${f.moneda||'—'}</strong><br>
           Número de cuenta: <strong style="color:var(--text);">${f.cuentaProveedor||'Sin registrar'}</strong><br>
+          Condición de pago: <strong style="color:var(--text);">${f.diasCredito} día${f.diasCredito!==1?'s':''}</strong><br>
+          Fecha de vencimiento: <strong style="color:${f.estado==='Vencida'?'var(--red)':'var(--text)'};">${f.fechaVencimiento||'—'}</strong><br>
           Fecha proyectada de pago:
           <span class="proy-placeholder" id="proyph-${rowId}" style="${seleccionadas.has(f.numero)?'display:none;':''}">
             <strong style="color:var(--text);">${f.fechaProyectada||'Sin definir'}</strong>
@@ -1258,20 +1272,12 @@ async function postAP(payload) {
   return json.result;
 }
 
-// Alta rápida de un proveedor que aparece en facturas pero no está en la base.
-// Queda con categoría "Otro"; se puede completar el resto en proveedores.html.
-async function agregarProveedorRapido(nombre, btn) {
-  if (btn) btn.disabled = true;
-  try {
-    const result = await postAP({ modulo: 'guardar_proveedor', nombre_juridico: nombre, categoria: 'Otro' });
-    proveedores.push({ id: result.id, nombre_juridico: nombre, nombre_comercial: '' });
-    construirFacturasAP();
-    inicializar();
-    showToast(`"${nombre}" agregado a proveedores ✓`, 'success');
-  } catch(e) {
-    showToast('No se pudo agregar: ' + e.message, 'error');
-    if (btn) btn.disabled = false;
-  }
+// Abre el formulario de alta de proveedores en una pestaña nueva, con el
+// nombre ya prellenado, para completar ahí toda la información (categoría,
+// contacto, condición de pago, etc.) en vez de crear un registro a medias.
+function agregarProveedorRapido(nombre) {
+  const url = 'proveedores.html?nuevo=1&nombre=' + encodeURIComponent(nombre);
+  window.open(url, '_blank');
 }
 
 function facturaPorNumero(numero) { return facturasAP.find(f => f.numero === numero); }
