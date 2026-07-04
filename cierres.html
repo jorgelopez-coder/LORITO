@@ -122,6 +122,7 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 .hist-fecha{font-weight:600;font-size:13px}
 .hist-encargado{font-size:12px;color:var(--muted)}
 .hist-total{font-family:var(--font-m);font-size:16px;font-weight:700;color:var(--green)}
+.hist-total.warn{color:var(--red)}
 .hist-row{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
 .hist-row span{display:flex;align-items:center;gap:4px}
 .badge{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:2px 8px;border-radius:20px}
@@ -502,7 +503,7 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 <div class="page" id="tab-historial">
 
   <div class="card" id="hist-dashboard">
-    <p class="card-title">Ventas por mes</p>
+    <p class="card-title">Balance por mes</p>
     <div class="dashboard-grid" id="hist-dashboard-grid"></div>
   </div>
 
@@ -1154,6 +1155,7 @@ async function cargarHistorial() {
         fotoSistemaUrl: r[49]||'', fotoDatafonoUrl: r[50]||'',
         propinaEfectivo: +r[51]||0, propinaTarjeta: +r[52]||0, propinaCredito: +r[53]||0, propinaOtro: +r[54]||0,
         datafonoTotal: +r[55]||0, diferenciaTarjeta: +r[56]||0, tarjetaCuadra: r[57]==='SI',
+        balanceFinal: +r[59]||0, balanceCuadra: r[60]==='SI',
         anio, mes, semana, diaSemana,
       };
     }).filter(r => r.id).reverse(); // más reciente primero, descarta filas vacías
@@ -1191,8 +1193,8 @@ function renderDashboardMensual() {
   historialData.forEach(r => {
     if (!r.anio || !r.mes) return;
     const key = r.anio + '-' + String(r.mes).padStart(2,'0');
-    if (!grupos[key]) grupos[key] = { total: 0, count: 0, anio: r.anio, mes: r.mes };
-    grupos[key].total += r.totalVentas;
+    if (!grupos[key]) grupos[key] = { balance: 0, count: 0, anio: r.anio, mes: r.mes };
+    grupos[key].balance += (r.diferenciaTarjeta || 0) + (r.diferencia || 0);
     grupos[key].count += 1;
   });
   const keys = Object.keys(grupos).sort((a,b) => b.localeCompare(a));
@@ -1200,9 +1202,10 @@ function renderDashboardMensual() {
   if (!keys.length) { grid.innerHTML = '<div class="empty-state" style="padding:1rem">Sin datos aún.</div>'; return; }
   grid.innerHTML = keys.map(k => {
     const g = grupos[k];
+    const cuadra = Math.abs(g.balance) <= 500;
     return `<div class="dashboard-item">
       <div class="dm-mes">${MESES[g.mes-1]} ${g.anio}</div>
-      <div class="dm-total">${fmtCRC(g.total)}</div>
+      <div class="dm-total" style="color:${cuadra?'var(--green)':'var(--red)'}">${(g.balance>=0?'+':'')+fmtCRC(g.balance)}</div>
       <div class="dm-count">${g.count} cierre${g.count===1?'':'s'}</div>
     </div>`;
   }).join('');
@@ -1230,9 +1233,12 @@ function renderHistorial() {
   document.getElementById('hist-lista').innerHTML = lista.map((r, i) => {
     const efectivoCuadra = Math.abs(r.diferencia || 0) <= 500;
     const tieneTarjetaRev = !!(r.datafonoTotal || r.tarjeta || r.propinaTarjeta);
+    const balanceFinal = (r.diferenciaTarjeta || 0) + (r.diferencia || 0);
+    const balanceCuadra = Math.abs(balanceFinal) <= 500;
     const fechaLbl = r.fecha
       ? new Date(r.fecha+'T12:00:00').toLocaleDateString('es-CR',{weekday:'short',day:'2-digit',month:'short'})
       : '—';
+    const iconBalance = `<span class="cuadre-icon ${balanceCuadra?'ok':'warn'}">${balanceCuadra?'✅':'⚠️'} Balance</span>`;
     const iconTarjeta = tieneTarjetaRev
       ? `<span class="cuadre-icon ${r.tarjetaCuadra?'ok':'warn'}">${r.tarjetaCuadra?'✅':'⚠️'} Tarjeta</span>` : '';
     const iconEfectivo = `<span class="cuadre-icon ${efectivoCuadra?'ok':'warn'}">${efectivoCuadra?'✅':'⚠️'} Efectivo</span>`;
@@ -1242,10 +1248,10 @@ function renderHistorial() {
           <div class="hist-fecha">${fechaLbl} · ${r.hora||'—'}</div>
           <div class="hist-encargado">${r.encargado||'—'}</div>
         </div>
-        <div class="hist-total">${fmtCRC(r.totalVentas)}</div>
+        <div class="hist-total ${balanceCuadra?'':'warn'}">${(balanceFinal>=0?'+':'')+fmtCRC(balanceFinal)}</div>
       </div>
       <div class="hist-row">
-        <div class="cuadre-icons">${iconTarjeta}${iconEfectivo}</div>
+        <div class="cuadre-icons">${iconBalance}${iconTarjeta}${iconEfectivo}</div>
         ${r.obs?`<span title="${r.obs.replace(/"/g,'')}" style="color:var(--amber)">📝 Observación</span>`:''}
       </div>
     </div>
@@ -1261,7 +1267,9 @@ function toggleDetalle(i) {
 function renderDetalleCierre(r) {
   const item = (label, val) => `<div class="hist-detail-item"><span>${label}</span><span class="v">${val}</span></div>`;
   const tarjetaReportada = (r.tarjeta||0) + (r.propinaTarjeta||0);
-  const efectivoEsperado = (r.efectivo||0) + (r.fondo||0);
+  const efectivoEsperado = (r.efectivo||0) + (r.propinaEfectivo||0) + (r.fondo||0);
+  const balanceFinal = (r.diferenciaTarjeta||0) + (r.diferencia||0);
+  const balanceCuadra = Math.abs(balanceFinal) <= 500;
   return `
     <div class="hist-detail-section">
       <div class="hist-detail-title">Ventas</div>
@@ -1301,6 +1309,15 @@ function renderDetalleCierre(r) {
         ${item('Efectivo esperado', fmtCRC(efectivoEsperado))}
         ${item('Diferencia', (r.diferencia>=0?'+':'')+fmtCRC(r.diferencia))}
         ${item('Cuadra', Math.abs(r.diferencia||0)<=500 ? '✅ Sí' : '⚠️ No')}
+      </div>
+    </div>
+    <div class="hist-detail-section">
+      <div class="hist-detail-title">Balance Final</div>
+      <div class="hist-detail-grid">
+        ${item('Diferencia Tarjeta', (r.diferenciaTarjeta>=0?'+':'')+fmtCRC(r.diferenciaTarjeta))}
+        ${item('Diferencia Efectivo', (r.diferencia>=0?'+':'')+fmtCRC(r.diferencia))}
+        ${item('Balance Final', (balanceFinal>=0?'+':'')+fmtCRC(balanceFinal))}
+        ${item('Cuadra', balanceCuadra ? '✅ Sí' : '⚠️ No')}
       </div>
     </div>
     ${r.obs ? `<div class="hist-detail-section"><div class="hist-detail-title">Observaciones</div><div style="color:var(--text)">${r.obs}</div></div>` : ''}
