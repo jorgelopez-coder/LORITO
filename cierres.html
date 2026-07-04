@@ -465,6 +465,19 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
     </div>
 
     <div class="card">
+      <p class="card-title">Balance Final</p>
+      <div class="cuadre-card">
+        <div class="cuadre-row"><label>Diferencia Tarjeta</label><span class="val" id="bf-tarjeta">₡0</span></div>
+        <div class="cuadre-row"><label>Diferencia Efectivo</label><span class="val" id="bf-efectivo">₡0</span></div>
+        <div class="cuadre-total">
+          <span>Balance Final</span>
+          <span class="val" id="bf-total">₡0</span>
+        </div>
+        <div id="bf-badge" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div class="card">
       <p class="card-title">Observaciones</p>
       <div class="field">
         <textarea id="f-obs" rows="3" placeholder="Incidencias, devoluciones, notas del cierre…"></textarea>
@@ -808,13 +821,47 @@ function calcRevisionTarjeta() {
   diffEl.className = 'val ' + (Math.abs(diff) <= 500 ? 'diff-ok' : 'diff-warn');
 
   const badge = document.getElementById('rt-badge');
-  if (!datafono && !reportado) { badge.innerHTML = ''; return; }
-  const cuadra = Math.abs(diff) <= 500;
+  if (!datafono && !reportado) {
+    badge.innerHTML = '';
+  } else {
+    const cuadra = Math.abs(diff) <= 500;
+    badge.innerHTML = cuadra
+      ? `<div class="ia-box ia-ok">✅ Cuadra — diferencia dentro de tolerancia (±₡500)</div>`
+      : `<div class="ia-box ia-warn">⚠️ No cuadra — diferencia de ${fmtCRC(Math.abs(diff))} (tolerancia ±₡500)</div>`;
+  }
+  actualizarDetalleTarjeta();
+  actualizarBalanceFinal();
+  actualizarWhatsAppBtn();
+}
+
+function actualizarBalanceFinal() {
+  const bfTarjeta = document.getElementById('bf-tarjeta');
+  if (!bfTarjeta) return;
+  const tarjeta = parseFloat(document.getElementById('f-tarjeta')?.value) || 0;
+  const propinaTarjeta = parseFloat(document.getElementById('f-propina-tarjeta')?.value) || 0;
+  const datafono = parseFloat(document.getElementById('f-datafono-total')?.value) || 0;
+  const diffTarjeta = datafono - (tarjeta + propinaTarjeta);
+
+  let totalCaja = 0;
+  DENOMS_CRC.forEach(d => { totalCaja += (parseInt(document.getElementById('d-'+d)?.value)||0) * d; });
+  const efectivo = parseFloat(document.getElementById('f-efectivo')?.value) || 0;
+  const propinaEfectivo = parseFloat(document.getElementById('f-propina-efectivo')?.value) || 0;
+  const fondo = parseFloat(document.getElementById('f-fondo')?.value) || 0;
+  const diffEfectivo = totalCaja - (efectivo + propinaEfectivo + fondo);
+
+  const balance = diffTarjeta + diffEfectivo;
+
+  bfTarjeta.textContent = (diffTarjeta >= 0 ? '+' : '') + fmtCRC(diffTarjeta);
+  document.getElementById('bf-efectivo').textContent = (diffEfectivo >= 0 ? '+' : '') + fmtCRC(diffEfectivo);
+  const totalEl = document.getElementById('bf-total');
+  totalEl.textContent = (balance >= 0 ? '+' : '') + fmtCRC(balance);
+  totalEl.className = 'val ' + (Math.abs(balance) <= 500 ? 'diff-ok' : 'diff-warn');
+
+  const badge = document.getElementById('bf-badge');
+  const cuadra = Math.abs(balance) <= 500;
   badge.innerHTML = cuadra
     ? `<div class="ia-box ia-ok">✅ Cuadra — diferencia dentro de tolerancia (±₡500)</div>`
-    : `<div class="ia-box ia-warn">⚠️ No cuadra — diferencia de ${fmtCRC(Math.abs(diff))} (tolerancia ±₡500)</div>`;
-  actualizarDetalleTarjeta();
-  actualizarWhatsAppBtn();
+    : `<div class="ia-box ia-warn">⚠️ No cuadra — diferencia de ${fmtCRC(Math.abs(balance))} (tolerancia ±₡500)</div>`;
 }
 
 function actualizarDetalleTarjeta() {
@@ -891,6 +938,7 @@ function calcCuadre() {
     usdRow.style.display = 'none';
   }
   actualizarDetalleEfectivo();
+  actualizarBalanceFinal();
   actualizarWhatsAppBtn();
 }
 
