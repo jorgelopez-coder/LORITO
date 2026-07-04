@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reportes de Ventas · Lorito</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#ffffff;
+      --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
+      --amber:#c87820; --amber-bg:#fdf6e3; --amber-lt:#f0d890;
+      --blue:#185fa5; --blue-bg:#eef4fb; --blue-lt:#b8d0f0;
+      --teal:#0e7a7a; --teal-bg:#eaf6f6;
+      --purple:#6a3a9a; --purple-bg:#f3eefb;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif; --font-m:'JetBrains Mono',monospace;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+
+    header { height:56px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; background:var(--bg); position:sticky; top:0; z-index:20; }
+    .nav-left { display:flex; align-items:center; gap:10px; }
+    .back-btn { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); transition:color .15s,border-color .15s; }
+    .back-btn:hover { color:var(--text); border-color:var(--border-h); }
+    .back-btn svg { width:13px; height:13px; }
+    .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
+    .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 10px; }
+
+    main { max-width:1100px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .page-header { margin-bottom:1.5rem; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .page-header h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+    .page-header p { font-size:13px; color:var(--muted); }
+
+    /* KPIs */
+    .kpi-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:1.25rem; }
+    .kpi-box { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; }
+    .kpi-val { font-family:var(--font-d); font-size:22px; font-weight:700; letter-spacing:-.02em; color:var(--text); }
+    .kpi-lbl { font-size:11px; color:var(--muted); margin-top:2px; }
+    .kpi-val.verde { color:var(--green); }
+    .kpi-val.rojo  { color:var(--red); }
+    .kpi-sub { font-size:11px; margin-top:3px; font-weight:600; }
+    .kpi-sub.up   { color:var(--green); }
+    .kpi-sub.down { color:var(--red); }
+
+    /* Comparativo entre períodos */
+    .cmp-period-lbl { font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; display:flex; align-items:center; gap:6px; margin-bottom:8px; }
+    .cmp-dot { width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0; }
+    .cmp-dot.a { background:#185fa5; }
+    .cmp-dot.b { background:#c87820; }
+    .cmp-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:14px 0; }
+    .cmp-box { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:.9rem 1.1rem; }
+    .cmp-metric-lbl { font-size:11px; color:var(--muted); margin-bottom:8px; }
+    .cmp-values { display:flex; flex-direction:column; gap:5px; margin-bottom:7px; }
+    .cmp-values div { display:flex; align-items:center; gap:7px; font-family:var(--font-m); font-size:15px; font-weight:600; color:var(--text); }
+    .cmp-delta { font-size:12px; font-weight:600; }
+    .cmp-delta.up   { color:var(--green); }
+    .cmp-delta.down { color:var(--red); }
+    .cmp-charts-grid { display:grid; grid-template-columns:1.3fr 1fr; gap:16px; }
+
+    /* Detalle por período (colapsable) */
+    .detalle-toggle { display:flex; align-items:center; justify-content:space-between; padding:1rem 1.25rem; cursor:pointer; transition:background .12s; }
+    .detalle-toggle:hover { background:var(--surface); }
+    .toggle-arrow { width:14px; height:14px; color:var(--muted); transition:transform .2s; flex-shrink:0; }
+    .toggle-arrow.open { transform:rotate(180deg); }
+
+    /* Card */
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; }
+    .card-pad { padding:1.25rem 1.5rem; }
+    .card-title { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:1rem; }
+
+    /* Controles */
+    .tabs { display:flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:3px; width:fit-content; }
+    .tab { font-size:13px; font-weight:500; padding:5px 14px; border-radius:7px; border:none; cursor:pointer; background:transparent; color:var(--muted); transition:background .15s,color .15s; white-space:nowrap; }
+    .tab.active { background:var(--card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+    .date-input { font-size:13px; padding:6px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); outline:none; font-family:var(--font-b); }
+    .filter-sel { font-size:13px; padding:6px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); outline:none; cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 8px center; padding-right:28px; }
+    .preset-btn { font-size:12px; padding:6px 12px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; transition:border-color .12s,color .12s; }
+    .preset-btn:hover { border-color:var(--border-h); color:var(--text); }
+    .preset-btn.active { background:var(--green-bg); border-color:var(--green-lt); color:var(--green); }
+    .ctrl-lbl { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+
+    /* Tabla */
+    .tabla-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th { text-align:left; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:10px 12px; border-bottom:1px solid var(--border); white-space:nowrap; background:var(--surface); }
+    td { padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:middle; font-family:var(--font-m); }
+    td.txt { font-family:var(--font-b); }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:var(--surface); }
+    .num { text-align:right; font-variant-numeric:tabular-nums; }
+
+    /* Leyenda forma de pago */
+    .legend-row { display:flex; align-items:center; justify-content:space-between; padding:6px 0; font-size:12px; border-bottom:1px solid var(--border); }
+    .legend-row:last-child { border-bottom:none; }
+    .legend-dot { width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:8px; flex-shrink:0; }
+    .legend-name { display:flex; align-items:center; color:var(--text); }
+    .legend-val { font-family:var(--font-m); font-weight:600; color:var(--text); }
+    .legend-pct { font-family:var(--font-m); color:var(--muted); font-size:11px; margin-left:8px; min-width:40px; text-align:right; display:inline-block; }
+
+    /* Empty / Spinner */
+    .empty { text-align:center; padding:3rem; color:var(--subtle); font-size:13px; }
+    .spinner { display:inline-block; width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--green); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* Status */
+    .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
+    .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+    .sdot.off { background:var(--subtle); }
+    .ssep { width:1px; height:14px; background:var(--border); }
+
+    .charts-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+    @media (max-width:800px) {
+      header { padding:0 1rem; } main { padding:1.5rem 1rem 3rem; }
+      .kpi-strip { grid-template-columns:1fr 1fr; }
+      .charts-grid-2 { grid-template-columns:1fr; }
+      .cmp-grid { grid-template-columns:1fr; }
+      .cmp-charts-grid { grid-template-columns:1fr; }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Reportes de Ventas</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<main>
+  <div class="page-header">
+    <div>
+      <h1>Reportes de ventas y análisis</h1>
+      <p>Basado en los registros de cierres de caja · Lorito</p>
+    </div>
+    <div id="status-carga" style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;">
+      <span class="spinner"></span> Cargando…
+    </div>
+  </div>
+
+  <!-- Controles -->
+  <div class="card card-pad">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+
+      <div>
+        <div class="ctrl-lbl">Agrupar por</div>
+        <div class="tabs">
+          <button class="tab active" id="grp-dia"    onclick="setAgrupacion('dia',this)">Día</button>
+          <button class="tab"        id="grp-semana" onclick="setAgrupacion('semana',this)">Semana</button>
+          <button class="tab"        id="grp-mes"    onclick="setAgrupacion('mes',this)">Mes</button>
+          <button class="tab"        id="grp-anio"   onclick="setAgrupacion('anio',this)">Año</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="ctrl-lbl">Período</div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <button class="preset-btn" onclick="aplicarPreset('hoy')">Hoy</button>
+          <button class="preset-btn" onclick="aplicarPreset('7d')">7 días</button>
+          <button class="preset-btn" onclick="aplicarPreset('mes')">Este mes</button>
+          <button class="preset-btn" onclick="aplicarPreset('anio')">Este año</button>
+          <button class="preset-btn active" onclick="aplicarPreset('todo')">Todo</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="ctrl-lbl">Rango específico</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <input type="date" id="filtro-desde" class="date-input" onchange="onFiltroManual()">
+          <span style="color:var(--subtle);font-size:12px;">→</span>
+          <input type="date" id="filtro-hasta" class="date-input" onchange="onFiltroManual()">
+        </div>
+      </div>
+
+      <div>
+        <div class="ctrl-lbl">Encargado</div>
+        <select class="filter-sel" id="filtro-encargado" onchange="renderTodo(); renderComparativo();">
+          <option value="">Todos</option>
+        </select>
+      </div>
+
+      <div>
+        <div class="ctrl-lbl">Día de semana</div>
+        <select class="filter-sel" id="filtro-dia-semana" onchange="renderTodo(); renderComparativo();">
+          <option value="">Todos</option>
+          <option value="1">Lunes</option>
+          <option value="2">Martes</option>
+          <option value="3">Miércoles</option>
+          <option value="4">Jueves</option>
+          <option value="5">Viernes</option>
+          <option value="6">Sábado</option>
+          <option value="0">Domingo</option>
+        </select>
+      </div>
+
+    </div>
+    <div id="rango-info" style="font-size:12px;color:var(--muted);margin-top:12px;"></div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-strip">
+    <div class="kpi-box">
+      <div class="kpi-val verde" id="kpi-total">₡—</div>
+      <div class="kpi-lbl">Total de ventas</div>
+      <div class="kpi-sub" id="kpi-total-var"></div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val" id="kpi-promedio">₡—</div>
+      <div class="kpi-lbl">Promedio por día</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val" id="kpi-cierres">—</div>
+      <div class="kpi-lbl">Cierres registrados</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val" id="kpi-mejor-dia">—</div>
+      <div class="kpi-lbl">Mejor día (promedio)</div>
+    </div>
+  </div>
+
+  <!-- Tendencia de ventas -->
+  <div class="card card-pad">
+    <div class="card-title">Tendencia de ventas</div>
+    <div style="position:relative;height:280px;">
+      <canvas id="chart-tendencia"></canvas>
+    </div>
+  </div>
+
+  <!-- Comparativo entre períodos -->
+  <div class="card card-pad">
+    <div class="card-title">Comparativo entre períodos</div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+      <button class="preset-btn active" id="cmp-preset-mes"    onclick="aplicarPresetComparativo('mes', this)">Mes actual vs. anterior</button>
+      <button class="preset-btn"        id="cmp-preset-anio"   onclick="aplicarPresetComparativo('anio', this)">Año actual vs. anterior</button>
+      <button class="preset-btn"        id="cmp-preset-mesanio" onclick="aplicarPresetComparativo('mesanio', this)">Mismo mes, año pasado</button>
+      <button class="preset-btn"        id="cmp-preset-semana" onclick="aplicarPresetComparativo('semana', this)">Semana actual vs. anterior</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:6px;">
+      <div>
+        <div class="cmp-period-lbl" style="color:#185fa5;"><span class="cmp-dot a"></span>Período A</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <input type="date" id="cmp-a-desde" class="date-input" onchange="onComparativoManual()">
+          <span style="color:var(--subtle);font-size:12px;">→</span>
+          <input type="date" id="cmp-a-hasta" class="date-input" onchange="onComparativoManual()">
+        </div>
+      </div>
+      <div>
+        <div class="cmp-period-lbl" style="color:#c87820;"><span class="cmp-dot b"></span>Período B</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <input type="date" id="cmp-b-desde" class="date-input" onchange="onComparativoManual()">
+          <span style="color:var(--subtle);font-size:12px;">→</span>
+          <input type="date" id="cmp-b-hasta" class="date-input" onchange="onComparativoManual()">
+        </div>
+      </div>
+    </div>
+    <div id="cmp-info" style="font-size:12px;color:var(--muted);margin-bottom:6px;"></div>
+
+    <div class="cmp-grid" id="cmp-kpis"></div>
+
+    <div class="cmp-charts-grid">
+      <div>
+        <div class="card-title" style="margin-bottom:.5rem;">Tendencia alineada por día</div>
+        <div style="position:relative;height:230px;">
+          <canvas id="chart-comparativo-tendencia"></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="card-title" style="margin-bottom:.5rem;">Forma de pago</div>
+        <div style="position:relative;height:230px;">
+          <canvas id="chart-comparativo-fp"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Forma de pago + Día de semana -->
+  <div class="charts-grid-2">
+    <div class="card card-pad">
+      <div class="card-title">Ventas por forma de pago</div>
+      <div style="position:relative;height:220px;">
+        <canvas id="chart-forma-pago"></canvas>
+      </div>
+      <div id="leyenda-forma-pago" style="margin-top:14px;"></div>
+    </div>
+    <div class="card card-pad">
+      <div class="card-title">Ventas por día de la semana</div>
+      <div style="position:relative;height:280px;">
+        <canvas id="chart-dia-semana"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Evolución forma de pago -->
+  <div class="card card-pad">
+    <div class="card-title">Evolución de la forma de pago en el tiempo</div>
+    <div style="position:relative;height:260px;">
+      <canvas id="chart-evolucion-fp"></canvas>
+    </div>
+  </div>
+
+  <!-- Tabla detalle por período -->
+  <div class="card">
+    <div class="detalle-toggle" onclick="toggleDetallePeriodos()">
+      <span class="card-title" style="margin-bottom:0;">Detalle por período</span>
+      <svg class="toggle-arrow" id="detalle-periodos-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 6 8 10 12 6"/></svg>
+    </div>
+    <div class="tabla-wrap" id="tabla-periodos" style="display:none;">
+      <div class="empty"><span class="spinner"></span></div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div style="display:flex;align-items:center;gap:6px;"><span class="sdot" id="conn-dot"></span><span id="conn-label">Conectando…</span></div>
+    <span class="ssep"></span>
+    <span id="status-msg">—</span>
+    <span class="ssep"></span>
+    <span style="margin-left:auto;">v1.0 · Reportes · Grupo del Sol</span>
+  </div>
+</main>
+
+<script>
+// ─── CONFIGURACIÓN ────────────────────────────────────────────────
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwp-pTaJAeZ2PPl6Xig4e8JH8tw1o6AHun4yiDxDLFFZs1tVUXlhEwNVPlQ9kDl04kh/exec';
+// ─────────────────────────────────────────────────────────────────
+
+const hoy = new Date();
+document.getElementById('date-chip').textContent =
+  hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+let cierresData   = [];
+let agrupacion    = 'dia';
+let agrupacionManual = false;
+let presetActivo  = 'todo';
+let chartTendencia    = null;
+let chartFormaPago    = null;
+let chartDiaSemana    = null;
+let chartEvolucionFp  = null;
+let chartCmpTendencia = null;
+let chartCmpFormaPago = null;
+let detalleAbierto    = false;
+
+const DIAS_SEMANA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+const FORMAS_PAGO = [
+  { key:'efectivo',    label:'Efectivo',    color:'#1a7a4a' },
+  { key:'tarjeta',     label:'Tarjeta',     color:'#185fa5' },
+  { key:'sinpe',       label:'SINPE',       color:'#0e7a7a' },
+  { key:'credito',     label:'Crédito',     color:'#6a3a9a' },
+  { key:'plataformas', label:'Plataformas', color:'#c87820' },
+  { key:'otras',       label:'Otras',       color:'#c84a20' },
+  { key:'usd',         label:'USD (en ₡)',  color:'#8ab89e' },
+  { key:'sinClasificar', label:'Sin clasificar', color:'#a0a0a0' },
+];
+
+function fmtCRC(n) { return '₡' + Math.round(n||0).toLocaleString('es-CR'); }
+function fmtNum(n) { return Number(n||0).toLocaleString('es-CR'); }
+
+// ─── CARGA DE DATOS ────────────────────────────────────────────────
+async function cargarDatos() {
+  try {
+    const resp = await fetch(SHEETS_URL + '?action=read');
+    const data = await resp.json();
+
+    cierresData = (data.records || []).map((r, i) => {
+      const fecha = r[1] ? String(r[1]).slice(0,10) : '';
+      let diaSemana = null;
+      if (fecha) {
+        const d = new Date(fecha + 'T12:00:00');
+        if (!isNaN(d)) diaSemana = d.getDay();
+      }
+      const efectivo    = +r[6]  || 0;
+      const tarjeta     = +r[7]  || 0;
+      const sinpe       = +r[8]  || 0;
+      const otras       = +r[9]  || 0;
+      const credito     = +r[10] || 0;
+      const plataformas = +r[11] || 0;
+      const servicio    = +r[13] || 0;
+      const totalVentas = +r[14] || 0;
+      const usd         = +r[34] || 0;
+      // Algunos cierres migrados en la carga histórica ("CARGA MASIVA") sólo traen
+      // el Total Ventas ya calculado, sin el desglose completo por forma de pago.
+      // Ese remanente se marca como "Sin clasificar" para que la dona siga sumando
+      // el mismo total que el KPI, en vez de ocultar el faltante.
+      const sinClasificar = Math.max(0, totalVentas - servicio - (efectivo+tarjeta+sinpe+otras+credito+plataformas+usd));
+      return {
+        id: r[0] || ('row'+i), fecha, hora: r[2], encargado: r[4] || '', turno: r[5] || '',
+        efectivo, tarjeta, sinpe, otras, credito, plataformas, servicio, totalVentas, usd,
+        sinClasificar,
+        diaSemana,
+      };
+    }).filter(r => r.fecha);
+
+    poblarFiltros();
+    document.getElementById('status-carga').style.display = 'none';
+    document.getElementById('conn-dot').classList.remove('off');
+    document.getElementById('conn-label').textContent = 'Conectado';
+    document.getElementById('status-msg').textContent = `${cierresData.length} cierres cargados`;
+
+    aplicarPreset('todo');
+    aplicarPresetComparativo('mes', document.getElementById('cmp-preset-mes'));
+  } catch (e) {
+    document.getElementById('status-carga').innerHTML = '<span style="color:var(--red)">Sin conexión</span>';
+    document.getElementById('conn-dot').classList.add('off');
+    document.getElementById('conn-label').textContent = 'Sin conexión';
+    document.getElementById('status-msg').textContent = 'No se pudo cargar el historial de cierres.';
+    document.getElementById('tabla-periodos').innerHTML = '<div class="empty">No se pudo cargar el historial. Revisá la conexión.</div>';
+  }
+}
+
+function poblarFiltros() {
+  const encargados = [...new Set(cierresData.map(r => r.encargado).filter(Boolean))].sort();
+  document.getElementById('filtro-encargado').innerHTML = '<option value="">Todos</option>'
+    + encargados.map(e => `<option value="${e}">${e}</option>`).join('');
+}
+
+// ─── AGRUPACIÓN ────────────────────────────────────────────────────
+function setAgrupacion(tipo, el) {
+  agrupacion = tipo;
+  agrupacionManual = true;
+  document.querySelectorAll('[id^="grp-"]').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderTodo();
+}
+
+// Sugiere un nivel de agrupación razonable según la cantidad de días del rango,
+// para que "Todo" (varios años de historial) no grafique un punto por día.
+function sugerirAgrupacion(desde, hasta) {
+  const fechas = (desde && hasta) ? [desde, hasta] : cierresData.map(r => r.fecha).sort();
+  if (!fechas.length) return 'dia';
+  const dias = Math.round((new Date(fechas[fechas.length-1]+'T00:00:00') - new Date(fechas[0]+'T00:00:00')) / 86400000) + 1;
+  if (dias <= 45)  return 'dia';
+  if (dias <= 180) return 'semana';
+  return 'mes';
+}
+
+function aplicarAgrupacionSugerida(desde, hasta) {
+  if (agrupacionManual) return;
+  agrupacion = sugerirAgrupacion(desde, hasta);
+  document.querySelectorAll('[id^="grp-"]').forEach(b => b.classList.remove('active'));
+  document.getElementById('grp-' + agrupacion).classList.add('active');
+}
+
+function claveAgrupacion(fecha) {
+  const [y, m, d] = fecha.split('-');
+  if (agrupacion === 'dia')   return fecha;
+  if (agrupacion === 'mes')   return `${y}-${m}`;
+  if (agrupacion === 'anio')  return y;
+  if (agrupacion === 'semana') {
+    const dt  = new Date(+y, +m - 1, +d);
+    const ini = new Date(dt);
+    ini.setDate(dt.getDate() - (dt.getDay() === 0 ? 6 : dt.getDay() - 1)); // lunes
+    return `${ini.getFullYear()}-${String(ini.getMonth()+1).padStart(2,'0')}-${String(ini.getDate()).padStart(2,'0')}`;
+  }
+  return fecha;
+}
+
+function labelPeriodo(clave) {
+  if (agrupacion === 'dia') {
+    const [y,m,d] = clave.split('-');
+    return new Date(y,m-1,d).toLocaleDateString('es-CR',{day:'numeric',month:'short'});
+  }
+  if (agrupacion === 'semana') {
+    const [y,m,d] = clave.split('-');
+    const ini = new Date(y,m-1,d);
+    const fin = new Date(ini); fin.setDate(ini.getDate()+6);
+    return `${ini.getDate()}/${ini.getMonth()+1} – ${fin.getDate()}/${fin.getMonth()+1}`;
+  }
+  if (agrupacion === 'mes') {
+    const [y,m] = clave.split('-');
+    return new Date(y,m-1).toLocaleDateString('es-CR',{month:'short',year:'numeric'});
+  }
+  return clave;
+}
+
+// ─── FILTROS DE FECHA (presets + manual) ──────────────────────────
+function pad(n){ return String(n).padStart(2,'0'); }
+function toISO(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+
+function aplicarPreset(tipo) {
+  presetActivo = tipo;
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  const idx = ['hoy','7d','mes','anio','todo'].indexOf(tipo);
+  document.querySelectorAll('.preset-btn')[idx].classList.add('active');
+
+  const hoyD = new Date();
+  let desde = '', hasta = '';
+  if (tipo === 'hoy')  { desde = toISO(hoyD); hasta = toISO(hoyD); }
+  if (tipo === '7d')    { const d = new Date(hoyD); d.setDate(d.getDate()-6); desde = toISO(d); hasta = toISO(hoyD); }
+  if (tipo === 'mes')   { desde = toISO(new Date(hoyD.getFullYear(), hoyD.getMonth(), 1)); hasta = toISO(hoyD); }
+  if (tipo === 'anio')  { desde = toISO(new Date(hoyD.getFullYear(), 0, 1)); hasta = toISO(hoyD); }
+  if (tipo === 'todo')  { desde = ''; hasta = ''; }
+
+  document.getElementById('filtro-desde').value = desde;
+  document.getElementById('filtro-hasta').value = hasta;
+  renderTodo();
+}
+
+function onFiltroManual() {
+  presetActivo = '';
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  renderTodo();
+}
+
+function filtrarLista(lista, desde, hasta, encargado, diaSemana) {
+  return lista.filter(r =>
+    (!desde || r.fecha >= desde) &&
+    (!hasta || r.fecha <= hasta) &&
+    (!encargado || r.encargado === encargado) &&
+    (diaSemana === '' || diaSemana === undefined || String(r.diaSemana) === diaSemana)
+  );
+}
+
+// ─── RENDER PRINCIPAL ──────────────────────────────────────────────
+function renderTodo() {
+  if (!cierresData.length) return;
+
+  const desde     = document.getElementById('filtro-desde').value;
+  const hasta     = document.getElementById('filtro-hasta').value;
+  const encargado = document.getElementById('filtro-encargado').value;
+  const diaSemana = document.getElementById('filtro-dia-semana').value;
+
+  aplicarAgrupacionSugerida(desde, hasta);
+
+  const filtrado = filtrarLista(cierresData, desde, hasta, encargado, diaSemana);
+  const fechas   = filtrado.map(r => r.fecha).sort();
+
+  // Info de rango
+  const totalVentas = filtrado.reduce((a,r) => a + r.totalVentas, 0);
+  document.getElementById('rango-info').innerHTML = filtrado.length
+    ? `<strong>${filtrado.length}</strong> cierre${filtrado.length!==1?'s':''} &nbsp;·&nbsp; <strong>${fechas[0]}</strong> → <strong>${fechas[fechas.length-1]}</strong> &nbsp;·&nbsp; Total: <strong style="color:var(--green)">${fmtCRC(totalVentas)}</strong>`
+    : 'Sin cierres en el período seleccionado.';
+
+  renderKPIs(filtrado, desde, hasta, encargado, diaSemana);
+  renderTendencia(filtrado);
+  renderFormaPago(filtrado);
+  renderDiaSemana(filtrado);
+  renderEvolucionFormaPago(filtrado);
+  renderTablaPeriodos(filtrado);
+}
+
+// ─── KPIs ──────────────────────────────────────────────────────────
+function renderKPIs(filtrado, desde, hasta, encargado, diaSemana) {
+  const total = filtrado.reduce((a,r) => a + r.totalVentas, 0);
+  const diasUnicos = new Set(filtrado.map(r => r.fecha)).size;
+  const promedio = diasUnicos ? total / diasUnicos : 0;
+
+  document.getElementById('kpi-total').textContent = fmtCRC(total);
+  document.getElementById('kpi-promedio').textContent = fmtCRC(promedio);
+  document.getElementById('kpi-cierres').textContent = fmtNum(filtrado.length);
+
+  // Mejor día de la semana (por promedio)
+  const porDia = {};
+  filtrado.forEach(r => {
+    if (r.diaSemana === null) return;
+    if (!porDia[r.diaSemana]) porDia[r.diaSemana] = { total:0, count:0 };
+    porDia[r.diaSemana].total += r.totalVentas;
+    porDia[r.diaSemana].count += 1;
+  });
+  let mejorDia = '—';
+  let mejorProm = -1;
+  Object.keys(porDia).forEach(d => {
+    const prom = porDia[d].total / porDia[d].count;
+    if (prom > mejorProm) { mejorProm = prom; mejorDia = DIAS_SEMANA[d]; }
+  });
+  document.getElementById('kpi-mejor-dia').textContent = mejorDia;
+
+  // Variación vs período anterior equivalente (solo si hay rango definido)
+  const varEl = document.getElementById('kpi-total-var');
+  if (desde && hasta) {
+    const dIni = new Date(desde+'T00:00:00');
+    const dFin = new Date(hasta+'T00:00:00');
+    const dias = Math.round((dFin - dIni) / 86400000) + 1;
+    const prevHasta = new Date(dIni); prevHasta.setDate(prevHasta.getDate()-1);
+    const prevDesde = new Date(prevHasta); prevDesde.setDate(prevDesde.getDate()-(dias-1));
+    const prevLista = filtrarLista(cierresData, toISO(prevDesde), toISO(prevHasta), encargado, diaSemana);
+    const prevTotal = prevLista.reduce((a,r) => a + r.totalVentas, 0);
+    if (prevTotal > 0) {
+      const cambio = ((total - prevTotal) / prevTotal) * 100;
+      varEl.textContent = (cambio>=0?'▲ +':'▼ ') + cambio.toFixed(1) + '% vs período anterior';
+      varEl.className = 'kpi-sub ' + (cambio>=0?'up':'down');
+    } else {
+      varEl.textContent = 'Sin datos del período anterior';
+      varEl.className = 'kpi-sub';
+    }
+  } else {
+    varEl.textContent = '';
+    varEl.className = 'kpi-sub';
+  }
+}
+
+// ─── TENDENCIA DE VENTAS ───────────────────────────────────────────
+function renderTendencia(filtrado) {
+  const mapa = {};
+  filtrado.forEach(r => {
+    const k = claveAgrupacion(r.fecha);
+    mapa[k] = (mapa[k] || 0) + r.totalVentas;
+  });
+  const claves  = Object.keys(mapa).sort();
+  const labels  = claves.map(labelPeriodo);
+  const valores = claves.map(k => mapa[k]);
+
+  const ctx = document.getElementById('chart-tendencia').getContext('2d');
+  if (chartTendencia) chartTendencia.destroy();
+  chartTendencia = new Chart(ctx, {
+    type: claves.length > 1 ? 'line' : 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Ventas (₡)',
+        data: valores,
+        borderColor: '#1a7a4a',
+        backgroundColor: 'rgba(26,122,74,0.12)',
+        pointBackgroundColor: '#1a7a4a',
+        pointRadius: claves.length > 40 ? 0 : 3,
+        borderWidth: 2,
+        fill: true,
+        tension: 0.25,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' ' + fmtCRC(ctx.raw) } }
+      },
+      scales: {
+        y: {
+          ticks: {
+            callback: v => '₡' + (v>=1000000 ? (v/1000000).toFixed(1)+'M' : v>=1000 ? (v/1000).toFixed(0)+'K' : v),
+            color: '#5a8a6a', font: { size: 11 }
+          },
+          grid: { color: '#e8f0ea' }
+        },
+        x: { ticks: { color: '#5a8a6a', font: { size: 11 }, maxRotation: 0, autoSkip: true }, grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ─── FORMA DE PAGO (dona) ──────────────────────────────────────────
+function renderFormaPago(filtrado) {
+  const totales = {};
+  FORMAS_PAGO.forEach(f => totales[f.key] = 0);
+  filtrado.forEach(r => FORMAS_PAGO.forEach(f => totales[f.key] += r[f.key] || 0));
+
+  const activos = FORMAS_PAGO.filter(f => totales[f.key] > 0);
+  const total = activos.reduce((a,f) => a + totales[f.key], 0);
+
+  const ctx = document.getElementById('chart-forma-pago').getContext('2d');
+  if (chartFormaPago) chartFormaPago.destroy();
+
+  if (!activos.length) {
+    document.getElementById('leyenda-forma-pago').innerHTML = '<div class="empty" style="padding:1rem">Sin ventas en el período.</div>';
+    return;
+  }
+
+  chartFormaPago = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: activos.map(f => f.label),
+      datasets: [{
+        data: activos.map(f => totales[f.key]),
+        backgroundColor: activos.map(f => f.color),
+        borderWidth: 2,
+        borderColor: '#ffffff',
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${fmtCRC(ctx.raw)}` } }
+      }
+    }
+  });
+
+  document.getElementById('leyenda-forma-pago').innerHTML = activos
+    .sort((a,b) => totales[b.key] - totales[a.key])
+    .map(f => {
+      const pct = total > 0 ? (totales[f.key] / total * 100) : 0;
+      return `<div class="legend-row">
+        <span class="legend-name"><span class="legend-dot" style="background:${f.color}"></span>${f.label}</span>
+        <span><span class="legend-val">${fmtCRC(totales[f.key])}</span><span class="legend-pct">${pct.toFixed(1)}%</span></span>
+      </div>`;
+    }).join('')
+    + (totales.sinClasificar > 0
+      ? `<div style="font-size:11px;color:var(--muted);margin-top:8px;">"Sin clasificar" son cierres antiguos migrados sin desglose por forma de pago (el Total Ventas de esos cierres sí está completo).</div>`
+      : '');
+}
+
+// ─── VENTAS POR DÍA DE LA SEMANA ───────────────────────────────────
+function renderDiaSemana(filtrado) {
+  const acumulado = Array(7).fill(0);
+  const conteo = Array(7).fill(0);
+  filtrado.forEach(r => {
+    if (r.diaSemana === null) return;
+    acumulado[r.diaSemana] += r.totalVentas;
+    conteo[r.diaSemana] += 1;
+  });
+  const promedios = acumulado.map((v,i) => conteo[i] ? v / conteo[i] : 0);
+  // Reordenar Lunes→Domingo para lectura más natural
+  const orden = [1,2,3,4,5,6,0];
+  const labels = orden.map(i => DIAS_SEMANA[i].slice(0,3));
+  const valores = orden.map(i => promedios[i]);
+
+  const ctx = document.getElementById('chart-dia-semana').getContext('2d');
+  if (chartDiaSemana) chartDiaSemana.destroy();
+  chartDiaSemana = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Promedio de ventas (₡)',
+        data: valores,
+        backgroundColor: 'rgba(24,95,165,0.75)',
+        borderColor: '#185fa5',
+        borderWidth: 1,
+        borderRadius: 5,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' ' + fmtCRC(ctx.raw) } }
+      },
+      scales: {
+        y: {
+          ticks: {
+            callback: v => '₡' + (v>=1000000 ? (v/1000000).toFixed(1)+'M' : v>=1000 ? (v/1000).toFixed(0)+'K' : v),
+            color: '#5a8a6a', font: { size: 11 }
+          },
+          grid: { color: '#e8f0ea' }
+        },
+        x: { ticks: { color: '#5a8a6a', font: { size: 11 } }, grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ─── EVOLUCIÓN DE FORMA DE PAGO (barras apiladas) ─────────────────
+function renderEvolucionFormaPago(filtrado) {
+  const mapa = {};
+  filtrado.forEach(r => {
+    const k = claveAgrupacion(r.fecha);
+    if (!mapa[k]) { mapa[k] = {}; FORMAS_PAGO.forEach(f => mapa[k][f.key] = 0); }
+    FORMAS_PAGO.forEach(f => mapa[k][f.key] += r[f.key] || 0);
+  });
+  const claves = Object.keys(mapa).sort();
+  const labels = claves.map(labelPeriodo);
+  const activos = FORMAS_PAGO.filter(f => claves.some(k => mapa[k][f.key] > 0));
+
+  const ctx = document.getElementById('chart-evolucion-fp').getContext('2d');
+  if (chartEvolucionFp) chartEvolucionFp.destroy();
+  chartEvolucionFp = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: activos.map(f => ({
+        label: f.label,
+        data: claves.map(k => mapa[k][f.key]),
+        backgroundColor: f.color,
+        borderRadius: 3,
+      }))
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, color: '#1c3a28', boxWidth: 10, padding: 10 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtCRC(ctx.raw)}` } }
+      },
+      scales: {
+        y: {
+          stacked: true,
+          ticks: {
+            callback: v => '₡' + (v>=1000000 ? (v/1000000).toFixed(1)+'M' : v>=1000 ? (v/1000).toFixed(0)+'K' : v),
+            color: '#5a8a6a', font: { size: 11 }
+          },
+          grid: { color: '#e8f0ea' }
+        },
+        x: { stacked: true, ticks: { color: '#5a8a6a', font: { size: 11 }, maxRotation: 0, autoSkip: true }, grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ─── TABLA DE DETALLE POR PERÍODO ──────────────────────────────────
+function toggleDetallePeriodos() {
+  detalleAbierto = !detalleAbierto;
+  document.getElementById('tabla-periodos').style.display = detalleAbierto ? '' : 'none';
+  document.getElementById('detalle-periodos-arrow').classList.toggle('open', detalleAbierto);
+}
+
+function renderTablaPeriodos(filtrado) {
+  const mapa = {};
+  filtrado.forEach(r => {
+    const k = claveAgrupacion(r.fecha);
+    if (!mapa[k]) mapa[k] = { total:0, count:0 };
+    mapa[k].total += r.totalVentas;
+    mapa[k].count += 1;
+  });
+  const claves = Object.keys(mapa).sort((a,b) => b.localeCompare(a));
+  const cont = document.getElementById('tabla-periodos');
+
+  if (!claves.length) {
+    cont.innerHTML = '<div class="empty">Sin datos para el período seleccionado.</div>';
+    return;
+  }
+
+  cont.innerHTML = `<table>
+    <thead><tr><th>Período</th><th class="num">Cierres</th><th class="num">Total ventas</th><th class="num">Promedio</th></tr></thead>
+    <tbody>
+      ${claves.map(k => {
+        const g = mapa[k];
+        return `<tr>
+          <td class="txt">${labelPeriodo(k)}</td>
+          <td class="num">${fmtNum(g.count)}</td>
+          <td class="num" style="color:var(--green)">${fmtCRC(g.total)}</td>
+          <td class="num">${fmtCRC(g.total / g.count)}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ─── COMPARATIVO ENTRE PERÍODOS ────────────────────────────────────
+function lastDayOfMonth(y, m) { return new Date(y, m+1, 0).getDate(); }
+
+function aplicarPresetComparativo(tipo, el) {
+  document.querySelectorAll('#cmp-preset-mes,#cmp-preset-anio,#cmp-preset-mesanio,#cmp-preset-semana')
+    .forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+
+  const h = new Date();
+  let aDesde, aHasta, bDesde, bHasta;
+
+  if (tipo === 'mes') {
+    aDesde = new Date(h.getFullYear(), h.getMonth(), 1);
+    aHasta = h;
+    bDesde = new Date(h.getFullYear(), h.getMonth()-1, 1);
+    bHasta = new Date(h.getFullYear(), h.getMonth()-1, lastDayOfMonth(h.getFullYear(), h.getMonth()-1));
+  } else if (tipo === 'anio') {
+    aDesde = new Date(h.getFullYear(), 0, 1);
+    aHasta = h;
+    bDesde = new Date(h.getFullYear()-1, 0, 1);
+    bHasta = new Date(h.getFullYear()-1, 11, 31);
+  } else if (tipo === 'mesanio') {
+    aDesde = new Date(h.getFullYear(), h.getMonth(), 1);
+    aHasta = h;
+    bDesde = new Date(h.getFullYear()-1, h.getMonth(), 1);
+    bHasta = new Date(h.getFullYear()-1, h.getMonth(), lastDayOfMonth(h.getFullYear()-1, h.getMonth()));
+  } else if (tipo === 'semana') {
+    const diffLunes = h.getDay() === 0 ? 6 : h.getDay()-1;
+    aDesde = new Date(h); aDesde.setDate(h.getDate()-diffLunes);
+    aHasta = h;
+    bHasta = new Date(aDesde); bHasta.setDate(aDesde.getDate()-1);
+    bDesde = new Date(bHasta); bDesde.setDate(bHasta.getDate()-6);
+  }
+
+  document.getElementById('cmp-a-desde').value = toISO(aDesde);
+  document.getElementById('cmp-a-hasta').value = toISO(aHasta);
+  document.getElementById('cmp-b-desde').value = toISO(bDesde);
+  document.getElementById('cmp-b-hasta').value = toISO(bHasta);
+  renderComparativo();
+}
+
+function onComparativoManual() {
+  document.querySelectorAll('#cmp-preset-mes,#cmp-preset-anio,#cmp-preset-mesanio,#cmp-preset-semana')
+    .forEach(b => b.classList.remove('active'));
+  renderComparativo();
+}
+
+function deltaPct(a, b) {
+  if (!b) return a > 0 ? 100 : 0;
+  return (a - b) / b * 100;
+}
+
+function cmpBox(label, valA, valB, fmt) {
+  const pct = deltaPct(valA, valB);
+  return `<div class="cmp-box">
+    <div class="cmp-metric-lbl">${label}</div>
+    <div class="cmp-values">
+      <div><span class="cmp-dot a"></span>${fmt(valA)}</div>
+      <div><span class="cmp-dot b"></span>${fmt(valB)}</div>
+    </div>
+    <div class="cmp-delta ${pct>=0?'up':'down'}">${pct>=0?'▲ +':'▼ '}${pct.toFixed(1)}% (A vs. B)</div>
+  </div>`;
+}
+
+function renderComparativo() {
+  if (!cierresData.length) return;
+
+  const aDesde = document.getElementById('cmp-a-desde').value;
+  const aHasta = document.getElementById('cmp-a-hasta').value;
+  const bDesde = document.getElementById('cmp-b-desde').value;
+  const bHasta = document.getElementById('cmp-b-hasta').value;
+  const encargado = document.getElementById('filtro-encargado').value;
+  const diaSemana = document.getElementById('filtro-dia-semana').value;
+  if (!aDesde || !aHasta || !bDesde || !bHasta) return;
+
+  const listaA = filtrarLista(cierresData, aDesde, aHasta, encargado, diaSemana);
+  const listaB = filtrarLista(cierresData, bDesde, bHasta, encargado, diaSemana);
+
+  const totalA = listaA.reduce((a,r) => a + r.totalVentas, 0);
+  const totalB = listaB.reduce((a,r) => a + r.totalVentas, 0);
+  const diasA = new Set(listaA.map(r => r.fecha)).size;
+  const diasB = new Set(listaB.map(r => r.fecha)).size;
+  const promA = diasA ? totalA / diasA : 0;
+  const promB = diasB ? totalB / diasB : 0;
+
+  document.getElementById('cmp-info').innerHTML =
+    `<span style="color:#185fa5;font-weight:600;">A</span> ${aDesde} → ${aHasta} (${listaA.length} cierres) `
+    + `&nbsp;·&nbsp; <span style="color:#c87820;font-weight:600;">B</span> ${bDesde} → ${bHasta} (${listaB.length} cierres)`;
+
+  document.getElementById('cmp-kpis').innerHTML =
+    cmpBox('Total de ventas', totalA, totalB, fmtCRC) +
+    cmpBox('Promedio por día', promA, promB, fmtCRC) +
+    cmpBox('Cierres registrados', listaA.length, listaB.length, fmtNum);
+
+  renderComparativoTendencia(listaA, listaB, aDesde, bDesde);
+  renderComparativoFormaPago(listaA, listaB);
+}
+
+// Alinea ambos períodos por día relativo (día 1, día 2…) desde el inicio de cada uno,
+// para poder comparar la forma de la curva aunque los rangos tengan fechas distintas.
+function renderComparativoTendencia(listaA, listaB, aDesde, bDesde) {
+  const inicioA = new Date(aDesde+'T00:00:00');
+  const inicioB = new Date(bDesde+'T00:00:00');
+
+  const porDiaA = {}, porDiaB = {};
+  listaA.forEach(r => {
+    const idx = Math.round((new Date(r.fecha+'T00:00:00') - inicioA) / 86400000);
+    porDiaA[idx] = (porDiaA[idx] || 0) + r.totalVentas;
+  });
+  listaB.forEach(r => {
+    const idx = Math.round((new Date(r.fecha+'T00:00:00') - inicioB) / 86400000);
+    porDiaB[idx] = (porDiaB[idx] || 0) + r.totalVentas;
+  });
+
+  const maxIdx = Math.max(0, ...Object.keys(porDiaA).map(Number), ...Object.keys(porDiaB).map(Number));
+  const labels = Array.from({length: maxIdx+1}, (_,i) => 'Día ' + (i+1));
+  const dataA = Array.from({length: maxIdx+1}, (_,i) => porDiaA[i] || 0);
+  const dataB = Array.from({length: maxIdx+1}, (_,i) => porDiaB[i] || 0);
+
+  const ctx = document.getElementById('chart-comparativo-tendencia').getContext('2d');
+  if (chartCmpTendencia) chartCmpTendencia.destroy();
+  chartCmpTendencia = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'Período A', data:dataA, borderColor:'#185fa5', backgroundColor:'rgba(24,95,165,0.08)', pointRadius: maxIdx>40?0:2, borderWidth:2, tension:0.25 },
+        { label:'Período B', data:dataB, borderColor:'#c87820', backgroundColor:'rgba(200,120,32,0.08)', pointRadius: maxIdx>40?0:2, borderWidth:2, tension:0.25, borderDash:[5,3] },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position:'bottom', labels:{ font:{size:11}, color:'#1c3a28', boxWidth:10, padding:10 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtCRC(ctx.raw)}` } }
+      },
+      scales: {
+        y: {
+          ticks: {
+            callback: v => '₡' + (v>=1000000 ? (v/1000000).toFixed(1)+'M' : v>=1000 ? (v/1000).toFixed(0)+'K' : v),
+            color:'#5a8a6a', font:{size:11}
+          },
+          grid: { color:'#e8f0ea' }
+        },
+        x: { ticks: { color:'#5a8a6a', font:{size:11}, maxRotation:0, autoSkip:true }, grid:{ display:false } }
+      }
+    }
+  });
+}
+
+function renderComparativoFormaPago(listaA, listaB) {
+  const totalesA = {}, totalesB = {};
+  FORMAS_PAGO.forEach(f => { totalesA[f.key] = 0; totalesB[f.key] = 0; });
+  listaA.forEach(r => FORMAS_PAGO.forEach(f => totalesA[f.key] += r[f.key] || 0));
+  listaB.forEach(r => FORMAS_PAGO.forEach(f => totalesB[f.key] += r[f.key] || 0));
+
+  const activos = FORMAS_PAGO.filter(f => totalesA[f.key] > 0 || totalesB[f.key] > 0);
+
+  const ctx = document.getElementById('chart-comparativo-fp').getContext('2d');
+  if (chartCmpFormaPago) chartCmpFormaPago.destroy();
+
+  if (!activos.length) return;
+
+  chartCmpFormaPago = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: activos.map(f => f.label),
+      datasets: [
+        { label:'Período A', data: activos.map(f => totalesA[f.key]), backgroundColor:'#185fa5', borderRadius:4 },
+        { label:'Período B', data: activos.map(f => totalesB[f.key]), backgroundColor:'#c87820', borderRadius:4 },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position:'bottom', labels:{ font:{size:11}, color:'#1c3a28', boxWidth:10, padding:10 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtCRC(ctx.raw)}` } }
+      },
+      scales: {
+        y: {
+          ticks: {
+            callback: v => '₡' + (v>=1000000 ? (v/1000000).toFixed(1)+'M' : v>=1000 ? (v/1000).toFixed(0)+'K' : v),
+            color:'#5a8a6a', font:{size:11}
+          },
+          grid: { color:'#e8f0ea' }
+        },
+        x: { ticks: { color:'#5a8a6a', font:{size:11} }, grid:{ display:false } }
+      }
+    }
+  });
+}
+
+// ─── INIT ──────────────────────────────────────────────────────────
+cargarDatos();
+</script>
+</body>
+</html>
