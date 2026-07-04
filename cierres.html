@@ -307,26 +307,26 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
       </div>
 
       <div class="denom-section">
-        <p class="denom-group-title">🧾 Propinas por forma de pago</p>
+        <p class="denom-group-title">🧾 10% Servicio por forma de pago</p>
         <div class="field-row-3">
           <div class="field">
-            <label for="f-propina-efectivo">Propina Efectivo (₡)</label>
+            <label for="f-propina-efectivo">10% Servicio Efectivo (₡)</label>
             <input type="number" id="f-propina-efectivo" placeholder="0" min="0" oninput="actualizarResumen()"/>
           </div>
           <div class="field">
-            <label for="f-propina-tarjeta">Propina Tarjeta (₡)</label>
+            <label for="f-propina-tarjeta">10% Servicio Tarjeta (₡)</label>
             <input type="number" id="f-propina-tarjeta" placeholder="0" min="0" oninput="actualizarResumen();calcRevisionTarjeta()"/>
           </div>
           <div class="field">
-            <label for="f-propina-credito">Propina Crédito (₡)</label>
+            <label for="f-propina-credito">10% Servicio Crédito (₡)</label>
             <input type="number" id="f-propina-credito" placeholder="0" min="0" oninput="actualizarResumen()"/>
           </div>
           <div class="field">
-            <label for="f-propina-otro">Propina Otro (₡)</label>
+            <label for="f-propina-otro">10% Servicio Otro (₡)</label>
             <input type="number" id="f-propina-otro" placeholder="0" min="0" oninput="actualizarResumen()"/>
           </div>
           <div class="field">
-            <label for="f-propina-dolares">Propina en Dólares ($)</label>
+            <label for="f-propina-dolares">10% Servicio en Dólares ($)</label>
             <input type="number" id="f-propina-dolares" placeholder="0.00" min="0" step="0.01" oninput="calcDolares();actualizarResumen()"/>
           </div>
         </div>
@@ -433,7 +433,7 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
     <div class="card">
       <p class="card-title">Revisión de Tarjeta</p>
       <div class="cuadre-card">
-        <div class="cuadre-row"><label>Tarjeta reportada (ventas + propina)</label><span class="val" id="rt-reportado">₡0</span></div>
+        <div class="cuadre-row"><label>Tarjeta reportada (ventas + 10% servicio)</label><span class="val" id="rt-reportado">₡0</span></div>
         <div class="cuadre-row"><label>Total datáfono</label><span class="val" id="rt-datafono">₡0</span></div>
         <div class="cuadre-total">
           <span>Diferencia</span>
@@ -787,7 +787,7 @@ function actualizarResumen() {
   const items = [
     ['Efectivo ₡', t.efectivo],['Tarjeta ₡', t.tarjeta],
     ['SINPE ₡', t.sinpe],['Crédito ₡', t.credito],
-    ['Plataformas ₡', t.plataformas],['Propinas ₡', t.servicio],
+    ['Plataformas ₡', t.plataformas],['10% Servicio ₡', t.servicio],
     ['Otras ₡', t.otras],['USD en ₡', t.usdTotalCrc],
   ].filter(([,v]) => v > 0);
 
@@ -872,7 +872,7 @@ function actualizarDetalleTarjeta() {
   const datafono = parseFloat(document.getElementById('f-datafono-total')?.value) || 0;
   el.innerHTML = `
     <div class="hist-detail-item"><span>Ventas con tarjeta</span><span class="v">${fmtCRC(tarjeta)}</span></div>
-    <div class="hist-detail-item"><span>+ Propina en tarjeta</span><span class="v">${fmtCRC(propinaTarjeta)}</span></div>
+    <div class="hist-detail-item"><span>+ 10% Servicio en tarjeta</span><span class="v">${fmtCRC(propinaTarjeta)}</span></div>
     <div class="hist-detail-item" style="border-top:1px solid var(--border);padding-top:5px;font-weight:600"><span>= Total reportado</span><span class="v">${fmtCRC(tarjeta+propinaTarjeta)}</span></div>
     <div class="hist-detail-item" style="margin-top:6px"><span>Total datáfono</span><span class="v">${fmtCRC(datafono)}</span></div>
   `;
@@ -956,7 +956,7 @@ function actualizarDetalleEfectivo() {
     <div class="hist-detail-item"><span>Monedas ₡</span><span class="v">${fmtCRC(totalMonedasCRC)}</span></div>
     <div class="hist-detail-item" style="border-top:1px solid var(--border);padding-top:5px;font-weight:600"><span>= Total contado en caja</span><span class="v">${fmtCRC(totalBilletesCRC+totalMonedasCRC)}</span></div>
     <div class="hist-detail-item" style="margin-top:6px"><span>Ventas en efectivo</span><span class="v">${fmtCRC(efectivoVentas)}</span></div>
-    <div class="hist-detail-item"><span>+ Propina en efectivo</span><span class="v">${fmtCRC(propinaEfectivo)}</span></div>
+    <div class="hist-detail-item"><span>+ 10% Servicio en efectivo</span><span class="v">${fmtCRC(propinaEfectivo)}</span></div>
     <div class="hist-detail-item"><span>+ Fondo de caja inicial</span><span class="v">${fmtCRC(fondo)}</span></div>
     <div class="hist-detail-item" style="border-top:1px solid var(--border);padding-top:5px;font-weight:600"><span>= Efectivo esperado</span><span class="v">${fmtCRC(efectivoVentas+propinaEfectivo+fondo)}</span></div>
   `;
@@ -1095,7 +1095,7 @@ function buildWAMessage(r) {
 💰 *Ventas Totales: ₡${(r.totalVentas||0).toLocaleString('es-CR')}*
 • Efectivo: ₡${(r.efectivo||0).toLocaleString('es-CR')}
 • Tarjeta: ₡${(r.tarjeta||0).toLocaleString('es-CR')}
-• Crédito: ₡${(r.credito||0).toLocaleString('es-CR')}${r.sinpe?`\n• SINPE: ₡${r.sinpe.toLocaleString('es-CR')}`:''}${r.plataformas?`\n• Plataformas: ₡${r.plataformas.toLocaleString('es-CR')}${r.plataformasDesc?' ('+r.plataformasDesc+')':''}`:''}${r.otras?`\n• Otras: ₡${r.otras.toLocaleString('es-CR')}`:''}${r.servicio?`\n• Propinas: ₡${r.servicio.toLocaleString('es-CR')}`:''}${(r.usdEfectivo||r.usdTarjeta)?`\n• 💵 USD: $${((r.usdEfectivo||0)+(r.usdTarjeta||0)).toFixed(2)} (TC ₡${(r.tc||0).toLocaleString('es-CR')})`:''}
+• Crédito: ₡${(r.credito||0).toLocaleString('es-CR')}${r.sinpe?`\n• SINPE: ₡${r.sinpe.toLocaleString('es-CR')}`:''}${r.plataformas?`\n• Plataformas: ₡${r.plataformas.toLocaleString('es-CR')}${r.plataformasDesc?' ('+r.plataformasDesc+')':''}`:''}${r.otras?`\n• Otras: ₡${r.otras.toLocaleString('es-CR')}`:''}${r.servicio?`\n• 10% Servicio: ₡${r.servicio.toLocaleString('es-CR')}`:''}${(r.usdEfectivo||r.usdTarjeta)?`\n• 💵 USD: $${((r.usdEfectivo||0)+(r.usdTarjeta||0)).toFixed(2)} (TC ₡${(r.tc||0).toLocaleString('es-CR')})`:''}
 
 ${tieneTarjetaRev ? `💳 *Revisión Tarjeta:* ${tarjetaEmoji} ${tarjetaCuadra ? 'Cuadra' : 'No cuadra'} (dif. ₡${Math.abs(difTarjeta).toLocaleString('es-CR')})\n` : ''}💵 *Revisión Efectivo:* ${efectivoEmoji} ${efectivoCuadra ? 'Cuadra' : 'No cuadra'} (dif. ₡${Math.abs(difCaja).toLocaleString('es-CR')})
 📊 *Balance Final:* ${balanceEmoji} ${balanceCuadra ? 'Cuadra' : 'No cuadra'} (₡${balanceFinal>=0?'+':''}${balanceFinal.toLocaleString('es-CR')})
@@ -1272,12 +1272,12 @@ function renderDetalleCierre(r) {
         ${item('SINPE', fmtCRC(r.sinpe))}
         ${item('Plataformas', fmtCRC(r.plataformas) + (r.plataformasDesc?` (${r.plataformasDesc})`:''))}
         ${item('Otras', fmtCRC(r.otras))}
-        ${item('Propinas', fmtCRC(r.servicio))}
+        ${item('10% Servicio', fmtCRC(r.servicio))}
         ${(r.usdEfectivo||r.usdTarjeta) ? item('USD', '$'+((r.usdEfectivo||0)+(r.usdTarjeta||0)).toFixed(2) + ' (TC ₡'+(r.tc||0).toLocaleString('es-CR')+')') : ''}
       </div>
     </div>
     <div class="hist-detail-section">
-      <div class="hist-detail-title">Propinas por forma de pago</div>
+      <div class="hist-detail-title">10% Servicio por forma de pago</div>
       <div class="hist-detail-grid">
         ${item('Efectivo', fmtCRC(r.propinaEfectivo))}
         ${item('Tarjeta', fmtCRC(r.propinaTarjeta))}
