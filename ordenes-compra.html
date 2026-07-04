@@ -156,10 +156,24 @@
           <button class="btn-green" id="btn-aprobar" onclick="aprobarOrden()">✓ Aprobar orden</button>
         </div>
       </div>
+      <div class="total-strip" id="presupuesto-strip" style="display:none;background:var(--purple-bg);border-bottom:1px solid var(--purple-lt);">
+        <div>
+          <span style="font-size:13px;font-weight:600;color:var(--purple);">Presupuesto semanal (35% ventas netas)</span>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="presupuesto-detalle">—</div>
+        </div>
+        <span id="presupuesto-valor" style="font-family:var(--font-d);font-size:22px;font-weight:700;color:var(--purple);">₡0</span>
+      </div>
+      <div id="resumen-proveedores" style="display:none;padding:12px 16px;border-bottom:1px solid var(--border);">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Resumen por proveedor</div>
+        <div id="resumen-proveedores-lista" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
       <div id="totales-orden" style="display:flex;flex-wrap:wrap;border-bottom:1px solid var(--border);"></div>
       <div id="contenido-orden"><div class="empty"><span class="spinner"></span> Cargando productos…</div></div>
       <div class="total-strip" id="total-general" style="display:none;">
-        <span style="font-size:13px;font-weight:600;color:var(--blue);">Total estimado de compra</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:13px;font-weight:600;color:var(--blue);">Total estimado de compra</span>
+          <span id="presupuesto-badge"></span>
+        </div>
         <span id="total-valor" style="font-family:var(--font-d);font-size:24px;font-weight:700;color:var(--blue);">₡0</span>
       </div>
     </div>
@@ -191,6 +205,10 @@ console.log('[OC] Script cargado OK');
 const SHEET_ID         = '1PtT9AHv2drY7oLygHKWMhHQgeOuT20_cD_igqu6ijyA';
 const EMAIL_GERENCIA   = 'TODO_GERENCIA_LORITO@pendiente.com';
 const APPS_SCRIPT_RRHH = 'TODO_APPS_SCRIPT_RRHH_LORITO';
+// Mismo backend de Apps Script que usa cierres.html (hoja "Cierres", col. 14 = Total Ventas ₡)
+const SHEETS_URL_CIERRES = 'https://script.google.com/macros/s/AKfycbwp-pTaJAeZ2PPl6Xig4e8JH8tw1o6AHun4yiDxDLFFZs1tVUXlhEwNVPlQ9kDl04kh/exec';
+const IVA               = 0.13;  // IVA incluido en "Total Ventas ₡"
+const PCT_PRESUPUESTO   = 0.35;  // % de las ventas netas que define el presupuesto semanal
 // ─────────────────────────────────────────────────────────────────
 
 const hoy      = new Date();
@@ -356,6 +374,93 @@ async function cargarInventarioSeleccionado() {
   renderOrden();
 }
 
+// ── PRESUPUESTO SEMANAL (35% de ventas netas de la semana anterior) ─
+var cierresCache = null;
+
+async function cargarCierres() {
+  if (cierresCache) return cierresCache;
+  var resp = await fetch(SHEETS_URL_CIERRES + '?action=read');
+  var data = await resp.json();
+  cierresCache = (data.records || []).map(function(r){
+    return { fecha: String(r[1]||'').slice(0,10), totalVentas: parseFloat(r[14]) || 0 };
+  }).filter(function(r){ return r.fecha; });
+  return cierresCache;
+}
+
+// Lunes-domingo de la semana calendario inmediatamente anterior a fechaYMD
+function rangoSemanaAnterior(fechaYMD) {
+  var d   = new Date(fechaYMD + 'T12:00:00');
+  var dow = d.getDay(); // 0=domingo..6=sábado
+  var offsetLunes = dow === 0 ? 6 : dow - 1;
+  var lunesEstaSemana = new Date(d);   lunesEstaSemana.setDate(d.getDate() - offsetLunes);
+  var domingoAnterior = new Date(lunesEstaSemana); domingoAnterior.setDate(lunesEstaSemana.getDate() - 1);
+  var lunesAnterior    = new Date(domingoAnterior); lunesAnterior.setDate(domingoAnterior.getDate() - 6);
+  var toYMD = function(dt){ return dt.getFullYear()+'-'+pad(dt.getMonth()+1)+'-'+pad(dt.getDate()); };
+  return { inicio: toYMD(lunesAnterior), fin: toYMD(domingoAnterior) };
+}
+
+function fmtDMY(ymd) {
+  var p = ymd.split('-');
+  return p[2] + '/' + p[1];
+}
+
+async function calcularPresupuestoSemanal(fechaYMD) {
+  var rango    = rangoSemanaAnterior(fechaYMD);
+  var cierres  = await cargarCierres();
+  var brutas   = cierres
+    .filter(function(c){ return c.fecha >= rango.inicio && c.fecha <= rango.fin; })
+    .reduce(function(a,c){ return a + c.totalVentas; }, 0);
+  var netas       = Math.round(brutas / (1 + IVA));
+  var presupuesto = Math.round(netas * PCT_PRESUPUESTO);
+  return { inicio: rango.inicio, fin: rango.fin, brutas: brutas, netas: netas, presupuesto: presupuesto };
+}
+
+async function actualizarPresupuesto() {
+  if (!ordenActual || ordenActual.estado !== 'en_proceso') return;
+  var fecha = ordenActual.fecha || fechaHoy;
+  var strip = document.getElementById('presupuesto-strip');
+  strip.style.display = 'flex';
+  document.getElementById('presupuesto-valor').textContent = '…';
+  document.getElementById('presupuesto-detalle').textContent = 'Calculando con ventas del Sheet de cierres…';
+  try {
+    var r = await calcularPresupuestoSemanal(fecha);
+    ordenActual.presupuesto = r.presupuesto;
+    ordenActual.presupuesto_info = 'Semana ' + fmtDMY(r.inicio) + ' – ' + fmtDMY(r.fin)
+      + ' · Ventas brutas: ' + fmt(r.brutas) + ' · Netas (sin IVA): ' + fmt(r.netas);
+    saveOrdenes(ordenes);
+    document.getElementById('presupuesto-valor').textContent = fmt(r.presupuesto);
+    document.getElementById('presupuesto-detalle').textContent =
+      r.brutas > 0 ? ordenActual.presupuesto_info : 'Semana ' + fmtDMY(r.inicio) + ' – ' + fmtDMY(r.fin) + ' · Sin ventas registradas esa semana';
+  } catch(e) {
+    console.warn('Error calculando presupuesto:', e.message);
+    document.getElementById('presupuesto-valor').textContent = '—';
+    document.getElementById('presupuesto-detalle').textContent = 'No se pudo calcular (sin conexión al Sheet de cierres)';
+  }
+  compararConTotal();
+  renderResumenProveedores();
+}
+
+function compararConTotal() {
+  if (!ordenActual) return;
+  var badge = document.getElementById('presupuesto-badge');
+  if (!badge) return;
+  var pres = ordenActual.presupuesto;
+  if (pres === undefined || pres <= 0) { badge.innerHTML = ''; return; }
+  var total = ordenActual.total || 0;
+  badge.innerHTML = total <= pres
+    ? '<span class="badge b-ok">Dentro de presupuesto</span>'
+    : '<span class="badge b-out">Excede por ' + fmt(total - pres) + '</span>';
+}
+
+function mostrarPresupuestoCacheado(orden) {
+  var strip = document.getElementById('presupuesto-strip');
+  if (orden.presupuesto === undefined) { strip.style.display = 'none'; return; }
+  strip.style.display = 'flex';
+  document.getElementById('presupuesto-valor').textContent = fmt(orden.presupuesto);
+  document.getElementById('presupuesto-detalle').textContent = orden.presupuesto_info || '';
+  compararConTotal();
+}
+
 // ── STOCK ACTUAL ─────────────────────────────────────────────────
 function getStockActual(p) {
   var key = (p.nombre||'').trim().toLowerCase();
@@ -398,6 +503,7 @@ function nuevaOrden() {
   renderMeta();
   renderOrden();
   renderListaOrdenes();
+  actualizarPresupuesto();
   showToast('Orden ' + id + ' iniciada', 'success');
 }
 
@@ -405,6 +511,7 @@ function guardarFechaOrden() {
   if (!ordenActual) return;
   ordenActual.fecha = document.getElementById('fecha-orden').value;
   saveOrdenes(ordenes);
+  actualizarPresupuesto();
 }
 
 // ── RENDER META ───────────────────────────────────────────────────
@@ -503,6 +610,8 @@ function renderOrden() {
   document.getElementById('total-general').style.display = 'flex';
   ordenActual.total = totalGeneral;
   saveOrdenes(ordenes);
+  compararConTotal();
+  renderResumenProveedores();
 }
 
 function onPedido(id, input) {
@@ -514,12 +623,50 @@ function onPedido(id, input) {
   if (mEl) mEl.textContent = fmt(val * (parseFloat(p ? p.precio_sin_iva : 0) || 0));
   saveOrdenes(ordenes);
   recalcularTotales();
+  renderResumenProveedores();
 }
 
 function onProveedor(id, input) {
   if (!ordenActual.lineas[id]) ordenActual.lineas[id] = {};
   ordenActual.lineas[id].proveedor = input.value.trim();
   saveOrdenes(ordenes);
+  renderResumenProveedores();
+}
+
+// ── RESUMEN POR PROVEEDOR vs. PRESUPUESTO ─────────────────────────
+function renderResumenProveedores() {
+  if (!ordenActual || ordenActual.estado !== 'en_proceso') return;
+  var cont  = document.getElementById('resumen-proveedores');
+  var lista = document.getElementById('resumen-proveedores-lista');
+  if (!cont || !lista) return;
+
+  var porProv = {};
+  productos.forEach(function(p) {
+    var linea  = ordenActual.lineas[p.id] || {};
+    var pedido = linea.pedido !== undefined ? linea.pedido : calcPedidoSugerido(p);
+    if (!pedido) return;
+    var prov  = (linea.proveedor !== undefined ? linea.proveedor : (p.proveedor||'')).trim() || 'Sin proveedor';
+    var monto = pedido * (parseFloat(p.precio_sin_iva) || 0);
+    porProv[prov] = (porProv[prov] || 0) + monto;
+  });
+
+  var provs = Object.keys(porProv).sort(function(a,b){ return porProv[b] - porProv[a]; });
+  if (!provs.length) { cont.style.display = 'none'; return; }
+  cont.style.display = 'block';
+
+  var presupuesto = ordenActual.presupuesto;
+  lista.innerHTML = provs.map(function(prov) {
+    var monto  = porProv[prov];
+    var pctTxt = (presupuesto && presupuesto > 0)
+      ? (monto / presupuesto * 100).toFixed(1) + '% del presupuesto'
+      : 'Presupuesto sin calcular';
+    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;">'
+      + '<span style="font-weight:500;">' + prov + '</span>'
+      + '<span style="display:flex;align-items:center;gap:10px;">'
+      + '<span style="color:var(--muted);font-size:12px;">' + pctTxt + '</span>'
+      + '<span style="font-weight:600;color:var(--blue);min-width:90px;text-align:right;">' + fmt(monto) + '</span>'
+      + '</span></div>';
+  }).join('');
 }
 
 function recalcularTotales() {
@@ -538,6 +685,7 @@ function recalcularTotales() {
   document.getElementById('total-valor').textContent = fmt(total);
   ordenActual.total = total;
   saveOrdenes(ordenes);
+  compararConTotal();
 }
 
 // ── APROBAR ───────────────────────────────────────────────────────
@@ -612,6 +760,7 @@ function renderOrdenAprobada(orden) {
         : '<span style="font-size:12px;color:var(--muted);" id="lbl-' + provKey + '">Pendiente de envío</span>')
       + '<span style="font-size:12px;color:var(--muted);">'
       + items.length + ' producto' + (items.length!==1?'s':'') + ' · ' + fmt(total)
+      + (orden.presupuesto > 0 ? ' · ' + (total / orden.presupuesto * 100).toFixed(1) + '% del presupuesto' : '')
       + '</span>'
       + '</div>'
       + '<div class="send-btns">'
@@ -634,6 +783,7 @@ function renderOrdenAprobada(orden) {
   document.getElementById('contenido-orden').innerHTML = html;
   document.getElementById('total-valor').textContent = fmt(orden.total||0);
   document.getElementById('total-general').style.display = 'flex';
+  document.getElementById('resumen-proveedores').style.display = 'none';
 }
 
 function toggleEnviado(ordenId, prov, provKey, checkbox) {
@@ -746,6 +896,7 @@ function abrirOrden() {
     document.getElementById('sel-inventario').value = ordenActual.inventario_id;
     cargarInventarioSeleccionado();
   } else { renderOrden(); }
+  actualizarPresupuesto();
 }
 
 function verOrdenAprobada(id) {
@@ -757,6 +908,7 @@ function verOrdenAprobada(id) {
   ordenActual = orden;
   renderMeta();
   renderOrdenAprobada(orden);
+  mostrarPresupuestoCacheado(orden);
 }
 
 function renderHistorial() {
