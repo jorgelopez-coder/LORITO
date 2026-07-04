@@ -851,8 +851,9 @@ function calcCuadre() {
   });
 
   const efectivo = parseFloat(document.getElementById('f-efectivo')?.value) || 0;
+  const propinaEfectivo = parseFloat(document.getElementById('f-propina-efectivo')?.value) || 0;
   const fondo    = parseFloat(document.getElementById('f-fondo')?.value) || 0;
-  const esperado = efectivo + fondo;
+  const esperado = efectivo + propinaEfectivo + fondo;
   const diff     = total - esperado;
   const usdVentas = parseFloat(document.getElementById('f-usd-ventas')?.value) || 0;
   const propinaDolares = parseFloat(document.getElementById('f-propina-dolares')?.value) || 0;
@@ -871,7 +872,7 @@ function calcCuadre() {
   diffEl.className = 'val ' + (diff === 0 ? 'diff-ok' : Math.abs(diff) <= 500 ? 'diff-minor' : 'diff-warn');
 
   const badge = document.getElementById('cuadre-badge');
-  if (efectivo || fondo || total) {
+  if (efectivo || propinaEfectivo || fondo || total) {
     const cuadra = Math.abs(diff) <= 500;
     badge.innerHTML = cuadra
       ? `<div class="ia-box ia-ok">✅ Cuadra — diferencia dentro de tolerancia (±₡500)</div>`
@@ -901,13 +902,15 @@ function actualizarDetalleEfectivo() {
   [500,100,50,25,10,5].forEach(d => { totalMonedasCRC += (parseInt(document.getElementById('d-'+d)?.value)||0) * d; });
   const fondo = parseFloat(document.getElementById('f-fondo')?.value) || 0;
   const efectivoVentas = parseFloat(document.getElementById('f-efectivo')?.value) || 0;
+  const propinaEfectivo = parseFloat(document.getElementById('f-propina-efectivo')?.value) || 0;
   el.innerHTML = `
     <div class="hist-detail-item"><span>Billetes ₡</span><span class="v">${fmtCRC(totalBilletesCRC)}</span></div>
     <div class="hist-detail-item"><span>Monedas ₡</span><span class="v">${fmtCRC(totalMonedasCRC)}</span></div>
     <div class="hist-detail-item" style="border-top:1px solid var(--border);padding-top:5px;font-weight:600"><span>= Total contado en caja</span><span class="v">${fmtCRC(totalBilletesCRC+totalMonedasCRC)}</span></div>
     <div class="hist-detail-item" style="margin-top:6px"><span>Ventas en efectivo</span><span class="v">${fmtCRC(efectivoVentas)}</span></div>
+    <div class="hist-detail-item"><span>+ Propina en efectivo</span><span class="v">${fmtCRC(propinaEfectivo)}</span></div>
     <div class="hist-detail-item"><span>+ Fondo de caja inicial</span><span class="v">${fmtCRC(fondo)}</span></div>
-    <div class="hist-detail-item" style="border-top:1px solid var(--border);padding-top:5px;font-weight:600"><span>= Efectivo esperado</span><span class="v">${fmtCRC(efectivoVentas+fondo)}</span></div>
+    <div class="hist-detail-item" style="border-top:1px solid var(--border);padding-top:5px;font-weight:600"><span>= Efectivo esperado</span><span class="v">${fmtCRC(efectivoVentas+propinaEfectivo+fondo)}</span></div>
   `;
 }
 
@@ -957,7 +960,7 @@ function construirPayload() {
   });
   const usdDenomDetalle = Object.fromEntries(DENOMS_USD.map(({id,val}) => [id, parseInt(document.getElementById('d-'+id)?.value)||0]));
   const usdCajaTotalContado = DENOMS_USD.reduce((s,{id,val}) => s+(parseInt(document.getElementById('d-'+id)?.value)||0)*val, 0);
-  const diferencia = caja - (efectivo + fondo);
+  const diferencia = caja - (efectivo + propinaEfectivo + fondo);
 
   return {
     id: Date.now(),
@@ -979,7 +982,7 @@ function construirPayload() {
     usdD5:   usdDenomDetalle.usd5||0,   usdD1:  usdDenomDetalle.usd1||0,
     usdCajaTotalContado,
     cajaTotalContada: caja, fondoCajaInicial: fondo,
-    efectivoEsperado: efectivo + fondo, diferenciaColones: diferencia,
+    efectivoEsperado: efectivo + propinaEfectivo + fondo, diferenciaColones: diferencia,
     usdTotalContado: usdCajaTotalContado, usdReportadoVentas: usdVentas + propinaDolares,
     diferenciaUsd: usdCajaTotalContado - (usdVentas + propinaDolares),
     fotoSistema: fotos.sistema ? fotos.sistema.base64 : '',
