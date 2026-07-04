@@ -1009,6 +1009,8 @@ function construirPayload() {
   const usdDenomDetalle = Object.fromEntries(DENOMS_USD.map(({id,val}) => [id, parseInt(document.getElementById('d-'+id)?.value)||0]));
   const usdCajaTotalContado = DENOMS_USD.reduce((s,{id,val}) => s+(parseInt(document.getElementById('d-'+id)?.value)||0)*val, 0);
   const diferencia = caja - (efectivo + propinaEfectivo + fondo);
+  const balanceFinal = diferenciaTarjeta + diferencia;
+  const balanceCuadra = Math.abs(balanceFinal) <= 500;
 
   return {
     id: Date.now(),
@@ -1017,6 +1019,7 @@ function construirPayload() {
     efectivo, tarjeta, sinpe, otras, credito, plataformas, plataformasDesc, servicio,
     propinaEfectivo, propinaTarjeta, propinaCredito, propinaOtro, propinaDolares,
     datafonoTotal, diferenciaTarjeta, tarjetaCuadra,
+    balanceFinal, balanceCuadra,
     totalVentas, fondo, caja, diferencia, obs,
     usdEfectivo: usdVentas, usdTarjeta: 0, tc, usdTotalCrc,
     d50000: denomDetalle[50000]||0, d20000: denomDetalle[20000]||0,
@@ -1080,6 +1083,10 @@ function buildWAMessage(r) {
   const tarjetaEmoji = tarjetaCuadra ? '✅' : '⚠️';
   const tieneTarjetaRev = !!(r.datafonoTotal || r.tarjeta || r.propinaTarjeta);
 
+  const balanceFinal = r.balanceFinal || 0;
+  const balanceCuadra = !!r.balanceCuadra;
+  const balanceEmoji = balanceCuadra ? '✅' : '⚠️';
+
   return `📊 *Cierre de Caja*
 🏪 Punto de venta: ${r.punto}
 📅 Fecha: ${fecha}
@@ -1091,6 +1098,7 @@ function buildWAMessage(r) {
 • Crédito: ₡${(r.credito||0).toLocaleString('es-CR')}${r.sinpe?`\n• SINPE: ₡${r.sinpe.toLocaleString('es-CR')}`:''}${r.plataformas?`\n• Plataformas: ₡${r.plataformas.toLocaleString('es-CR')}${r.plataformasDesc?' ('+r.plataformasDesc+')':''}`:''}${r.otras?`\n• Otras: ₡${r.otras.toLocaleString('es-CR')}`:''}${r.servicio?`\n• Propinas: ₡${r.servicio.toLocaleString('es-CR')}`:''}${(r.usdEfectivo||r.usdTarjeta)?`\n• 💵 USD: $${((r.usdEfectivo||0)+(r.usdTarjeta||0)).toFixed(2)} (TC ₡${(r.tc||0).toLocaleString('es-CR')})`:''}
 
 ${tieneTarjetaRev ? `💳 *Revisión Tarjeta:* ${tarjetaEmoji} ${tarjetaCuadra ? 'Cuadra' : 'No cuadra'} (dif. ₡${Math.abs(difTarjeta).toLocaleString('es-CR')})\n` : ''}💵 *Revisión Efectivo:* ${efectivoEmoji} ${efectivoCuadra ? 'Cuadra' : 'No cuadra'} (dif. ₡${Math.abs(difCaja).toLocaleString('es-CR')})
+📊 *Balance Final:* ${balanceEmoji} ${balanceCuadra ? 'Cuadra' : 'No cuadra'} (₡${balanceFinal>=0?'+':''}${balanceFinal.toLocaleString('es-CR')})
 ${r.obs?`\n📝 *Observaciones:* ${r.obs}`:''}`;
 }
 
