@@ -856,7 +856,7 @@ function actualizarBalanceFinal() {
   document.getElementById('bf-efectivo').textContent = (diffEfectivo >= 0 ? '+' : '') + fmtCRC(diffEfectivo);
   const totalEl = document.getElementById('bf-total');
   totalEl.textContent = (balance >= 0 ? '+' : '') + fmtCRC(balance);
-  totalEl.className = 'val ' + (Math.abs(balance) <= 500 ? 'diff-ok' : 'diff-warn');
+  totalEl.className = 'val ' + (balance >= 0 ? 'diff-ok' : 'diff-warn');
 
   const badge = document.getElementById('bf-badge');
   const cuadra = Math.abs(balance) <= 500;
@@ -1202,10 +1202,9 @@ function renderDashboardMensual() {
   if (!keys.length) { grid.innerHTML = '<div class="empty-state" style="padding:1rem">Sin datos aún.</div>'; return; }
   grid.innerHTML = keys.map(k => {
     const g = grupos[k];
-    const cuadra = Math.abs(g.balance) <= 500;
     return `<div class="dashboard-item">
       <div class="dm-mes">${MESES[g.mes-1]} ${g.anio}</div>
-      <div class="dm-total" style="color:${cuadra?'var(--green)':'var(--red)'}">${(g.balance>=0?'+':'')+fmtCRC(g.balance)}</div>
+      <div class="dm-total" style="color:${g.balance>=0?'var(--green)':'var(--red)'}">${(g.balance>=0?'+':'')+fmtCRC(g.balance)}</div>
       <div class="dm-count">${g.count} cierre${g.count===1?'':'s'}</div>
     </div>`;
   }).join('');
@@ -1248,7 +1247,7 @@ function renderHistorial() {
           <div class="hist-fecha">${fechaLbl} · ${r.hora||'—'}</div>
           <div class="hist-encargado">${r.encargado||'—'}</div>
         </div>
-        <div class="hist-total ${balanceCuadra?'':'warn'}">${(balanceFinal>=0?'+':'')+fmtCRC(balanceFinal)}</div>
+        <div class="hist-total ${balanceFinal>=0?'':'warn'}">${(balanceFinal>=0?'+':'')+fmtCRC(balanceFinal)}</div>
       </div>
       <div class="hist-row">
         <div class="cuadre-icons">${iconBalance}${iconTarjeta}${iconEfectivo}</div>
@@ -1316,7 +1315,7 @@ function renderDetalleCierre(r) {
       <div class="hist-detail-grid">
         ${item('Diferencia Tarjeta', (r.diferenciaTarjeta>=0?'+':'')+fmtCRC(r.diferenciaTarjeta))}
         ${item('Diferencia Efectivo', (r.diferencia>=0?'+':'')+fmtCRC(r.diferencia))}
-        ${item('Balance Final', (balanceFinal>=0?'+':'')+fmtCRC(balanceFinal))}
+        <div class="hist-detail-item"><span>Balance Final</span><span class="v" style="color:${balanceFinal>=0?'var(--green)':'var(--red)'}">${(balanceFinal>=0?'+':'')+fmtCRC(balanceFinal)}</span></div>
         ${item('Cuadra', balanceCuadra ? '✅ Sí' : '⚠️ No')}
       </div>
     </div>
