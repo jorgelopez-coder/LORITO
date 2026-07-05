@@ -234,7 +234,7 @@
 // ─── CONFIG ──────────────────────────────────────────────────────
 const EMAIL_GERENCIA        = 'jorge.lopez@casaaguizotes.com';
 const APPS_SCRIPT_RRHH      = 'TODO_APPS_SCRIPT_RRHH_LORITO';
-const APPS_SCRIPT_INVENTARIO= 'TODO_APPS_SCRIPT_INVENTARIO_LORITO'; // Web App de Code-inventario-backend.gs
+const APPS_SCRIPT_INVENTARIO= 'https://script.google.com/macros/s/AKfycbzFhuID6l5-FM9ib_kB1_QlvqOL04RT0JXf_15PGMZY9UxvPRiH_4u2I3rDeaHp1-JVjQ/exec';
 // ─────────────────────────────────────────────────────────────────
 
 const hoy = new Date();
@@ -720,7 +720,7 @@ async function guardarTemaEnDrive(toma) {
 
   try {
     await fetch(APPS_SCRIPT_INVENTARIO, {
-      method: 'POST',
+      method: 'POST', mode: 'no-cors',
       body: new URLSearchParams({ data: JSON.stringify(payload) })
     });
     console.log('Inventario guardado en Drive ✓');
@@ -752,7 +752,7 @@ async function enviarResumenPorCorreo(toma) {
 
   try {
     await fetch(APPS_SCRIPT_RRHH, {
-      method: 'POST',
+      method: 'POST', mode: 'no-cors',
       body: new URLSearchParams({ data: JSON.stringify({
         modulo:   'enviar_correo',
         para:     EMAIL_GERENCIA,
