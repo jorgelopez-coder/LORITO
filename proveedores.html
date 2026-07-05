@@ -647,27 +647,16 @@ function renderPorAgregar() {
         <div class="nombre">${f.nombre}</div>
         <div class="meta">${f.facturas} factura${f.facturas!==1?'s':''} registrada${f.facturas!==1?'s':''}</div>
       </div>
-      <button class="btn-add-rapido" onclick="agregarProveedorRapido('${f.nombre.replace(/'/g,"\\'")}', this)">+ Agregar</button>
+      <button class="btn-add-rapido" onclick="agregarProveedorRapido('${f.nombre.replace(/'/g,"\\'")}')">+ Agregar</button>
     </div>`).join('');
 }
 
-async function agregarProveedorRapido(nombre, btn) {
-  if (btn) btn.disabled = true;
-  try {
-    const result = await postAP({ modulo: 'guardar_proveedor', nombre_juridico: nombre, categoria: 'Otro' });
-    proveedoresCache.push({
-      id: result.id, nombre_juridico: nombre, nombre_comercial: '', categoria: 'Otro',
-      contacto: '', telefono: '', correo: '', dias_pedido: [], dia_pedido: '',
-      notas_contacto: '', cuenta: '', condicion_pago: '0', notas_pago: '', actualizado: new Date().toISOString()
-    });
-    actualizarFiltros();
-    renderLista();
-    renderPorAgregar();
-    showToast(`"${nombre}" agregado. Editalo para completar sus datos.`, 'success');
-  } catch(e) {
-    showToast('No se pudo agregar: ' + e.message, 'error');
-    if (btn) btn.disabled = false;
-  }
+// En vez de crear un registro a medias, despliega el formulario de "Nuevo
+// proveedor" con el nombre ya prellenado, para completar ahí el resto de
+// los datos (categoría, contacto, condición de pago, etc.) de una vez.
+function agregarProveedorRapido(nombre) {
+  abrirNuevo();
+  document.getElementById('p-nombre-juridico').value = nombre;
 }
 
 // ── TABS ──────────────────────────────────────────────────────────
@@ -700,7 +689,12 @@ document.getElementById('modal-prov').addEventListener('click', e => {
 // ── INIT ──────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   await cargarDatos();
-  if (new URLSearchParams(location.search).get('nuevo') === '1') abrirNuevo();
+  const params = new URLSearchParams(location.search);
+  if (params.get('nuevo') === '1') {
+    abrirNuevo();
+    const nombre = params.get('nombre');
+    if (nombre) document.getElementById('p-nombre-juridico').value = nombre;
+  }
 });
 </script>
 </body>
