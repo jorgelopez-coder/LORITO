@@ -689,7 +689,7 @@ function _renderProductos() {
     grupos[nombre].lineas.push(r);
   });
 
-  const nombresOrdenados = Object.keys(grupos).sort();
+  const nombresOrdenados = Object.keys(grupos).sort((a,b) => a.localeCompare(b, 'es'));
   const total  = nombresOrdenados.length;
   const inicio = (pagProductos - 1) * POR_PAGINA;
   const pagina = nombresOrdenados.slice(inicio, inicio + POR_PAGINA);
@@ -700,19 +700,20 @@ function _renderProductos() {
     const totalCant  = g.lineas.reduce((a,r) => a + (parseFloat(r['Cantidad'])||0), 0);
     const totalLinea = g.lineas.reduce((a,r) => a + (parseFloat(String(r['Total línea']||0).replace(/,/g,''))||0), 0);
     const nCompras   = g.lineas.length;
-    const proveedores = [...new Set(g.lineas.map(r => r['Proveedor']||''))].join(', ');
+    const precioProm = totalCant ? totalLinea / totalCant : 0;
 
     // Detalle expandible
     const detalleHtml = `
       <table class="detail-table">
-        <thead><tr><th>Proveedor</th><th>Fecha</th><th style="text-align:right;">Cantidad</th><th>Unidad</th><th style="text-align:right;">P. Unitario</th><th style="text-align:right;">Total línea</th></tr></thead>
+        <thead><tr><th>Fecha</th><th>Proveedor</th><th>Nombre producto proveedor</th><th style="text-align:right;">Cantidad</th><th>Unidad</th><th style="text-align:right;">P. Unitario</th><th style="text-align:right;">Total línea</th></tr></thead>
         <tbody>
           ${g.lineas.map(r => {
             const pUnit  = parseFloat(String(r['Precio unitario']||0).replace(/,/g,''))||0;
             const tLinea = parseFloat(String(r['Total línea']||0).replace(/,/g,''))||0;
             return `<tr>
-              <td>${r['Proveedor']||'—'}</td>
               <td style="color:var(--muted);">${r['Fecha de factura']||'—'}</td>
+              <td>${r['Proveedor']||'—'}</td>
+              <td>${r['Producto']||'—'}</td>
               <td class="num">${r['Cantidad']||'—'}</td>
               <td style="color:var(--muted);">${r['Unidad de medida']||'—'}</td>
               <td class="num">${fmt(pUnit)}</td>
@@ -729,9 +730,9 @@ function _renderProductos() {
         </td>
         <td style="font-weight:500;">${nombre}</td>
         <td><span class="cat-chip ${catClass(g.cat)}">${g.cat}</span></td>
-        <td style="color:var(--muted);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${proveedores}</td>
         <td class="num">${nCompras} compra${nCompras!==1?'s':''}</td>
         <td class="num">${totalCant.toFixed(2)} ${g.unidad}</td>
+        <td class="num">${fmt(precioProm)}</td>
         <td class="num" style="font-weight:600;">${fmt(totalLinea)}</td>
       </tr>
       <tr class="tr-detail" id="${rowId}">
@@ -744,9 +745,10 @@ function _renderProductos() {
   document.getElementById('tabla-productos').innerHTML = `
     <table>
       <thead><tr>
-        <th></th><th>Producto</th><th>Categoría</th><th>Proveedores</th>
+        <th></th><th>Producto</th><th>Categoría</th>
         <th style="text-align:right;">Compras</th>
         <th style="text-align:right;">Total cantidad</th>
+        <th style="text-align:right;">Precio promedio</th>
         <th style="text-align:right;">Total</th>
       </tr></thead>
       <tbody>${filas}</tbody>
