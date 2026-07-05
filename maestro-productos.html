@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maestro de productos · Lorito</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#ffffff;
+      --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
+      --amber:#c87820; --amber-bg:#fdf6e3; --amber-lt:#f0d890;
+      --blue:#185fa5; --blue-bg:#eef4fb; --blue-lt:#b8d0f0;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+
+    header { height:56px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; background:var(--bg); position:sticky; top:0; z-index:20; }
+    .nav-left { display:flex; align-items:center; gap:10px; }
+    .back-btn { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); }
+    .back-btn:hover { color:var(--text); border-color:var(--border-h); }
+    .back-btn svg { width:13px; height:13px; }
+    .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
+    .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 10px; }
+
+    main { max-width:1240px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .page-header { margin-bottom:1.5rem; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .page-header h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+    .page-header p { font-size:13px; color:var(--muted); }
+
+    .btn-primary { font-family:var(--font-d); font-size:13px; font-weight:700; padding:10px 18px; border-radius:9px; border:none; background:var(--green); color:#fff; cursor:pointer; white-space:nowrap; }
+    .btn-primary:hover { background:#146a3e; }
+
+    .kpi-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:1.25rem; }
+    .kpi-box { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; }
+    .kpi-val { font-family:var(--font-d); font-size:22px; font-weight:700; letter-spacing:-.02em; color:var(--text); }
+    .kpi-lbl { font-size:11px; color:var(--muted); margin-top:2px; }
+    .kpi-val.ambar { color:var(--amber); }
+
+    .toolbar { display:flex; gap:8px; margin-bottom:1rem; flex-wrap:wrap; align-items:center; }
+    .search-wrap { position:relative; flex:1; min-width:200px; }
+    .search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--subtle); pointer-events:none; }
+    .search-input { width:100%; background:var(--card); border:1px solid var(--border); border-radius:9px; color:var(--text); font-family:var(--font-b); font-size:13px; padding:8px 12px 8px 32px; outline:none; }
+    .search-input:focus { border-color:var(--green); }
+    .filter-sel { font-size:13px; padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--text); outline:none; cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:30px; }
+
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; }
+    .tabla-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th { text-align:left; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:10px 12px; border-bottom:1px solid var(--border); white-space:nowrap; background:var(--surface); }
+    td { padding:9px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:var(--surface); }
+    .num { text-align:right; font-variant-numeric:tabular-nums; }
+
+    .badge { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; white-space:nowrap; }
+    .b-ok    { background:var(--green-bg); color:var(--green); }
+    .b-huerf { background:var(--amber-bg); color:var(--amber); }
+    .b-dot { width:5px; height:5px; border-radius:50%; background:currentColor; }
+
+    .btn-mini { font-size:11.5px; font-weight:600; padding:6px 11px; border-radius:7px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; white-space:nowrap; }
+    .btn-mini:hover { border-color:var(--border-h); color:var(--text); }
+    .btn-mini.rojo:hover { border-color:var(--red-lt); color:var(--red); background:var(--red-bg); }
+    .fila-acciones { display:flex; gap:6px; flex-wrap:wrap; }
+
+    .pagination { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-top:1px solid var(--border); font-size:12px; color:var(--muted); }
+    .pag-btns { display:flex; gap:4px; }
+    .pag-btn { padding:4px 10px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:12px; cursor:pointer; }
+    .pag-btn:hover:not(:disabled) { background:var(--surface); color:var(--text); }
+    .pag-btn:disabled { opacity:.4; cursor:default; }
+    .pag-btn.active { background:var(--green); color:#fff; border-color:var(--green); }
+
+    .empty { text-align:center; padding:3rem; color:var(--subtle); font-size:13px; }
+    .spinner { display:inline-block; width:18px; height:18px; border:2px solid var(--border); border-top-color:var(--green); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
+    .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+    .sdot.off { background:var(--subtle); }
+
+    /* Modales */
+    .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:50; align-items:flex-start; justify-content:center; padding:1.5rem 1rem; overflow-y:auto; }
+    .modal-bg.open { display:flex; }
+    .modal { background:var(--card); border-radius:16px; width:100%; max-width:480px; margin:auto; }
+    .modal-head { padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .modal-title { font-family:var(--font-d); font-size:18px; font-weight:700; }
+    .close-btn { background:none; border:none; font-size:22px; line-height:1; color:var(--muted); cursor:pointer; padding:2px 6px; }
+    .close-btn:hover { color:var(--text); }
+    .modal-body { padding:1.25rem 1.5rem; display:flex; flex-direction:column; gap:12px; }
+    .field label { display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:5px; }
+    .field input, .field select { width:100%; padding:9px 11px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-family:var(--font-b); font-size:13px; outline:none; }
+    .field input:focus, .field select:focus { border-color:var(--green); }
+    .modal-note { font-size:12px; color:var(--amber); background:var(--amber-bg); border:1px solid var(--amber-lt); border-radius:8px; padding:.6rem .8rem; }
+    .modal-foot { padding:1rem 1.5rem; border-top:1px solid var(--border); display:flex; gap:8px; justify-content:flex-end; }
+    .btn-sec { padding:9px 16px; border-radius:9px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; cursor:pointer; }
+    .btn-sec:hover { color:var(--text); border-color:var(--border-h); }
+    .btn-save { padding:9px 18px; border-radius:9px; border:none; background:var(--green); color:#fff; font-family:var(--font-d); font-size:13px; font-weight:700; cursor:pointer; }
+    .btn-save:hover { background:#146a3e; }
+    .btn-save:disabled { opacity:.6; cursor:default; }
+
+    .toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px); background:var(--card); border:1px solid var(--border); border-radius:10px; padding:11px 18px; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s; opacity:0; z-index:100; box-shadow:0 4px 20px rgba(0,0,0,.08); }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+    .toast.success { border-color:var(--green); color:var(--green); }
+    .toast.error   { border-color:var(--red);   color:var(--red); }
+    .toast svg { width:16px; height:16px; flex-shrink:0; }
+
+    @media (max-width:700px) {
+      header { padding:0 1rem; } main { padding:1.5rem 1rem 3rem; }
+      .kpi-strip { grid-template-columns:1fr; }
+      .page-header { flex-direction:column; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Maestro de productos</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<main>
+  <div class="page-header">
+    <div>
+      <h1>Maestro de productos</h1>
+      <p>Catálogo único (id_producto) · editá, fusioná duplicados o creá productos nuevos</p>
+    </div>
+    <button class="btn-primary" onclick="abrirModalProducto(null)">+ Nuevo producto</button>
+  </div>
+
+  <div id="status-carga" style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;margin-bottom:1rem;">
+    <span class="spinner"></span> Cargando…
+  </div>
+
+  <div class="kpi-strip">
+    <div class="kpi-box">
+      <div class="kpi-val" id="kpi-total">—</div>
+      <div class="kpi-lbl">Productos en el Maestro</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val ambar" id="kpi-huerfanos">—</div>
+      <div class="kpi-lbl">Sin ningún alias (huérfanos)</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val" id="kpi-categorias">—</div>
+      <div class="kpi-lbl">Categorías distintas</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" class="search-input" id="s-prod" placeholder="Buscar producto o ID…" oninput="renderTabla()">
+    </div>
+    <select class="filter-sel" id="f-cat" onchange="renderTabla()">
+      <option value="">Todas las categorías</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <div class="tabla-wrap" id="tabla-productos">
+      <div class="empty"><span class="spinner"></span></div>
+    </div>
+    <div class="pagination" id="pag-productos" style="display:none;"></div>
+  </div>
+
+  <div class="status-bar">
+    <div style="display:flex;align-items:center;gap:6px;"><span class="sdot" id="conn-dot"></span><span id="conn-label">Conectando…</span></div>
+    <span style="margin-left:auto;">v1.0 · Maestro de productos · Grupo del Sol</span>
+  </div>
+</main>
+
+<!-- Modal: crear / editar producto -->
+<div class="modal-bg" id="modal-producto">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" id="modal-producto-titulo">Nuevo producto</span>
+      <button class="close-btn" onclick="cerrarModalProducto()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Nombre normalizado *</label>
+        <input type="text" id="mp-nombre" placeholder="Ej. Filete de Res">
+      </div>
+      <div class="field">
+        <label>Categoría</label>
+        <select id="mp-categoria"></select>
+      </div>
+      <div class="field">
+        <label>Unidad base</label>
+        <input type="text" id="mp-unidad-base" placeholder="kg, lt, unidad…">
+      </div>
+      <div class="field">
+        <label>Unidad de compra default</label>
+        <input type="text" id="mp-unidad-compra" placeholder="caja, kg, lt… (si es distinta a la base)">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="cerrarModalProducto()">Cancelar</button>
+      <button class="btn-save" id="mp-btn-guardar" onclick="guardarProductoMaestro()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: fusionar duplicados -->
+<div class="modal-bg" id="modal-fusion">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">Fusionar producto duplicado</span>
+      <button class="close-btn" onclick="cerrarModalFusion()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-note" id="fusion-nota"></div>
+      <div class="field">
+        <label>Conservar todo bajo este producto</label>
+        <select id="mf-destino"></select>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="cerrarModalFusion()">Cancelar</button>
+      <button class="btn-save" id="mf-btn-confirmar" onclick="confirmarFusion()">Fusionar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ─── CONFIGURACIÓN ────────────────────────────────────────────────
+// Sheet "Registro compras LORITO_Brewhouse - IA" (mismo Sheet y mismo backend
+// que config-productos.html / historial-precios.html / factura-manual.html).
+const SHEET_ID = '1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw';
+const APPS_SCRIPT_AP = 'https://script.google.com/macros/s/AKfycbyqdI4EGUgcahTiyz_GBwvUQLWORT_TUVBvFMPGdMve1-3q3ge8mioZ458_zsbMbUqa/exec';
+// ─────────────────────────────────────────────────────────────────
+
+const CATEGORIAS = [
+  'Carnes','Mariscos','Aves','Lácteos','Aceites y Grasas','Frutas y Verduras',
+  'Granos y Cereales','Bebidas','Panadería y Repostería','Condimentos y Especias',
+  'Limpieza e Higiene','Empaques y Desechables','Servicios','Otros'
+];
+
+const hoy = new Date();
+document.getElementById('date-chip').textContent =
+  hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
+
+const fmtC = n => '₡' + Number(n||0).toLocaleString('es-CR', { maximumFractionDigits:2 });
+
+let dataMaestro  = [];
+let dataAlias    = [];
+let dataCosto    = [];
+let productos    = []; // vista combinada lista para tabla
+let pagActual    = 1;
+const POR_PAGINA = 20;
+
+function gvizLoad(hoja, expectedCol) {
+  return new Promise(function(resolve) {
+    var cb    = '_mp_' + Math.random().toString(36).slice(2,10);
+    var url   = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
+              + '/gviz/tq?tqx=responseHandler:' + cb
+              + '&sheet=' + encodeURIComponent(hoja);
+    var timer = setTimeout(function() { cleanup(); resolve([]); }, 15000);
+    function cleanup() {
+      clearTimeout(timer);
+      try { delete window[cb]; } catch(e) {}
+      try { if (s && s.parentNode) document.body.removeChild(s); } catch(e) {}
+    }
+    window[cb] = function(data) {
+      cleanup();
+      try {
+        var colsMeta = data.table.cols || [];
+        var cols  = colsMeta.map(function(c){ return c.label||c.id||''; });
+        if (expectedCol && cols.indexOf(expectedCol) === -1) { resolve([]); return; }
+        var rows = (data.table.rows||[]).filter(function(r){ return r&&r.c; }).map(function(row){
+          var obj = {};
+          cols.forEach(function(col,i){
+            var cell = row.c[i];
+            obj[col] = cell ? (cell.f!=null?cell.f:(cell.v!=null?cell.v:'')) : '';
+          });
+          return obj;
+        });
+        resolve(rows);
+      } catch(e2) { resolve([]); }
+    };
+    var s = document.createElement('script');
+    s.onerror = function(){ cleanup(); resolve([]); };
+    s.src = url;
+    document.body.appendChild(s);
+  });
+}
+
+async function postAP(payload) {
+  const resp = await fetch(APPS_SCRIPT_AP, {
+    method: 'POST',
+    body: new URLSearchParams({ data: JSON.stringify(payload) })
+  });
+  const json = await resp.json();
+  if (!json.ok) throw new Error(json.error || 'Error al guardar');
+  return json.result;
+}
+
+const numLimpio = v => parseFloat(String(v||0).replace(/,/g,'')) || 0;
+
+async function cargarDatos() {
+  document.getElementById('status-carga').innerHTML = '<span class="spinner"></span> Conectando con Google Sheets…';
+  try {
+    const [dM, dA, dC] = await Promise.all([
+      gvizLoad('Maestro_Productos', 'ID producto'),
+      gvizLoad('Alias_Productos', 'ID producto').catch(() => []),
+      gvizLoad('Costo_Promedio', 'ID producto').catch(() => [])
+    ]);
+
+    dataMaestro = dM;
+    dataAlias   = dA;
+    dataCosto   = dC;
+
+    document.getElementById('conn-dot').classList.remove('off');
+    document.getElementById('conn-label').textContent = 'Conectado · Google Sheets';
+    document.getElementById('status-carga').innerHTML = dataMaestro.length
+      ? '<span style="color:var(--green);">✓</span> ' + dataMaestro.length + ' productos en el Maestro'
+      : '<span style="color:var(--amber);">●</span> El Maestro todavía está vacío';
+
+    construirVista();
+    inicializar();
+
+  } catch(e) {
+    console.error('Error cargando el Maestro de productos:', e.message);
+    document.getElementById('conn-dot').classList.add('off');
+    document.getElementById('conn-label').textContent = 'Error de conexión';
+    document.getElementById('status-carga').innerHTML =
+      '<span style="color:var(--red);">✕</span> ' + e.message;
+    document.getElementById('tabla-productos').innerHTML =
+      '<div class="empty">No se pudo conectar. Verificá que el Sheet sea público (Compartir → Cualquiera con el enlace).</div>';
+  }
+}
+
+function construirVista() {
+  const aliasPorId = {};
+  dataAlias.forEach(r => {
+    const id = String(r['ID producto']||'').trim();
+    if (!id) return;
+    aliasPorId[id] = (aliasPorId[id]||0) + 1;
+  });
+
+  const costoPorId = {};
+  dataCosto.forEach(r => {
+    const id = String(r['ID producto']||'').trim();
+    if (!id) return;
+    costoPorId[id] = numLimpio(r['Costo promedio 90 días']);
+  });
+
+  productos = dataMaestro.map(r => {
+    const id = String(r['ID producto']||'').trim();
+    return {
+      id,
+      nombre: r['Nombre normalizado'] || id,
+      categoria: r['Categoría'] || '',
+      unidadBase: r['Unidad base'] || '',
+      unidadCompra: r['Unidad de compra default'] || '',
+      alias: aliasPorId[id] || 0,
+      costoProm90: costoPorId[id] != null ? costoPorId[id] : null
+    };
+  }).sort((a,b) => a.nombre.localeCompare(b.nombre));
+}
+
+function inicializar() {
+  const huerfanos = productos.filter(p => p.alias === 0).length;
+  const cats = [...new Set(productos.map(p => p.categoria).filter(Boolean))].sort();
+
+  document.getElementById('kpi-total').textContent      = productos.length;
+  document.getElementById('kpi-huerfanos').textContent  = huerfanos;
+  document.getElementById('kpi-categorias').textContent = cats.length;
+
+  const selCat = document.getElementById('f-cat');
+  const valCat = selCat.value;
+  selCat.innerHTML = '<option value="">Todas las categorías</option>' +
+    cats.map(c => `<option value="${c}"${c===valCat?' selected':''}>${c}</option>`).join('');
+
+  renderTabla();
+}
+
+function opcionesCategoria(valorActual) {
+  const opciones = valorActual && !CATEGORIAS.includes(valorActual) ? [valorActual, ...CATEGORIAS] : CATEGORIAS;
+  return '<option value=""' + (!valorActual?' selected':'') + '>Sin categoría</option>' +
+    opciones.map(c => `<option value="${c}"${c===valorActual?' selected':''}>${c}</option>`).join('');
+}
+
+function renderTabla() {
+  pagActual = 1;
+  _renderTabla();
+}
+
+function _renderTabla() {
+  const busq = document.getElementById('s-prod').value.toLowerCase();
+  const cat  = document.getElementById('f-cat').value;
+
+  const lista = productos.filter(p => {
+    const matchBusq = !busq || p.nombre.toLowerCase().includes(busq) || p.id.toLowerCase().includes(busq);
+    const matchCat  = !cat || p.categoria === cat;
+    return matchBusq && matchCat;
+  });
+
+  const total  = lista.length;
+  const inicio = (pagActual-1) * POR_PAGINA;
+  const pagina = lista.slice(inicio, inicio + POR_PAGINA);
+
+  if (!lista.length) {
+    document.getElementById('tabla-productos').innerHTML = '<div class="empty">' +
+      (productos.length ? 'Sin resultados.' : 'El Maestro todavía no tiene productos. Creá uno con "+ Nuevo producto".') +
+      '</div>';
+    document.getElementById('pag-productos').style.display = 'none';
+    return;
+  }
+
+  window._listaFiltrada = lista;
+
+  const filas = pagina.map((p, idx) => {
+    const rowIdx = inicio + idx;
+    const badgeAlias = p.alias > 0
+      ? `<span class="badge b-ok"><span class="b-dot"></span>${p.alias}</span>`
+      : `<span class="badge b-huerf"><span class="b-dot"></span>0</span>`;
+    return `
+      <tr>
+        <td style="font-family:var(--font-d);font-size:12px;color:var(--muted);white-space:nowrap;">${p.id}</td>
+        <td style="font-weight:500;max-width:200px;">${p.nombre}</td>
+        <td style="color:var(--muted);">${p.categoria || '—'}</td>
+        <td style="color:var(--muted);">${p.unidadBase || '—'}</td>
+        <td class="num">${p.costoProm90 != null ? fmtC(p.costoProm90) : '—'}</td>
+        <td>${badgeAlias}</td>
+        <td>
+          <div class="fila-acciones">
+            <button class="btn-mini" onclick="abrirModalProducto(${rowIdx})">Editar</button>
+            <button class="btn-mini" onclick="abrirModalFusion(${rowIdx})">Fusionar</button>
+            <button class="btn-mini rojo" onclick="eliminarProducto(${rowIdx})">Eliminar</button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('tabla-productos').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>ID</th><th>Nombre normalizado</th><th>Categoría</th><th>Unidad base</th>
+        <th style="text-align:right;">Costo prom. 90d</th><th>Alias</th><th>Acciones</th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+
+  renderPaginacion('pag-productos', total, pagActual, p => { pagActual = p; _renderTabla(); });
+}
+
+// ── MODAL CREAR / EDITAR ─────────────────────────────────────────
+let productoEnEdicion = null; // id_producto en edición, o null si es "nuevo"
+
+function abrirModalProducto(idx) {
+  const p = idx != null ? window._listaFiltrada[idx] : null;
+  productoEnEdicion = p ? p.id : null;
+
+  document.getElementById('modal-producto-titulo').textContent = p ? 'Editar producto' : 'Nuevo producto';
+  document.getElementById('mp-nombre').value = p ? p.nombre : '';
+  document.getElementById('mp-categoria').innerHTML = opcionesCategoria(p ? p.categoria : '');
+  document.getElementById('mp-unidad-base').value = p ? p.unidadBase : '';
+  document.getElementById('mp-unidad-compra').value = p ? p.unidadCompra : '';
+
+  document.getElementById('modal-producto').classList.add('open');
+}
+
+function cerrarModalProducto() {
+  document.getElementById('modal-producto').classList.remove('open');
+}
+document.getElementById('modal-producto').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-producto')) cerrarModalProducto();
+});
+
+async function guardarProductoMaestro() {
+  const nombre = document.getElementById('mp-nombre').value.trim();
+  if (!nombre) { showToast('Ingresá el nombre normalizado.', 'error'); return; }
+
+  const btn = document.getElementById('mp-btn-guardar');
+  btn.disabled = true;
+  try {
+    const payload = {
+      modulo: 'guardar_producto_maestro',
+      nombre_normalizado: nombre,
+      categoria: document.getElementById('mp-categoria').value,
+      unidad_base: document.getElementById('mp-unidad-base').value.trim(),
+      unidad_compra_default: document.getElementById('mp-unidad-compra').value.trim()
+    };
+    if (productoEnEdicion) payload.id_producto = productoEnEdicion;
+
+    await postAP(payload);
+    showToast(productoEnEdicion ? 'Producto actualizado ✓' : 'Producto creado ✓', 'success');
+    cerrarModalProducto();
+    await cargarDatos();
+  } catch(e) {
+    showToast('No se pudo guardar: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── MODAL FUSIONAR ────────────────────────────────────────────────
+let productoAFusionar = null;
+
+function abrirModalFusion(idx) {
+  const p = window._listaFiltrada[idx];
+  productoAFusionar = p.id;
+
+  document.getElementById('fusion-nota').textContent =
+    `"${p.nombre}" (${p.id}, ${p.alias} alias) se va a eliminar del Maestro. Todos sus alias van a quedar apuntando al producto que elijas abajo, y su costo promedio se recalcula con el historial combinado.`;
+
+  const otros = productos.filter(x => x.id !== p.id).sort((a,b) => a.nombre.localeCompare(b.nombre));
+  document.getElementById('mf-destino').innerHTML =
+    otros.map(o => `<option value="${o.id}">${o.id} · ${o.nombre}${o.categoria?' ('+o.categoria+')':''}</option>`).join('');
+
+  document.getElementById('modal-fusion').classList.add('open');
+}
+
+function cerrarModalFusion() {
+  document.getElementById('modal-fusion').classList.remove('open');
+}
+document.getElementById('modal-fusion').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-fusion')) cerrarModalFusion();
+});
+
+async function confirmarFusion() {
+  const destino = document.getElementById('mf-destino').value;
+  if (!destino) { showToast('No hay otro producto para fusionar.', 'error'); return; }
+
+  const btn = document.getElementById('mf-btn-confirmar');
+  btn.disabled = true;
+  try {
+    const result = await postAP({
+      modulo: 'fusionar_productos_maestro',
+      id_conservar: destino,
+      id_descartar: productoAFusionar
+    });
+    showToast(`Fusionado ✓ (${result.alias_movidos} alias movidos)`, 'success');
+    cerrarModalFusion();
+    await cargarDatos();
+  } catch(e) {
+    showToast('No se pudo fusionar: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── ELIMINAR ───────────────────────────────────────────────────────
+async function eliminarProducto(idx) {
+  const p = window._listaFiltrada[idx];
+  if (!confirm(`¿Eliminar "${p.nombre}" (${p.id}) del Maestro? Esta acción no se puede deshacer.`)) return;
+
+  try {
+    await postAP({ modulo: 'eliminar_producto_maestro', id_producto: p.id });
+    showToast(`"${p.nombre}" eliminado ✓`, 'success');
+    await cargarDatos();
+  } catch(e) {
+    showToast(e.message, 'error');
+  }
+}
+
+function renderPaginacion(id, total, pag, cb) {
+  const pagEl   = document.getElementById(id);
+  const totalPag = Math.ceil(total / POR_PAGINA);
+  if (totalPag <= 1) { pagEl.style.display = 'none'; return; }
+
+  pagEl.style.display = 'flex';
+  const desde = (pag-1)*POR_PAGINA + 1;
+  const hasta = Math.min(pag*POR_PAGINA, total);
+
+  let btns = '';
+  for (let i = 1; i <= totalPag; i++) {
+    if (i === 1 || i === totalPag || Math.abs(i - pag) <= 1) {
+      btns += `<button class="pag-btn${i===pag?' active':''}" onclick="(${cb.toString()})(${i})">${i}</button>`;
+    } else if (Math.abs(i - pag) === 2) {
+      btns += `<span style="padding:4px;">…</span>`;
+    }
+  }
+
+  pagEl.innerHTML = `
+    <span>${desde}–${hasta} de ${total}</span>
+    <div class="pag-btns">
+      <button class="pag-btn" onclick="(${cb.toString()})(${pag-1})" ${pag<=1?'disabled':''}>← Anterior</button>
+      ${btns}
+      <button class="pag-btn" onclick="(${cb.toString()})(${pag+1})" ${pag>=totalPag?'disabled':''}>Siguiente →</button>
+    </div>`;
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').innerHTML = type==='success'
+    ? '<polyline points="3 8 7 12 13 4"/>'
+    : '<line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = `toast ${type}`;
+  requestAnimationFrame(()=>t.classList.add('show'));
+  setTimeout(()=>t.classList.remove('show'), 3500);
+}
+
+cargarDatos();
+</script>
+</body>
+</html>
