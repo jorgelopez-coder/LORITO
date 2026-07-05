@@ -7,6 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
     :root {
@@ -225,6 +227,7 @@ var ordenes     = [];
 var ordenActual = null;
 var productos   = [];
 var stockActual = {}; // { nombreProducto.toLowerCase(): {cerrado, abierto} }
+var ordenParaPDF = null; // orden aprobada mostrada actualmente, usada para el PDF/envío
 
 function getOrdenes()   { try { return JSON.parse(localStorage.getItem('ordenes_compra')||'[]'); } catch(e) { return []; } }
 function saveOrdenes(o) { localStorage.setItem('ordenes_compra', JSON.stringify(o)); }
@@ -749,6 +752,7 @@ async function aprobarOrden() {
 
 // ── ORDEN APROBADA: por proveedor ─────────────────────────────────
 function renderOrdenAprobada(orden) {
+  ordenParaPDF = orden;
   var lineas  = orden.lineas_aprobadas || [];
   var provMap = {};
   lineas.forEach(function(l){
@@ -757,8 +761,13 @@ function renderOrdenAprobada(orden) {
     provMap[k].push(l);
   });
 
-  var html = '<div style="padding:1rem 1.25rem;background:var(--green-bg);border-bottom:1px solid var(--green-lt);font-size:13px;color:var(--green);font-weight:600;">'
-    + '✓ Orden aprobada el ' + new Date(orden.aprobada).toLocaleString('es-CR') + '</div>';
+  var html = '<div style="padding:1rem 1.25rem;background:var(--green-bg);border-bottom:1px solid var(--green-lt);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">'
+    + '<span style="font-size:13px;color:var(--green);font-weight:600;">✓ Orden aprobada el ' + new Date(orden.aprobada).toLocaleString('es-CR') + '</span>'
+    + '<div class="send-btns">'
+    + '<button class="btn-sec" onclick="descargarPDFOrden()">&#128196; Descargar PDF</button>'
+    + '<button class="btn-wa" onclick="enviarWhatsAppOrden()">&#128172; WhatsApp</button>'
+    + '<button class="btn-email" onclick="enviarCorreoOrden()">&#9993; Correo</button>'
+    + '</div></div>';
 
   Object.keys(provMap).sort().forEach(function(prov){
     var items = provMap[prov];
@@ -809,6 +818,150 @@ function renderOrdenAprobada(orden) {
   document.getElementById('total-valor').textContent = fmt(orden.total||0);
   document.getElementById('total-general').style.display = 'flex';
   document.getElementById('resumen-proveedores').style.display = 'none';
+}
+
+// ── PDF DE LA ORDEN COMPLETA (html2canvas + jsPDF) ────────────────
+async function generarPDFOrden() {
+  if (!window.html2canvas || !window.jspdf) { showToast('Cargando librería de PDF, esperá un segundo…', 'error'); return null; }
+  var orden = ordenParaPDF;
+  if (!orden) { showToast('Sin orden para exportar', 'error'); return null; }
+
+  var lineas  = orden.lineas_aprobadas || [];
+  var provMap = {};
+  lineas.forEach(function(l){
+    var k = l.proveedor_orden || l.proveedor || 'Sin proveedor';
+    if (!provMap[k]) provMap[k] = [];
+    provMap[k].push(l);
+  });
+
+  var provsHtml = Object.keys(provMap).sort().map(function(prov){
+    var items = provMap[prov];
+    var total = items.reduce(function(a,i){ return a + (i.monto||0); }, 0);
+    var filas = items.map(function(i){
+      return '<tr>'
+        + '<td style="padding:6px 8px;border-bottom:1px solid #e0e0e0;">' + i.nombre + '</td>'
+        + '<td style="padding:6px 8px;border-bottom:1px solid #e0e0e0;color:#666;">' + ([i.presentacion,i.tamano].filter(Boolean).join(' ')||'—') + '</td>'
+        + '<td style="padding:6px 8px;border-bottom:1px solid #e0e0e0;text-align:right;">' + i.pedido + '</td>'
+        + '<td style="padding:6px 8px;border-bottom:1px solid #e0e0e0;text-align:right;color:#666;">' + fmt2(i.precio_sin_iva||0) + '</td>'
+        + '<td style="padding:6px 8px;border-bottom:1px solid #e0e0e0;text-align:right;font-weight:600;">' + fmt(i.monto) + '</td>'
+        + '</tr>';
+    }).join('');
+    return '<div style="margin-bottom:18px;">'
+      + '<div style="background:#eef4fb;padding:8px 10px;font-weight:700;font-size:13px;color:#185fa5;display:flex;justify-content:space-between;">'
+      + '<span>' + prov + '</span><span>' + fmt(total) + '</span></div>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+      + '<thead><tr style="background:#f2ede2;">'
+      + '<th style="padding:6px 8px;text-align:left;">Producto</th><th style="padding:6px 8px;text-align:left;">Presentación</th>'
+      + '<th style="padding:6px 8px;text-align:right;">Cant.</th><th style="padding:6px 8px;text-align:right;">Precio</th><th style="padding:6px 8px;text-align:right;">Monto</th>'
+      + '</tr></thead><tbody>' + filas + '</tbody></table></div>';
+  }).join('');
+
+  var presupuestoHtml = orden.presupuesto !== undefined
+    ? '<div style="background:#f3eefb;border:1px solid #d4b8f0;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#6a3a9a;">'
+      + '<strong>Presupuesto semanal:</strong> ' + fmt(orden.presupuesto) + (orden.presupuesto_info ? ' — ' + orden.presupuesto_info : '')
+      + '</div>'
+    : '';
+
+  var htmlDoc = '<div style="width:760px;padding:30px;font-family:Arial,sans-serif;color:#1c3a28;">'
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">'
+    + '<div><div style="font-size:20px;font-weight:700;">Orden de compra ' + orden.id + '</div>'
+    + '<div style="font-size:12px;color:#666;margin-top:4px;">Fecha: ' + (orden.fecha||'—') + ' · Aprobada: ' + new Date(orden.aprobada).toLocaleString('es-CR') + '</div></div>'
+    + '<div style="font-size:13px;font-weight:700;color:#185fa5;">Grupo del Sol</div>'
+    + '</div>'
+    + '<div style="height:1px;background:#ddd;margin:14px 0 18px;"></div>'
+    + presupuestoHtml
+    + provsHtml
+    + '<div style="display:flex;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:2px solid #185fa5;">'
+    + '<div style="font-size:15px;font-weight:700;color:#185fa5;">Total: ' + fmt(orden.total||0) + '</div>'
+    + '</div></div>';
+
+  var holder = document.createElement('div');
+  holder.style.position = 'fixed'; holder.style.left = '-99999px'; holder.style.top = '0';
+  holder.innerHTML = htmlDoc;
+  document.body.appendChild(holder);
+  await new Promise(function(r){ setTimeout(r, 60); });
+
+  var canvas;
+  try {
+    canvas = await html2canvas(holder, { scale: 2, backgroundColor: '#ffffff' });
+  } finally {
+    document.body.removeChild(holder);
+  }
+
+  var jsPDF   = window.jspdf.jsPDF;
+  var pdf     = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+  var pageW   = pdf.internal.pageSize.getWidth();
+  var pageH   = pdf.internal.pageSize.getHeight();
+  var imgW    = pageW;
+  var imgH    = canvas.height * imgW / canvas.width;
+  var imgData = canvas.toDataURL('image/png');
+
+  var heightLeft = imgH, position = 0;
+  pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
+  heightLeft -= pageH;
+  while (heightLeft > 0) {
+    position = heightLeft - imgH;
+    pdf.addPage();
+    pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
+    heightLeft -= pageH;
+  }
+
+  return { pdf: pdf, filename: 'orden_' + orden.id + '.pdf' };
+}
+
+async function descargarPDFOrden() {
+  var r = await generarPDFOrden();
+  if (!r) return;
+  r.pdf.save(r.filename);
+  showToast('PDF descargado', 'success');
+}
+
+// En celular (Chrome/Safari) se abre el selector nativo para compartir el PDF
+// directo a WhatsApp/Correo. En escritorio se descarga el PDF y se abre
+// WhatsApp/correo con un mensaje para adjuntarlo a mano.
+async function enviarWhatsAppOrden() {
+  var r = await generarPDFOrden();
+  if (!r) return;
+  var orden  = ordenParaPDF;
+  var file   = new File([r.pdf.output('blob')], r.filename, { type: 'application/pdf' });
+  var texto  = 'Orden de compra ' + orden.id + ' - Total: ' + fmt(orden.total||0);
+
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'Orden de compra', text: texto });
+      showToast('Compartido ✓', 'success');
+      return;
+    } catch(e) {
+      if (e && e.name === 'AbortError') return;
+    }
+  }
+
+  r.pdf.save(r.filename);
+  window.open('https://wa.me/?text=' + encodeURIComponent(texto + ' — adjuntá el PDF que se acaba de descargar.'), '_blank');
+  showToast('PDF descargado — adjuntalo en WhatsApp', 'success');
+}
+
+async function enviarCorreoOrden() {
+  var r = await generarPDFOrden();
+  if (!r) return;
+  var orden = ordenParaPDF;
+  var file  = new File([r.pdf.output('blob')], r.filename, { type: 'application/pdf' });
+  var texto = 'Orden de compra ' + orden.id + ' - Total: ' + fmt(orden.total||0);
+
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'Orden de compra ' + orden.id, text: texto });
+      showToast('Compartido ✓', 'success');
+      return;
+    } catch(e) {
+      if (e && e.name === 'AbortError') return;
+    }
+  }
+
+  r.pdf.save(r.filename);
+  window.open('mailto:?subject=' + encodeURIComponent('Orden de compra ' + orden.id)
+    + '&body=' + encodeURIComponent(texto + '\n\nAdjuntá el PDF que se acaba de descargar.'));
+  showToast('PDF descargado — adjuntalo al correo', 'success');
 }
 
 function toggleEnviado(ordenId, prov, provKey, checkbox) {
