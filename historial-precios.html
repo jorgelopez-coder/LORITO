@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Historial de precios · Lorito</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#ffffff;
+      --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
+      --amber:#c87820; --amber-bg:#fdf6e3; --amber-lt:#f0d890;
+      --blue:#185fa5; --blue-bg:#eef4fb; --blue-lt:#b8d0f0;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+
+    header { height:56px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; background:var(--bg); position:sticky; top:0; z-index:20; }
+    .nav-left { display:flex; align-items:center; gap:10px; }
+    .back-btn { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); }
+    .back-btn:hover { color:var(--text); border-color:var(--border-h); }
+    .back-btn svg { width:13px; height:13px; }
+    .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
+    .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 10px; }
+
+    main { max-width:1200px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .page-header { margin-bottom:1.5rem; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .page-header h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+    .page-header p { font-size:13px; color:var(--muted); }
+
+    .kpi-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:1.25rem; }
+    .kpi-box { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; }
+    .kpi-val { font-family:var(--font-d); font-size:22px; font-weight:700; letter-spacing:-.02em; color:var(--text); }
+    .kpi-sub { font-size:11px; color:var(--subtle); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .kpi-lbl { font-size:11px; color:var(--muted); margin-top:2px; }
+    .kpi-val.rojo  { color:var(--red); }
+    .kpi-val.verde { color:var(--green); }
+
+    .tabs { display:flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:4px; margin-bottom:1.25rem; width:fit-content; }
+    .tab { font-size:13px; font-weight:500; padding:6px 16px; border-radius:7px; border:none; cursor:pointer; background:transparent; color:var(--muted); display:flex; align-items:center; gap:6px; }
+    .tab.active { background:var(--card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+    .tab-badge { font-size:10px; font-weight:700; padding:2px 6px; border-radius:20px; background:var(--border); color:var(--muted); }
+    .tab.active .tab-badge { background:var(--green); color:#fff; }
+
+    .toolbar { display:flex; gap:8px; margin-bottom:1rem; flex-wrap:wrap; align-items:center; }
+    .search-wrap { position:relative; flex:1; min-width:200px; }
+    .search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--subtle); pointer-events:none; }
+    .search-input { width:100%; background:var(--card); border:1px solid var(--border); border-radius:9px; color:var(--text); font-family:var(--font-b); font-size:13px; padding:8px 12px 8px 32px; outline:none; }
+    .search-input:focus { border-color:var(--green); }
+    .filter-sel { font-size:13px; padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--text); outline:none; cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:30px; }
+
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; }
+    .tabla-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th { text-align:left; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:10px 12px; border-bottom:1px solid var(--border); white-space:nowrap; background:var(--surface); }
+    td { padding:9px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    tr.clickable { cursor:pointer; }
+    tr.clickable:hover td { background:var(--surface); }
+    .num { text-align:right; font-variant-numeric:tabular-nums; }
+
+    .badge { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; white-space:nowrap; }
+    .b-sube  { background:var(--red-bg); color:var(--red); }
+    .b-baja  { background:var(--green-bg); color:var(--green); }
+    .b-igual { background:var(--surface); color:var(--muted); }
+    .b-dot { width:5px; height:5px; border-radius:50%; background:currentColor; }
+
+    .btn-mini { font-size:11.5px; font-weight:600; padding:6px 11px; border-radius:7px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; white-space:nowrap; }
+    .btn-mini:hover { border-color:var(--border-h); color:var(--text); }
+
+    .pagination { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-top:1px solid var(--border); font-size:12px; color:var(--muted); }
+    .pag-btns { display:flex; gap:4px; }
+    .pag-btn { padding:4px 10px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:12px; cursor:pointer; }
+    .pag-btn:hover:not(:disabled) { background:var(--surface); color:var(--text); }
+    .pag-btn:disabled { opacity:.4; cursor:default; }
+    .pag-btn.active { background:var(--green); color:#fff; border-color:var(--green); }
+
+    .empty { text-align:center; padding:3rem; color:var(--subtle); font-size:13px; }
+    .spinner { display:inline-block; width:18px; height:18px; border:2px solid var(--border); border-top-color:var(--green); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
+    .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+    .sdot.off { background:var(--subtle); }
+
+    /* Modal de detalle */
+    .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:50; align-items:flex-start; justify-content:center; padding:1.5rem 1rem; overflow-y:auto; }
+    .modal-bg.open { display:flex; }
+    .modal { background:var(--card); border-radius:16px; width:100%; max-width:760px; margin:auto; }
+    .modal-head { padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+    .modal-title { font-family:var(--font-d); font-size:18px; font-weight:700; }
+    .modal-sub { font-size:12px; color:var(--muted); margin-top:2px; }
+    .close-btn { background:none; border:none; font-size:22px; line-height:1; color:var(--muted); cursor:pointer; padding:2px 6px; }
+    .close-btn:hover { color:var(--text); }
+    .modal-body { padding:1.25rem 1.5rem; }
+    .modal-kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:1rem; }
+    .modal-kpi { background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:.6rem .8rem; }
+    .modal-kpi-val { font-family:var(--font-d); font-size:16px; font-weight:700; }
+    .modal-kpi-lbl { font-size:10.5px; color:var(--muted); margin-top:1px; }
+    .chart-wrap { height:220px; margin-bottom:1.25rem; }
+
+    .empty svg { width:16px; height:16px; }
+    .toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px); background:var(--card); border:1px solid var(--border); border-radius:10px; padding:11px 18px; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s; opacity:0; z-index:100; box-shadow:0 4px 20px rgba(0,0,0,.08); }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+    .toast.error { border-color:var(--red); color:var(--red); }
+
+    @media (max-width:700px) {
+      header { padding:0 1rem; } main { padding:1.5rem 1rem 3rem; }
+      .kpi-strip { grid-template-columns:1fr 1fr; }
+      .modal-kpis { grid-template-columns:1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Historial de precios</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<main>
+  <div class="page-header">
+    <div>
+      <h1>Historial de precios</h1>
+      <p>Evolución del precio de compra por producto, calculada a partir de las facturas (hoja Desglose_IA)</p>
+    </div>
+    <div id="status-carga" style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;">
+      <span class="spinner"></span> Cargando…
+    </div>
+  </div>
+
+  <div class="kpi-strip">
+    <div class="kpi-box">
+      <div class="kpi-val" id="kpi-total">—</div>
+      <div class="kpi-lbl">Productos con historial</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val rojo" id="kpi-subieron">—</div>
+      <div class="kpi-lbl">Subieron en la última compra</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val verde" id="kpi-bajaron">—</div>
+      <div class="kpi-lbl">Bajaron en la última compra</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val rojo" id="kpi-mayor-alza">—</div>
+      <div class="kpi-sub" id="kpi-mayor-alza-nombre">—</div>
+      <div class="kpi-lbl">Mayor alza (últ. compra)</div>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs-estado">
+    <button class="tab active" data-estado="" onclick="cambiarTabEstado('', this)">Todos <span class="tab-badge" id="tab-badge-todos">—</span></button>
+    <button class="tab" data-estado="Subió" onclick="cambiarTabEstado('Subió', this)">Subieron <span class="tab-badge" id="tab-badge-subio">—</span></button>
+    <button class="tab" data-estado="Bajó" onclick="cambiarTabEstado('Bajó', this)">Bajaron <span class="tab-badge" id="tab-badge-bajo">—</span></button>
+    <button class="tab" data-estado="Estable" onclick="cambiarTabEstado('Estable', this)">Estables <span class="tab-badge" id="tab-badge-estable">—</span></button>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" class="search-input" id="s-prod" placeholder="Buscar producto…" oninput="renderTabla()">
+    </div>
+    <select class="filter-sel" id="f-cat" onchange="renderTabla()">
+      <option value="">Todas las categorías</option>
+    </select>
+  </div>
+
+  <div id="nota-pendientes" style="display:none;font-size:12px;color:var(--amber);background:var(--amber-bg);border:1px solid var(--amber-lt);border-radius:9px;padding:.6rem 1rem;margin-bottom:1rem;"></div>
+
+  <div class="card">
+    <div class="tabla-wrap" id="tabla-productos">
+      <div class="empty"><span class="spinner"></span></div>
+    </div>
+    <div class="pagination" id="pag-productos" style="display:none;"></div>
+  </div>
+
+  <div class="status-bar">
+    <div style="display:flex;align-items:center;gap:6px;"><span class="sdot" id="conn-dot"></span><span id="conn-label">Conectando…</span></div>
+    <span style="margin-left:auto;">v1.0 · Historial de precios · Grupo del Sol</span>
+  </div>
+</main>
+
+<div class="modal-bg" id="modal-detalle">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="modal-titulo">Producto</div>
+        <div class="modal-sub" id="modal-sub">—</div>
+      </div>
+      <button class="close-btn" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-kpis">
+        <div class="modal-kpi"><div class="modal-kpi-val" id="mk-actual">—</div><div class="modal-kpi-lbl">Precio actual</div></div>
+        <div class="modal-kpi"><div class="modal-kpi-val" id="mk-min">—</div><div class="modal-kpi-lbl">Mínimo</div></div>
+        <div class="modal-kpi"><div class="modal-kpi-val" id="mk-max">—</div><div class="modal-kpi-lbl">Máximo</div></div>
+        <div class="modal-kpi"><div class="modal-kpi-val" id="mk-prom30">—</div><div class="modal-kpi-lbl">Costo prom. 30 días</div></div>
+        <div class="modal-kpi"><div class="modal-kpi-val" id="mk-prom90">—</div><div class="modal-kpi-lbl">Costo prom. 90 días</div></div>
+        <div class="modal-kpi"><div class="modal-kpi-val" id="mk-var">—</div><div class="modal-kpi-lbl">Var. desde 1ra compra</div></div>
+      </div>
+      <div class="chart-wrap"><canvas id="chart-detalle"></canvas></div>
+      <div class="tabla-wrap">
+        <table>
+          <thead><tr>
+            <th>Fecha</th><th>Proveedor</th><th>Factura</th>
+            <th style="text-align:right;">Cantidad</th><th>Unidad</th>
+            <th style="text-align:right;">Precio unitario</th><th style="text-align:right;">Var.</th>
+          </tr></thead>
+          <tbody id="tabla-detalle"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ─── CONFIGURACIÓN ────────────────────────────────────────────────
+// Sheet "Registro compras LORITO_Brewhouse - IA" (mismo Sheet que
+// config-productos.html y compras.html). Este módulo es de solo lectura:
+// arma el historial de precios agrupando las líneas de Desglose_IA por
+// producto, no necesita backend propio ni hoja nueva.
+const SHEET_ID = '1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw';
+// ─────────────────────────────────────────────────────────────────
+
+const UMBRAL_PCT = 0.5; // % mínimo para considerar que un precio "subió" o "bajó"
+
+const hoy = new Date();
+document.getElementById('date-chip').textContent =
+  hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
+
+const fmt  = n => Number(n||0).toLocaleString('es-CR', { maximumFractionDigits:0 });
+const fmtC = n => '₡' + Number(n||0).toLocaleString('es-CR', { maximumFractionDigits:2 });
+const fmtPct = n => (n>0?'+':'') + n.toLocaleString('es-CR', { minimumFractionDigits:1, maximumFractionDigits:1 }) + '%';
+
+let dataDesglose  = [];
+let dataAlias     = [];
+let dataMaestro   = [];
+let dataCosto     = [];
+let historial     = []; // dataset agrupado por id_producto
+let lineasSinMapear = 0;
+let estadoActivo  = '';
+let pagActual     = 1;
+const POR_PAGINA = 20;
+
+function gvizLoad(hoja, expectedCol) {
+  return new Promise(function(resolve) {
+    var cb    = '_hp_' + Math.random().toString(36).slice(2,10);
+    var url   = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
+              + '/gviz/tq?tqx=responseHandler:' + cb
+              + '&sheet=' + encodeURIComponent(hoja);
+    var timer = setTimeout(function() { cleanup(); resolve([]); }, 15000);
+    function cleanup() {
+      clearTimeout(timer);
+      try { delete window[cb]; } catch(e) {}
+      try { if (s && s.parentNode) document.body.removeChild(s); } catch(e) {}
+    }
+    window[cb] = function(data) {
+      cleanup();
+      try {
+        var colsMeta = data.table.cols || [];
+        var cols  = colsMeta.map(function(c){ return c.label||c.id||''; });
+        if (expectedCol && cols.indexOf(expectedCol) === -1) { resolve([]); return; }
+        var rows = (data.table.rows||[]).filter(function(r){ return r&&r.c; }).map(function(row){
+          var obj = {};
+          cols.forEach(function(col,i){
+            var cell = row.c[i];
+            obj[col] = cell ? (cell.f!=null?cell.f:(cell.v!=null?cell.v:'')) : '';
+          });
+          return obj;
+        });
+        resolve(rows);
+      } catch(e2) { resolve([]); }
+    };
+    var s = document.createElement('script');
+    s.onerror = function(){ cleanup(); resolve([]); };
+    s.src = url;
+    document.body.appendChild(s);
+  });
+}
+
+// Convierte fechas formateadas por gviz como "D/M/YYYY" a ISO "YYYY-MM-DD".
+function isoDate(str) {
+  const s = String(str||'').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return '';
+  const [, d, mo, y] = m;
+  return y + '-' + mo.padStart(2,'0') + '-' + d.padStart(2,'0');
+}
+
+const numLimpio = v => parseFloat(String(v||0).replace(/,/g,'')) || 0;
+
+async function cargarDatos() {
+  document.getElementById('status-carga').innerHTML = '<span class="spinner"></span> Conectando con Google Sheets…';
+  try {
+    // Alias_Productos / Maestro_Productos / Costo_Promedio pueden no existir
+    // todavía si el Sheet no corrió la migración — no es un error de conexión,
+    // solo significa "nada mapeado todavía" (ver mensaje de abajo).
+    const [dD, dA, dM, dC] = await Promise.all([
+      gvizLoad('Desglose_IA', 'Producto'),
+      gvizLoad('Alias_Productos', 'ID producto').catch(() => []),
+      gvizLoad('Maestro_Productos', 'ID producto').catch(() => []),
+      gvizLoad('Costo_Promedio', 'ID producto').catch(() => [])
+    ]);
+
+    if (!dD.length) throw new Error('Sin datos en la hoja Desglose_IA');
+
+    dataDesglose = dD;
+    dataAlias    = dA;
+    dataMaestro  = dM;
+    dataCosto    = dC;
+
+    document.getElementById('conn-dot').classList.remove('off');
+    document.getElementById('conn-label').textContent = 'Conectado · Google Sheets';
+    document.getElementById('status-carga').innerHTML =
+      '<span style="color:var(--green);">✓</span> ' + dataDesglose.length + ' líneas de compra cargadas';
+
+    construirHistorial();
+    inicializar();
+
+  } catch(e) {
+    console.error('Error cargando historial de precios:', e.message);
+    document.getElementById('conn-dot').classList.add('off');
+    document.getElementById('conn-label').textContent = 'Error de conexión';
+    document.getElementById('status-carga').innerHTML =
+      '<span style="color:var(--red);">✕</span> ' + e.message;
+    document.getElementById('tabla-productos').innerHTML =
+      '<div class="empty">No se pudo conectar. Verificá que el Sheet sea público (Compartir → Cualquiera con el enlace).</div>';
+  }
+}
+
+// Resuelve id_producto a partir de (nombre en factura, proveedor), igual que
+// idProductoPorAlias() en Code-compras-backend.gs: exact match por proveedor,
+// con fallback al alias comodín ('*', migrado desde Normalizacion_Productos).
+function resolverIdProducto(aliasIndex, nombreFactura, proveedor) {
+  const candidatos = aliasIndex[nombreFactura];
+  if (!candidatos) return '';
+  let comodin = '';
+  for (const c of candidatos) {
+    if (c.proveedor === proveedor) return c.idProducto;
+    if (c.proveedor === '*' && !comodin) comodin = c.idProducto;
+  }
+  return comodin;
+}
+
+// ── CONSTRUIR HISTORIAL: agrupa Desglose_IA por id_producto (resuelto vía
+// Alias_Productos), no por texto crudo — así dos nombres de factura distintos
+// para el mismo producto real (p.ej. de dos proveedores) quedan unificados.
+// Las líneas que no resuelven a ningún id_producto están pendientes de mapear
+// (ver config-productos.html) y no aparecen acá. ──
+function construirHistorial() {
+  const aliasIndex = {};
+  dataAlias.forEach(r => {
+    const nombre = String(r['Nombre en factura']||'').trim();
+    if (!nombre) return;
+    (aliasIndex[nombre] = aliasIndex[nombre] || []).push({
+      proveedor: String(r['Proveedor']||'').trim(),
+      idProducto: String(r['ID producto']||'').trim()
+    });
+  });
+
+  const maestroPorId = {};
+  dataMaestro.forEach(r => {
+    const id = String(r['ID producto']||'').trim();
+    if (!id) return;
+    maestroPorId[id] = { nombre: r['Nombre normalizado'] || id, categoria: r['Categoría'] || '' };
+  });
+
+  const costoPorId = {};
+  dataCosto.forEach(r => {
+    const id = String(r['ID producto']||'').trim();
+    if (!id) return;
+    costoPorId[id] = {
+      prom30: numLimpio(r['Costo promedio 30 días']),
+      prom90: numLimpio(r['Costo promedio 90 días'])
+    };
+  });
+
+  const grupos = {};
+  lineasSinMapear = 0;
+  dataDesglose.forEach(l => {
+    const prod = String(l['Producto']||'').trim();
+    const proveedor = String(l['Proveedor']||'').trim();
+    const precio = numLimpio(l['Precio unitario']);
+    // Excluye notas de crédito / devoluciones (precio unitario <= 0): no son precios de compra reales.
+    if (!prod || precio <= 0) return;
+
+    const idProducto = resolverIdProducto(aliasIndex, prod, proveedor);
+    if (!idProducto) { lineasSinMapear++; return; }
+
+    if (!grupos[idProducto]) grupos[idProducto] = { idProducto, lineas: [] };
+    grupos[idProducto].lineas.push({
+      fecha: isoDate(l['Fecha de factura']),
+      precio,
+      cantidad: parseFloat(l['Cantidad']) || 0,
+      unidad: l['Unidad de medida'] || '',
+      proveedor,
+      factura: l['Número de factura'] || ''
+    });
+  });
+
+  historial = Object.values(grupos).map(g => {
+    const maestro = maestroPorId[g.idProducto] || { nombre: g.idProducto, categoria: '' };
+    const costo   = costoPorId[g.idProducto] || null;
+
+    const lineas = g.lineas
+      .filter(l => l.fecha)
+      .sort((a,b) => a.fecha.localeCompare(b.fecha));
+
+    // variación de cada línea vs. la anterior
+    lineas.forEach((l, i) => {
+      l.varAnterior = i>0 && lineas[i-1].precio>0
+        ? ((l.precio - lineas[i-1].precio) / lineas[i-1].precio) * 100
+        : null;
+    });
+
+    const n = lineas.length;
+    const precios  = lineas.map(l => l.precio);
+    const actual   = n ? lineas[n-1].precio : 0;
+    const primero  = n ? lineas[0].precio : 0;
+    const varUltima = n>1 ? lineas[n-1].varAnterior : null;
+    const varTotal  = (n>1 && primero>0) ? ((actual-primero)/primero)*100 : null;
+    const proveedores = [...new Set(lineas.map(l => l.proveedor).filter(Boolean))];
+
+    let estado = 'Sin comparar';
+    if (varUltima != null) {
+      estado = varUltima > UMBRAL_PCT ? 'Subió' : (varUltima < -UMBRAL_PCT ? 'Bajó' : 'Estable');
+    }
+
+    return {
+      idProducto: g.idProducto, nombre: maestro.nombre, categoria: maestro.categoria, lineas,
+      compras: n, precioActual: actual,
+      precioMin: precios.length ? Math.min(...precios) : 0,
+      precioMax: precios.length ? Math.max(...precios) : 0,
+      // Costo promedio ponderado autoritativo (calculado y guardado por el
+      // backend en Costo_Promedio) — no se recalcula acá para evitar que la
+      // pantalla muestre un número distinto al que usa el resto del sistema.
+      costoProm30: costo ? costo.prom30 : null,
+      costoProm90: costo ? costo.prom90 : null,
+      varUltima, varTotal, estado,
+      proveedores, fechaUltima: n ? lineas[n-1].fecha : ''
+    };
+  }).sort((a,b) => {
+    const av = a.varUltima == null ? -Infinity : a.varUltima;
+    const bv = b.varUltima == null ? -Infinity : b.varUltima;
+    if (bv !== av) return bv - av;
+    return a.nombre.localeCompare(b.nombre);
+  });
+}
+
+function inicializar() {
+  const subieron = historial.filter(p => p.estado === 'Subió').length;
+  const bajaron  = historial.filter(p => p.estado === 'Bajó').length;
+  const estables = historial.filter(p => p.estado === 'Estable').length;
+  const mayorAlza = historial.find(p => p.varUltima != null && p.varUltima > 0);
+
+  document.getElementById('kpi-total').textContent    = historial.length;
+  document.getElementById('kpi-subieron').textContent = subieron;
+  document.getElementById('kpi-bajaron').textContent  = bajaron;
+  document.getElementById('kpi-mayor-alza').textContent = mayorAlza ? fmtPct(mayorAlza.varUltima) : '—';
+  document.getElementById('kpi-mayor-alza-nombre').textContent = mayorAlza ? mayorAlza.nombre : 'Sin alzas recientes';
+
+  document.getElementById('tab-badge-todos').textContent   = historial.length;
+  document.getElementById('tab-badge-subio').textContent   = subieron;
+  document.getElementById('tab-badge-bajo').textContent    = bajaron;
+  document.getElementById('tab-badge-estable').textContent = estables;
+
+  const cats = [...new Set(historial.map(p => p.categoria).filter(Boolean))].sort();
+  const selCat = document.getElementById('f-cat');
+  const valCat = selCat.value;
+  selCat.innerHTML = '<option value="">Todas las categorías</option>' +
+    cats.map(c => `<option value="${c}"${c===valCat?' selected':''}>${c}</option>`).join('');
+
+  const notaPendientes = document.getElementById('nota-pendientes');
+  notaPendientes.innerHTML = lineasSinMapear
+    ? `⚠ ${lineasSinMapear} línea${lineasSinMapear!==1?'s':''} de compra sin mapear a un producto — <a href="config-productos.html" style="color:var(--amber);font-weight:600;">resolver en Configuración de productos →</a>`
+    : '';
+  notaPendientes.style.display = lineasSinMapear ? '' : 'none';
+
+  renderTabla();
+}
+
+function cambiarTabEstado(estado, el) {
+  estadoActivo = estado;
+  document.querySelectorAll('#tabs-estado .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderTabla();
+}
+
+function renderTabla() {
+  pagActual = 1;
+  _renderTabla();
+}
+
+function badgeVar(v) {
+  if (v == null) return '<span class="badge b-igual"><span class="b-dot"></span>—</span>';
+  if (v > UMBRAL_PCT)  return `<span class="badge b-sube"><span class="b-dot"></span>${fmtPct(v)}</span>`;
+  if (v < -UMBRAL_PCT) return `<span class="badge b-baja"><span class="b-dot"></span>${fmtPct(v)}</span>`;
+  return `<span class="badge b-igual"><span class="b-dot"></span>${fmtPct(v)}</span>`;
+}
+
+function _renderTabla() {
+  const busq   = document.getElementById('s-prod').value.toLowerCase();
+  const estado = estadoActivo;
+  const cat    = document.getElementById('f-cat').value;
+
+  const lista = historial.filter(p => {
+    const matchBusq   = !busq || p.nombre.toLowerCase().includes(busq) || p.idProducto.toLowerCase().includes(busq);
+    const matchEstado = !estado || p.estado === estado;
+    const matchCat    = !cat || p.categoria === cat;
+    return matchBusq && matchEstado && matchCat;
+  });
+
+  const total  = lista.length;
+  const inicio = (pagActual-1) * POR_PAGINA;
+  const pagina = lista.slice(inicio, inicio + POR_PAGINA);
+
+  if (!lista.length) {
+    document.getElementById('tabla-productos').innerHTML = '<div class="empty">' + (
+      historial.length ? 'Sin resultados.' :
+      dataDesglose.length ? 'Ningún producto mapeado todavía. Resolvé los pendientes en <a href="config-productos.html">Configuración de productos</a>.' :
+      'Sin resultados.'
+    ) + '</div>';
+    document.getElementById('pag-productos').style.display = 'none';
+    return;
+  }
+
+  const filas = pagina.map((p, idx) => {
+    const rowIdx = inicio + idx;
+    return `
+      <tr class="clickable" onclick="abrirDetalle(${rowIdx})" data-idx="${rowIdx}">
+        <td style="font-weight:500;max-width:220px;">${p.nombre}</td>
+        <td style="color:var(--muted);">${p.categoria || '—'}</td>
+        <td class="num">${p.compras}</td>
+        <td class="num">${fmtC(p.precioActual)}</td>
+        <td class="num" style="color:var(--muted);">${p.costoProm90 != null ? fmtC(p.costoProm90) : '—'}</td>
+        <td style="color:var(--muted);font-size:12px;white-space:nowrap;">${p.fechaUltima||'—'}</td>
+        <td>${badgeVar(p.varUltima)}</td>
+        <td>${badgeVar(p.varTotal)}</td>
+        <td><button class="btn-mini" onclick="event.stopPropagation();abrirDetalle(${rowIdx})">Ver historial</button></td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('tabla-productos').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Producto</th><th>Categoría</th><th style="text-align:right;">Compras</th>
+        <th style="text-align:right;">Precio actual</th><th style="text-align:right;">Costo prom. 90d</th><th>Últ. compra</th>
+        <th>Var. últ. compra</th><th>Var. desde 1ra</th><th>Acción</th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+
+  // guarda la lista filtrada actual para que abrirDetalle(idx) referencie el índice global de `historial`
+  window._listaFiltrada = lista;
+  renderPaginacion('pag-productos', total, pagActual, p => { pagActual = p; _renderTabla(); });
+}
+
+let chartDetalle = null;
+
+function abrirDetalle(idx) {
+  const producto = window._listaFiltrada && window._listaFiltrada[idx];
+  if (!producto) return;
+
+  document.getElementById('modal-titulo').textContent = producto.nombre;
+  document.getElementById('modal-sub').textContent =
+    (producto.categoria || 'Sin categoría') +
+    (producto.proveedores.length ? ' · ' + producto.proveedores.join(', ') : '');
+
+  document.getElementById('mk-actual').textContent = fmtC(producto.precioActual);
+  document.getElementById('mk-min').textContent     = fmtC(producto.precioMin);
+  document.getElementById('mk-max').textContent     = fmtC(producto.precioMax);
+  document.getElementById('mk-prom30').textContent  = producto.costoProm30 != null ? fmtC(producto.costoProm30) : '—';
+  document.getElementById('mk-prom90').textContent  = producto.costoProm90 != null ? fmtC(producto.costoProm90) : '—';
+  const mkVar = document.getElementById('mk-var');
+  mkVar.textContent = producto.varTotal == null ? '—' : fmtPct(producto.varTotal);
+  mkVar.style.color = producto.varTotal == null ? 'var(--text)' : (producto.varTotal > 0 ? 'var(--red)' : (producto.varTotal < 0 ? 'var(--green)' : 'var(--text)'));
+
+  const filasDet = producto.lineas.map(l => `
+    <tr>
+      <td>${l.fecha}</td>
+      <td>${l.proveedor || '—'}</td>
+      <td style="color:var(--muted);">${l.factura || '—'}</td>
+      <td class="num">${fmt(l.cantidad)}</td>
+      <td>${l.unidad || '—'}</td>
+      <td class="num">${fmtC(l.precio)}</td>
+      <td>${badgeVar(l.varAnterior)}</td>
+    </tr>`).join('');
+  document.getElementById('tabla-detalle').innerHTML = filasDet;
+
+  const ctx = document.getElementById('chart-detalle').getContext('2d');
+  if (chartDetalle) chartDetalle.destroy();
+  chartDetalle = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: producto.lineas.map(l => l.fecha),
+      datasets: [{
+        label: 'Precio unitario (₡)',
+        data: producto.lineas.map(l => l.precio),
+        borderColor: '#1a7a4a',
+        backgroundColor: 'rgba(26,122,74,.12)',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: '#1a7a4a',
+        tension: .2,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display:false } },
+      scales: {
+        y: { beginAtZero:false, ticks: { callback: v => fmtC(v) } }
+      }
+    }
+  });
+
+  document.getElementById('modal-detalle').classList.add('open');
+}
+
+function cerrarModal() {
+  document.getElementById('modal-detalle').classList.remove('open');
+}
+document.getElementById('modal-detalle').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-detalle')) cerrarModal();
+});
+
+function renderPaginacion(id, total, pag, cb) {
+  const pagEl   = document.getElementById(id);
+  const totalPag = Math.ceil(total / POR_PAGINA);
+  if (totalPag <= 1) { pagEl.style.display = 'none'; return; }
+
+  pagEl.style.display = 'flex';
+  const desde = (pag-1)*POR_PAGINA + 1;
+  const hasta = Math.min(pag*POR_PAGINA, total);
+
+  let btns = '';
+  for (let i = 1; i <= totalPag; i++) {
+    if (i === 1 || i === totalPag || Math.abs(i - pag) <= 1) {
+      btns += `<button class="pag-btn${i===pag?' active':''}" onclick="(${cb.toString()})(${i})">${i}</button>`;
+    } else if (Math.abs(i - pag) === 2) {
+      btns += `<span style="padding:4px;">…</span>`;
+    }
+  }
+
+  pagEl.innerHTML = `
+    <span>${desde}–${hasta} de ${total}</span>
+    <div class="pag-btns">
+      <button class="pag-btn" onclick="(${cb.toString()})(${pag-1})" ${pag<=1?'disabled':''}>← Anterior</button>
+      ${btns}
+      <button class="pag-btn" onclick="(${cb.toString()})(${pag+1})" ${pag>=totalPag?'disabled':''}>Siguiente →</button>
+    </div>`;
+}
+
+cargarDatos();
+</script>
+</body>
+</html>

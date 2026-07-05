@@ -42,3 +42,53 @@ Sheet de datos: "RRHH - LORITO IA" — `1m8RLK3GPB8rpJjA92D2_gGfIaU-7CIo_Bz9xKB1
 `Code-rrhh-backend.gs` está desplegado como Web App y las 8 páginas (`rrhh-personal.html`, `rrhh-vacaciones.html`, `rrhh-control-vacaciones.html`, `rrhh-amonestaciones.html`, `rrhh-liquidaciones.html`, `rrhh-terminacion.html`, `rrhh-cambio-salario.html`, `rrhh-nuevo-ingreso.html`) ya apuntan a ese `/exec`. `rrhh-vacaciones.html` y `rrhh-amonestaciones.html` leen su historial del Sheet (antes solo vivía en localStorage).
 
 Si se agregan columnas o módulos nuevos, actualizar los encabezados (`ENCABEZADOS_*`) en `Code-rrhh-backend.gs`, re-desplegar (Implementar → Gestionar implementaciones → Editar → Nueva versión — la URL `/exec` no cambia) y correr `configurarHojas()` de nuevo si se agregó una pestaña.
+
+## Maestro de productos · historial de precios — despliegue pendiente
+
+Arquitectura de 3 capas (Maestro de productos → Alias → Costo promedio) para
+poder unificar productos comprados con nombres distintos entre proveedores
+(ej. "Filete de Res" vs. "Lomo Res Premium") y calcular un costo promedio
+ponderado (30 y 90 días) por producto real, en vez de por texto crudo de
+factura. Vive toda en el Sheet "Registro compras LORITO_Brewhouse - IA"
+(`1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw`), junto a `Desglose_IA`.
+
+Pasos para activarla (todos manuales, vía script.google.com):
+
+1. Abrí el proyecto de Apps Script pegado en ese Sheet (el mismo de
+   `Code-compras-backend.gs`), reemplazá el código por la versión actualizada
+   de este repo, e Implementar → Gestionar implementaciones → Editar → Nueva
+   versión (la URL `/exec` no cambia).
+2. En ese mismo editor, corré **UNA VEZ** la función `migrarNormalizacionAMaestro()`
+   para migrar el catálogo viejo `Normalizacion_Productos` hacia las hojas
+   nuevas `Maestro_Productos` y `Alias_Productos` (crea las hojas
+   `Pendientes_Mapeo` y `Costo_Promedio` automáticamente cuando hagan falta).
+3. En el script de OCR de facturas (el que ya escribe cada línea de producto
+   en `Desglose_IA` — vive en un Sheet aparte,
+   `11dfpbu92aGq-Moadys1BbltxA9iRJORYHPZDMKFw3P4`), agregá justo después de
+   escribir cada línea un POST a la misma URL `/exec` de
+   `Code-compras-backend.gs`:
+   ```js
+   UrlFetchApp.fetch(APPS_SCRIPT_AP_COMPRAS, {
+     method: 'post',
+     payload: { data: JSON.stringify({
+       modulo: 'procesar_linea_compra',
+       producto: p.producto, proveedor: data.proveedor,
+       categoria: p.categoria, nombre_normalizado: p.producto_normalizado
+     }) }
+   });
+   ```
+   (reemplazá `APPS_SCRIPT_AP_COMPRAS` por la URL `/exec` de `Code-compras-backend.gs`).
+4. Hasta que se hagan los pasos 1-3, `historial-precios.html` va a mostrar
+   "Ningún producto mapeado todavía" (porque `Alias_Productos` no existe) y
+   `config-productos.html` va a mostrar "Todo mapeado" (porque
+   `Pendientes_Mapeo` tampoco existe) — ambos estados son correctos para
+   "todavía no desplegado", no errores.
+5. Una vez desplegado, cada factura nueva con un producto no reconocido cae en
+   `Pendientes_Mapeo` — resolvelo una vez desde `config-productos.html`
+   (asignándolo a un producto ya existente en el Maestro o creando uno nuevo)
+   y queda automático para siempre.
+
+Fuera de alcance por ahora: `costos-productos.html`, `costos-recetas.html` y
+`costos-menu.html` siguen en `localStorage` sin backend propio, y
+`factura-manual.html` sigue sin generar líneas de producto (solo cabecera
+para cuentas por pagar).

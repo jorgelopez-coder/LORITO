@@ -123,7 +123,7 @@
   <div class="page-header">
     <div>
       <h1>Configuración de productos</h1>
-      <p>Productos comprados (hoja Desglose_IA) · administrá el nombre normalizado y detectá productos nuevos</p>
+      <p>Pendientes de mapear (hoja Pendientes_Mapeo) · asigná cada nombre de factura a un producto del Maestro, una sola vez</p>
     </div>
     <div id="status-carga" style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;">
       <span class="spinner"></span> Cargando…
@@ -132,32 +132,31 @@
 
   <div class="kpi-strip">
     <div class="kpi-box">
-      <div class="kpi-val" id="kpi-total">—</div>
-      <div class="kpi-lbl">Productos comprados (únicos)</div>
+      <div class="kpi-val ambar" id="kpi-total">—</div>
+      <div class="kpi-lbl">Pendientes de mapear</div>
     </div>
     <div class="kpi-box">
-      <div class="kpi-val ambar" id="kpi-nuevos">—</div>
-      <div class="kpi-lbl">Nuevos sin registrar</div>
+      <div class="kpi-val" id="kpi-lineas">—</div>
+      <div class="kpi-lbl">Líneas de compra afectadas</div>
     </div>
     <div class="kpi-box">
-      <div class="kpi-val verde" id="kpi-registrados">—</div>
-      <div class="kpi-lbl">Registrados</div>
+      <div class="kpi-val verde" id="kpi-maestro">—</div>
+      <div class="kpi-lbl">Productos en el Maestro</div>
     </div>
   </div>
 
   <div class="tabs" id="tabs-estado">
     <button class="tab active" data-estado="" onclick="cambiarTabEstado('', this)">Todos <span class="tab-badge" id="tab-badge-todos">—</span></button>
-    <button class="tab" data-estado="Nuevo" onclick="cambiarTabEstado('Nuevo', this)">Nuevos <span class="tab-badge" id="tab-badge-nuevos">—</span></button>
-    <button class="tab" data-estado="Registrado" onclick="cambiarTabEstado('Registrado', this)">Registrados <span class="tab-badge" id="tab-badge-registrados">—</span></button>
+    <button class="tab" data-estado="recurrente" onclick="cambiarTabEstado('recurrente', this)">Recurrentes (2+ veces) <span class="tab-badge" id="tab-badge-recurrentes">—</span></button>
   </div>
 
   <div class="toolbar">
     <div class="search-wrap">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" class="search-input" id="s-prod" placeholder="Buscar producto…" oninput="renderTabla()">
+      <input type="text" class="search-input" id="s-prod" placeholder="Buscar nombre en factura…" oninput="renderTabla()">
     </div>
     <select class="filter-sel" id="f-cat" onchange="renderTabla()">
-      <option value="">Todas las categorías</option>
+      <option value="">Todas las categorías sugeridas</option>
     </select>
   </div>
 
@@ -198,10 +197,10 @@ document.getElementById('date-chip').textContent =
 
 const fmt = n => Number(n||0).toLocaleString('es-CR');
 
-let dataDesglose = [];
-let dataNorm     = [];
-let productos    = []; // dataset unido y calculado
-let pagActual    = 1;
+let dataPendientes = [];
+let dataMaestro    = [];
+let pendientes     = []; // vista de Pendientes_Mapeo lista para tabla
+let pagActual      = 1;
 const POR_PAGINA = 20;
 
 function gvizLoad(hoja, expectedCol) {
@@ -253,22 +252,24 @@ async function postAP(payload) {
 async function cargarDatos() {
   document.getElementById('status-carga').innerHTML = '<span class="spinner"></span> Conectando con Google Sheets…';
   try {
-    const [dD, dN] = await Promise.all([
-      gvizLoad('Desglose_IA', 'Producto'),
-      gvizLoad('Normalizacion_Productos', 'Nombre normalizado').catch(() => [])
+    // Pendientes_Mapeo puede no existir todavía (se crea sola cuando llega la
+    // primera línea de compra sin alias) o puede estar legítimamente vacía
+    // (todo mapeado) — en ninguno de los dos casos es un error de conexión.
+    const [dPend, dMaestro] = await Promise.all([
+      gvizLoad('Pendientes_Mapeo', 'Nombre en factura').catch(() => []),
+      gvizLoad('Maestro_Productos', 'ID producto').catch(() => [])
     ]);
 
-    if (!dD.length) throw new Error('Sin datos en la hoja Desglose_IA');
-
-    dataDesglose = dD;
-    dataNorm     = dN;
+    dataPendientes = dPend;
+    dataMaestro    = dMaestro;
 
     document.getElementById('conn-dot').classList.remove('off');
     document.getElementById('conn-label').textContent = 'Conectado · Google Sheets';
-    document.getElementById('status-carga').innerHTML =
-      '<span style="color:var(--green);">✓</span> ' + dataDesglose.length + ' líneas de compra cargadas';
+    document.getElementById('status-carga').innerHTML = dataPendientes.length
+      ? '<span style="color:var(--amber);">●</span> ' + dataPendientes.length + ' pendientes de mapear'
+      : '<span style="color:var(--green);">✓</span> Todo mapeado';
 
-    construirProductos();
+    construirVista();
     inicializar();
 
   } catch(e) {
@@ -292,81 +293,60 @@ function isoDate(str) {
   return y + '-' + mo.padStart(2,'0') + '-' + d.padStart(2,'0');
 }
 
-// ── CONSTRUIR DATASET: agrupa Desglose_IA por Producto y cruza con el
-// catálogo Normalizacion_Productos (fuente de verdad del nombre normalizado). ──
-function construirProductos() {
-  const normPorProducto = {};
-  dataNorm.forEach(r => {
-    const prod = (r['Producto']||'').trim();
-    if (!prod) return;
-    normPorProducto[prod] = {
-      nombreNormalizado: r['Nombre normalizado'] || '',
-      categoria: r['Categoría'] || ''
-    };
-  });
-
-  const grupos = {};
-  dataDesglose.forEach(l => {
-    const prod = (l['Producto']||'').trim();
-    if (!prod) return;
-    if (!grupos[prod]) {
-      grupos[prod] = {
-        producto: prod,
-        categoriaIA: l['Categoría'] || '',
-        nombreNormalizadoIA: l['Nombre normalizado'] || '',
-        facturas: new Set(),
-        ultimaCompra: ''
-      };
-    }
-    const g = grupos[prod];
-    if (l['Número de factura']) g.facturas.add(l['Número de factura']);
-    const fecha = isoDate(l['Fecha de factura']);
-    if (fecha && fecha > g.ultimaCompra) g.ultimaCompra = fecha;
-  });
-
-  productos = Object.values(grupos).map(g => {
-    const registro = normPorProducto[g.producto];
-    const registrado = !!registro;
-    return {
-      producto: g.producto,
-      categoria: registrado ? (registro.categoria || g.categoriaIA) : g.categoriaIA,
-      nombreNormalizado: registrado ? (registro.nombreNormalizado || g.nombreNormalizadoIA) : g.nombreNormalizadoIA,
-      facturas: g.facturas.size,
-      ultimaCompra: g.ultimaCompra,
-      estado: registrado ? 'Registrado' : 'Nuevo'
-    };
-  }).sort((a,b) => {
-    if (a.estado !== b.estado) return a.estado === 'Nuevo' ? -1 : 1;
-    return a.producto.localeCompare(b.producto);
-  });
+// ── CONSTRUIR VISTA: normaliza las filas de Pendientes_Mapeo y las ordena
+// por "veces visto" (lo más recurrente primero, porque impacta más líneas
+// de compra) y luego alfabéticamente. ──
+function construirVista() {
+  pendientes = dataPendientes.map(r => ({
+    nombreFactura: (r['Nombre en factura']||'').trim(),
+    proveedor: (r['Proveedor']||'').trim(),
+    categoriaSugerida: r['Categoría sugerida'] || '',
+    nombreNormalizadoSugerido: r['Nombre normalizado sugerido'] || '',
+    primeraFecha: isoDate(r['Primera vez visto']),
+    ultimaFecha: isoDate(r['Última vez visto']),
+    vecesVisto: parseInt(r['Veces visto'], 10) || 1
+  })).filter(p => p.nombreFactura)
+    .sort((a,b) => b.vecesVisto - a.vecesVisto || a.nombreFactura.localeCompare(b.nombreFactura));
 }
 
 let estadoActivo = '';
 
 function inicializar() {
-  const nuevos = productos.filter(p => p.estado === 'Nuevo').length;
-  const registrados = productos.length - nuevos;
+  const recurrentes = pendientes.filter(p => p.vecesVisto >= 2).length;
+  const lineasAfectadas = pendientes.reduce((a,p) => a + p.vecesVisto, 0);
 
-  document.getElementById('kpi-total').textContent = productos.length;
-  document.getElementById('kpi-nuevos').textContent = nuevos;
-  document.getElementById('kpi-registrados').textContent = registrados;
-  document.getElementById('tab-badge-todos').textContent = productos.length;
-  document.getElementById('tab-badge-nuevos').textContent = nuevos;
-  document.getElementById('tab-badge-registrados').textContent = registrados;
+  document.getElementById('kpi-total').textContent   = pendientes.length;
+  document.getElementById('kpi-lineas').textContent  = lineasAfectadas;
+  document.getElementById('kpi-maestro').textContent = dataMaestro.length;
+  document.getElementById('tab-badge-todos').textContent       = pendientes.length;
+  document.getElementById('tab-badge-recurrentes').textContent = recurrentes;
 
-  const cats = [...new Set(productos.map(p => p.categoria).filter(Boolean))].sort();
+  const cats = [...new Set(pendientes.map(p => p.categoriaSugerida).filter(Boolean))].sort();
   const selCat = document.getElementById('f-cat');
   const valCat = selCat.value;
-  selCat.innerHTML = '<option value="">Todas las categorías</option>' +
+  selCat.innerHTML = '<option value="">Todas las categorías sugeridas</option>' +
     cats.map(c => `<option value="${c}"${c===valCat?' selected':''}>${c}</option>`).join('');
 
   renderTabla();
 }
 
-function opcionesCategoria(valorActual) {
+function opcionesCategoria(valorActual, idPrefix) {
   const opciones = valorActual && !CATEGORIAS.includes(valorActual) ? [valorActual, ...CATEGORIAS] : CATEGORIAS;
   return '<option value=""' + (!valorActual?' selected':'') + '>Sin categoría</option>' +
     opciones.map(c => `<option value="${c}"${c===valorActual?' selected':''}>${c}</option>`).join('');
+}
+
+// Opciones del selector "Producto maestro": crear nuevo (default) o uno ya existente.
+function opcionesMaestro() {
+  const ordenados = [...dataMaestro].sort((a,b) =>
+    (a['Nombre normalizado']||'').localeCompare(b['Nombre normalizado']||''));
+  return '<option value="">+ Crear producto nuevo</option>' +
+    ordenados.map(m => {
+      const id = m['ID producto'] || '';
+      const nombre = m['Nombre normalizado'] || '';
+      const cat = m['Categoría'] || '';
+      return `<option value="${id}">${id} · ${nombre}${cat ? ' (' + cat + ')' : ''}</option>`;
+    }).join('');
 }
 
 function cambiarTabEstado(estado, el) {
@@ -374,6 +354,13 @@ function cambiarTabEstado(estado, el) {
   document.querySelectorAll('#tabs-estado .tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   renderTabla();
+}
+
+// Muestra/oculta los campos de "crear producto nuevo" según lo que se elija
+// en el selector de producto maestro de esa fila.
+function alCambiarMaestro(rowId) {
+  const esNuevo = !document.getElementById(rowId + '-maestro').value;
+  document.getElementById(rowId + '-nuevo').style.display = esNuevo ? '' : 'none';
 }
 
 function renderTabla() {
@@ -386,10 +373,10 @@ function _renderTabla() {
   const estado = estadoActivo;
   const cat    = document.getElementById('f-cat').value;
 
-  const lista = productos.filter(p => {
-    const matchBusq   = !busq || p.producto.toLowerCase().includes(busq);
-    const matchEstado = !estado || p.estado === estado;
-    const matchCat    = !cat || p.categoria === cat;
+  const lista = pendientes.filter(p => {
+    const matchBusq   = !busq || p.nombreFactura.toLowerCase().includes(busq) || p.proveedor.toLowerCase().includes(busq);
+    const matchEstado = !estado || (estado === 'recurrente' && p.vecesVisto >= 2);
+    const matchCat    = !cat || p.categoriaSugerida === cat;
     return matchBusq && matchEstado && matchCat;
   });
 
@@ -398,32 +385,37 @@ function _renderTabla() {
   const pagina = lista.slice(inicio, inicio + POR_PAGINA);
 
   if (!lista.length) {
-    document.getElementById('tabla-productos').innerHTML = '<div class="empty">Sin resultados.</div>';
+    document.getElementById('tabla-productos').innerHTML =
+      '<div class="empty">' + (pendientes.length ? 'Sin resultados.' : '✓ No hay nada pendiente de mapear.') + '</div>';
     document.getElementById('pag-productos').style.display = 'none';
     return;
   }
 
   const filas = pagina.map((p, idx) => {
     const rowId = 'prow-' + (inicio + idx);
-    const badge = p.estado === 'Nuevo'
-      ? '<span class="badge b-nuevo"><span class="b-dot"></span>Nuevo</span>'
-      : '<span class="badge b-registrado"><span class="b-dot"></span>Registrado</span>';
+    const vistoBadge = p.vecesVisto >= 2
+      ? `<span class="badge b-nuevo"><span class="b-dot"></span>${p.vecesVisto}×</span>`
+      : `<span class="badge b-igual" style="background:var(--surface);color:var(--muted);">1×</span>`;
     return `
       <tr>
-        <td style="font-weight:500;max-width:220px;">${p.producto}</td>
+        <td style="font-weight:500;max-width:200px;">${p.nombreFactura}</td>
+        <td style="color:var(--muted);max-width:140px;">${p.proveedor || '—'}</td>
         <td>
-          <select class="row-sel" id="${rowId}-cat">
-            ${opcionesCategoria(p.categoria)}
+          <select class="row-sel" id="${rowId}-maestro" onchange="alCambiarMaestro('${rowId}')">
+            ${opcionesMaestro()}
           </select>
         </td>
         <td>
-          <input type="text" class="row-input" id="${rowId}-norm" value="${(p.nombreNormalizado||'').replace(/"/g,'&quot;')}" placeholder="Nombre normalizado">
+          <div id="${rowId}-nuevo" style="display:flex;flex-direction:column;gap:5px;min-width:170px;">
+            <input type="text" class="row-input" id="${rowId}-norm" value="${(p.nombreNormalizadoSugerido||'').replace(/"/g,'&quot;')}" placeholder="Nombre normalizado">
+            <select class="row-sel" id="${rowId}-cat">${opcionesCategoria(p.categoriaSugerida)}</select>
+            <input type="text" class="row-input" id="${rowId}-unidad" placeholder="Unidad base (kg, lt, unidad…)">
+          </div>
         </td>
-        <td class="num">${p.facturas}</td>
-        <td style="color:var(--muted);font-size:12px;white-space:nowrap;">${p.ultimaCompra||'—'}</td>
-        <td>${badge}</td>
+        <td>${vistoBadge}</td>
+        <td style="color:var(--muted);font-size:12px;white-space:nowrap;">${p.ultimaFecha||'—'}</td>
         <td>
-          <button class="btn-mini guardar" id="${rowId}-btn" onclick="guardarProducto('${rowId}', '${p.producto.replace(/'/g,"\\'")}')">Guardar</button>
+          <button class="btn-mini guardar" id="${rowId}-btn" onclick="guardarPendiente('${rowId}', '${p.nombreFactura.replace(/'/g,"\\'")}', '${p.proveedor.replace(/'/g,"\\'")}')">Guardar</button>
         </td>
       </tr>`;
   }).join('');
@@ -431,8 +423,8 @@ function _renderTabla() {
   document.getElementById('tabla-productos').innerHTML = `
     <table>
       <thead><tr>
-        <th>Producto</th><th>Categoría</th><th>Nombre normalizado</th>
-        <th style="text-align:right;">Facturas</th><th>Última compra</th><th>Estado</th><th>Acción</th>
+        <th>Nombre en factura</th><th>Proveedor</th><th>Producto maestro</th><th>Crear nuevo (si aplica)</th>
+        <th>Veces visto</th><th>Última vez</th><th>Acción</th>
       </tr></thead>
       <tbody>${filas}</tbody>
     </table>`;
@@ -440,20 +432,38 @@ function _renderTabla() {
   renderPaginacion('pag-productos', total, pagActual, p => { pagActual = p; _renderTabla(); });
 }
 
-async function guardarProducto(rowId, producto) {
-  const nombreNormalizado = document.getElementById(rowId + '-norm').value.trim();
-  const categoria = document.getElementById(rowId + '-cat').value;
+async function guardarPendiente(rowId, nombreFactura, proveedor) {
+  const idProducto = document.getElementById(rowId + '-maestro').value;
   const btn = document.getElementById(rowId + '-btn');
   btn.disabled = true;
   try {
-    await postAP({ modulo: 'guardar_normalizacion', producto, nombre_normalizado: nombreNormalizado, categoria });
-    const item = productos.find(p => p.producto === producto);
-    if (item) {
-      item.nombreNormalizado = nombreNormalizado;
-      item.categoria = categoria;
-      item.estado = 'Registrado';
+    const payload = { modulo: 'resolver_pendiente', nombre_factura: nombreFactura, proveedor };
+    if (idProducto) {
+      payload.id_producto = idProducto;
+    } else {
+      const nombreNormalizado = document.getElementById(rowId + '-norm').value.trim();
+      if (!nombreNormalizado) throw new Error('Ingresá el nombre normalizado del producto nuevo.');
+      const unidadBase = document.getElementById(rowId + '-unidad').value.trim();
+      payload.nombre_normalizado = nombreNormalizado;
+      payload.categoria = document.getElementById(rowId + '-cat').value;
+      payload.unidad_base = unidadBase;
+      payload.unidad_compra_default = unidadBase;
     }
-    showToast(`"${producto}" guardado ✓`, 'success');
+
+    const result = await postAP(payload);
+
+    if (!idProducto) {
+      // Producto recién creado: lo sumamos al catálogo local para que quede
+      // disponible de inmediato en el selector de las demás filas pendientes.
+      dataMaestro.push({
+        'ID producto': result.id_producto,
+        'Nombre normalizado': payload.nombre_normalizado,
+        'Categoría': payload.categoria
+      });
+    }
+
+    pendientes = pendientes.filter(p => !(p.nombreFactura === nombreFactura && p.proveedor === proveedor));
+    showToast(`"${nombreFactura}" mapeado a ${result.id_producto} ✓`, 'success');
     inicializar();
   } catch(e) {
     showToast('No se pudo guardar: ' + e.message, 'error');
