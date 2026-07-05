@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuración de productos · Lorito</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#ffffff;
+      --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
+      --amber:#c87820; --amber-bg:#fdf6e3; --amber-lt:#f0d890;
+      --blue:#185fa5; --blue-bg:#eef4fb; --blue-lt:#b8d0f0;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+
+    header { height:56px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; background:var(--bg); position:sticky; top:0; z-index:20; }
+    .nav-left { display:flex; align-items:center; gap:10px; }
+    .back-btn { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); }
+    .back-btn:hover { color:var(--text); border-color:var(--border-h); }
+    .back-btn svg { width:13px; height:13px; }
+    .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
+    .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 10px; }
+
+    main { max-width:1200px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .page-header { margin-bottom:1.5rem; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .page-header h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+    .page-header p { font-size:13px; color:var(--muted); }
+
+    .kpi-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:1.25rem; }
+    .kpi-box { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; }
+    .kpi-val { font-family:var(--font-d); font-size:22px; font-weight:700; letter-spacing:-.02em; color:var(--text); }
+    .kpi-lbl { font-size:11px; color:var(--muted); margin-top:2px; }
+    .kpi-val.verde  { color:var(--green); }
+    .kpi-val.ambar  { color:var(--amber); }
+
+    .toolbar { display:flex; gap:8px; margin-bottom:1rem; flex-wrap:wrap; align-items:center; }
+    .search-wrap { position:relative; flex:1; min-width:200px; }
+    .search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--subtle); pointer-events:none; }
+    .search-input { width:100%; background:var(--card); border:1px solid var(--border); border-radius:9px; color:var(--text); font-family:var(--font-b); font-size:13px; padding:8px 12px 8px 32px; outline:none; }
+    .search-input:focus { border-color:var(--green); }
+    .filter-sel { font-size:13px; padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--text); outline:none; cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:30px; }
+
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; }
+    .tabla-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th { text-align:left; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:10px 12px; border-bottom:1px solid var(--border); white-space:nowrap; background:var(--surface); }
+    td { padding:9px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:var(--surface); }
+    .num { text-align:right; font-variant-numeric:tabular-nums; }
+
+    .badge { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; white-space:nowrap; }
+    .b-nuevo      { background:var(--amber-bg); color:var(--amber); }
+    .b-registrado { background:var(--green-bg); color:var(--green); }
+    .b-dot { width:5px; height:5px; border-radius:50%; background:currentColor; }
+
+    .row-input { width:100%; min-width:160px; font-size:12.5px; padding:6px 9px; border-radius:7px; border:1px solid var(--border); background:var(--surface); color:var(--text); outline:none; }
+    .row-input:focus { border-color:var(--green); }
+    .row-sel { font-size:12.5px; padding:6px 9px; border-radius:7px; border:1px solid var(--border); background:var(--surface); color:var(--text); outline:none; cursor:pointer; min-width:140px; }
+    .row-sel:focus { border-color:var(--green); }
+
+    .btn-mini { font-size:11.5px; font-weight:600; padding:6px 11px; border-radius:7px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; white-space:nowrap; }
+    .btn-mini:hover { border-color:var(--border-h); color:var(--text); }
+    .btn-mini.guardar { border-color:var(--green-lt); background:var(--green-bg); color:var(--green); }
+    .btn-mini.guardar:hover { background:var(--green); color:#fff; }
+    .btn-mini:disabled { opacity:.5; cursor:default; }
+
+    .pagination { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-top:1px solid var(--border); font-size:12px; color:var(--muted); }
+    .pag-btns { display:flex; gap:4px; }
+    .pag-btn { padding:4px 10px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:12px; cursor:pointer; }
+    .pag-btn:hover:not(:disabled) { background:var(--surface); color:var(--text); }
+    .pag-btn:disabled { opacity:.4; cursor:default; }
+    .pag-btn.active { background:var(--green); color:#fff; border-color:var(--green); }
+
+    .empty { text-align:center; padding:3rem; color:var(--subtle); font-size:13px; }
+    .spinner { display:inline-block; width:18px; height:18px; border:2px solid var(--border); border-top-color:var(--green); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
+    .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+    .sdot.off { background:var(--subtle); }
+
+    .toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px); background:var(--card); border:1px solid var(--border); border-radius:10px; padding:11px 18px; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s; opacity:0; z-index:100; box-shadow:0 4px 20px rgba(0,0,0,.08); }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+    .toast.success { border-color:var(--green); color:var(--green); }
+    .toast.error   { border-color:var(--red);   color:var(--red); }
+    .toast svg { width:16px; height:16px; flex-shrink:0; }
+
+    @media (max-width:700px) {
+      header { padding:0 1rem; } main { padding:1.5rem 1rem 3rem; }
+      .kpi-strip { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Configuración de productos</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<main>
+  <div class="page-header">
+    <div>
+      <h1>Configuración de productos</h1>
+      <p>Productos comprados (hoja Desglose_IA) · administrá el nombre normalizado y detectá productos nuevos</p>
+    </div>
+    <div id="status-carga" style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;">
+      <span class="spinner"></span> Cargando…
+    </div>
+  </div>
+
+  <div class="kpi-strip">
+    <div class="kpi-box">
+      <div class="kpi-val" id="kpi-total">—</div>
+      <div class="kpi-lbl">Productos comprados (únicos)</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val ambar" id="kpi-nuevos">—</div>
+      <div class="kpi-lbl">Nuevos sin registrar</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val verde" id="kpi-registrados">—</div>
+      <div class="kpi-lbl">Registrados</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" class="search-input" id="s-prod" placeholder="Buscar producto…" oninput="renderTabla()">
+    </div>
+    <select class="filter-sel" id="f-estado" onchange="renderTabla()">
+      <option value="">Todos los estados</option>
+      <option value="Nuevo">Solo nuevos</option>
+      <option value="Registrado">Solo registrados</option>
+    </select>
+    <select class="filter-sel" id="f-cat" onchange="renderTabla()">
+      <option value="">Todas las categorías</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <div class="tabla-wrap" id="tabla-productos">
+      <div class="empty"><span class="spinner"></span></div>
+    </div>
+    <div class="pagination" id="pag-productos" style="display:none;"></div>
+  </div>
+
+  <div class="status-bar">
+    <div style="display:flex;align-items:center;gap:6px;"><span class="sdot" id="conn-dot"></span><span id="conn-label">Conectando…</span></div>
+    <span style="margin-left:auto;">v1.0 · Configuración de productos · Grupo del Sol</span>
+  </div>
+</main>
+
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ─── CONFIGURACIÓN ────────────────────────────────────────────────
+// Sheet "Registro compras LORITO_Brewhouse - IA".
+const SHEET_ID = '1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw';
+const APPS_SCRIPT_AP = 'https://script.google.com/macros/s/AKfycbyqdI4EGUgcahTiyz_GBwvUQLWORT_TUVBvFMPGdMve1-3q3ge8mioZ458_zsbMbUqa/exec';
+// ─────────────────────────────────────────────────────────────────
+
+const CATEGORIAS = [
+  'Carnes','Mariscos','Aves','Lácteos','Aceites y Grasas','Frutas y Verduras',
+  'Granos y Cereales','Bebidas','Panadería y Repostería','Condimentos y Especias',
+  'Limpieza e Higiene','Empaques y Desechables','Servicios','Otros'
+];
+
+const hoy = new Date();
+document.getElementById('date-chip').textContent =
+  hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
+
+const fmt = n => Number(n||0).toLocaleString('es-CR');
+
+let dataDesglose = [];
+let dataNorm     = [];
+let productos    = []; // dataset unido y calculado
+let pagActual    = 1;
+const POR_PAGINA = 20;
+
+function gvizLoad(hoja, expectedCol) {
+  return new Promise(function(resolve) {
+    var cb    = '_cp_' + Math.random().toString(36).slice(2,10);
+    var url   = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
+              + '/gviz/tq?tqx=responseHandler:' + cb
+              + '&sheet=' + encodeURIComponent(hoja);
+    var timer = setTimeout(function() { cleanup(); resolve([]); }, 15000);
+    function cleanup() {
+      clearTimeout(timer);
+      try { delete window[cb]; } catch(e) {}
+      try { if (s && s.parentNode) document.body.removeChild(s); } catch(e) {}
+    }
+    window[cb] = function(data) {
+      cleanup();
+      try {
+        var colsMeta = data.table.cols || [];
+        var cols  = colsMeta.map(function(c){ return c.label||c.id||''; });
+        if (expectedCol && cols.indexOf(expectedCol) === -1) { resolve([]); return; }
+        var rows = (data.table.rows||[]).filter(function(r){ return r&&r.c; }).map(function(row){
+          var obj = {};
+          cols.forEach(function(col,i){
+            var cell = row.c[i];
+            obj[col] = cell ? (cell.f!=null?cell.f:(cell.v!=null?cell.v:'')) : '';
+          });
+          return obj;
+        });
+        resolve(rows);
+      } catch(e2) { resolve([]); }
+    };
+    var s = document.createElement('script');
+    s.onerror = function(){ cleanup(); resolve([]); };
+    s.src = url;
+    document.body.appendChild(s);
+  });
+}
+
+async function postAP(payload) {
+  const resp = await fetch(APPS_SCRIPT_AP, {
+    method: 'POST',
+    body: new URLSearchParams({ data: JSON.stringify(payload) })
+  });
+  const json = await resp.json();
+  if (!json.ok) throw new Error(json.error || 'Error al guardar');
+  return json.result;
+}
+
+async function cargarDatos() {
+  document.getElementById('status-carga').innerHTML = '<span class="spinner"></span> Conectando con Google Sheets…';
+  try {
+    const [dD, dN] = await Promise.all([
+      gvizLoad('Desglose_IA', 'Producto'),
+      gvizLoad('Normalizacion_Productos', 'Nombre normalizado').catch(() => [])
+    ]);
+
+    if (!dD.length) throw new Error('Sin datos en la hoja Desglose_IA');
+
+    dataDesglose = dD;
+    dataNorm     = dN;
+
+    document.getElementById('conn-dot').classList.remove('off');
+    document.getElementById('conn-label').textContent = 'Conectado · Google Sheets';
+    document.getElementById('status-carga').innerHTML =
+      '<span style="color:var(--green);">✓</span> ' + dataDesglose.length + ' líneas de compra cargadas';
+
+    construirProductos();
+    inicializar();
+
+  } catch(e) {
+    console.error('Error cargando configuración de productos:', e.message);
+    document.getElementById('conn-dot').classList.add('off');
+    document.getElementById('conn-label').textContent = 'Error de conexión';
+    document.getElementById('status-carga').innerHTML =
+      '<span style="color:var(--red);">✕</span> ' + e.message;
+    document.getElementById('tabla-productos').innerHTML =
+      '<div class="empty">No se pudo conectar. Verificá que el Sheet sea público (Compartir → Cualquiera con el enlace).</div>';
+  }
+}
+
+// Convierte fechas formateadas por gviz como "D/M/YYYY" a ISO "YYYY-MM-DD".
+function isoDate(str) {
+  const s = String(str||'').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return '';
+  const [, d, mo, y] = m;
+  return y + '-' + mo.padStart(2,'0') + '-' + d.padStart(2,'0');
+}
+
+// ── CONSTRUIR DATASET: agrupa Desglose_IA por Producto y cruza con el
+// catálogo Normalizacion_Productos (fuente de verdad del nombre normalizado). ──
+function construirProductos() {
+  const normPorProducto = {};
+  dataNorm.forEach(r => {
+    const prod = (r['Producto']||'').trim();
+    if (!prod) return;
+    normPorProducto[prod] = {
+      nombreNormalizado: r['Nombre normalizado'] || '',
+      categoria: r['Categoría'] || ''
+    };
+  });
+
+  const grupos = {};
+  dataDesglose.forEach(l => {
+    const prod = (l['Producto']||'').trim();
+    if (!prod) return;
+    if (!grupos[prod]) {
+      grupos[prod] = {
+        producto: prod,
+        categoriaIA: l['Categoría'] || '',
+        nombreNormalizadoIA: l['Nombre normalizado'] || '',
+        facturas: new Set(),
+        ultimaCompra: ''
+      };
+    }
+    const g = grupos[prod];
+    if (l['Número de factura']) g.facturas.add(l['Número de factura']);
+    const fecha = isoDate(l['Fecha de factura']);
+    if (fecha && fecha > g.ultimaCompra) g.ultimaCompra = fecha;
+  });
+
+  productos = Object.values(grupos).map(g => {
+    const registro = normPorProducto[g.producto];
+    const registrado = !!registro;
+    return {
+      producto: g.producto,
+      categoria: registrado ? (registro.categoria || g.categoriaIA) : g.categoriaIA,
+      nombreNormalizado: registrado ? (registro.nombreNormalizado || g.nombreNormalizadoIA) : g.nombreNormalizadoIA,
+      facturas: g.facturas.size,
+      ultimaCompra: g.ultimaCompra,
+      estado: registrado ? 'Registrado' : 'Nuevo'
+    };
+  }).sort((a,b) => {
+    if (a.estado !== b.estado) return a.estado === 'Nuevo' ? -1 : 1;
+    return a.producto.localeCompare(b.producto);
+  });
+}
+
+function inicializar() {
+  const nuevos = productos.filter(p => p.estado === 'Nuevo').length;
+  const registrados = productos.length - nuevos;
+
+  document.getElementById('kpi-total').textContent = productos.length;
+  document.getElementById('kpi-nuevos').textContent = nuevos;
+  document.getElementById('kpi-registrados').textContent = registrados;
+
+  const cats = [...new Set(productos.map(p => p.categoria).filter(Boolean))].sort();
+  const selCat = document.getElementById('f-cat');
+  const valCat = selCat.value;
+  selCat.innerHTML = '<option value="">Todas las categorías</option>' +
+    cats.map(c => `<option value="${c}"${c===valCat?' selected':''}>${c}</option>`).join('');
+
+  renderTabla();
+}
+
+function opcionesCategoria(valorActual) {
+  const opciones = valorActual && !CATEGORIAS.includes(valorActual) ? [valorActual, ...CATEGORIAS] : CATEGORIAS;
+  return '<option value=""' + (!valorActual?' selected':'') + '>Sin categoría</option>' +
+    opciones.map(c => `<option value="${c}"${c===valorActual?' selected':''}>${c}</option>`).join('');
+}
+
+function renderTabla() {
+  pagActual = 1;
+  _renderTabla();
+}
+
+function _renderTabla() {
+  const busq   = document.getElementById('s-prod').value.toLowerCase();
+  const estado = document.getElementById('f-estado').value;
+  const cat    = document.getElementById('f-cat').value;
+
+  const lista = productos.filter(p => {
+    const matchBusq   = !busq || p.producto.toLowerCase().includes(busq);
+    const matchEstado = !estado || p.estado === estado;
+    const matchCat    = !cat || p.categoria === cat;
+    return matchBusq && matchEstado && matchCat;
+  });
+
+  const total  = lista.length;
+  const inicio = (pagActual-1) * POR_PAGINA;
+  const pagina = lista.slice(inicio, inicio + POR_PAGINA);
+
+  if (!lista.length) {
+    document.getElementById('tabla-productos').innerHTML = '<div class="empty">Sin resultados.</div>';
+    document.getElementById('pag-productos').style.display = 'none';
+    return;
+  }
+
+  const filas = pagina.map((p, idx) => {
+    const rowId = 'prow-' + (inicio + idx);
+    const badge = p.estado === 'Nuevo'
+      ? '<span class="badge b-nuevo"><span class="b-dot"></span>Nuevo</span>'
+      : '<span class="badge b-registrado"><span class="b-dot"></span>Registrado</span>';
+    return `
+      <tr>
+        <td style="font-weight:500;max-width:220px;">${p.producto}</td>
+        <td>
+          <select class="row-sel" id="${rowId}-cat">
+            ${opcionesCategoria(p.categoria)}
+          </select>
+        </td>
+        <td>
+          <input type="text" class="row-input" id="${rowId}-norm" value="${(p.nombreNormalizado||'').replace(/"/g,'&quot;')}" placeholder="Nombre normalizado">
+        </td>
+        <td class="num">${p.facturas}</td>
+        <td style="color:var(--muted);font-size:12px;white-space:nowrap;">${p.ultimaCompra||'—'}</td>
+        <td>${badge}</td>
+        <td>
+          <button class="btn-mini guardar" id="${rowId}-btn" onclick="guardarProducto('${rowId}', '${p.producto.replace(/'/g,"\\'")}')">Guardar</button>
+        </td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('tabla-productos').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Producto</th><th>Categoría</th><th>Nombre normalizado</th>
+        <th style="text-align:right;">Facturas</th><th>Última compra</th><th>Estado</th><th>Acción</th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+
+  renderPaginacion('pag-productos', total, pagActual, p => { pagActual = p; _renderTabla(); });
+}
+
+async function guardarProducto(rowId, producto) {
+  const nombreNormalizado = document.getElementById(rowId + '-norm').value.trim();
+  const categoria = document.getElementById(rowId + '-cat').value;
+  const btn = document.getElementById(rowId + '-btn');
+  btn.disabled = true;
+  try {
+    await postAP({ modulo: 'guardar_normalizacion', producto, nombre_normalizado: nombreNormalizado, categoria });
+    const item = productos.find(p => p.producto === producto);
+    if (item) {
+      item.nombreNormalizado = nombreNormalizado;
+      item.categoria = categoria;
+      item.estado = 'Registrado';
+    }
+    showToast(`"${producto}" guardado ✓`, 'success');
+    inicializar();
+  } catch(e) {
+    showToast('No se pudo guardar: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderPaginacion(id, total, pag, cb) {
+  const pagEl   = document.getElementById(id);
+  const totalPag = Math.ceil(total / POR_PAGINA);
+  if (totalPag <= 1) { pagEl.style.display = 'none'; return; }
+
+  pagEl.style.display = 'flex';
+  const desde = (pag-1)*POR_PAGINA + 1;
+  const hasta = Math.min(pag*POR_PAGINA, total);
+
+  let btns = '';
+  for (let i = 1; i <= totalPag; i++) {
+    if (i === 1 || i === totalPag || Math.abs(i - pag) <= 1) {
+      btns += `<button class="pag-btn${i===pag?' active':''}" onclick="(${cb.toString()})(${i})">${i}</button>`;
+    } else if (Math.abs(i - pag) === 2) {
+      btns += `<span style="padding:4px;">…</span>`;
+    }
+  }
+
+  pagEl.innerHTML = `
+    <span>${desde}–${hasta} de ${total}</span>
+    <div class="pag-btns">
+      <button class="pag-btn" onclick="(${cb.toString()})(${pag-1})" ${pag<=1?'disabled':''}>← Anterior</button>
+      ${btns}
+      <button class="pag-btn" onclick="(${cb.toString()})(${pag+1})" ${pag>=totalPag?'disabled':''}>Siguiente →</button>
+    </div>`;
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').innerHTML = type==='success'
+    ? '<polyline points="3 8 7 12 13 4"/>'
+    : '<line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = `toast ${type}`;
+  requestAnimationFrame(()=>t.classList.add('show'));
+  setTimeout(()=>t.classList.remove('show'), 3500);
+}
+
+cargarDatos();
+</script>
+</body>
+</html>
