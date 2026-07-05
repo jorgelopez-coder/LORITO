@@ -232,9 +232,9 @@
 
 <script>
 // ─── CONFIG ──────────────────────────────────────────────────────
-const EMAIL_GERENCIA     = 'TODO_GERENCIA_LORITO@pendiente.com';
-const APPS_SCRIPT_RRHH   = 'TODO_APPS_SCRIPT_RRHH_LORITO';
-const APPS_SCRIPT_COSTOS = 'TODO_APPS_SCRIPT_COSTOS_LORITO';
+const EMAIL_GERENCIA        = 'jorge.lopez@casaaguizotes.com';
+const APPS_SCRIPT_RRHH      = 'TODO_APPS_SCRIPT_RRHH_LORITO';
+const APPS_SCRIPT_INVENTARIO= 'TODO_APPS_SCRIPT_INVENTARIO_LORITO'; // Web App de Code-inventario-backend.gs
 // ─────────────────────────────────────────────────────────────────
 
 const hoy = new Date();
@@ -277,9 +277,12 @@ function normalizarProducto(r) {
   };
 }
 
-// ID del Sheet de costos y nombre exacto de la hoja
+// ID del Sheet de costos (catálogo de productos) y nombre exacto de la hoja
 const COSTOS_SHEET_ID  = '1PtT9AHv2drY7oLygHKWMhHQgeOuT20_cD_igqu6ijyA';
 const COSTOS_HOJA_PROD = 'Productos';
+
+// ID del Sheet dedicado "Inventarios - Lorito IA" donde se guarda el historial de tomas
+const INVENTARIO_SHEET_ID = '14kRIMIe0BKX6ElMnx4NuLdO5mM3TeNpQaYuTFf13el0';
 
 // Leer via API pública de Google Sheets (gviz) — no requiere auth ni Apps Script
 async function cargarProductosSheet() {
@@ -716,7 +719,7 @@ async function guardarTemaEnDrive(toma) {
   };
 
   try {
-    await fetch(APPS_SCRIPT_COSTOS, {
+    await fetch(APPS_SCRIPT_INVENTARIO, {
       method: 'POST',
       body: new URLSearchParams({ data: JSON.stringify(payload) })
     });
@@ -804,7 +807,7 @@ async function renderHistorial() {
   // Leer tomas del Sheet via gviz
   let tomasSheet = [];
   try {
-    const url = `https://docs.google.com/spreadsheets/d/1PtT9AHv2drY7oLygHKWMhHQgeOuT20_cD_igqu6ijyA/gviz/tq?tqx=responseHandler:_invHist&sheet=${encodeURIComponent('HISTORIAL_inventario')}`;
+    const url = `https://docs.google.com/spreadsheets/d/${INVENTARIO_SHEET_ID}/gviz/tq?tqx=responseHandler:_invHist&sheet=${encodeURIComponent('HISTORIAL_inventario')}`;
     const rows = await new Promise((resolve, reject) => {
       const cb = '_invHist';
       const s  = document.createElement('script');
