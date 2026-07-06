@@ -50,12 +50,25 @@ const DESGLOSE_COL = {
 const HOJA_MAESTRO = 'Maestro_Productos';
 const MAESTRO_COL = {
   ID_PRODUCTO: 1, NOMBRE_NORMALIZADO: 2, CATEGORIA: 3,
-  UNIDAD_BASE: 4, UNIDAD_COMPRA_DEFAULT: 5, FECHA_CREACION: 6
+  AREA_NEGOCIO: 4, FECHA_CREACION: 5
 };
 const MAESTRO_ENCABEZADOS = [
   'ID producto', 'Nombre normalizado', 'Categoría',
-  'Unidad base', 'Unidad de compra default', 'Fecha de creación'
+  'Área de negocio', 'Fecha de creación'
 ];
+
+// Listas compartidas de categorías / área de negocio — usadas acá y también
+// por costos-productos.html (que antes las tenía hardcodeadas/en localStorage).
+// Se administran desde config-catalogos.html.
+const HOJA_CATEGORIAS = 'Categorias_Productos';
+const CATEGORIAS_DEFAULT = [
+  'Carnes', 'Mariscos', 'Aves', 'Lácteos', 'Aceites y Grasas', 'Frutas y Verduras',
+  'Granos y Cereales', 'Bebidas', 'Panadería y Repostería', 'Condimentos y Especias',
+  'Limpieza e Higiene', 'Empaques y Desechables', 'Servicios', 'Otros'
+];
+
+const HOJA_AREAS = 'Areas_Negocio';
+const AREAS_DEFAULT = ['Cocina', 'Bar', 'Consumible', 'Otro'];
 
 const HOJA_ALIAS = 'Alias_Productos';
 const ALIAS_COL = { NOMBRE_FACTURA: 1, PROVEEDOR: 2, ID_PRODUCTO: 3, FECHA_REGISTRO: 4 };
@@ -76,12 +89,12 @@ const PEND_ENCABEZADOS = [
 
 const HOJA_COSTO_PROMEDIO = 'Costo_Promedio';
 const COSTO_COL = {
-  ID_PRODUCTO: 1, NOMBRE_NORMALIZADO: 2, CATEGORIA: 3, UNIDAD_BASE: 4,
-  COSTO_ULTIMO: 5, FECHA_ULTIMA_COMPRA: 6, COSTO_PROM_30D: 7, COSTO_PROM_90D: 8,
-  FECHA_ACTUALIZACION: 9
+  ID_PRODUCTO: 1, NOMBRE_NORMALIZADO: 2, CATEGORIA: 3,
+  COSTO_ULTIMO: 4, FECHA_ULTIMA_COMPRA: 5, COSTO_PROM_30D: 6, COSTO_PROM_90D: 7,
+  FECHA_ACTUALIZACION: 8
 };
 const COSTO_ENCABEZADOS = [
-  'ID producto', 'Nombre normalizado', 'Categoría', 'Unidad base',
+  'ID producto', 'Nombre normalizado', 'Categoría',
   'Costo último', 'Fecha última compra', 'Costo promedio 30 días',
   'Costo promedio 90 días', 'Fecha de actualización'
 ];
@@ -177,6 +190,27 @@ function doPost(e) {
         break;
       case 'resolver_pendiente':
         result = resolverPendiente(payload);
+        break;
+      case 'guardar_producto_maestro':
+        result = guardarProductoMaestro(payload);
+        break;
+      case 'eliminar_producto_maestro':
+        result = eliminarProductoMaestro(payload);
+        break;
+      case 'fusionar_productos_maestro':
+        result = fusionarProductosMaestro(payload);
+        break;
+      case 'guardar_categoria':
+        result = guardarCategoria(payload);
+        break;
+      case 'eliminar_categoria':
+        result = eliminarCategoria(payload);
+        break;
+      case 'guardar_area_negocio':
+        result = guardarAreaNegocio(payload);
+        break;
+      case 'eliminar_area_negocio':
+        result = eliminarAreaNegocio(payload);
         break;
       default:
         throw new Error('Módulo no reconocido: ' + payload.modulo);
@@ -785,8 +819,7 @@ function crearProductoMaestro(datos) {
   hoja.getRange(fila, MAESTRO_COL.ID_PRODUCTO).setValue(id);
   hoja.getRange(fila, MAESTRO_COL.NOMBRE_NORMALIZADO).setValue(datos.nombre_normalizado);
   hoja.getRange(fila, MAESTRO_COL.CATEGORIA).setValue(datos.categoria || '');
-  hoja.getRange(fila, MAESTRO_COL.UNIDAD_BASE).setValue(datos.unidad_base || '');
-  hoja.getRange(fila, MAESTRO_COL.UNIDAD_COMPRA_DEFAULT).setValue(datos.unidad_compra_default || '');
+  hoja.getRange(fila, MAESTRO_COL.AREA_NEGOCIO).setValue(datos.area_negocio || '');
   hoja.getRange(fila, MAESTRO_COL.FECHA_CREACION).setValue(new Date());
   return id;
 }
@@ -808,14 +841,21 @@ function resolverAlias(nombreFactura, proveedor, categoriaSugerida, nombreNormal
 // (Σ cantidad×precio / Σ cantidad) a 30 y 90 días para un id_producto,
 // juntando todas las líneas de todos sus alias. Excluye precio ≤ 0
 // (notas de crédito/devoluciones) para no distorsionar el promedio.
-function recalcularCostoPromedio(idProducto) {
+//
+// `lineaActual` (opcional) son los datos de la línea que se acaba de procesar
+// desde el script de OCR: { numeroFactura, producto, cantidad, precio, fecha }.
+// Desglose_IA vive en otro Sheet y se sincroniza hacia acá por fuera de este
+// script (fórmula / proceso aparte), así que puede no estar actualizado en
+// el instante en que llega el aviso — por eso esa línea se suma "a mano" acá,
+// y se excluye la copia que pueda aparecer en el escaneo de Desglose_IA para
+// no contarla dos veces una vez que sí se sincronice.
+function recalcularCostoPromedio(idProducto, lineaActual) {
   const aliases = obtenerAliasesDeProducto(getHojaAlias(), idProducto);
   if (!aliases.length) return null;
 
   const hojaDesglose = getHojaDesglose();
   const nFilas = hojaDesglose.getLastRow() - 1;
-  if (nFilas <= 0) return null;
-  const datos = hojaDesglose.getRange(2, 1, nFilas, DESGLOSE_COL.FECHA_CARGA).getValues();
+  const datos = nFilas > 0 ? hojaDesglose.getRange(2, 1, nFilas, DESGLOSE_COL.FECHA_CARGA).getValues() : [];
 
   const ahora = new Date();
   const MS_DIA = 24 * 60 * 60 * 1000;
@@ -823,6 +863,15 @@ function recalcularCostoPromedio(idProducto) {
   let sum30 = 0, cant30 = 0, sum90 = 0, cant90 = 0;
   let ultimoPrecio = 0, ultimaFecha = null;
   let nombreNorm = '', categoria = '';
+
+  function acumular(precio, cantidad, fecha) {
+    if (!precio || precio <= 0 || !cantidad) return; // excluye notas de crédito / líneas sin cantidad
+    if (!(fecha instanceof Date) || isNaN(fecha.getTime())) return;
+    const antiguedadDias = (ahora - fecha) / MS_DIA;
+    if (antiguedadDias <= 30) { sum30 += cantidad * precio; cant30 += cantidad; }
+    if (antiguedadDias <= 90) { sum90 += cantidad * precio; cant90 += cantidad; }
+    if (!ultimaFecha || fecha > ultimaFecha) { ultimaFecha = fecha; ultimoPrecio = precio; }
+  }
 
   datos.forEach(function(fila) {
     const producto = String(fila[DESGLOSE_COL.PRODUCTO - 1] || '').trim();
@@ -832,22 +881,26 @@ function recalcularCostoPromedio(idProducto) {
     });
     if (!coincide) return;
 
+    // Ya la contamos explícitamente más abajo vía lineaActual — no duplicar
+    // si esta misma factura+producto ya alcanzó a sincronizarse acá.
+    if (lineaActual && lineaActual.numeroFactura &&
+        String(fila[DESGLOSE_COL.NUMERO_FACTURA - 1]) === lineaActual.numeroFactura &&
+        producto === lineaActual.producto) {
+      return;
+    }
+
     const precio = parseFloat(fila[DESGLOSE_COL.PRECIO_UNITARIO - 1]) || 0;
     const cantidad = parseFloat(fila[DESGLOSE_COL.CANTIDAD - 1]) || 0;
-    if (precio <= 0 || !cantidad) return; // excluye notas de crédito / líneas sin cantidad
-
     const fechaRaw = fila[DESGLOSE_COL.FECHA_FACTURA - 1];
     const fecha = fechaRaw instanceof Date ? fechaRaw : new Date(fechaRaw);
-    if (isNaN(fecha.getTime())) return;
-
-    const antiguedadDias = (ahora - fecha) / MS_DIA;
-    if (antiguedadDias <= 30) { sum30 += cantidad * precio; cant30 += cantidad; }
-    if (antiguedadDias <= 90) { sum90 += cantidad * precio; cant90 += cantidad; }
-
-    if (!ultimaFecha || fecha > ultimaFecha) { ultimaFecha = fecha; ultimoPrecio = precio; }
+    acumular(precio, cantidad, fecha);
     if (fila[DESGLOSE_COL.NOMBRE_NORMALIZADO - 1]) nombreNorm = fila[DESGLOSE_COL.NOMBRE_NORMALIZADO - 1];
     if (fila[DESGLOSE_COL.CATEGORIA - 1]) categoria = fila[DESGLOSE_COL.CATEGORIA - 1];
   });
+
+  if (lineaActual) {
+    acumular(lineaActual.precio, lineaActual.cantidad, lineaActual.fecha);
+  }
 
   const hojaMaestro = getHojaMaestro();
   const filaMaestroIdx = filaMaestroPorId(hojaMaestro, idProducto);
@@ -862,7 +915,6 @@ function recalcularCostoPromedio(idProducto) {
   hojaCosto.getRange(filaCosto, COSTO_COL.ID_PRODUCTO).setValue(idProducto);
   hojaCosto.getRange(filaCosto, COSTO_COL.NOMBRE_NORMALIZADO).setValue(datosMaestro ? datosMaestro[MAESTRO_COL.NOMBRE_NORMALIZADO - 1] : nombreNorm);
   hojaCosto.getRange(filaCosto, COSTO_COL.CATEGORIA).setValue(datosMaestro ? datosMaestro[MAESTRO_COL.CATEGORIA - 1] : categoria);
-  hojaCosto.getRange(filaCosto, COSTO_COL.UNIDAD_BASE).setValue(datosMaestro ? datosMaestro[MAESTRO_COL.UNIDAD_BASE - 1] : '');
   hojaCosto.getRange(filaCosto, COSTO_COL.COSTO_ULTIMO).setValue(ultimoPrecio);
   hojaCosto.getRange(filaCosto, COSTO_COL.FECHA_ULTIMA_COMPRA).setValue(ultimaFecha || '');
   hojaCosto.getRange(filaCosto, COSTO_COL.COSTO_PROM_30D).setValue(cant30 > 0 ? sum30 / cant30 : ultimoPrecio);
@@ -873,10 +925,13 @@ function recalcularCostoPromedio(idProducto) {
 }
 
 // Llamar por cada línea de producto que se escriba en Desglose_IA (desde el
-// script de OCR de facturas): { producto, proveedor, categoria, nombre_normalizado }.
-// Si el producto ya está mapeado, actualiza el costo promedio al toque.
-// Si no, la línea queda "pendiente" — no hace falta reintentar, quien la
-// resuelva una vez desde config-productos.html dispara el recálculo.
+// script de OCR de facturas): { producto, proveedor, categoria,
+// nombre_normalizado, cantidad, precio_unitario, fecha_factura, numero_factura }.
+// Si el producto ya está mapeado, actualiza el costo promedio al toque —
+// incluyendo esta misma línea aunque Desglose_IA (que vive en otro Sheet)
+// todavía no la tenga sincronizada. Si no está mapeado, la línea queda
+// "pendiente" — no hace falta reintentar, quien la resuelva una vez desde
+// config-productos.html dispara el recálculo.
 function procesarLineaCompra(p) {
   if (!p.producto) throw new Error('Falta el nombre del producto.');
   const nombreFactura = String(p.producto).trim();
@@ -885,24 +940,38 @@ function procesarLineaCompra(p) {
   const idProducto = resolverAlias(nombreFactura, proveedor, p.categoria, p.nombre_normalizado);
   if (!idProducto) return { resultado: 'pendiente' };
 
-  recalcularCostoPromedio(idProducto);
+  const fecha = p.fecha_factura ? new Date(p.fecha_factura + 'T00:00:00') : null;
+  recalcularCostoPromedio(idProducto, {
+    numeroFactura: String(p.numero_factura || ''),
+    producto: nombreFactura,
+    cantidad: parseFloat(p.cantidad) || 0,
+    precio: parseFloat(p.precio_unitario) || 0,
+    fecha: fecha
+  });
   return { resultado: 'actualizado', id_producto: idProducto };
 }
 
 // Usada desde config-productos.html para resolver una fila de Pendientes_Mapeo:
 // o se asigna a un id_producto ya existente en el Maestro, o se crea uno nuevo
-// (con nombre_normalizado + categoria + unidad_base + unidad_compra_default).
+// con solo el nombre normalizado (la pantalla ya no pide categoría/unidad acá
+// — la categoría sugerida por la IA se usa como valor inicial en silencio, y
+// la categoría/área de negocio definitivas se terminan de ajustar después
+// desde la pestaña "Catálogo" del mismo config-productos.html).
 function resolverPendiente(p) {
   if (!p.nombre_factura) throw new Error('Falta el nombre en factura.');
   const proveedor = String(p.proveedor || '').trim();
 
   let idProducto = p.id_producto;
   if (!idProducto) {
+    if (!p.nombre_normalizado) throw new Error('Falta el nombre normalizado para crear el producto.');
+    const hojaPend = getHojaPendientes();
+    const filaPend = filaPendientePorClave(hojaPend, p.nombre_factura, proveedor);
+    const categoriaSugerida = filaPend !== -1
+      ? hojaPend.getRange(filaPend, PEND_COL.CATEGORIA_SUGERIDA).getValue()
+      : '';
     idProducto = crearProductoMaestro({
       nombre_normalizado: p.nombre_normalizado,
-      categoria: p.categoria,
-      unidad_base: p.unidad_base,
-      unidad_compra_default: p.unidad_compra_default
+      categoria: categoriaSugerida
     });
   } else if (filaMaestroPorId(getHojaMaestro(), idProducto) === -1) {
     throw new Error('No existe ese producto en el Maestro: ' + idProducto);
@@ -967,4 +1036,273 @@ function migrarNormalizacionAMaestro() {
 
   Logger.log('Migración completa: ' + productosCreados + ' productos en Maestro_Productos, ' +
     aliasCreados + ' alias en Alias_Productos, ' + saltados + ' filas sin producto saltadas.');
+}
+
+// Función de UN SOLO USO: correr manualmente desde este editor para cargar a
+// Pendientes_Mapeo el backlog de compras que ya existían en Desglose_IA antes
+// de conectar el aviso automático desde el OCR (procesar_linea_compra). Sin
+// esto, esas líneas viejas nunca aparecen en config-productos.html porque esa
+// pantalla solo lee Pendientes_Mapeo, no Desglose_IA directamente. Correrla
+// después de migrarNormalizacionAMaestro(). Es seguro volver a correrla — usa
+// el mismo upsert que procesar_linea_compra, no duplica filas.
+function poblarPendientesDesdeDesglose() {
+  const hojaDesglose = getHojaDesglose();
+  const nFilas = hojaDesglose.getLastRow() - 1;
+  if (nFilas <= 0) { Logger.log('Desglose_IA está vacía.'); return; }
+  const datos = hojaDesglose.getRange(2, 1, nFilas, DESGLOSE_COL.FECHA_CARGA).getValues();
+
+  const hojaAlias = getHojaAlias();
+  const pendientesDistintos = new Set();
+  let lineasSinMapear = 0;
+
+  datos.forEach(function(fila) {
+    const producto = String(fila[DESGLOSE_COL.PRODUCTO - 1] || '').trim();
+    const proveedor = String(fila[DESGLOSE_COL.PROVEEDOR - 1] || '').trim();
+    if (!producto) return;
+    if (idProductoPorAlias(hojaAlias, producto, proveedor)) return; // ya mapeado, no es pendiente
+
+    upsertPendiente(
+      producto, proveedor,
+      fila[DESGLOSE_COL.CATEGORIA - 1] || '',
+      fila[DESGLOSE_COL.NOMBRE_NORMALIZADO - 1] || ''
+    );
+    pendientesDistintos.add(producto + '||' + proveedor);
+    lineasSinMapear++;
+  });
+
+  Logger.log('Backfill completo: ' + pendientesDistintos.size + ' productos distintos pendientes de mapear (' +
+    lineasSinMapear + ' líneas de compra en total).');
+}
+
+// ── ADMINISTRACIÓN DEL MAESTRO DE PRODUCTOS (pestaña "Catálogo" de config-productos.html) ──
+// Crea o edita un producto. Si viene p.id_producto, edita esa fila; si no,
+// crea uno nuevo (mismo esquema de ID que resolverPendiente / migración).
+function guardarProductoMaestro(p) {
+  if (!p.nombre_normalizado) throw new Error('Falta el nombre normalizado.');
+
+  if (p.id_producto) {
+    const hoja = getHojaMaestro();
+    const fila = filaMaestroPorId(hoja, p.id_producto);
+    if (fila === -1) throw new Error('No existe ese producto en el Maestro: ' + p.id_producto);
+
+    hoja.getRange(fila, MAESTRO_COL.NOMBRE_NORMALIZADO).setValue(p.nombre_normalizado);
+    hoja.getRange(fila, MAESTRO_COL.CATEGORIA).setValue(p.categoria || '');
+    hoja.getRange(fila, MAESTRO_COL.AREA_NEGOCIO).setValue(p.area_negocio || '');
+
+    // Refresca Costo_Promedio por si cambió la categoría que se muestra ahí
+    // (el costo en sí no cambia con esta edición).
+    recalcularCostoPromedio(p.id_producto);
+
+    return { id_producto: p.id_producto, nuevo: false };
+  }
+
+  const idProducto = crearProductoMaestro({
+    nombre_normalizado: p.nombre_normalizado,
+    categoria: p.categoria,
+    area_negocio: p.area_negocio
+  });
+  return { id_producto: idProducto, nuevo: true };
+}
+
+// Bloquea el borrado si el producto tiene alias asociados — borrarlo dejaría
+// esos alias apuntando a un id_producto inexistente y rompería el historial
+// de precios. Si hay que deshacerse de él, primero fusionarlo con otro
+// (fusionarProductosMaestro) o reasignar sus alias a mano.
+function eliminarProductoMaestro(p) {
+  if (!p.id_producto) throw new Error('Falta el id_producto a eliminar.');
+  const hojaMaestro = getHojaMaestro();
+  const fila = filaMaestroPorId(hojaMaestro, p.id_producto);
+  if (fila === -1) throw new Error('No existe ese producto en el Maestro: ' + p.id_producto);
+
+  const aliases = obtenerAliasesDeProducto(getHojaAlias(), p.id_producto);
+  if (aliases.length) {
+    throw new Error('No se puede eliminar: tiene ' + aliases.length +
+      ' alias asociado(s). Fusionalo con otro producto primero.');
+  }
+
+  hojaMaestro.deleteRow(fila);
+
+  const hojaCosto = getHojaCostoPromedio();
+  const filaCosto = filaCostoPorId(hojaCosto, p.id_producto);
+  if (filaCosto !== -1) hojaCosto.deleteRow(filaCosto);
+
+  return { eliminado: p.id_producto };
+}
+
+// Fusiona dos productos duplicados del Maestro: mueve todos los alias de
+// id_descartar hacia id_conservar, borra id_descartar de Maestro_Productos y
+// de Costo_Promedio, y recalcula el costo promedio de id_conservar con el
+// historial combinado de ambos.
+function fusionarProductosMaestro(p) {
+  if (!p.id_conservar || !p.id_descartar) throw new Error('Faltan los dos productos a fusionar.');
+  if (p.id_conservar === p.id_descartar) throw new Error('Elegí dos productos distintos.');
+
+  const hojaMaestro = getHojaMaestro();
+  if (filaMaestroPorId(hojaMaestro, p.id_conservar) === -1) throw new Error('No existe ' + p.id_conservar);
+  const filaDescartar = filaMaestroPorId(hojaMaestro, p.id_descartar);
+  if (filaDescartar === -1) throw new Error('No existe ' + p.id_descartar);
+
+  const hojaAlias = getHojaAlias();
+  const nFilas = hojaAlias.getLastRow() - 1;
+  let aliasMovidos = 0;
+  if (nFilas > 0) {
+    const ids = hojaAlias.getRange(2, ALIAS_COL.ID_PRODUCTO, nFilas, 1).getValues();
+    for (let i = 0; i < ids.length; i++) {
+      if (String(ids[i][0]) === String(p.id_descartar)) {
+        hojaAlias.getRange(i + 2, ALIAS_COL.ID_PRODUCTO).setValue(p.id_conservar);
+        aliasMovidos++;
+      }
+    }
+  }
+
+  hojaMaestro.deleteRow(filaDescartar);
+
+  const hojaCosto = getHojaCostoPromedio();
+  const filaCostoDescartar = filaCostoPorId(hojaCosto, p.id_descartar);
+  if (filaCostoDescartar !== -1) hojaCosto.deleteRow(filaCostoDescartar);
+
+  recalcularCostoPromedio(p.id_conservar);
+
+  return { id_conservar: p.id_conservar, alias_movidos: aliasMovidos };
+}
+
+// ── LISTAS COMPARTIDAS: CATEGORÍAS Y ÁREA DE NEGOCIO (config-catalogos.html) ──
+// Ambas hojas son una sola columna de texto. Se administran desde
+// config-catalogos.html y las lee también costos-productos.html (antes las
+// tenía hardcodeadas / en localStorage).
+function getHojaCategorias() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let hoja = ss.getSheetByName(HOJA_CATEGORIAS);
+  if (!hoja) {
+    hoja = ss.insertSheet(HOJA_CATEGORIAS);
+    hoja.appendRow(['Categoría']);
+    CATEGORIAS_DEFAULT.forEach(c => hoja.appendRow([c]));
+  }
+  return hoja;
+}
+
+function getHojaAreas() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let hoja = ss.getSheetByName(HOJA_AREAS);
+  if (!hoja) {
+    hoja = ss.insertSheet(HOJA_AREAS);
+    hoja.appendRow(['Área de negocio']);
+    AREAS_DEFAULT.forEach(a => hoja.appendRow([a]));
+  }
+  return hoja;
+}
+
+// Busca la fila (1-indexada) de un valor exacto en una hoja de una sola
+// columna (Categorias_Productos / Areas_Negocio). Devuelve -1 si no existe.
+function filaValorEnLista(hoja, valor) {
+  const nFilas = hoja.getLastRow() - 1;
+  if (nFilas <= 0) return -1;
+  const datos = hoja.getRange(2, 1, nFilas, 1).getValues();
+  for (let i = 0; i < datos.length; i++) {
+    if (String(datos[i][0]).trim() === String(valor).trim()) return i + 2;
+  }
+  return -1;
+}
+
+// Cuenta cuántas filas de Maestro_Productos usan un valor dado en una
+// columna (CATEGORIA o AREA_NEGOCIO) — para bloquear el borrado si está en uso.
+function contarUsosEnMaestro(colIndice, valor) {
+  const hoja = getHojaMaestro();
+  const nFilas = hoja.getLastRow() - 1;
+  if (nFilas <= 0) return 0;
+  const datos = hoja.getRange(2, colIndice, nFilas, 1).getValues();
+  return datos.filter(r => String(r[0]).trim() === String(valor).trim()).length;
+}
+
+function guardarCategoria(p) {
+  if (!p.valor) throw new Error('Falta el nombre de la categoría.');
+  const hoja = getHojaCategorias();
+
+  if (p.valor_anterior) {
+    const fila = filaValorEnLista(hoja, p.valor_anterior);
+    if (fila === -1) throw new Error('No existe la categoría: ' + p.valor_anterior);
+    if (filaValorEnLista(hoja, p.valor) !== -1 && p.valor !== p.valor_anterior) {
+      throw new Error('Ya existe una categoría con ese nombre.');
+    }
+    hoja.getRange(fila, 1).setValue(p.valor);
+    return { renombrada: true };
+  }
+
+  if (filaValorEnLista(hoja, p.valor) !== -1) throw new Error('Ya existe esa categoría.');
+  hoja.appendRow([p.valor]);
+  return { creada: true };
+}
+
+function eliminarCategoria(p) {
+  if (!p.valor) throw new Error('Falta el nombre de la categoría.');
+  const usos = contarUsosEnMaestro(MAESTRO_COL.CATEGORIA, p.valor);
+  if (usos > 0) throw new Error('No se puede eliminar: ' + usos + ' producto(s) del Maestro usan esta categoría.');
+
+  const hoja = getHojaCategorias();
+  const fila = filaValorEnLista(hoja, p.valor);
+  if (fila === -1) throw new Error('No existe esa categoría.');
+  hoja.deleteRow(fila);
+  return { eliminada: p.valor };
+}
+
+function guardarAreaNegocio(p) {
+  if (!p.valor) throw new Error('Falta el nombre del área de negocio.');
+  const hoja = getHojaAreas();
+
+  if (p.valor_anterior) {
+    const fila = filaValorEnLista(hoja, p.valor_anterior);
+    if (fila === -1) throw new Error('No existe el área: ' + p.valor_anterior);
+    if (filaValorEnLista(hoja, p.valor) !== -1 && p.valor !== p.valor_anterior) {
+      throw new Error('Ya existe un área con ese nombre.');
+    }
+    hoja.getRange(fila, 1).setValue(p.valor);
+    return { renombrada: true };
+  }
+
+  if (filaValorEnLista(hoja, p.valor) !== -1) throw new Error('Ya existe esa área.');
+  hoja.appendRow([p.valor]);
+  return { creada: true };
+}
+
+function eliminarAreaNegocio(p) {
+  if (!p.valor) throw new Error('Falta el nombre del área de negocio.');
+  const usos = contarUsosEnMaestro(MAESTRO_COL.AREA_NEGOCIO, p.valor);
+  if (usos > 0) throw new Error('No se puede eliminar: ' + usos + ' producto(s) del Maestro usan esta área.');
+
+  const hoja = getHojaAreas();
+  const fila = filaValorEnLista(hoja, p.valor);
+  if (fila === -1) throw new Error('No existe esa área.');
+  hoja.deleteRow(fila);
+  return { eliminada: p.valor };
+}
+
+// Función de UN SOLO USO: correr manualmente desde este editor después de
+// pegar esta versión del código. Quita las columnas "Unidad base" y "Unidad
+// de compra default" de Maestro_Productos (siempre vinieron vacías) y agrega
+// "Área de negocio" en su lugar; también quita "Unidad base" de
+// Costo_Promedio. Es seguro correrla más de una vez: si las columnas viejas
+// ya no están, no hace nada.
+function migrarEsquemaSinUnidades() {
+  const hojaMaestro = getHojaMaestro();
+  const encabezadosMaestro = hojaMaestro.getRange(1, 1, 1, hojaMaestro.getLastColumn()).getValues()[0];
+  if (encabezadosMaestro.indexOf('Unidad base') !== -1) {
+    hojaMaestro.deleteColumn(4); // Unidad base
+    // Si "Unidad de compra default" sigue ahí (ahora en la posición 4), se borra también.
+    const encabezadosAhora = hojaMaestro.getRange(1, 1, 1, hojaMaestro.getLastColumn()).getValues()[0];
+    if (encabezadosAhora[3] === 'Unidad de compra default') hojaMaestro.deleteColumn(4);
+    hojaMaestro.insertColumnAfter(3);
+    hojaMaestro.getRange(1, 4).setValue('Área de negocio');
+    Logger.log('Maestro_Productos actualizado: ID producto | Nombre normalizado | Categoría | Área de negocio | Fecha de creación.');
+  } else {
+    Logger.log('Maestro_Productos ya estaba con el esquema nuevo.');
+  }
+
+  const hojaCosto = getHojaCostoPromedio();
+  const encabezadosCosto = hojaCosto.getRange(1, 1, 1, hojaCosto.getLastColumn()).getValues()[0];
+  if (encabezadosCosto.indexOf('Unidad base') !== -1) {
+    hojaCosto.deleteColumn(4); // Unidad base
+    Logger.log('Costo_Promedio actualizado: se quitó la columna Unidad base.');
+  } else {
+    Logger.log('Costo_Promedio ya estaba con el esquema nuevo.');
+  }
 }

@@ -334,10 +334,9 @@
       <div class="card">
         <p class="card-title">Categorías</p>
         <div id="cfg-cat-lista" style="margin-bottom:10px;"></div>
-        <div style="display:flex;gap:6px;">
-          <input type="text" id="cfg-cat-nueva" placeholder="Nueva categoría…" style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key==='Enter')addItem('cat')">
-          <button onclick="addItem('cat')" style="padding:7px 12px;border-radius:8px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;font-weight:600;white-space:nowrap;">+ Agregar</button>
-        </div>
+        <p style="font-size:12px;color:var(--muted);">Lista compartida con Configuración de productos — se administra desde
+          <a href="config-catalogos.html" style="color:var(--purple);font-weight:600;">Categorías y áreas →</a>
+        </p>
       </div>
 
       <div class="card">
@@ -352,10 +351,9 @@
       <div class="card">
         <p class="card-title">Áreas de negocio</p>
         <div id="cfg-area-lista" style="margin-bottom:10px;"></div>
-        <div style="display:flex;gap:6px;">
-          <input type="text" id="cfg-area-nueva" placeholder="Nueva área…" style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key==='Enter')addItem('area')">
-          <button onclick="addItem('area')" style="padding:7px 12px;border-radius:8px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;font-weight:600;white-space:nowrap;">+ Agregar</button>
-        </div>
+        <p style="font-size:12px;color:var(--muted);">Lista compartida con Configuración de productos — se administra desde
+          <a href="config-catalogos.html" style="color:var(--purple);font-weight:600;">Categorías y áreas →</a>
+        </p>
       </div>
 
       <div class="card">
@@ -731,7 +729,60 @@ const CFG_DEFAULTS = {
   area: ['Cocina','Bar','Consumible','Otro']
 };
 
+// Categorías / Área de negocio ya no son locales: viven en el Sheet de
+// compras (Categorias_Productos / Areas_Negocio) y se administran desde
+// config-catalogos.html. Acá solo se leen (read-only, gviz público).
+const SHEET_COMPRAS_ID = '1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw';
+let catCompartidas   = null; // null mientras carga; después, array de strings
+let areasCompartidas = null;
+
+function gvizLoadCompartida(hoja, expectedCol) {
+  return new Promise(function(resolve) {
+    var cb  = '_sh_' + Math.random().toString(36).slice(2,10);
+    var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_COMPRAS_ID
+            + '/gviz/tq?tqx=responseHandler:' + cb
+            + '&sheet=' + encodeURIComponent(hoja);
+    var timer = setTimeout(function() { cleanup(); resolve([]); }, 15000);
+    function cleanup() {
+      clearTimeout(timer);
+      try { delete window[cb]; } catch(e) {}
+      try { if (s && s.parentNode) document.body.removeChild(s); } catch(e) {}
+    }
+    window[cb] = function(data) {
+      cleanup();
+      try {
+        var cols = (data.table.cols||[]).map(function(c){ return c.label||c.id||''; });
+        var idx = cols.indexOf(expectedCol);
+        if (idx === -1) { resolve([]); return; }
+        var rows = (data.table.rows||[]).filter(function(r){ return r&&r.c; }).map(function(row){
+          var cell = row.c[idx];
+          return cell && cell.v != null ? String(cell.v).trim() : '';
+        }).filter(Boolean);
+        resolve(rows);
+      } catch(e2) { resolve([]); }
+    };
+    var s = document.createElement('script');
+    s.onerror = function(){ cleanup(); resolve([]); };
+    s.src = url;
+    document.body.appendChild(s);
+  });
+}
+
+async function cargarListasCompartidas() {
+  const [cats, areas] = await Promise.all([
+    gvizLoadCompartida('Categorias_Productos', 'Categoría'),
+    gvizLoadCompartida('Areas_Negocio', 'Área de negocio')
+  ]);
+  catCompartidas   = cats.length ? cats : CFG_DEFAULTS.cat;
+  areasCompartidas = areas.length ? areas : CFG_DEFAULTS.area;
+  aplicarConfiguracion();
+  renderCfgLista('cat');
+  renderCfgLista('area');
+}
+
 function getCfg(tipo) {
+  if (tipo === 'cat')  return catCompartidas   || CFG_DEFAULTS.cat;
+  if (tipo === 'area') return areasCompartidas || CFG_DEFAULTS.area;
   try {
     const stored = JSON.parse(localStorage.getItem('cfg_productos_' + tipo) || 'null');
     return stored || CFG_DEFAULTS[tipo];
@@ -745,10 +796,11 @@ function saveCfg(tipo, lista) {
 function renderCfgLista(tipo) {
   const lista = getCfg(tipo);
   const cont  = document.getElementById('cfg-' + tipo + '-lista');
+  const soloLectura = tipo === 'cat' || tipo === 'area';
   cont.innerHTML = lista.map((item, i) => `
     <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:7px;background:var(--surface);margin-bottom:4px;font-size:13px;">
       <span>${item}</span>
-      <button onclick="removeItem('${tipo}',${i})" style="background:none;border:none;color:var(--subtle);cursor:pointer;font-size:16px;line-height:1;padding:0 4px;" title="Eliminar">×</button>
+      ${soloLectura ? '' : `<button onclick="removeItem('${tipo}',${i})" style="background:none;border:none;color:var(--subtle);cursor:pointer;font-size:16px;line-height:1;padding:0 4px;" title="Eliminar">×</button>`}
     </div>`).join('');
 }
 
@@ -947,13 +999,13 @@ function renderTablaFaltantes() {
   const filas = FALTANTES_COSTEO.map(f => `<tr>
     <td style="font-weight:500;">${f.nombre}</td>
     <td style="color:var(--muted);font-size:12px;">${f.categoria || '—'}</td>
-    <td style="color:var(--muted);font-size:12px;">${f.unidad_base || f.unidad_compra_default || '—'}</td>
+    <td style="color:var(--muted);font-size:12px;">${f.area_negocio || '—'}</td>
     <td><button class="btn-edit" onclick="agregarDesdeFaltante('${f.id}')">+ Agregar</button></td>
   </tr>`).join('');
 
   document.getElementById('faltantes-tabla').innerHTML = `
     <table>
-      <thead><tr><th>Producto</th><th>Categoría</th><th>Unidad</th><th></th></tr></thead>
+      <thead><tr><th>Producto</th><th>Categoría</th><th>Área de negocio</th><th></th></tr></thead>
       <tbody>${filas}</tbody>
     </table>`;
 }
@@ -976,8 +1028,7 @@ function agregarDesdeFaltante(id) {
   document.getElementById('p-nombre').value = f.nombre;
   document.getElementById('p-id-normalizado').value = f.id;
   if (f.categoria) document.getElementById('p-categoria').value = f.categoria;
-  const unidad = (f.unidad_base || f.unidad_compra_default || '').toLowerCase();
-  if (unidad) document.getElementById('p-unidad').value = unidad;
+  if (f.area_negocio) document.getElementById('p-area').value = f.area_negocio;
   document.getElementById('p-precio-sin-iva').focus();
 }
 
@@ -1332,6 +1383,7 @@ function showToast(msg, type='success') {
 
 document.addEventListener("DOMContentLoaded", () => {
   initConfig();
+  cargarListasCompartidas();
   renderLista();
   cargarProveedoresDesdeSheet();
   cargarProductosDesdeSheet();

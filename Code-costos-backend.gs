@@ -38,9 +38,11 @@ const HOJA_PROVEEDORES = 'proveedores';
 
 // Control de productos del Maestro (Sheet de compras) que todavía no están
 // registrados en la base de productos (pestaña "Productos" de este Sheet).
+// "Área de negocio" reemplaza a "Unidad base"/"Unidad de compra default":
+// Maestro_Productos ya no tiene esas dos columnas (ver Code-compras-backend.gs).
 const HOJA_FALTANTES = 'Faltantes_Costeo';
 const ENCABEZADOS_FALTANTES = [
-  'ID', 'Nombre normalizado', 'Categoría', 'Unidad base', 'Unidad de compra default', 'Fecha de creación'
+  'ID', 'Nombre normalizado', 'Categoría', 'Área de negocio', 'Fecha de creación'
 ];
 
 // Corré esta función UNA VEZ desde el editor de Apps Script para preparar el Sheet.
@@ -77,8 +79,7 @@ function calcularFaltantes() {
       id: m['ID producto'] || '',
       nombre: m['Nombre normalizado'] || '',
       categoria: m['Categoría'] || '',
-      unidad_base: m['Unidad base'] || '',
-      unidad_compra_default: m['Unidad de compra default'] || '',
+      area_negocio: m['Área de negocio'] || '',
       fecha_creacion: m['Fecha de creación'] || ''
     }));
 }
@@ -95,7 +96,7 @@ function actualizarControlFaltantes() {
   if (!faltantes.length) return;
 
   const filas = faltantes.map(f => [
-    f.id, f.nombre, f.categoria, f.unidad_base, f.unidad_compra_default, f.fecha_creacion
+    f.id, f.nombre, f.categoria, f.area_negocio, f.fecha_creacion
   ]);
   hojaFaltantes.getRange(2, 1, filas.length, ENCABEZADOS_FALTANTES.length).setValues(filas);
 }

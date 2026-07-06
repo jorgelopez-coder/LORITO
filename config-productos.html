@@ -29,17 +29,26 @@
     .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
     .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 10px; }
 
-    main { max-width:1200px; margin:0 auto; padding:2rem 2rem 5rem; }
-    .page-header { margin-bottom:1.5rem; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    main { max-width:1240px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .page-header { margin-bottom:1.25rem; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
     .page-header h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
     .page-header p { font-size:13px; color:var(--muted); }
+
+    .btn-primary { font-family:var(--font-d); font-size:13px; font-weight:700; padding:10px 18px; border-radius:9px; border:none; background:var(--green); color:#fff; cursor:pointer; white-space:nowrap; }
+    .btn-primary:hover { background:#146a3e; }
+
+    .tabs-principal { display:flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:11px; padding:4px; margin-bottom:1.5rem; width:fit-content; }
+    .tab-principal { font-family:var(--font-d); font-size:14px; font-weight:700; padding:9px 18px; border-radius:8px; border:none; cursor:pointer; background:transparent; color:var(--muted); display:flex; align-items:center; gap:7px; }
+    .tab-principal.active { background:var(--card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+    .tab-principal .tab-badge { background:var(--border); color:var(--muted); }
+    .tab-principal.active .tab-badge { background:var(--green); color:#fff; }
 
     .kpi-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:1.25rem; }
     .kpi-box { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; }
     .kpi-val { font-family:var(--font-d); font-size:22px; font-weight:700; letter-spacing:-.02em; color:var(--text); }
     .kpi-lbl { font-size:11px; color:var(--muted); margin-top:2px; }
-    .kpi-val.verde  { color:var(--green); }
-    .kpi-val.ambar  { color:var(--amber); }
+    .kpi-val.ambar { color:var(--amber); }
+    .kpi-val.verde { color:var(--green); }
 
     .tabs { display:flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:4px; margin-bottom:1.25rem; width:fit-content; }
     .tab { font-size:13px; font-weight:500; padding:6px 16px; border-radius:7px; border:none; cursor:pointer; background:transparent; color:var(--muted); display:flex; align-items:center; gap:6px; }
@@ -64,20 +73,23 @@
     .num { text-align:right; font-variant-numeric:tabular-nums; }
 
     .badge { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; white-space:nowrap; }
-    .b-nuevo      { background:var(--amber-bg); color:var(--amber); }
-    .b-registrado { background:var(--green-bg); color:var(--green); }
+    .b-nuevo { background:var(--amber-bg); color:var(--amber); }
+    .b-ok    { background:var(--green-bg); color:var(--green); }
+    .b-huerf { background:var(--amber-bg); color:var(--amber); }
     .b-dot { width:5px; height:5px; border-radius:50%; background:currentColor; }
 
     .row-input { width:100%; min-width:160px; font-size:12.5px; padding:6px 9px; border-radius:7px; border:1px solid var(--border); background:var(--surface); color:var(--text); outline:none; }
     .row-input:focus { border-color:var(--green); }
-    .row-sel { font-size:12.5px; padding:6px 9px; border-radius:7px; border:1px solid var(--border); background:var(--surface); color:var(--text); outline:none; cursor:pointer; min-width:140px; }
+    .row-sel { font-size:12.5px; padding:6px 9px; border-radius:7px; border:1px solid var(--border); background:var(--surface); color:var(--text); outline:none; cursor:pointer; min-width:150px; }
     .row-sel:focus { border-color:var(--green); }
 
     .btn-mini { font-size:11.5px; font-weight:600; padding:6px 11px; border-radius:7px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; white-space:nowrap; }
     .btn-mini:hover { border-color:var(--border-h); color:var(--text); }
     .btn-mini.guardar { border-color:var(--green-lt); background:var(--green-bg); color:var(--green); }
     .btn-mini.guardar:hover { background:var(--green); color:#fff; }
+    .btn-mini.rojo:hover { border-color:var(--red-lt); color:var(--red); background:var(--red-bg); }
     .btn-mini:disabled { opacity:.5; cursor:default; }
+    .fila-acciones { display:flex; gap:6px; flex-wrap:wrap; }
 
     .pagination { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-top:1px solid var(--border); font-size:12px; color:var(--muted); }
     .pag-btns { display:flex; gap:4px; }
@@ -87,12 +99,33 @@
     .pag-btn.active { background:var(--green); color:#fff; border-color:var(--green); }
 
     .empty { text-align:center; padding:3rem; color:var(--subtle); font-size:13px; }
+    .empty a { color:var(--green); }
     .spinner { display:inline-block; width:18px; height:18px; border:2px solid var(--border); border-top-color:var(--green); border-radius:50%; animation:spin .7s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg); } }
 
     .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
     .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
     .sdot.off { background:var(--subtle); }
+
+    /* Modales (Catálogo) */
+    .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:50; align-items:flex-start; justify-content:center; padding:1.5rem 1rem; overflow-y:auto; }
+    .modal-bg.open { display:flex; }
+    .modal { background:var(--card); border-radius:16px; width:100%; max-width:480px; margin:auto; }
+    .modal-head { padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .modal-title { font-family:var(--font-d); font-size:18px; font-weight:700; }
+    .close-btn { background:none; border:none; font-size:22px; line-height:1; color:var(--muted); cursor:pointer; padding:2px 6px; }
+    .close-btn:hover { color:var(--text); }
+    .modal-body { padding:1.25rem 1.5rem; display:flex; flex-direction:column; gap:12px; }
+    .field label { display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:5px; }
+    .field input, .field select { width:100%; padding:9px 11px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-family:var(--font-b); font-size:13px; outline:none; }
+    .field input:focus, .field select:focus { border-color:var(--green); }
+    .modal-note { font-size:12px; color:var(--amber); background:var(--amber-bg); border:1px solid var(--amber-lt); border-radius:8px; padding:.6rem .8rem; }
+    .modal-foot { padding:1rem 1.5rem; border-top:1px solid var(--border); display:flex; gap:8px; justify-content:flex-end; }
+    .btn-sec { padding:9px 16px; border-radius:9px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; cursor:pointer; }
+    .btn-sec:hover { color:var(--text); border-color:var(--border-h); }
+    .btn-save { padding:9px 18px; border-radius:9px; border:none; background:var(--green); color:#fff; font-family:var(--font-d); font-size:13px; font-weight:700; cursor:pointer; }
+    .btn-save:hover { background:#146a3e; }
+    .btn-save:disabled { opacity:.6; cursor:default; }
 
     .toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px); background:var(--card); border:1px solid var(--border); border-radius:10px; padding:11px 18px; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s; opacity:0; z-index:100; box-shadow:0 4px 20px rgba(0,0,0,.08); }
     .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
@@ -103,6 +136,7 @@
     @media (max-width:700px) {
       header { padding:0 1rem; } main { padding:1.5rem 1rem 3rem; }
       .kpi-strip { grid-template-columns:1fr; }
+      .page-header { flex-direction:column; }
     }
   </style>
 </head>
@@ -123,55 +157,155 @@
   <div class="page-header">
     <div>
       <h1>Configuración de productos</h1>
-      <p>Pendientes de mapear (hoja Pendientes_Mapeo) · asigná cada nombre de factura a un producto del Maestro, una sola vez</p>
+      <p>Pendientes de mapear y catálogo de productos (Maestro) · <a href="config-catalogos.html" style="color:var(--muted);">administrar categorías / áreas →</a></p>
     </div>
     <div id="status-carga" style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;">
       <span class="spinner"></span> Cargando…
     </div>
   </div>
 
-  <div class="kpi-strip">
-    <div class="kpi-box">
-      <div class="kpi-val ambar" id="kpi-total">—</div>
-      <div class="kpi-lbl">Pendientes de mapear</div>
+  <div class="tabs-principal">
+    <button class="tab-principal active" id="tabp-pendientes" onclick="cambiarTabPrincipal('pendientes')">
+      Pendientes de mapear <span class="tab-badge" id="tab-badge-pend-principal">—</span>
+    </button>
+    <button class="tab-principal" id="tabp-catalogo" onclick="cambiarTabPrincipal('catalogo')">
+      Catálogo (Maestro) <span class="tab-badge" id="tab-badge-cat-principal">—</span>
+    </button>
+  </div>
+
+  <!-- ═══════════════ PANEL: PENDIENTES DE MAPEAR ═══════════════ -->
+  <div id="panel-pendientes">
+    <div class="kpi-strip">
+      <div class="kpi-box">
+        <div class="kpi-val ambar" id="kpi-total">—</div>
+        <div class="kpi-lbl">Pendientes de mapear</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-val" id="kpi-lineas">—</div>
+        <div class="kpi-lbl">Líneas de compra afectadas</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-val verde" id="kpi-maestro">—</div>
+        <div class="kpi-lbl">Productos en el Maestro</div>
+      </div>
     </div>
-    <div class="kpi-box">
-      <div class="kpi-val" id="kpi-lineas">—</div>
-      <div class="kpi-lbl">Líneas de compra afectadas</div>
+
+    <div class="tabs" id="tabs-estado">
+      <button class="tab active" data-estado="" onclick="cambiarTabEstadoPend('', this)">Todos <span class="tab-badge" id="tab-badge-todos">—</span></button>
+      <button class="tab" data-estado="recurrente" onclick="cambiarTabEstadoPend('recurrente', this)">Recurrentes (2+ veces) <span class="tab-badge" id="tab-badge-recurrentes">—</span></button>
     </div>
-    <div class="kpi-box">
-      <div class="kpi-val verde" id="kpi-maestro">—</div>
-      <div class="kpi-lbl">Productos en el Maestro</div>
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="search-input" id="s-pend" placeholder="Buscar nombre en factura…" oninput="renderTablaPend()">
+      </div>
+      <select class="filter-sel" id="f-cat-pend" onchange="renderTablaPend()">
+        <option value="">Todas las categorías sugeridas</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <div class="tabla-wrap" id="tabla-pendientes">
+        <div class="empty"><span class="spinner"></span></div>
+      </div>
+      <div class="pagination" id="pag-pendientes" style="display:none;"></div>
     </div>
   </div>
 
-  <div class="tabs" id="tabs-estado">
-    <button class="tab active" data-estado="" onclick="cambiarTabEstado('', this)">Todos <span class="tab-badge" id="tab-badge-todos">—</span></button>
-    <button class="tab" data-estado="recurrente" onclick="cambiarTabEstado('recurrente', this)">Recurrentes (2+ veces) <span class="tab-badge" id="tab-badge-recurrentes">—</span></button>
-  </div>
-
-  <div class="toolbar">
-    <div class="search-wrap">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" class="search-input" id="s-prod" placeholder="Buscar nombre en factura…" oninput="renderTabla()">
+  <!-- ═══════════════ PANEL: CATÁLOGO (MAESTRO) ═══════════════ -->
+  <div id="panel-catalogo" style="display:none;">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:1rem;">
+      <button class="btn-primary" onclick="abrirModalProducto(null)">+ Nuevo producto</button>
     </div>
-    <select class="filter-sel" id="f-cat" onchange="renderTabla()">
-      <option value="">Todas las categorías sugeridas</option>
-    </select>
-  </div>
 
-  <div class="card">
-    <div class="tabla-wrap" id="tabla-productos">
-      <div class="empty"><span class="spinner"></span></div>
+    <div class="kpi-strip">
+      <div class="kpi-box">
+        <div class="kpi-val" id="kpi-cat-total">—</div>
+        <div class="kpi-lbl">Productos en el Maestro</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-val ambar" id="kpi-cat-huerfanos">—</div>
+        <div class="kpi-lbl">Sin ningún alias (huérfanos)</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-val" id="kpi-cat-categorias">—</div>
+        <div class="kpi-lbl">Categorías distintas en uso</div>
+      </div>
     </div>
-    <div class="pagination" id="pag-productos" style="display:none;"></div>
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="search-input" id="s-cat" placeholder="Buscar producto o ID…" oninput="renderTablaCat()">
+      </div>
+      <select class="filter-sel" id="f-cat-cat" onchange="renderTablaCat()">
+        <option value="">Todas las categorías</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <div class="tabla-wrap" id="tabla-catalogo">
+        <div class="empty"><span class="spinner"></span></div>
+      </div>
+      <div class="pagination" id="pag-catalogo" style="display:none;"></div>
+    </div>
   </div>
 
   <div class="status-bar">
     <div style="display:flex;align-items:center;gap:6px;"><span class="sdot" id="conn-dot"></span><span id="conn-label">Conectando…</span></div>
-    <span style="margin-left:auto;">v1.0 · Configuración de productos · Grupo del Sol</span>
+    <span style="margin-left:auto;">v2.0 · Configuración de productos · Grupo del Sol</span>
   </div>
 </main>
+
+<!-- Modal: crear / editar producto del Maestro -->
+<div class="modal-bg" id="modal-producto">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" id="modal-producto-titulo">Nuevo producto</span>
+      <button class="close-btn" onclick="cerrarModalProducto()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Nombre normalizado *</label>
+        <input type="text" id="mp-nombre" placeholder="Ej. Filete de Res">
+      </div>
+      <div class="field">
+        <label>Categoría</label>
+        <select id="mp-categoria"></select>
+      </div>
+      <div class="field">
+        <label>Área de negocio</label>
+        <select id="mp-area"></select>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="cerrarModalProducto()">Cancelar</button>
+      <button class="btn-save" id="mp-btn-guardar" onclick="guardarProductoMaestroUI()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: fusionar duplicados del Maestro -->
+<div class="modal-bg" id="modal-fusion">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">Fusionar producto duplicado</span>
+      <button class="close-btn" onclick="cerrarModalFusion()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-note" id="fusion-nota"></div>
+      <div class="field">
+        <label>Conservar todo bajo este producto</label>
+        <select id="mf-destino"></select>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="cerrarModalFusion()">Cancelar</button>
+      <button class="btn-save" id="mf-btn-confirmar" onclick="confirmarFusion()">Fusionar</button>
+    </div>
+  </div>
+</div>
 
 <div class="toast" id="toast">
   <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
@@ -185,23 +319,12 @@ const SHEET_ID = '1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw';
 const APPS_SCRIPT_AP = 'https://script.google.com/macros/s/AKfycbyqdI4EGUgcahTiyz_GBwvUQLWORT_TUVBvFMPGdMve1-3q3ge8mioZ458_zsbMbUqa/exec';
 // ─────────────────────────────────────────────────────────────────
 
-const CATEGORIAS = [
-  'Carnes','Mariscos','Aves','Lácteos','Aceites y Grasas','Frutas y Verduras',
-  'Granos y Cereales','Bebidas','Panadería y Repostería','Condimentos y Especias',
-  'Limpieza e Higiene','Empaques y Desechables','Servicios','Otros'
-];
-
 const hoy = new Date();
 document.getElementById('date-chip').textContent =
   hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
 
-const fmt = n => Number(n||0).toLocaleString('es-CR');
-
-let dataPendientes = [];
-let dataMaestro    = [];
-let pendientes     = []; // vista de Pendientes_Mapeo lista para tabla
-let pagActual      = 1;
-const POR_PAGINA = 20;
+const fmtC = n => '₡' + Number(n||0).toLocaleString('es-CR', { maximumFractionDigits:2 });
+const numLimpio = v => parseFloat(String(v||0).replace(/,/g,'')) || 0;
 
 function gvizLoad(hoja, expectedCol) {
   return new Promise(function(resolve) {
@@ -249,40 +372,6 @@ async function postAP(payload) {
   return json.result;
 }
 
-async function cargarDatos() {
-  document.getElementById('status-carga').innerHTML = '<span class="spinner"></span> Conectando con Google Sheets…';
-  try {
-    // Pendientes_Mapeo puede no existir todavía (se crea sola cuando llega la
-    // primera línea de compra sin alias) o puede estar legítimamente vacía
-    // (todo mapeado) — en ninguno de los dos casos es un error de conexión.
-    const [dPend, dMaestro] = await Promise.all([
-      gvizLoad('Pendientes_Mapeo', 'Nombre en factura').catch(() => []),
-      gvizLoad('Maestro_Productos', 'ID producto').catch(() => [])
-    ]);
-
-    dataPendientes = dPend;
-    dataMaestro    = dMaestro;
-
-    document.getElementById('conn-dot').classList.remove('off');
-    document.getElementById('conn-label').textContent = 'Conectado · Google Sheets';
-    document.getElementById('status-carga').innerHTML = dataPendientes.length
-      ? '<span style="color:var(--amber);">●</span> ' + dataPendientes.length + ' pendientes de mapear'
-      : '<span style="color:var(--green);">✓</span> Todo mapeado';
-
-    construirVista();
-    inicializar();
-
-  } catch(e) {
-    console.error('Error cargando configuración de productos:', e.message);
-    document.getElementById('conn-dot').classList.add('off');
-    document.getElementById('conn-label').textContent = 'Error de conexión';
-    document.getElementById('status-carga').innerHTML =
-      '<span style="color:var(--red);">✕</span> ' + e.message;
-    document.getElementById('tabla-productos').innerHTML =
-      '<div class="empty">No se pudo conectar. Verificá que el Sheet sea público (Compartir → Cualquiera con el enlace).</div>';
-  }
-}
-
 // Convierte fechas formateadas por gviz como "D/M/YYYY" a ISO "YYYY-MM-DD".
 function isoDate(str) {
   const s = String(str||'').trim();
@@ -293,25 +382,84 @@ function isoDate(str) {
   return y + '-' + mo.padStart(2,'0') + '-' + d.padStart(2,'0');
 }
 
-// ── CONSTRUIR VISTA: normaliza las filas de Pendientes_Mapeo y las ordena
-// por "veces visto" (lo más recurrente primero, porque impacta más líneas
-// de compra) y luego alfabéticamente. ──
-function construirVista() {
+// ── DATOS COMPARTIDOS ─────────────────────────────────────────────
+let dataPendientes = [];
+let dataMaestro    = [];
+let dataAlias      = [];
+let dataCosto      = [];
+let dataCategorias = []; // strings, desde la hoja Categorias_Productos
+let dataAreas      = []; // strings, desde la hoja Areas_Negocio
+
+async function cargarDatos() {
+  document.getElementById('status-carga').innerHTML = '<span class="spinner"></span> Conectando con Google Sheets…';
+  try {
+    const [dPend, dMaestro, dAlias, dCosto, dCat, dArea] = await Promise.all([
+      gvizLoad('Pendientes_Mapeo', 'Nombre en factura').catch(() => []),
+      gvizLoad('Maestro_Productos', 'ID producto').catch(() => []),
+      gvizLoad('Alias_Productos', 'ID producto').catch(() => []),
+      gvizLoad('Costo_Promedio', 'ID producto').catch(() => []),
+      gvizLoad('Categorias_Productos', 'Categoría').catch(() => []),
+      gvizLoad('Areas_Negocio', 'Área de negocio').catch(() => [])
+    ]);
+
+    dataPendientes = dPend;
+    dataMaestro    = dMaestro;
+    dataAlias      = dAlias;
+    dataCosto      = dCosto;
+    dataCategorias = dCat.map(r => r['Categoría']).filter(Boolean);
+    dataAreas      = dArea.map(r => r['Área de negocio']).filter(Boolean);
+
+    document.getElementById('conn-dot').classList.remove('off');
+    document.getElementById('conn-label').textContent = 'Conectado · Google Sheets';
+    document.getElementById('status-carga').innerHTML = dataPendientes.length
+      ? '<span style="color:var(--amber);">●</span> ' + dataPendientes.length + ' pendientes de mapear'
+      : '<span style="color:var(--green);">✓</span> Todo mapeado';
+
+    construirVistaPendientes();
+    construirVistaCatalogo();
+    inicializarPend();
+    inicializarCat();
+
+  } catch(e) {
+    console.error('Error cargando configuración de productos:', e.message);
+    document.getElementById('conn-dot').classList.add('off');
+    document.getElementById('conn-label').textContent = 'Error de conexión';
+    document.getElementById('status-carga').innerHTML =
+      '<span style="color:var(--red);">✕</span> ' + e.message;
+    document.getElementById('tabla-pendientes').innerHTML =
+      '<div class="empty">No se pudo conectar. Verificá que el Sheet sea público (Compartir → Cualquiera con el enlace).</div>';
+  }
+}
+
+// ── TAB PRINCIPAL ──────────────────────────────────────────────────
+function cambiarTabPrincipal(tab) {
+  document.getElementById('panel-pendientes').style.display = tab === 'pendientes' ? '' : 'none';
+  document.getElementById('panel-catalogo').style.display   = tab === 'catalogo'   ? '' : 'none';
+  document.getElementById('tabp-pendientes').classList.toggle('active', tab === 'pendientes');
+  document.getElementById('tabp-catalogo').classList.toggle('active', tab === 'catalogo');
+}
+
+// ═══════════════════════ PANEL: PENDIENTES DE MAPEAR ═══════════════════════
+let pendientes = [];
+let estadoActivoPend = '';
+let pagActualPend = 1;
+const POR_PAGINA = 20;
+
+// ── Agrupa/normaliza Pendientes_Mapeo, ordenado por "veces visto" (lo más
+// recurrente primero, porque impacta más líneas de compra). ──
+function construirVistaPendientes() {
   pendientes = dataPendientes.map(r => ({
     nombreFactura: (r['Nombre en factura']||'').trim(),
     proveedor: (r['Proveedor']||'').trim(),
     categoriaSugerida: r['Categoría sugerida'] || '',
     nombreNormalizadoSugerido: r['Nombre normalizado sugerido'] || '',
-    primeraFecha: isoDate(r['Primera vez visto']),
     ultimaFecha: isoDate(r['Última vez visto']),
     vecesVisto: parseInt(r['Veces visto'], 10) || 1
   })).filter(p => p.nombreFactura)
     .sort((a,b) => b.vecesVisto - a.vecesVisto || a.nombreFactura.localeCompare(b.nombreFactura));
 }
 
-let estadoActivo = '';
-
-function inicializar() {
+function inicializarPend() {
   const recurrentes = pendientes.filter(p => p.vecesVisto >= 2).length;
   const lineasAfectadas = pendientes.reduce((a,p) => a + p.vecesVisto, 0);
 
@@ -320,23 +468,20 @@ function inicializar() {
   document.getElementById('kpi-maestro').textContent = dataMaestro.length;
   document.getElementById('tab-badge-todos').textContent       = pendientes.length;
   document.getElementById('tab-badge-recurrentes').textContent = recurrentes;
+  document.getElementById('tab-badge-pend-principal').textContent = pendientes.length;
+  document.getElementById('tab-badge-cat-principal').textContent  = dataMaestro.length;
 
   const cats = [...new Set(pendientes.map(p => p.categoriaSugerida).filter(Boolean))].sort();
-  const selCat = document.getElementById('f-cat');
+  const selCat = document.getElementById('f-cat-pend');
   const valCat = selCat.value;
   selCat.innerHTML = '<option value="">Todas las categorías sugeridas</option>' +
     cats.map(c => `<option value="${c}"${c===valCat?' selected':''}>${c}</option>`).join('');
 
-  renderTabla();
+  renderTablaPend();
 }
 
-function opcionesCategoria(valorActual, idPrefix) {
-  const opciones = valorActual && !CATEGORIAS.includes(valorActual) ? [valorActual, ...CATEGORIAS] : CATEGORIAS;
-  return '<option value=""' + (!valorActual?' selected':'') + '>Sin categoría</option>' +
-    opciones.map(c => `<option value="${c}"${c===valorActual?' selected':''}>${c}</option>`).join('');
-}
-
-// Opciones del selector "Producto maestro": crear nuevo (default) o uno ya existente.
+// Devuelve las <option> del selector "Producto maestro": crear nuevo (default)
+// o uno ya existente.
 function opcionesMaestro() {
   const ordenados = [...dataMaestro].sort((a,b) =>
     (a['Nombre normalizado']||'').localeCompare(b['Nombre normalizado']||''));
@@ -349,29 +494,29 @@ function opcionesMaestro() {
     }).join('');
 }
 
-function cambiarTabEstado(estado, el) {
-  estadoActivo = estado;
+function cambiarTabEstadoPend(estado, el) {
+  estadoActivoPend = estado;
   document.querySelectorAll('#tabs-estado .tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  renderTabla();
+  renderTablaPend();
 }
 
-// Muestra/oculta los campos de "crear producto nuevo" según lo que se elija
-// en el selector de producto maestro de esa fila.
+// Muestra/oculta el input de "nombre nuevo" según lo que se elija en el
+// selector de producto maestro de esa fila.
 function alCambiarMaestro(rowId) {
   const esNuevo = !document.getElementById(rowId + '-maestro').value;
   document.getElementById(rowId + '-nuevo').style.display = esNuevo ? '' : 'none';
 }
 
-function renderTabla() {
-  pagActual = 1;
-  _renderTabla();
+function renderTablaPend() {
+  pagActualPend = 1;
+  _renderTablaPend();
 }
 
-function _renderTabla() {
-  const busq   = document.getElementById('s-prod').value.toLowerCase();
-  const estado = estadoActivo;
-  const cat    = document.getElementById('f-cat').value;
+function _renderTablaPend() {
+  const busq   = document.getElementById('s-pend').value.toLowerCase();
+  const estado = estadoActivoPend;
+  const cat    = document.getElementById('f-cat-pend').value;
 
   const lista = pendientes.filter(p => {
     const matchBusq   = !busq || p.nombreFactura.toLowerCase().includes(busq) || p.proveedor.toLowerCase().includes(busq);
@@ -381,13 +526,13 @@ function _renderTabla() {
   });
 
   const total  = lista.length;
-  const inicio = (pagActual-1) * POR_PAGINA;
+  const inicio = (pagActualPend-1) * POR_PAGINA;
   const pagina = lista.slice(inicio, inicio + POR_PAGINA);
 
   if (!lista.length) {
-    document.getElementById('tabla-productos').innerHTML =
+    document.getElementById('tabla-pendientes').innerHTML =
       '<div class="empty">' + (pendientes.length ? 'Sin resultados.' : '✓ No hay nada pendiente de mapear.') + '</div>';
-    document.getElementById('pag-productos').style.display = 'none';
+    document.getElementById('pag-pendientes').style.display = 'none';
     return;
   }
 
@@ -395,7 +540,7 @@ function _renderTabla() {
     const rowId = 'prow-' + (inicio + idx);
     const vistoBadge = p.vecesVisto >= 2
       ? `<span class="badge b-nuevo"><span class="b-dot"></span>${p.vecesVisto}×</span>`
-      : `<span class="badge b-igual" style="background:var(--surface);color:var(--muted);">1×</span>`;
+      : `<span class="badge" style="background:var(--surface);color:var(--muted);">1×</span>`;
     return `
       <tr>
         <td style="font-weight:500;max-width:200px;">${p.nombreFactura}</td>
@@ -406,11 +551,7 @@ function _renderTabla() {
           </select>
         </td>
         <td>
-          <div id="${rowId}-nuevo" style="display:flex;flex-direction:column;gap:5px;min-width:170px;">
-            <input type="text" class="row-input" id="${rowId}-norm" value="${(p.nombreNormalizadoSugerido||'').replace(/"/g,'&quot;')}" placeholder="Nombre normalizado">
-            <select class="row-sel" id="${rowId}-cat">${opcionesCategoria(p.categoriaSugerida)}</select>
-            <input type="text" class="row-input" id="${rowId}-unidad" placeholder="Unidad base (kg, lt, unidad…)">
-          </div>
+          <input type="text" class="row-input" id="${rowId}-nuevo" value="${(p.nombreNormalizadoSugerido||'').replace(/"/g,'&quot;')}" placeholder="Nombre del producto nuevo">
         </td>
         <td>${vistoBadge}</td>
         <td style="color:var(--muted);font-size:12px;white-space:nowrap;">${p.ultimaFecha||'—'}</td>
@@ -420,16 +561,16 @@ function _renderTabla() {
       </tr>`;
   }).join('');
 
-  document.getElementById('tabla-productos').innerHTML = `
+  document.getElementById('tabla-pendientes').innerHTML = `
     <table>
       <thead><tr>
-        <th>Nombre en factura</th><th>Proveedor</th><th>Producto maestro</th><th>Crear nuevo (si aplica)</th>
+        <th>Nombre en factura</th><th>Proveedor</th><th>Producto maestro</th><th>Nuevo nombre (si aplica)</th>
         <th>Veces visto</th><th>Última vez</th><th>Acción</th>
       </tr></thead>
       <tbody>${filas}</tbody>
     </table>`;
 
-  renderPaginacion('pag-productos', total, pagActual, p => { pagActual = p; _renderTabla(); });
+  renderPaginacion('pag-pendientes', total, pagActualPend, p => { pagActualPend = p; _renderTablaPend(); });
 }
 
 async function guardarPendiente(rowId, nombreFactura, proveedor) {
@@ -441,13 +582,9 @@ async function guardarPendiente(rowId, nombreFactura, proveedor) {
     if (idProducto) {
       payload.id_producto = idProducto;
     } else {
-      const nombreNormalizado = document.getElementById(rowId + '-norm').value.trim();
-      if (!nombreNormalizado) throw new Error('Ingresá el nombre normalizado del producto nuevo.');
-      const unidadBase = document.getElementById(rowId + '-unidad').value.trim();
-      payload.nombre_normalizado = nombreNormalizado;
-      payload.categoria = document.getElementById(rowId + '-cat').value;
-      payload.unidad_base = unidadBase;
-      payload.unidad_compra_default = unidadBase;
+      const nombreNuevo = document.getElementById(rowId + '-nuevo').value.trim();
+      if (!nombreNuevo) throw new Error('Ingresá el nombre del producto nuevo.');
+      payload.nombre_normalizado = nombreNuevo;
     }
 
     const result = await postAP(payload);
@@ -455,16 +592,14 @@ async function guardarPendiente(rowId, nombreFactura, proveedor) {
     if (!idProducto) {
       // Producto recién creado: lo sumamos al catálogo local para que quede
       // disponible de inmediato en el selector de las demás filas pendientes.
-      dataMaestro.push({
-        'ID producto': result.id_producto,
-        'Nombre normalizado': payload.nombre_normalizado,
-        'Categoría': payload.categoria
-      });
+      dataMaestro.push({ 'ID producto': result.id_producto, 'Nombre normalizado': payload.nombre_normalizado, 'Categoría': '' });
     }
 
     pendientes = pendientes.filter(p => !(p.nombreFactura === nombreFactura && p.proveedor === proveedor));
     showToast(`"${nombreFactura}" mapeado a ${result.id_producto} ✓`, 'success');
-    inicializar();
+    inicializarPend();
+    construirVistaCatalogo();
+    inicializarCat();
   } catch(e) {
     showToast('No se pudo guardar: ' + e.message, 'error');
   } finally {
@@ -472,6 +607,234 @@ async function guardarPendiente(rowId, nombreFactura, proveedor) {
   }
 }
 
+// ═══════════════════════ PANEL: CATÁLOGO (MAESTRO) ═══════════════════════
+let productosCatalogo = [];
+let pagActualCat = 1;
+
+function construirVistaCatalogo() {
+  const aliasPorId = {};
+  dataAlias.forEach(r => {
+    const id = String(r['ID producto']||'').trim();
+    if (!id) return;
+    aliasPorId[id] = (aliasPorId[id]||0) + 1;
+  });
+
+  const costoPorId = {};
+  dataCosto.forEach(r => {
+    const id = String(r['ID producto']||'').trim();
+    if (!id) return;
+    costoPorId[id] = numLimpio(r['Costo promedio 90 días']);
+  });
+
+  productosCatalogo = dataMaestro.map(r => {
+    const id = String(r['ID producto']||'').trim();
+    return {
+      id,
+      nombre: r['Nombre normalizado'] || id,
+      categoria: r['Categoría'] || '',
+      area: r['Área de negocio'] || '',
+      alias: aliasPorId[id] || 0,
+      costoProm90: costoPorId[id] != null ? costoPorId[id] : null
+    };
+  }).sort((a,b) => a.nombre.localeCompare(b.nombre));
+}
+
+function inicializarCat() {
+  const huerfanos = productosCatalogo.filter(p => p.alias === 0).length;
+  const cats = [...new Set(productosCatalogo.map(p => p.categoria).filter(Boolean))].sort();
+
+  document.getElementById('kpi-cat-total').textContent      = productosCatalogo.length;
+  document.getElementById('kpi-cat-huerfanos').textContent  = huerfanos;
+  document.getElementById('kpi-cat-categorias').textContent = cats.length;
+  document.getElementById('tab-badge-cat-principal').textContent = productosCatalogo.length;
+
+  const selCat = document.getElementById('f-cat-cat');
+  const valCat = selCat.value;
+  selCat.innerHTML = '<option value="">Todas las categorías</option>' +
+    cats.map(c => `<option value="${c}"${c===valCat?' selected':''}>${c}</option>`).join('');
+
+  renderTablaCat();
+}
+
+function opcionesLista(lista, valorActual) {
+  const opciones = valorActual && !lista.includes(valorActual) ? [valorActual, ...lista] : lista;
+  return '<option value=""' + (!valorActual?' selected':'') + '>Sin definir</option>' +
+    opciones.map(c => `<option value="${c}"${c===valorActual?' selected':''}>${c}</option>`).join('');
+}
+
+function renderTablaCat() {
+  pagActualCat = 1;
+  _renderTablaCat();
+}
+
+function _renderTablaCat() {
+  const busq = document.getElementById('s-cat').value.toLowerCase();
+  const cat  = document.getElementById('f-cat-cat').value;
+
+  const lista = productosCatalogo.filter(p => {
+    const matchBusq = !busq || p.nombre.toLowerCase().includes(busq) || p.id.toLowerCase().includes(busq);
+    const matchCat  = !cat || p.categoria === cat;
+    return matchBusq && matchCat;
+  });
+
+  const total  = lista.length;
+  const inicio = (pagActualCat-1) * POR_PAGINA;
+  const pagina = lista.slice(inicio, inicio + POR_PAGINA);
+
+  if (!lista.length) {
+    document.getElementById('tabla-catalogo').innerHTML = '<div class="empty">' +
+      (productosCatalogo.length ? 'Sin resultados.' : 'El Maestro todavía no tiene productos. Creá uno con "+ Nuevo producto".') +
+      '</div>';
+    document.getElementById('pag-catalogo').style.display = 'none';
+    return;
+  }
+
+  window._catalogoFiltrado = lista;
+
+  const filas = pagina.map((p, idx) => {
+    const rowIdx = inicio + idx;
+    const badgeAlias = p.alias > 0
+      ? `<span class="badge b-ok"><span class="b-dot"></span>${p.alias}</span>`
+      : `<span class="badge b-huerf"><span class="b-dot"></span>0</span>`;
+    return `
+      <tr>
+        <td style="font-family:var(--font-d);font-size:12px;color:var(--muted);white-space:nowrap;">${p.id}</td>
+        <td style="font-weight:500;max-width:200px;">${p.nombre}</td>
+        <td style="color:var(--muted);">${p.categoria || '—'}</td>
+        <td style="color:var(--muted);">${p.area || '—'}</td>
+        <td class="num">${p.costoProm90 != null ? fmtC(p.costoProm90) : '—'}</td>
+        <td>${badgeAlias}</td>
+        <td>
+          <div class="fila-acciones">
+            <button class="btn-mini" onclick="abrirModalProducto(${rowIdx})">Editar</button>
+            <button class="btn-mini" onclick="abrirModalFusion(${rowIdx})">Fusionar</button>
+            <button class="btn-mini rojo" onclick="eliminarProductoCatalogo(${rowIdx})">Eliminar</button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('tabla-catalogo').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>ID</th><th>Nombre normalizado</th><th>Categoría</th><th>Área de negocio</th>
+        <th style="text-align:right;">Costo prom. 90d</th><th>Alias</th><th>Acciones</th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+
+  renderPaginacion('pag-catalogo', total, pagActualCat, p => { pagActualCat = p; _renderTablaCat(); });
+}
+
+// ── Modal crear / editar producto ──────────────────────────────────
+let productoEnEdicion = null;
+
+function abrirModalProducto(idx) {
+  const p = idx != null ? window._catalogoFiltrado[idx] : null;
+  productoEnEdicion = p ? p.id : null;
+
+  document.getElementById('modal-producto-titulo').textContent = p ? 'Editar producto' : 'Nuevo producto';
+  document.getElementById('mp-nombre').value = p ? p.nombre : '';
+  document.getElementById('mp-categoria').innerHTML = opcionesLista(dataCategorias, p ? p.categoria : '');
+  document.getElementById('mp-area').innerHTML = opcionesLista(dataAreas, p ? p.area : '');
+
+  document.getElementById('modal-producto').classList.add('open');
+}
+
+function cerrarModalProducto() {
+  document.getElementById('modal-producto').classList.remove('open');
+}
+document.getElementById('modal-producto').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-producto')) cerrarModalProducto();
+});
+
+async function guardarProductoMaestroUI() {
+  const nombre = document.getElementById('mp-nombre').value.trim();
+  if (!nombre) { showToast('Ingresá el nombre normalizado.', 'error'); return; }
+
+  const btn = document.getElementById('mp-btn-guardar');
+  btn.disabled = true;
+  try {
+    const payload = {
+      modulo: 'guardar_producto_maestro',
+      nombre_normalizado: nombre,
+      categoria: document.getElementById('mp-categoria').value,
+      area_negocio: document.getElementById('mp-area').value
+    };
+    if (productoEnEdicion) payload.id_producto = productoEnEdicion;
+
+    await postAP(payload);
+    showToast(productoEnEdicion ? 'Producto actualizado ✓' : 'Producto creado ✓', 'success');
+    cerrarModalProducto();
+    await cargarDatos();
+  } catch(e) {
+    showToast('No se pudo guardar: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── Modal fusionar ──────────────────────────────────────────────────
+let productoAFusionar = null;
+
+function abrirModalFusion(idx) {
+  const p = window._catalogoFiltrado[idx];
+  productoAFusionar = p.id;
+
+  document.getElementById('fusion-nota').textContent =
+    `"${p.nombre}" (${p.id}, ${p.alias} alias) se va a eliminar del Maestro. Todos sus alias van a quedar apuntando al producto que elijas abajo, y su costo promedio se recalcula con el historial combinado.`;
+
+  const otros = productosCatalogo.filter(x => x.id !== p.id).sort((a,b) => a.nombre.localeCompare(b.nombre));
+  document.getElementById('mf-destino').innerHTML =
+    otros.map(o => `<option value="${o.id}">${o.id} · ${o.nombre}${o.categoria?' ('+o.categoria+')':''}</option>`).join('');
+
+  document.getElementById('modal-fusion').classList.add('open');
+}
+
+function cerrarModalFusion() {
+  document.getElementById('modal-fusion').classList.remove('open');
+}
+document.getElementById('modal-fusion').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-fusion')) cerrarModalFusion();
+});
+
+async function confirmarFusion() {
+  const destino = document.getElementById('mf-destino').value;
+  if (!destino) { showToast('No hay otro producto para fusionar.', 'error'); return; }
+
+  const btn = document.getElementById('mf-btn-confirmar');
+  btn.disabled = true;
+  try {
+    const result = await postAP({
+      modulo: 'fusionar_productos_maestro',
+      id_conservar: destino,
+      id_descartar: productoAFusionar
+    });
+    showToast(`Fusionado ✓ (${result.alias_movidos} alias movidos)`, 'success');
+    cerrarModalFusion();
+    await cargarDatos();
+  } catch(e) {
+    showToast('No se pudo fusionar: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── Eliminar ─────────────────────────────────────────────────────────
+async function eliminarProductoCatalogo(idx) {
+  const p = window._catalogoFiltrado[idx];
+  if (!confirm(`¿Eliminar "${p.nombre}" (${p.id}) del Maestro? Esta acción no se puede deshacer.`)) return;
+
+  try {
+    await postAP({ modulo: 'eliminar_producto_maestro', id_producto: p.id });
+    showToast(`"${p.nombre}" eliminado ✓`, 'success');
+    await cargarDatos();
+  } catch(e) {
+    showToast(e.message, 'error');
+  }
+}
+
+// ── Utilidades compartidas ────────────────────────────────────────────
 function renderPaginacion(id, total, pag, cb) {
   const pagEl   = document.getElementById(id);
   const totalPag = Math.ceil(total / POR_PAGINA);

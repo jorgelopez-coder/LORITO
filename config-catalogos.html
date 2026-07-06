@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Categorías y áreas · Lorito</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#ffffff;
+      --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
+      --amber:#c87820; --amber-bg:#fdf6e3; --amber-lt:#f0d890;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+
+    header { height:56px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; background:var(--bg); position:sticky; top:0; z-index:20; }
+    .nav-left { display:flex; align-items:center; gap:10px; }
+    .back-btn { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); }
+    .back-btn:hover { color:var(--text); border-color:var(--border-h); }
+    .back-btn svg { width:13px; height:13px; }
+    .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
+    .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 10px; }
+
+    main { max-width:900px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .page-header { margin-bottom:1.5rem; }
+    .page-header h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+    .page-header p { font-size:13px; color:var(--muted); }
+
+    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media (max-width:700px) { .grid-2 { grid-template-columns:1fr; } main { padding:1.5rem 1rem 3rem; } header { padding:0 1rem; } }
+
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; }
+    .card h2 { font-family:var(--font-d); font-size:16px; font-weight:700; margin-bottom:.9rem; }
+
+    .lista-item { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:8px; background:var(--surface); margin-bottom:6px; }
+    .lista-item span { flex:1; font-size:13px; }
+    .lista-item input { flex:1; font-size:13px; padding:6px 8px; border-radius:6px; border:1px solid var(--border); background:var(--card); color:var(--text); outline:none; }
+    .lista-item input:focus { border-color:var(--green); }
+    .icon-btn { background:none; border:none; color:var(--subtle); cursor:pointer; padding:2px 5px; font-size:14px; line-height:1; }
+    .icon-btn:hover { color:var(--text); }
+    .icon-btn.rojo:hover { color:var(--red); }
+    .icon-btn.verde:hover { color:var(--green); }
+    .badge-uso { font-size:10px; color:var(--muted); background:var(--card); border:1px solid var(--border); border-radius:20px; padding:1px 7px; white-space:nowrap; }
+
+    .agregar-row { display:flex; gap:8px; margin-top:10px; }
+    .agregar-row input { flex:1; font-size:13px; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); outline:none; }
+    .agregar-row input:focus { border-color:var(--green); }
+    .btn-agregar { padding:8px 14px; border-radius:8px; border:1px solid var(--green-lt); background:var(--green-bg); color:var(--green); font-weight:600; font-size:13px; cursor:pointer; white-space:nowrap; }
+    .btn-agregar:hover { background:var(--green); color:#fff; }
+
+    .empty { text-align:center; padding:1.5rem; color:var(--subtle); font-size:13px; }
+    .spinner { display:inline-block; width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--green); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
+    .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+    .sdot.off { background:var(--subtle); }
+
+    .toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px); background:var(--card); border:1px solid var(--border); border-radius:10px; padding:11px 18px; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s; opacity:0; z-index:100; box-shadow:0 4px 20px rgba(0,0,0,.08); }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+    .toast.success { border-color:var(--green); color:var(--green); }
+    .toast.error   { border-color:var(--red);   color:var(--red); }
+    .toast svg { width:16px; height:16px; flex-shrink:0; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="nav-left">
+    <a href="config-productos.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Configuración de productos
+    </a>
+    <span class="page-title">Categorías y áreas de negocio</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<main>
+  <div class="page-header">
+    <h1>Categorías y áreas de negocio</h1>
+    <p>Listas compartidas: las usan config-productos.html (Maestro de productos) y costos-productos.html.</p>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h2>Categorías de productos</h2>
+      <div id="lista-categorias"><div class="empty"><span class="spinner"></span></div></div>
+      <div class="agregar-row">
+        <input type="text" id="nueva-categoria" placeholder="Nueva categoría…" onkeydown="if(event.key==='Enter')agregar('categoria')">
+        <button class="btn-agregar" onclick="agregar('categoria')">+ Agregar</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Áreas de negocio</h2>
+      <div id="lista-areas"><div class="empty"><span class="spinner"></span></div></div>
+      <div class="agregar-row">
+        <input type="text" id="nueva-area" placeholder="Nueva área…" onkeydown="if(event.key==='Enter')agregar('area')">
+        <button class="btn-agregar" onclick="agregar('area')">+ Agregar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div style="display:flex;align-items:center;gap:6px;"><span class="sdot" id="conn-dot"></span><span id="conn-label">Conectando…</span></div>
+    <span style="margin-left:auto;">v1.0 · Categorías y áreas · Grupo del Sol</span>
+  </div>
+</main>
+
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+const SHEET_ID = '1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw';
+const APPS_SCRIPT_AP = 'https://script.google.com/macros/s/AKfycbyqdI4EGUgcahTiyz_GBwvUQLWORT_TUVBvFMPGdMve1-3q3ge8mioZ458_zsbMbUqa/exec';
+
+const hoy = new Date();
+document.getElementById('date-chip').textContent =
+  hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
+
+function gvizLoad(hoja, expectedCol) {
+  return new Promise(function(resolve) {
+    var cb    = '_cc_' + Math.random().toString(36).slice(2,10);
+    var url   = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
+              + '/gviz/tq?tqx=responseHandler:' + cb
+              + '&sheet=' + encodeURIComponent(hoja);
+    var timer = setTimeout(function() { cleanup(); resolve([]); }, 15000);
+    function cleanup() {
+      clearTimeout(timer);
+      try { delete window[cb]; } catch(e) {}
+      try { if (s && s.parentNode) document.body.removeChild(s); } catch(e) {}
+    }
+    window[cb] = function(data) {
+      cleanup();
+      try {
+        var colsMeta = data.table.cols || [];
+        var cols  = colsMeta.map(function(c){ return c.label||c.id||''; });
+        if (expectedCol && cols.indexOf(expectedCol) === -1) { resolve([]); return; }
+        var rows = (data.table.rows||[]).filter(function(r){ return r&&r.c; }).map(function(row){
+          var obj = {};
+          cols.forEach(function(col,i){
+            var cell = row.c[i];
+            obj[col] = cell ? (cell.f!=null?cell.f:(cell.v!=null?cell.v:'')) : '';
+          });
+          return obj;
+        });
+        resolve(rows);
+      } catch(e2) { resolve([]); }
+    };
+    var s = document.createElement('script');
+    s.onerror = function(){ cleanup(); resolve([]); };
+    s.src = url;
+    document.body.appendChild(s);
+  });
+}
+
+async function postAP(payload) {
+  const resp = await fetch(APPS_SCRIPT_AP, {
+    method: 'POST',
+    body: new URLSearchParams({ data: JSON.stringify(payload) })
+  });
+  const json = await resp.json();
+  if (!json.ok) throw new Error(json.error || 'Error al guardar');
+  return json.result;
+}
+
+let categorias = [];
+let areas = [];
+
+async function cargarDatos() {
+  try {
+    const [dCat, dArea] = await Promise.all([
+      gvizLoad('Categorias_Productos', 'Categoría'),
+      gvizLoad('Areas_Negocio', 'Área de negocio')
+    ]);
+    categorias = dCat.map(r => r['Categoría']).filter(Boolean);
+    areas      = dArea.map(r => r['Área de negocio']).filter(Boolean);
+
+    document.getElementById('conn-dot').classList.remove('off');
+    document.getElementById('conn-label').textContent = 'Conectado · Google Sheets';
+
+    renderLista('categoria', categorias);
+    renderLista('area', areas);
+  } catch(e) {
+    document.getElementById('conn-dot').classList.add('off');
+    document.getElementById('conn-label').textContent = 'Error de conexión';
+    showToast('No se pudo conectar: ' + e.message, 'error');
+  }
+}
+
+function contenedorDe(tipo) {
+  return document.getElementById(tipo === 'categoria' ? 'lista-categorias' : 'lista-areas');
+}
+
+function renderLista(tipo, lista) {
+  const cont = contenedorDe(tipo);
+  if (!lista.length) {
+    cont.innerHTML = '<div class="empty">Sin valores todavía.</div>';
+    return;
+  }
+  cont.innerHTML = lista.map((valor, i) => `
+    <div class="lista-item" id="${tipo}-item-${i}">
+      <span id="${tipo}-txt-${i}">${valor}</span>
+      <button class="icon-btn" title="Renombrar" onclick="editar('${tipo}', ${i})">✎</button>
+      <button class="icon-btn rojo" title="Eliminar" onclick="eliminar('${tipo}', ${i})">×</button>
+    </div>`).join('');
+}
+
+function editar(tipo, i) {
+  const lista = tipo === 'categoria' ? categorias : areas;
+  const valorActual = lista[i];
+  const item = document.getElementById(`${tipo}-item-${i}`);
+  item.innerHTML = `
+    <input type="text" id="${tipo}-input-${i}" value="${valorActual.replace(/"/g,'&quot;')}" onkeydown="if(event.key==='Enter')confirmarEdicion('${tipo}',${i})">
+    <button class="icon-btn verde" title="Guardar" onclick="confirmarEdicion('${tipo}', ${i})">✓</button>
+    <button class="icon-btn" title="Cancelar" onclick="renderLista('${tipo}', ${tipo==='categoria'?'categorias':'areas'})">×</button>
+  `;
+  document.getElementById(`${tipo}-input-${i}`).focus();
+}
+
+async function confirmarEdicion(tipo, i) {
+  const lista = tipo === 'categoria' ? categorias : areas;
+  const valorAnterior = lista[i];
+  const valorNuevo = document.getElementById(`${tipo}-input-${i}`).value.trim();
+  if (!valorNuevo) { showToast('El valor no puede quedar vacío.', 'error'); return; }
+  if (valorNuevo === valorAnterior) { renderLista(tipo, lista); return; }
+
+  try {
+    await postAP({
+      modulo: tipo === 'categoria' ? 'guardar_categoria' : 'guardar_area_negocio',
+      valor: valorNuevo,
+      valor_anterior: valorAnterior
+    });
+    lista[i] = valorNuevo;
+    renderLista(tipo, lista);
+    showToast('Renombrado ✓', 'success');
+  } catch(e) {
+    showToast('No se pudo renombrar: ' + e.message, 'error');
+    renderLista(tipo, lista);
+  }
+}
+
+async function eliminar(tipo, i) {
+  const lista = tipo === 'categoria' ? categorias : areas;
+  const valor = lista[i];
+  if (!confirm(`¿Eliminar "${valor}"?`)) return;
+
+  try {
+    await postAP({ modulo: tipo === 'categoria' ? 'eliminar_categoria' : 'eliminar_area_negocio', valor });
+    lista.splice(i, 1);
+    renderLista(tipo, lista);
+    showToast(`"${valor}" eliminado ✓`, 'success');
+  } catch(e) {
+    showToast(e.message, 'error');
+  }
+}
+
+async function agregar(tipo) {
+  const input = document.getElementById(tipo === 'categoria' ? 'nueva-categoria' : 'nueva-area');
+  const valor = input.value.trim();
+  if (!valor) return;
+
+  try {
+    await postAP({ modulo: tipo === 'categoria' ? 'guardar_categoria' : 'guardar_area_negocio', valor });
+    (tipo === 'categoria' ? categorias : areas).push(valor);
+    renderLista(tipo, tipo === 'categoria' ? categorias : areas);
+    input.value = '';
+    showToast(`"${valor}" agregado ✓`, 'success');
+  } catch(e) {
+    showToast('No se pudo agregar: ' + e.message, 'error');
+  }
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').innerHTML = type==='success'
+    ? '<polyline points="3 8 7 12 13 4"/>'
+    : '<line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = `toast ${type}`;
+  requestAnimationFrame(()=>t.classList.add('show'));
+  setTimeout(()=>t.classList.remove('show'), 3500);
+}
+
+cargarDatos();
+</script>
+</body>
+</html>
