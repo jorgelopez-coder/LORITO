@@ -59,7 +59,7 @@ const MAESTRO_ENCABEZADOS = [
 
 // Listas compartidas de categorías / área de negocio — usadas acá y también
 // por costos-productos.html (que antes las tenía hardcodeadas/en localStorage).
-// Se administran desde config-catalogos.html.
+// Se administran desde la pestaña "Categorías y áreas" de config-productos.html.
 const HOJA_CATEGORIAS = 'Categorias_Productos';
 const CATEGORIAS_DEFAULT = [
   'Carnes', 'Mariscos', 'Aves', 'Lácteos', 'Aceites y Grasas', 'Frutas y Verduras',
@@ -1166,10 +1166,10 @@ function fusionarProductosMaestro(p) {
   return { id_conservar: p.id_conservar, alias_movidos: aliasMovidos };
 }
 
-// ── LISTAS COMPARTIDAS: CATEGORÍAS Y ÁREA DE NEGOCIO (config-catalogos.html) ──
-// Ambas hojas son una sola columna de texto. Se administran desde
-// config-catalogos.html y las lee también costos-productos.html (antes las
-// tenía hardcodeadas / en localStorage).
+// ── LISTAS COMPARTIDAS: CATEGORÍAS Y ÁREA DE NEGOCIO ─────────────────
+// Ambas hojas son una sola columna de texto. Se administran desde la
+// pestaña "Categorías y áreas" de config-productos.html y las lee también
+// costos-productos.html (antes las tenía hardcodeadas / en localStorage).
 function getHojaCategorias() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let hoja = ss.getSheetByName(HOJA_CATEGORIAS);
@@ -1311,8 +1311,8 @@ function migrarEsquemaSinUnidades() {
 // sembrar (con los valores por defecto) las hojas Categorias_Productos y
 // Areas_Negocio la primera vez — de otra forma solo se crean solas al
 // recibir la primera escritura (guardar_categoria / guardar_area_negocio),
-// y hasta entonces config-productos.html / config-catalogos.html /
-// costos-productos.html las ven vacías (leen con gviz, que no crea hojas).
+// y hasta entonces config-productos.html / costos-productos.html las ven
+// vacías (leen con gviz, que no crea hojas).
 // Segura de volver a correr: si ya existen, no hace nada.
 function inicializarListasCompartidas() {
   const yaExistiaCat = !!SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_CATEGORIAS);

@@ -133,7 +133,24 @@
     .toast.error   { border-color:var(--red);   color:var(--red); }
     .toast svg { width:16px; height:16px; flex-shrink:0; }
 
+    /* Categorías y áreas */
+    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .lista-item { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:8px; background:var(--surface); margin-bottom:6px; }
+    .lista-item span { flex:1; font-size:13px; }
+    .lista-item input { flex:1; font-size:13px; padding:6px 8px; border-radius:6px; border:1px solid var(--border); background:var(--card); color:var(--text); outline:none; }
+    .lista-item input:focus { border-color:var(--green); }
+    .icon-btn { background:none; border:none; color:var(--subtle); cursor:pointer; padding:2px 5px; font-size:14px; line-height:1; }
+    .icon-btn:hover { color:var(--text); }
+    .icon-btn.rojo:hover { color:var(--red); }
+    .icon-btn.verde:hover { color:var(--green); }
+    .agregar-row { display:flex; gap:8px; margin-top:10px; }
+    .agregar-row input { flex:1; font-size:13px; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); outline:none; }
+    .agregar-row input:focus { border-color:var(--green); }
+    .btn-agregar { padding:8px 14px; border-radius:8px; border:1px solid var(--green-lt); background:var(--green-bg); color:var(--green); font-weight:600; font-size:13px; cursor:pointer; white-space:nowrap; }
+    .btn-agregar:hover { background:var(--green); color:#fff; }
+
     @media (max-width:700px) {
+      .grid-2 { grid-template-columns:1fr; }
       header { padding:0 1rem; } main { padding:1.5rem 1rem 3rem; }
       .kpi-strip { grid-template-columns:1fr; }
       .page-header { flex-direction:column; }
@@ -157,7 +174,7 @@
   <div class="page-header">
     <div>
       <h1>Configuración de productos</h1>
-      <p>Pendientes de mapear y catálogo de productos (Maestro) · <a href="config-catalogos.html" style="color:var(--muted);">administrar categorías / áreas →</a></p>
+      <p>Pendientes de mapear, catálogo de productos (Maestro) y categorías / áreas de negocio</p>
     </div>
     <div id="status-carga" style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;">
       <span class="spinner"></span> Cargando…
@@ -170,6 +187,9 @@
     </button>
     <button class="tab-principal" id="tabp-catalogo" onclick="cambiarTabPrincipal('catalogo')">
       Catálogo (Maestro) <span class="tab-badge" id="tab-badge-cat-principal">—</span>
+    </button>
+    <button class="tab-principal" id="tabp-categorias" onclick="cambiarTabPrincipal('categorias')">
+      Categorías y áreas
     </button>
   </div>
 
@@ -249,6 +269,30 @@
         <div class="empty"><span class="spinner"></span></div>
       </div>
       <div class="pagination" id="pag-catalogo" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ PANEL: CATEGORÍAS Y ÁREAS ═══════════════ -->
+  <div id="panel-categorias" style="display:none;">
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;">Listas compartidas: también las usa costos-productos.html.</p>
+    <div class="grid-2">
+      <div class="card">
+        <h2 style="font-family:var(--font-d);font-size:16px;font-weight:700;margin-bottom:.9rem;">Categorías de productos</h2>
+        <div id="lista-categoria"><div class="empty"><span class="spinner"></span></div></div>
+        <div class="agregar-row">
+          <input type="text" id="nueva-categoria" placeholder="Nueva categoría…" onkeydown="if(event.key==='Enter')agregarValorCompartido('categoria')">
+          <button class="btn-agregar" onclick="agregarValorCompartido('categoria')">+ Agregar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="font-family:var(--font-d);font-size:16px;font-weight:700;margin-bottom:.9rem;">Áreas de negocio</h2>
+        <div id="lista-area"><div class="empty"><span class="spinner"></span></div></div>
+        <div class="agregar-row">
+          <input type="text" id="nueva-area" placeholder="Nueva área…" onkeydown="if(event.key==='Enter')agregarValorCompartido('area')">
+          <button class="btn-agregar" onclick="agregarValorCompartido('area')">+ Agregar</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -419,6 +463,8 @@ async function cargarDatos() {
     construirVistaCatalogo();
     inicializarPend();
     inicializarCat();
+    renderListaCompartida('categoria');
+    renderListaCompartida('area');
 
   } catch(e) {
     console.error('Error cargando configuración de productos:', e.message);
@@ -435,8 +481,10 @@ async function cargarDatos() {
 function cambiarTabPrincipal(tab) {
   document.getElementById('panel-pendientes').style.display = tab === 'pendientes' ? '' : 'none';
   document.getElementById('panel-catalogo').style.display   = tab === 'catalogo'   ? '' : 'none';
+  document.getElementById('panel-categorias').style.display = tab === 'categorias' ? '' : 'none';
   document.getElementById('tabp-pendientes').classList.toggle('active', tab === 'pendientes');
   document.getElementById('tabp-catalogo').classList.toggle('active', tab === 'catalogo');
+  document.getElementById('tabp-categorias').classList.toggle('active', tab === 'categorias');
 }
 
 // ═══════════════════════ PANEL: PENDIENTES DE MAPEAR ═══════════════════════
@@ -831,6 +879,98 @@ async function eliminarProductoCatalogo(idx) {
     await cargarDatos();
   } catch(e) {
     showToast(e.message, 'error');
+  }
+}
+
+// ═══════════════════════ PANEL: CATEGORÍAS Y ÁREAS ═══════════════════════
+// dataCategorias / dataAreas ya se cargaron en cargarDatos() (se usan también
+// para los selects del modal de producto). Acá se administran (agregar,
+// renombrar, eliminar) — el backend bloquea el borrado si algún producto del
+// Maestro todavía usa ese valor.
+function listaCompartida(tipo) {
+  return tipo === 'categoria' ? dataCategorias : dataAreas;
+}
+
+function contenedorCompartido(tipo) {
+  return document.getElementById(tipo === 'categoria' ? 'lista-categoria' : 'lista-area');
+}
+
+function renderListaCompartida(tipo) {
+  const lista = listaCompartida(tipo);
+  const cont  = contenedorCompartido(tipo);
+  if (!lista.length) {
+    cont.innerHTML = '<div class="empty">Sin valores todavía.</div>';
+    return;
+  }
+  cont.innerHTML = lista.map((valor, i) => `
+    <div class="lista-item" id="${tipo}-item-${i}">
+      <span id="${tipo}-txt-${i}">${valor}</span>
+      <button class="icon-btn" title="Renombrar" onclick="editarValorCompartido('${tipo}', ${i})">✎</button>
+      <button class="icon-btn rojo" title="Eliminar" onclick="eliminarValorCompartido('${tipo}', ${i})">×</button>
+    </div>`).join('');
+}
+
+function editarValorCompartido(tipo, i) {
+  const valorActual = listaCompartida(tipo)[i];
+  const item = document.getElementById(`${tipo}-item-${i}`);
+  item.innerHTML = `
+    <input type="text" id="${tipo}-input-${i}" value="${valorActual.replace(/"/g,'&quot;')}" onkeydown="if(event.key==='Enter')confirmarEdicionCompartida('${tipo}',${i})">
+    <button class="icon-btn verde" title="Guardar" onclick="confirmarEdicionCompartida('${tipo}', ${i})">✓</button>
+    <button class="icon-btn" title="Cancelar" onclick="renderListaCompartida('${tipo}')">×</button>
+  `;
+  document.getElementById(`${tipo}-input-${i}`).focus();
+}
+
+async function confirmarEdicionCompartida(tipo, i) {
+  const lista = listaCompartida(tipo);
+  const valorAnterior = lista[i];
+  const valorNuevo = document.getElementById(`${tipo}-input-${i}`).value.trim();
+  if (!valorNuevo) { showToast('El valor no puede quedar vacío.', 'error'); return; }
+  if (valorNuevo === valorAnterior) { renderListaCompartida(tipo); return; }
+
+  try {
+    await postAP({
+      modulo: tipo === 'categoria' ? 'guardar_categoria' : 'guardar_area_negocio',
+      valor: valorNuevo,
+      valor_anterior: valorAnterior
+    });
+    lista[i] = valorNuevo;
+    renderListaCompartida(tipo);
+    showToast('Renombrado ✓', 'success');
+  } catch(e) {
+    showToast('No se pudo renombrar: ' + e.message, 'error');
+    renderListaCompartida(tipo);
+  }
+}
+
+async function eliminarValorCompartido(tipo, i) {
+  const lista = listaCompartida(tipo);
+  const valor = lista[i];
+  if (!confirm(`¿Eliminar "${valor}"?`)) return;
+
+  try {
+    await postAP({ modulo: tipo === 'categoria' ? 'eliminar_categoria' : 'eliminar_area_negocio', valor });
+    lista.splice(i, 1);
+    renderListaCompartida(tipo);
+    showToast(`"${valor}" eliminado ✓`, 'success');
+  } catch(e) {
+    showToast(e.message, 'error');
+  }
+}
+
+async function agregarValorCompartido(tipo) {
+  const input = document.getElementById(tipo === 'categoria' ? 'nueva-categoria' : 'nueva-area');
+  const valor = input.value.trim();
+  if (!valor) return;
+
+  try {
+    await postAP({ modulo: tipo === 'categoria' ? 'guardar_categoria' : 'guardar_area_negocio', valor });
+    listaCompartida(tipo).push(valor);
+    renderListaCompartida(tipo);
+    input.value = '';
+    showToast(`"${valor}" agregado ✓`, 'success');
+  } catch(e) {
+    showToast('No se pudo agregar: ' + e.message, 'error');
   }
 }
 

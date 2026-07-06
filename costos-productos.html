@@ -335,7 +335,7 @@
         <p class="card-title">Categorías</p>
         <div id="cfg-cat-lista" style="margin-bottom:10px;"></div>
         <p style="font-size:12px;color:var(--muted);">Lista compartida con Configuración de productos — se administra desde
-          <a href="config-catalogos.html" style="color:var(--purple);font-weight:600;">Categorías y áreas →</a>
+          <a href="config-productos.html" style="color:var(--purple);font-weight:600;">Categorías y áreas →</a>
         </p>
       </div>
 
@@ -352,7 +352,7 @@
         <p class="card-title">Áreas de negocio</p>
         <div id="cfg-area-lista" style="margin-bottom:10px;"></div>
         <p style="font-size:12px;color:var(--muted);">Lista compartida con Configuración de productos — se administra desde
-          <a href="config-catalogos.html" style="color:var(--purple);font-weight:600;">Categorías y áreas →</a>
+          <a href="config-productos.html" style="color:var(--purple);font-weight:600;">Categorías y áreas →</a>
         </p>
       </div>
 
@@ -730,8 +730,9 @@ const CFG_DEFAULTS = {
 };
 
 // Categorías / Área de negocio ya no son locales: viven en el Sheet de
-// compras (Categorias_Productos / Areas_Negocio) y se administran desde
-// config-catalogos.html. Acá solo se leen (read-only, gviz público).
+// compras (Categorias_Productos / Areas_Negocio) y se administran desde la
+// pestaña "Categorías y áreas" de config-productos.html. Acá solo se leen
+// (read-only, gviz público).
 const SHEET_COMPRAS_ID = '1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw';
 let catCompartidas   = null; // null mientras carga; después, array de strings
 let areasCompartidas = null;

@@ -52,13 +52,16 @@ ponderado (30 y 90 días) por producto real, en vez de por texto crudo de
 factura. Vive toda en el Sheet "Registro compras LORITO_Brewhouse - IA"
 (`1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw`), junto a `Desglose_IA`.
 
-`config-productos.html` fusiona en un solo archivo (con 2 pestañas) lo que
-antes eran dos páginas separadas: "Pendientes de mapear" (resolver facturas
-sin alias) y "Catálogo (Maestro)" (editar/fusionar/eliminar productos del
-Maestro — antes `maestro-productos.html`, ya eliminado). `Maestro_Productos`
-ya no tiene "Unidad base" / "Unidad de compra default" — tiene "Categoría" y
-"Área de negocio", elegidas de listas compartidas administradas en la nueva
-`config-catalogos.html`.
+`config-productos.html` fusiona en un solo archivo (con 3 pestañas) lo que
+antes eran tres páginas separadas: "Pendientes de mapear" (resolver facturas
+sin alias), "Catálogo (Maestro)" (editar/fusionar/eliminar productos del
+Maestro — antes `maestro-productos.html`) y "Categorías y áreas" (administrar
+las listas compartidas — antes `config-catalogos.html`); las tres quedaron
+eliminadas como páginas propias. `Maestro_Productos` ya no tiene "Unidad
+base" / "Unidad de compra default" — tiene "Categoría" y "Área de negocio".
+El módulo entero (`config-productos.html` + `historial-precios.html`) se
+movió del menú "Operaciones" a "Costos y recetas" en `index.html`, junto al
+resto de `costos-*.html`.
 
 Pasos para activarla (todos manuales, vía script.google.com):
 
@@ -77,9 +80,10 @@ Pasos para activarla (todos manuales, vía script.google.com):
      negocio" a `Maestro_Productos`.
    - `inicializarListasCompartidas()` — crea y siembra `Categorias_Productos`
      y `Areas_Negocio` con los valores por defecto (sin esto, esas hojas
-     recién se crean solas con la primera edición desde `config-catalogos.html`,
-     y hasta entonces todas las páginas que las leen por `gviz` las ven
-     vacías — no es un error, solo falta este paso).
+     recién se crean solas con la primera edición desde la pestaña
+     "Categorías y áreas" de `config-productos.html`, y hasta entonces todas
+     las páginas que las leen por `gviz` las ven vacías — no es un error,
+     solo falta este paso).
 3. El script de OCR de facturas (vive en su propio Sheet,
    `11dfpbu92aGq-Moadys1BbltxA9iRJORYHPZDMKFw3P4`, código fuente en
    `facturas-extractor/Code.gs` de este repo) escribe cada línea de producto
