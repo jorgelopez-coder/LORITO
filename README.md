@@ -152,17 +152,22 @@ Elegí leer `proveedores` desde acá (con `SHEET_COMPRAS_ID`, mismo patrón que
 vivo por cuentas-por-pagar/factura-manual/maestro-productos/caja-chica/
 config-productos.
 
-**Control de faltantes:** `Code-costos-backend.gs` agrega el menú "Costos" al
-Sheet (función `onOpen()`) con el botón "Actualizar control de faltantes", que
-corre `actualizarControlFaltantes()`: compara `Maestro_Productos` (Sheet de
-compras) contra la pestaña "Productos" de este Sheet por ID, y deja en la
-pestaña nueva `Faltantes_Costeo` los productos del Maestro que todavía no
-tienen precio/costo registrado acá. Es manual (sin trigger automático) porque
-Apps Script no tiene forma simple de detectar cambios en un Sheet externo —
-hay que abrirlo desde el menú cada vez que se quiera revisar qué falta
-registrar.
+**Control de faltantes:** la comparación vive en `calcularFaltantes()`
+(`Code-costos-backend.gs`) — Maestro_Productos (Sheet de compras) contra la
+pestaña "Productos" de este Sheet, por ID. Se usa en dos lugares:
+- Menú "Costos" del Sheet (función `onOpen()`) → "Actualizar control de
+  faltantes" corre `actualizarControlFaltantes()`, que deja el resultado en la
+  pestaña `Faltantes_Costeo`. Manual porque Apps Script no detecta cambios en
+  un Sheet externo solo.
+- `?modulo=faltantes` (doGet) → devuelve el mismo resultado como JSON; es lo
+  que lee `costos-productos.html` para mostrar el aviso "N producto(s) de
+  compras sin registrar acá" arriba de la lista (colapsable, con botón
+  "+ Agregar" por producto que precarga nombre/categoría/ID en "Nuevo
+  producto" — el precio queda vacío porque todavía no tiene ninguna compra).
 
-**Pendiente (de nuevo):** `?modulo=proveedores`, `actualizarControlFaltantes()`
-y el menú "Costos" se agregaron después del último despliegue — hay que volver
-a pegar `Code-costos-backend.gs` y hacer Nueva versión, y correr
-`configurarHojas()` una vez más para crear la pestaña `Faltantes_Costeo`.
+**Pendiente (de nuevo):** `?modulo=proveedores`, `?modulo=faltantes`,
+`calcularFaltantes()`/`actualizarControlFaltantes()` y el menú "Costos" se
+agregaron después del último despliegue — hay que volver a pegar
+`Code-costos-backend.gs` y hacer Nueva versión, y correr `configurarHojas()`
+una vez más para crear la pestaña `Faltantes_Costeo` (verificado con `curl`,
+hoy `?modulo=faltantes` todavía responde "Módulo no reconocido").

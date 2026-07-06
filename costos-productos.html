@@ -134,6 +134,15 @@
         <div style="font-size:12px;color:var(--muted);margin-top:2px;">Productos inactivos</div>
       </div>
     </div>
+    <div class="card" id="faltantes-card" style="display:none;margin-bottom:12px;border-color:var(--amber);background:var(--amber-bg);">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="toggleFaltantesDetalle()">
+        <span style="font-size:13px;font-weight:600;color:var(--amber);">⚠ <span id="faltantes-count">0</span> producto(s) de compras sin registrar acá</span>
+        <svg id="faltantes-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;color:var(--amber);transition:transform .15s;"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div id="faltantes-detalle" style="display:none;margin-top:12px;">
+        <div class="tabla-wrap" id="faltantes-tabla"></div>
+      </div>
+    </div>
     <div class="card">
       <div class="toolbar">
         <div class="search-wrap">
@@ -916,6 +925,62 @@ async function cargarProductosDesdeSheet() {
   }
 }
 
+// Productos del Maestro (Sheet de compras) que todavía no están en "Productos".
+let FALTANTES_COSTEO = [];
+
+async function cargarControlFaltantes() {
+  if (!APPS_SCRIPT_COSTOS) return;
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS + '?modulo=faltantes');
+    const data = await resp.json();
+    if (!data || !data.ok || !Array.isArray(data.faltantes)) return;
+    FALTANTES_COSTEO = data.faltantes;
+    document.getElementById('faltantes-count').textContent = FALTANTES_COSTEO.length;
+    document.getElementById('faltantes-card').style.display = FALTANTES_COSTEO.length ? 'block' : 'none';
+    renderTablaFaltantes();
+  } catch (e) {
+    console.warn('No se pudo cargar el control de faltantes:', e);
+  }
+}
+
+function renderTablaFaltantes() {
+  const filas = FALTANTES_COSTEO.map(f => `<tr>
+    <td style="font-weight:500;">${f.nombre}</td>
+    <td style="color:var(--muted);font-size:12px;">${f.categoria || '—'}</td>
+    <td style="color:var(--muted);font-size:12px;">${f.unidad_base || f.unidad_compra_default || '—'}</td>
+    <td><button class="btn-edit" onclick="agregarDesdeFaltante('${f.id}')">+ Agregar</button></td>
+  </tr>`).join('');
+
+  document.getElementById('faltantes-tabla').innerHTML = `
+    <table>
+      <thead><tr><th>Producto</th><th>Categoría</th><th>Unidad</th><th></th></tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+}
+
+function toggleFaltantesDetalle() {
+  const detalle = document.getElementById('faltantes-detalle');
+  const chevron = document.getElementById('faltantes-chevron');
+  const abierto = detalle.style.display !== 'none';
+  detalle.style.display = abierto ? 'none' : 'block';
+  chevron.style.transform = abierto ? '' : 'rotate(180deg)';
+}
+
+// Precarga nombre/categoría/unidad en "Nuevo producto" a partir de un producto
+// pendiente del Maestro — el precio de compra queda vacío porque todavía no
+// tiene ninguna factura registrada (por eso está en la lista de faltantes).
+function agregarDesdeFaltante(id) {
+  const f = FALTANTES_COSTEO.find(x => x.id === id);
+  if (!f) return;
+  switchTab('nuevo', document.querySelectorAll('.tab')[1]);
+  document.getElementById('p-nombre').value = f.nombre;
+  document.getElementById('p-id-normalizado').value = f.id;
+  if (f.categoria) document.getElementById('p-categoria').value = f.categoria;
+  const unidad = (f.unidad_base || f.unidad_compra_default || '').toLowerCase();
+  if (unidad) document.getElementById('p-unidad').value = unidad;
+  document.getElementById('p-precio-sin-iva').focus();
+}
+
 // Base de datos de proveedores (compartida con proveedores.html)
 function getProveedores() {
   try { return JSON.parse(localStorage.getItem('proveedores') || '[]'); }
@@ -1270,6 +1335,7 @@ document.addEventListener("DOMContentLoaded", () => {
   renderLista();
   cargarProveedoresDesdeSheet();
   cargarProductosDesdeSheet();
+  cargarControlFaltantes();
 });
 </script>
 </body>

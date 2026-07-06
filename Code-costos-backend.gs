@@ -59,15 +59,11 @@ function onOpen() {
     .addToUi();
 }
 
-// Compara Maestro_Productos (Sheet de compras) contra la pestaña "Productos"
-// de este Sheet y deja en "Faltantes_Costeo" los productos del Maestro que
-// todavía no tienen precio/costo registrado acá.
-function actualizarControlFaltantes() {
-  const hojaFaltantes = prepararHoja(HOJA_FALTANTES, ENCABEZADOS_FALTANTES);
-  if (hojaFaltantes.getLastRow() > 1) {
-    hojaFaltantes.getRange(2, 1, hojaFaltantes.getLastRow() - 1, ENCABEZADOS_FALTANTES.length).clearContent();
-  }
-
+// Compara Maestro_Productos (Sheet de compras) contra la pestaña "Productos" de
+// este Sheet y devuelve los productos del Maestro que todavía no tienen
+// precio/costo registrado acá. Usado tanto por actualizarControlFaltantes()
+// (menú del Sheet) como por doGet ?modulo=faltantes (costos-productos.html).
+function calcularFaltantes() {
   const ssCompras = SpreadsheetApp.openById(SHEET_COMPRAS_ID);
   const hojaMaestro = ssCompras.getSheetByName(HOJA_MAESTRO_PRODUCTOS);
   const maestro = hojaMaestro ? filasComoObjetos(hojaMaestro) : [];
@@ -75,16 +71,31 @@ function actualizarControlFaltantes() {
   const hojaProductos = prepararHoja(HOJA_PRODUCTOS, ENCABEZADOS_PRODUCTOS);
   const idsRegistrados = new Set(filasComoObjetos(hojaProductos).map(p => p['ID']));
 
-  const faltantes = maestro.filter(m => m['ID producto'] && !idsRegistrados.has(m['ID producto']));
+  return maestro
+    .filter(m => m['ID producto'] && !idsRegistrados.has(m['ID producto']))
+    .map(m => ({
+      id: m['ID producto'] || '',
+      nombre: m['Nombre normalizado'] || '',
+      categoria: m['Categoría'] || '',
+      unidad_base: m['Unidad base'] || '',
+      unidad_compra_default: m['Unidad de compra default'] || '',
+      fecha_creacion: m['Fecha de creación'] || ''
+    }));
+}
+
+// Deja en "Faltantes_Costeo" el resultado de calcularFaltantes() — se corre
+// desde el menú "Costos" del Sheet.
+function actualizarControlFaltantes() {
+  const hojaFaltantes = prepararHoja(HOJA_FALTANTES, ENCABEZADOS_FALTANTES);
+  if (hojaFaltantes.getLastRow() > 1) {
+    hojaFaltantes.getRange(2, 1, hojaFaltantes.getLastRow() - 1, ENCABEZADOS_FALTANTES.length).clearContent();
+  }
+
+  const faltantes = calcularFaltantes();
   if (!faltantes.length) return;
 
-  const filas = faltantes.map(m => [
-    m['ID producto'] || '',
-    m['Nombre normalizado'] || '',
-    m['Categoría'] || '',
-    m['Unidad base'] || '',
-    m['Unidad de compra default'] || '',
-    m['Fecha de creación'] || ''
+  const filas = faltantes.map(f => [
+    f.id, f.nombre, f.categoria, f.unidad_base, f.unidad_compra_default, f.fecha_creacion
   ]);
   hojaFaltantes.getRange(2, 1, filas.length, ENCABEZADOS_FALTANTES.length).setValues(filas);
 }
@@ -116,6 +127,9 @@ function doGet(e) {
       const ssCompras = SpreadsheetApp.openById(SHEET_COMPRAS_ID);
       const hojaProveedores = ssCompras.getSheetByName(HOJA_PROVEEDORES);
       return jsonOut({ ok: true, registros: hojaProveedores ? filasComoObjetos(hojaProveedores) : [] });
+    }
+    if (modulo === 'faltantes') {
+      return jsonOut({ ok: true, faltantes: calcularFaltantes() });
     }
     let hoja;
     switch (modulo) {
