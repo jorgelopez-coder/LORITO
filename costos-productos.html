@@ -1052,37 +1052,12 @@ function renderLista() {
     return;
   }
 
-  const filas = lista.map(p => {
-    const costoRaw = parseFloat(p.costo) || 0;
-    const rendRaw  = parseFloat(p.rendimiento) || 100;
-    const costoReal = rendRaw > 0 ? costoRaw / (rendRaw / 100) : costoRaw;
-    return `<tr>
-      <td style="font-weight:500;">${p.nombre}</td>
-      <td>${catBadge(p.categoria)}</td>
-      <td style="color:var(--muted);">${p.unidad}</td>
-      <td class="num">${fmt(parseFloat(p.precio_sin_iva||p.costo)||0)}</td>
-      <td class="num" style="color:var(--muted);">${p.iva || 0}%</td>
-      <td class="num">${p.cantidad_presentacion || 1} ${p.unidad}</td>
-      <td class="num" style="font-weight:600;color:var(--purple);">${fmt(p.costo)}</td>
-      <td class="num" style="color:var(--muted);">${p.rendimiento}%</td>
-      <td class="num" style="font-weight:700;color:var(--green);">${fmt(costoReal)}</td>
-      <td style="color:var(--muted);font-size:12px;">${p.area||'—'}</td>
-      <td class="num" style="color:var(--muted);">${p.stock_minimo > 0 ? p.stock_minimo + ' pres.' : '—'}</td>
-      <td style="color:var(--muted);font-size:12px;">${p.proveedor||'—'}</td>
-      <td style="color:var(--muted);font-size:12px;">${p.presentacion ? p.presentacion + (p.tamano ? ' · ' + p.tamano : '') : '—'}</td>
-      <td>
-        <div style="display:flex;gap:4px;">
-          <button class="btn-edit" onclick="editar('${p.id}')">Editar</button>
-          <button class="btn-del"  onclick="eliminar('${p.id}')">✕</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
+  const filas = lista.map(p => buildFila(p)).join('');
 
   document.getElementById('tabla-lista').innerHTML = `
     <table>
       <thead><tr>
-        <th>Producto</th><th>Categoría</th><th>Unidad</th>
+        <th>Producto</th><th>Categoría</th><th>Área</th><th>Unidad</th>
         <th style="text-align:right;">Precio sin IVA</th>
         <th style="text-align:right;">IVA</th>
         <th style="text-align:right;">Costo/u</th>
