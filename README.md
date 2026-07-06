@@ -99,34 +99,40 @@ Fuera de alcance por ahora: `costos-recetas.html` y
 `factura-manual.html` sigue sin generar líneas de producto (solo cabecera
 para cuentas por pagar).
 
-## Base de productos (costos-productos.html) — despliegue pendiente
+## Base de productos (costos-productos.html) — conectado
 
-Sheet de datos: "Recetas - Lorito IA" — `1YTK3wA-iaaZf0-PMK3mAcGchGNEPIFXwlOr0-oHLY_E`
-(dueño: jorge.lopez@casaaguizotes.com). Se pobló manualmente la pestaña
-"Productos" con los 16 productos que ya tenían costo real en `Costo_Promedio`
-del Sheet de compras (`1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw`); los otros
-23 productos de `Maestro_Productos` todavía no tienen compras registradas y se
-agregan solos a medida que se compran (vía `costos-productos.html` o carga
-masiva).
+Sheet de datos: "COSTOS Y RECETAS - LORITO IA" — `1PtT9AHv2drY7oLygHKWMhHQgeOuT20_cD_igqu6ijyA`
+(dueño: jorge.lopez@casaaguizotes.com). La pestaña "Productos" se puebla con
+los productos que ya tienen costo real en `Costo_Promedio` del Sheet de
+compras (`1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw`; había 16 al momento de
+escribir esto, todavía sin cargar en el Sheet nuevo); los demás productos de
+`Maestro_Productos` todavía no tienen compras registradas y se agregan solos a
+medida que se compran (vía `costos-productos.html` o carga masiva).
 
-`Code-costos-backend.gs` (nuevo) implementa el módulo `producto` (alta/edición
-por ID, borrado) y expone `?modulo=productos` de solo lectura — mismo patrón de
+`Code-costos-backend.gs` implementa el módulo `producto` (alta/edición por ID,
+borrado) y expone `?modulo=productos` de solo lectura — mismo patrón de
 `Code-rrhh-backend.gs` (fetch GET simple con querystring, no JSONP). Los
 módulos `receta` y `plato` (para `costos-recetas.html` / `costos-menu.html`)
 todavía no están implementados en este backend.
 
-Pasos para conectar (manuales, requieren script.google.com):
+Ya desplegado como Web App y `APPS_SCRIPT_COSTOS` en `costos-productos.html` ya
+apunta a ese `/exec` (verificado con `?modulo=productos` → responde
+`{"ok":true,"registros":[]}`, vacío porque la pestaña "Productos" del Sheet
+todavía no tiene filas). Si se agregan columnas, actualizar
+`ENCABEZADOS_PRODUCTOS` en `Code-costos-backend.gs`, re-desplegar (Implementar
+→ Gestionar implementaciones → Editar → Nueva versión — la URL `/exec` no
+cambia) y correr `configurarHojas()` de nuevo si hace falta.
 
-1. Abrí el Sheet "Recetas - Lorito IA" → Extensiones → Apps Script, pegá
-   `Code-costos-backend.gs`.
-2. Corré **UNA VEZ** la función `configurarHojas()` desde el editor para crear
-   la pestaña "Productos" con sus encabezados (si ya la pegaste manualmente,
-   revisá que los encabezados coincidan exactamente con `ENCABEZADOS_PRODUCTOS`
-   del script).
-3. Implementar → Nueva implementación → Tipo: Aplicación web (Ejecutar como
-   "Yo", Acceso "Cualquiera").
-4. Copiá la URL `/exec` resultante y reemplazá `TODO_APPS_SCRIPT_COSTOS_LORITO`
-   en `costos-productos.html`.
+`Code-costos-backend.gs` también expone `?modulo=nombres_normalizados`, que
+abre el Sheet de compras por ID (`SHEET_COMPRAS_ID`) y lee la columna "Nombre
+normalizado" de `Costo_Promedio` — es la fuente del datalist de "Nuevo
+producto" en `costos-productos.html` (antes era una lista fija en el código).
+**Pendiente:** este módulo se agregó después del primer despliegue, así que
+hay que volver a pegar `Code-costos-backend.gs` en el editor y hacer
+Implementar → Gestionar implementaciones → Editar → Nueva versión (verificado
+con `curl`, hoy responde `"Módulo no reconocido: nombres_normalizados"`
+porque el código desplegado es el viejo). La primera vez que corra puede pedir
+reautorizar el script (accede a un Sheet externo por primera vez).
 
 Nota: `cargarProveedoresDesdeSheet()` en `costos-productos.html` todavía apunta
 a `APPS_SCRIPT_COSTOS` con un formato JSONP que ningún backend de este repo

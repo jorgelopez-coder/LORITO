@@ -1,12 +1,12 @@
 /**
- * Backend Apps Script para el Sheet "Recetas - Lorito IA" (Base de productos).
+ * Backend Apps Script para el Sheet "COSTOS Y RECETAS - LORITO IA" (Base de productos).
  * Usado por costos-productos.html. costos-recetas.html y costos-menu.html
  * comparten el mismo placeholder APPS_SCRIPT_COSTOS pero sus módulos
  * ('receta', 'plato') todavía no están implementados acá — quedan para
  * cuando se conecten esas dos páginas.
  *
  * Cómo desplegarlo:
- * 1. Abrí el Google Sheet "Recetas - Lorito IA" > Extensiones > Apps Script.
+ * 1. Abrí el Google Sheet "COSTOS Y RECETAS - LORITO IA" > Extensiones > Apps Script.
  * 2. Pegá este código (reemplazando el contenido del archivo por defecto).
  * 3. Corré UNA VEZ la función configurarHojas() desde el editor (▶ con
  *    configurarHojas seleccionado) para crear la pestaña "Productos" con sus encabezados.
@@ -24,6 +24,11 @@ const ENCABEZADOS_PRODUCTOS = [
   'Precio sin IVA', 'IVA (%)', 'Cantidad presentación', 'Costo por unidad', 'Rendimiento (%)',
   'Proveedor', 'Stock mínimo', 'En uso', 'Actualizado'
 ];
+
+// Sheet de compras ("Registro compras LORITO_Brewhouse - IA"), donde vive Costo_Promedio.
+// Es un Sheet distinto al que tiene pegado este script — se abre por ID.
+const SHEET_COMPRAS_ID = '1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw';
+const HOJA_COSTO_PROMEDIO = 'Costo_Promedio';
 
 // Corré esta función UNA VEZ desde el editor de Apps Script para preparar el Sheet.
 function configurarHojas() {
@@ -50,6 +55,9 @@ function jsonOut(obj) {
 function doGet(e) {
   try {
     const modulo = e.parameter.modulo;
+    if (modulo === 'nombres_normalizados') {
+      return jsonOut({ ok: true, nombres: nombresNormalizados() });
+    }
     let hoja;
     switch (modulo) {
       case 'productos': hoja = prepararHoja(HOJA_PRODUCTOS, ENCABEZADOS_PRODUCTOS); break;
@@ -60,6 +68,18 @@ function doGet(e) {
   } catch (err) {
     return jsonOut({ ok: false, error: err.message });
   }
+}
+
+// Lee la columna "Nombre normalizado" de Costo_Promedio (Sheet de compras) y
+// devuelve los valores únicos, ordenados alfabéticamente, para el datalist de
+// "Nuevo producto" en costos-productos.html.
+function nombresNormalizados() {
+  const ss = SpreadsheetApp.openById(SHEET_COMPRAS_ID);
+  const hoja = ss.getSheetByName(HOJA_COSTO_PROMEDIO);
+  if (!hoja) return [];
+  const registros = filasComoObjetos(hoja);
+  const nombres = registros.map(r => r['Nombre normalizado']).filter(Boolean);
+  return Array.from(new Set(nombres)).sort((a, b) => a.localeCompare(b));
 }
 
 // Mapea las filas de una hoja a objetos usando la fila 1 como claves de encabezado.

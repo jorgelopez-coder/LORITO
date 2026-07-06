@@ -370,7 +370,7 @@
 
 <script>
 const STORAGE_KEY = 'costos_productos';
-const APPS_SCRIPT_COSTOS = 'TODO_APPS_SCRIPT_COSTOS_LORITO'; // Pegá la URL del Apps Script de costos
+const APPS_SCRIPT_COSTOS = 'https://script.google.com/macros/s/AKfycbzZptmtaSsNwc-3YnSWolrScvuieJBbJfyngTjVwNZ-N0_EIPmIq3JlWww909a0EkNMYw/exec';
 const hoy = new Date();
 document.getElementById('date-chip').textContent =
   hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
@@ -820,11 +820,21 @@ function initConfig() {
   renderCfgLista('pre');
   renderCfgLista('area');
   aplicarConfiguracion();
-  // Llenar datalist de nombres normalizados
+  cargarNombresNormalizados();
+}
+
+// Llena el datalist de nombres sugeridos con los "Nombre normalizado" de
+// Costo_Promedio (Sheet de compras) — no con una lista fija en el código.
+async function cargarNombresNormalizados() {
   const dl = document.getElementById('sugerencias-productos');
-  if (dl) {
-    const NOMBRES = ["Aceite de Ajonjolí","Aceite de Oliva","Aceite para Freír","Agua Tónica","Aguacate Hass","Apio Verde","Arrachera","Bandeja desechable 9x9","Camarón Cultivo PYD 26/30","Camote","Carne Molida de Res Angus","Cas","Cebolla Morada","Cebolla Seca","Chile Dulce","Chile jalapeño mitades","Cloro Duty 1 Galón","Coca-Cola 350ml Vidrio","Coca-Cola Sin Azúcar 350ml Vidrio","Culantro Castilla","Desengrasante Duty 1 Galón","Empanizador Panko","Frijol Tierno","Garbanzos","Ginger Beer","Hielo en bolsa 10kg","Hierba Buena","Hongo Champiñón","Harina Nacarina","Huevo","Jugo natural de limón","Jugo natural de naranja","Ketchup","Lechuga Americana","Lechuga Romana","Limón Mandarino","Limón Mesino","Lomito de Res Fresco","Maíz Dulce","Mango Tommy","Maracuyá","Mejillón Media Concha","Mora","Nachos","Naranja Nacional","On top vainilla","Pan Hamburguesa Brioche","Pan Mediterráneo","Papa Amarilla","Papa Corte Recto","Paprika","Pechuga de pollo","Perejil","Piña Jumbo","Plátano Maduro","Posta de cerdo","Puerro","Queso Crema","Queso Mozzarella Rallado","Queso Parmesano","Romero","Sal fina","Sal molida","Salchicha Frankfurt","Salsa Barbacoa","Salsa Búfalo","Sandía","Tallarín","Tamarindo","Tocineta Ahumada Rebanada","Tomate","Tomate Cherry","Tomate Grande","Tomillo","Tortilla sal","Vinagre","Zanahoria","Zucchini"];
-    dl.innerHTML = NOMBRES.map(n => `<option value="${n}">`).join('');
+  if (!dl || !APPS_SCRIPT_COSTOS) return;
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS + '?modulo=nombres_normalizados');
+    const data = await resp.json();
+    if (!data || !data.ok || !Array.isArray(data.nombres)) return;
+    dl.innerHTML = data.nombres.map(n => `<option value="${n}">`).join('');
+  } catch (e) {
+    console.warn('No se pudo cargar la lista de nombres normalizados:', e);
   }
 }
 
