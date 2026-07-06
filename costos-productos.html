@@ -124,12 +124,30 @@
 
   <!-- LISTA -->
   <div id="tab-lista">
+    <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:160px;background:var(--green-bg);border:1px solid var(--green-lt);border-radius:var(--radius);padding:1rem 1.25rem;">
+        <div style="font-family:var(--font-d);font-size:24px;font-weight:700;color:var(--green);" id="stat-activos">0</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">Productos activos</div>
+      </div>
+      <div style="flex:1;min-width:160px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;">
+        <div style="font-family:var(--font-d);font-size:24px;font-weight:700;color:var(--subtle);" id="stat-inactivos">0</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">Productos inactivos</div>
+      </div>
+    </div>
     <div class="card">
       <div class="toolbar">
         <div class="search-wrap">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" class="search-input" id="search" placeholder="Buscar producto…" oninput="renderLista()">
         </div>
+        <button type="button" id="btn-toggle-filtros" onclick="toggleFiltros()" style="display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;cursor:pointer;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polygon points="4 4 20 4 14 12 14 19 10 21 10 12 4 4"/></svg>
+          Filtros
+          <span id="filtros-badge" style="display:none;background:var(--purple);color:#fff;font-size:11px;font-weight:600;border-radius:10px;padding:1px 6px;"></span>
+          <svg id="filtros-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;transition:transform .15s;"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+      <div class="toolbar" id="filtros-panel" style="display:none;">
         <select class="filter-sel" id="f-area" onchange="renderLista()">
           <option value="">Todas las áreas</option>
         </select>
@@ -1021,12 +1039,45 @@ function buildFila(p) {
 }
 
 // Render lista
+// Alterna el panel de filtros (colapsado por defecto) y gira el chevron.
+function toggleFiltros() {
+  const panel = document.getElementById('filtros-panel');
+  const chevron = document.getElementById('filtros-chevron');
+  const abierto = panel.style.display !== 'none';
+  panel.style.display = abierto ? 'none' : 'flex';
+  chevron.style.transform = abierto ? '' : 'rotate(180deg)';
+}
+
+// Muestra cuántos filtros distintos del default están activos, para que se note
+// aunque el panel esté colapsado.
+function actualizarBadgeFiltros(cat, area, enUso, agrupar) {
+  const activos = [cat, area, enUso, agrupar].filter(Boolean).length;
+  const badge = document.getElementById('filtros-badge');
+  if (activos > 0) {
+    badge.textContent = activos;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// Cuenta activos/inactivos sobre toda la base (sin aplicar los filtros de la vista).
+function actualizarIndicadores() {
+  const todos = getProductos();
+  const activos = todos.filter(p => p.en_uso !== false && p.en_uso !== 'false').length;
+  document.getElementById('stat-activos').textContent = activos;
+  document.getElementById('stat-inactivos').textContent = todos.length - activos;
+}
+
 function renderLista() {
   const busq    = document.getElementById('search').value.toLowerCase();
   const cat     = document.getElementById('f-cat').value;
   const area    = document.getElementById('f-area').value;
   const agrupar = document.getElementById('f-agrupar').value;
   const enUso   = document.getElementById('f-en-uso').value;
+
+  actualizarBadgeFiltros(cat, area, enUso, agrupar);
+  actualizarIndicadores();
 
   let lista = getProductos().filter(p =>
     (!busq || (p.nombre||'').toLowerCase().includes(busq))
