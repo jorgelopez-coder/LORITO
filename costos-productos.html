@@ -835,6 +835,39 @@ function getProductos() {
 }
 function saveProductos(lista) { localStorage.setItem(STORAGE_KEY, JSON.stringify(lista)); }
 
+// Trae la lista de productos desde el Sheet ("Productos") y la deja como caché local.
+async function cargarProductosDesdeSheet() {
+  if (!APPS_SCRIPT_COSTOS) return;
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS + '?modulo=productos');
+    const data = await resp.json();
+    if (!data || !data.ok || !Array.isArray(data.registros)) return;
+    const productos = data.registros.map(r => ({
+      id:                    r['ID'] || '',
+      nombre:                r['Nombre'] || '',
+      categoria:             r['Categoría'] || '',
+      area:                  r['Área de negocio'] || '',
+      unidad:                r['Unidad'] || '',
+      presentacion:          r['Presentación'] || '',
+      tamano:                r['Tamaño'] || '',
+      precio_sin_iva:        parseFloat(r['Precio sin IVA']) || 0,
+      iva:                   parseFloat(r['IVA (%)']) || 0,
+      cantidad_presentacion: parseFloat(r['Cantidad presentación']) || 1,
+      costo:                 parseFloat(r['Costo por unidad']) || 0,
+      rendimiento:           parseFloat(r['Rendimiento (%)']) || 100,
+      proveedor:             r['Proveedor'] || '',
+      stock_minimo:          parseFloat(r['Stock mínimo']) || 0,
+      en_uso:                r['En uso'] === false || r['En uso'] === 'false' ? false : true
+    }));
+    saveProductos(productos);
+    renderLista();
+    document.getElementById('conn-dot').classList.remove('off');
+    document.getElementById('conn-label').textContent = 'Sincronizado con Sheet';
+  } catch (e) {
+    console.warn('Sin conexión al Sheet de productos:', e);
+  }
+}
+
 // Base de datos de proveedores (compartida con proveedores.html)
 function getProveedores() {
   try { return JSON.parse(localStorage.getItem('proveedores') || '[]'); }
@@ -1129,10 +1162,7 @@ async function eliminar(id) {
     try { await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'eliminar', tipo:'productos', id }) }) }); }
     catch(e) {}
   }
-  document.addEventListener("DOMContentLoaded", () => {
-  initConfig();
   renderLista();
-});
   showToast('Producto eliminado', 'success');
 }
 
@@ -1183,6 +1213,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initConfig();
   renderLista();
   cargarProveedoresDesdeSheet();
+  cargarProductosDesdeSheet();
 });
 </script>
 </body>

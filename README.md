@@ -62,22 +62,28 @@ Pasos para activarla (todos manuales, vía script.google.com):
    para migrar el catálogo viejo `Normalizacion_Productos` hacia las hojas
    nuevas `Maestro_Productos` y `Alias_Productos` (crea las hojas
    `Pendientes_Mapeo` y `Costo_Promedio` automáticamente cuando hagan falta).
-3. En el script de OCR de facturas (el que ya escribe cada línea de producto
-   en `Desglose_IA` — vive en un Sheet aparte,
-   `11dfpbu92aGq-Moadys1BbltxA9iRJORYHPZDMKFw3P4`), agregá justo después de
-   escribir cada línea un POST a la misma URL `/exec` de
-   `Code-compras-backend.gs`:
-   ```js
-   UrlFetchApp.fetch(APPS_SCRIPT_AP_COMPRAS, {
-     method: 'post',
-     payload: { data: JSON.stringify({
-       modulo: 'procesar_linea_compra',
-       producto: p.producto, proveedor: data.proveedor,
-       categoria: p.categoria, nombre_normalizado: p.producto_normalizado
-     }) }
-   });
-   ```
-   (reemplazá `APPS_SCRIPT_AP_COMPRAS` por la URL `/exec` de `Code-compras-backend.gs`).
+   Después corré también, **UNA VEZ**, `poblarPendientesDesdeDesglose()`: sin
+   esto, `config-productos.html` va a mostrar "Todo mapeado" aunque haya
+   compras viejas sin registrar, porque esa pantalla solo lee
+   `Pendientes_Mapeo` (no escanea `Desglose_IA` directo) y esa hoja recién
+   empieza a llenarse sola con las facturas que se procesen *después* de
+   conectar el paso 3 — las líneas de compra que ya existían antes no caen
+   ahí solas.
+3. El script de OCR de facturas (vive en su propio Sheet,
+   `11dfpbu92aGq-Moadys1BbltxA9iRJORYHPZDMKFw3P4`, código fuente en
+   `facturas-extractor/Code.gs` de este repo) escribe cada línea de producto
+   en su propia hoja "Facturas" — **no** directo en `Desglose_IA`; esa pestaña
+   se sincroniza hacia el Sheet de compras por fuera de este script (fórmula
+   o proceso aparte), así que puede tardar un poco en reflejar lo último.
+   Por eso `facturas-extractor/Code.gs` ya incluye `notificarLineaCompra()`,
+   que le avisa a `Code-compras-backend.gs` (vía `procesar_linea_compra`)
+   mandándole cantidad/precio/fecha directamente, y `recalcularCostoPromedio()`
+   los suma al toque sin esperar a que `Desglose_IA` se ponga al día (evita
+   contarlos dos veces una vez que sí se sincronice). Solo falta pegar la
+   versión actualizada de `facturas-extractor/Code.gs` en el editor de Apps
+   Script de ese Sheet (Extensiones → Apps Script) y guardar — no hace falta
+   redesplegar como Web App porque este script no lo es, corre desde el menú
+   "Facturas" del propio Sheet.
 4. Hasta que se hagan los pasos 1-3, `historial-precios.html` va a mostrar
    "Ningún producto mapeado todavía" (porque `Alias_Productos` no existe) y
    `config-productos.html` va a mostrar "Todo mapeado" (porque
@@ -88,7 +94,44 @@ Pasos para activarla (todos manuales, vía script.google.com):
    (asignándolo a un producto ya existente en el Maestro o creando uno nuevo)
    y queda automático para siempre.
 
-Fuera de alcance por ahora: `costos-productos.html`, `costos-recetas.html` y
+Fuera de alcance por ahora: `costos-recetas.html` y
 `costos-menu.html` siguen en `localStorage` sin backend propio, y
 `factura-manual.html` sigue sin generar líneas de producto (solo cabecera
 para cuentas por pagar).
+
+## Base de productos (costos-productos.html) — despliegue pendiente
+
+Sheet de datos: "Recetas - Lorito IA" — `1YTK3wA-iaaZf0-PMK3mAcGchGNEPIFXwlOr0-oHLY_E`
+(dueño: jorge.lopez@casaaguizotes.com). Se pobló manualmente la pestaña
+"Productos" con los 16 productos que ya tenían costo real en `Costo_Promedio`
+del Sheet de compras (`1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw`); los otros
+23 productos de `Maestro_Productos` todavía no tienen compras registradas y se
+agregan solos a medida que se compran (vía `costos-productos.html` o carga
+masiva).
+
+`Code-costos-backend.gs` (nuevo) implementa el módulo `producto` (alta/edición
+por ID, borrado) y expone `?modulo=productos` de solo lectura — mismo patrón de
+`Code-rrhh-backend.gs` (fetch GET simple con querystring, no JSONP). Los
+módulos `receta` y `plato` (para `costos-recetas.html` / `costos-menu.html`)
+todavía no están implementados en este backend.
+
+Pasos para conectar (manuales, requieren script.google.com):
+
+1. Abrí el Sheet "Recetas - Lorito IA" → Extensiones → Apps Script, pegá
+   `Code-costos-backend.gs`.
+2. Corré **UNA VEZ** la función `configurarHojas()` desde el editor para crear
+   la pestaña "Productos" con sus encabezados (si ya la pegaste manualmente,
+   revisá que los encabezados coincidan exactamente con `ENCABEZADOS_PRODUCTOS`
+   del script).
+3. Implementar → Nueva implementación → Tipo: Aplicación web (Ejecutar como
+   "Yo", Acceso "Cualquiera").
+4. Copiá la URL `/exec` resultante y reemplazá `TODO_APPS_SCRIPT_COSTOS_LORITO`
+   en `costos-productos.html`.
+
+Nota: `cargarProveedoresDesdeSheet()` en `costos-productos.html` todavía apunta
+a `APPS_SCRIPT_COSTOS` con un formato JSONP que ningún backend de este repo
+implementa (los proveedores en realidad viven en `Code-compras-backend.gs`,
+que hoy solo tiene `doPost`, sin `doGet`) — el dropdown de proveedor sigue
+funcionando igual porque lee de `localStorage` compartido con
+`proveedores.html`, pero esa sincronización directa contra el Sheet queda
+pendiente y fuera de alcance de este cambio.
