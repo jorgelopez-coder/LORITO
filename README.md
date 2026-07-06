@@ -124,15 +124,22 @@ todavía no tiene filas). Si se agregan columnas, actualizar
 cambia) y correr `configurarHojas()` de nuevo si hace falta.
 
 `Code-costos-backend.gs` también expone `?modulo=nombres_normalizados`, que
-abre el Sheet de compras por ID (`SHEET_COMPRAS_ID`) y lee la columna "Nombre
-normalizado" de `Costo_Promedio` — es la fuente del datalist de "Nuevo
-producto" en `costos-productos.html` (antes era una lista fija en el código).
-**Pendiente:** este módulo se agregó después del primer despliegue, así que
-hay que volver a pegar `Code-costos-backend.gs` en el editor y hacer
-Implementar → Gestionar implementaciones → Editar → Nueva versión (verificado
-con `curl`, hoy responde `"Módulo no reconocido: nombres_normalizados"`
-porque el código desplegado es el viejo). La primera vez que corra puede pedir
-reautorizar el script (accede a un Sheet externo por primera vez).
+abre el Sheet de compras por ID (`SHEET_COMPRAS_ID`) y lee de `Costo_Promedio`
+el ID, el "Nombre normalizado" y el "Costo promedio 30 días" de cada producto
+(`{ ok:true, productos:[{id, nombre, costo}] }`) — es la fuente del datalist
+de "Nuevo producto" en `costos-productos.html` (antes era una lista fija en el
+código) y también autocompleta, al elegir un nombre, el precio de compra
+(costo promedio, queda editable igual que siempre) y el ID del producto (se
+reutiliza ese ID en vez de generar uno nuevo, para quedar trazable a
+Costo_Promedio).
+
+**Pendiente:** este módulo (y su cambio de forma, de `{nombres:[...]}` a
+`{productos:[...]}`) se agregó después del primer despliegue, así que hay que
+volver a pegar `Code-costos-backend.gs` en el editor y hacer Implementar →
+Gestionar implementaciones → Editar → Nueva versión (verificado con `curl`,
+hoy responde `"Módulo no reconocido: nombres_normalizados"` porque el código
+desplegado es el viejo). La primera vez que corra puede pedir reautorizar el
+script (accede a un Sheet externo por primera vez).
 
 Nota: `cargarProveedoresDesdeSheet()` en `costos-productos.html` todavía apunta
 a `APPS_SCRIPT_COSTOS` con un formato JSONP que ningún backend de este repo

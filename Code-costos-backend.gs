@@ -56,7 +56,7 @@ function doGet(e) {
   try {
     const modulo = e.parameter.modulo;
     if (modulo === 'nombres_normalizados') {
-      return jsonOut({ ok: true, nombres: nombresNormalizados() });
+      return jsonOut({ ok: true, productos: nombresNormalizados() });
     }
     let hoja;
     switch (modulo) {
@@ -70,16 +70,23 @@ function doGet(e) {
   }
 }
 
-// Lee la columna "Nombre normalizado" de Costo_Promedio (Sheet de compras) y
-// devuelve los valores únicos, ordenados alfabéticamente, para el datalist de
-// "Nuevo producto" en costos-productos.html.
+// Lee Costo_Promedio (Sheet de compras) y devuelve, por producto, el ID, el
+// "Nombre normalizado" y el costo promedio de 30 días — usado en
+// costos-productos.html para el datalist de "Nuevo producto" y para
+// autocompletar precio de compra + ID al elegir un nombre.
 function nombresNormalizados() {
   const ss = SpreadsheetApp.openById(SHEET_COMPRAS_ID);
   const hoja = ss.getSheetByName(HOJA_COSTO_PROMEDIO);
   if (!hoja) return [];
   const registros = filasComoObjetos(hoja);
-  const nombres = registros.map(r => r['Nombre normalizado']).filter(Boolean);
-  return Array.from(new Set(nombres)).sort((a, b) => a.localeCompare(b));
+  return registros
+    .filter(r => r['Nombre normalizado'])
+    .map(r => ({
+      id: r['ID producto'] || '',
+      nombre: r['Nombre normalizado'],
+      costo: Number(r['Costo promedio 30 días']) || 0
+    }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
 }
 
 // Mapea las filas de una hoja a objetos usando la fila 1 como claves de encabezado.

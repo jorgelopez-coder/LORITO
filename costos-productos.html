@@ -163,8 +163,9 @@
       <div class="field-row-3">
         <div class="field">
           <label for="p-nombre">Nombre <span class="req">*</span></label>
-          <input type="text" id="p-nombre" list="sugerencias-productos" placeholder="Escribí o seleccioná…" autocomplete="off">
+          <input type="text" id="p-nombre" list="sugerencias-productos" placeholder="Escribí o seleccioná…" autocomplete="off" oninput="onNombreInput()">
           <datalist id="sugerencias-productos"></datalist>
+          <input type="hidden" id="p-id-normalizado">
         </div>
         <div class="field">
           <label for="p-area">Área de negocio <span class="req">*</span></label>
@@ -823,6 +824,10 @@ function initConfig() {
   cargarNombresNormalizados();
 }
 
+// Productos normalizados (id, nombre, costo promedio 30 días) cargados desde
+// Costo_Promedio — se usan para el datalist y para autocompletar precio + ID.
+let PRODUCTOS_NORMALIZADOS = [];
+
 // Llena el datalist de nombres sugeridos con los "Nombre normalizado" de
 // Costo_Promedio (Sheet de compras) — no con una lista fija en el código.
 async function cargarNombresNormalizados() {
@@ -831,10 +836,25 @@ async function cargarNombresNormalizados() {
   try {
     const resp = await fetch(APPS_SCRIPT_COSTOS + '?modulo=nombres_normalizados');
     const data = await resp.json();
-    if (!data || !data.ok || !Array.isArray(data.nombres)) return;
-    dl.innerHTML = data.nombres.map(n => `<option value="${n}">`).join('');
+    if (!data || !data.ok || !Array.isArray(data.productos)) return;
+    PRODUCTOS_NORMALIZADOS = data.productos;
+    dl.innerHTML = PRODUCTOS_NORMALIZADOS.map(p => `<option value="${p.nombre}">`).join('');
   } catch (e) {
     console.warn('No se pudo cargar la lista de nombres normalizados:', e);
+  }
+}
+
+// Al escribir/elegir un nombre que coincide con un producto de Costo_Promedio,
+// autocompleta el precio de compra (costo promedio) y guarda su ID para que
+// guardar() lo reutilice en vez de generar uno nuevo. El precio queda igual de
+// editable que siempre — esto solo lo precarga.
+function onNombreInput() {
+  const val = document.getElementById('p-nombre').value.trim().toLowerCase();
+  const match = PRODUCTOS_NORMALIZADOS.find(p => p.nombre.toLowerCase() === val);
+  document.getElementById('p-id-normalizado').value = match ? match.id : '';
+  if (match && match.costo) {
+    document.getElementById('p-precio-sin-iva').value = match.costo;
+    calcularCostos();
   }
 }
 
@@ -1095,6 +1115,7 @@ async function guardar() {
   const tamano               = document.getElementById('p-tamano').value.trim();
   const area                 = document.getElementById('p-area').value;
   const editId               = document.getElementById('edit-id').value;
+  const idNormalizado        = document.getElementById('p-id-normalizado').value;
 
   if (!nombre)      { showToast('Ingresá el nombre.', 'error'); return; }
   if (!categoria)   { showToast('Seleccioná una categoría.', 'error'); return; }
@@ -1102,7 +1123,9 @@ async function guardar() {
   if (!precioSinIva){ showToast('Ingresá el precio de compra.', 'error'); return; }
   if (!area)        { showToast('Seleccioná el área de negocio.', 'error'); return; }
 
-  const id = editId || 'PRD-' + Date.now();
+  // Si el nombre coincide con un producto de Costo_Promedio, reutilizamos su
+  // ID (PROD-xxxx) en vez de generar uno nuevo, para quedar trazable al origen.
+  const id = editId || idNormalizado || 'PRD-' + Date.now();
   const registro = {
     id, nombre, categoria, unidad,
     precio_sin_iva: precioSinIva,
@@ -1147,6 +1170,7 @@ function editar(id) {
   const p = getProductos().find(p => p.id === id);
   if (!p) return;
   document.getElementById('edit-id').value                  = p.id;
+  document.getElementById('p-id-normalizado').value         = '';
   document.getElementById('p-nombre').value                 = p.nombre;
   document.getElementById('p-categoria').value              = p.categoria;
   document.getElementById('p-unidad').value                 = p.unidad;
@@ -1178,6 +1202,7 @@ async function eliminar(id) {
 
 function limpiarForm() {
   document.getElementById('edit-id').value                  = '';
+  document.getElementById('p-id-normalizado').value         = '';
   document.getElementById('p-nombre').value                 = '';
   document.getElementById('p-categoria').value              = '';
   document.getElementById('p-unidad').value                 = '';
