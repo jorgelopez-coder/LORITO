@@ -1306,3 +1306,19 @@ function migrarEsquemaSinUnidades() {
     Logger.log('Costo_Promedio ya estaba con el esquema nuevo.');
   }
 }
+
+// Función de UN SOLO USO: correr manualmente desde este editor para crear y
+// sembrar (con los valores por defecto) las hojas Categorias_Productos y
+// Areas_Negocio la primera vez — de otra forma solo se crean solas al
+// recibir la primera escritura (guardar_categoria / guardar_area_negocio),
+// y hasta entonces config-productos.html / config-catalogos.html /
+// costos-productos.html las ven vacías (leen con gviz, que no crea hojas).
+// Segura de volver a correr: si ya existen, no hace nada.
+function inicializarListasCompartidas() {
+  const yaExistiaCat = !!SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_CATEGORIAS);
+  const yaExistiaArea = !!SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_AREAS);
+  getHojaCategorias();
+  getHojaAreas();
+  Logger.log(yaExistiaCat ? 'Categorias_Productos ya existía.' : 'Categorias_Productos creada y sembrada con ' + CATEGORIAS_DEFAULT.length + ' valores.');
+  Logger.log(yaExistiaArea ? 'Areas_Negocio ya existía.' : 'Areas_Negocio creada y sembrada con ' + AREAS_DEFAULT.length + ' valores.');
+}

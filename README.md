@@ -52,23 +52,34 @@ ponderado (30 y 90 días) por producto real, en vez de por texto crudo de
 factura. Vive toda en el Sheet "Registro compras LORITO_Brewhouse - IA"
 (`1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw`), junto a `Desglose_IA`.
 
+`config-productos.html` fusiona en un solo archivo (con 2 pestañas) lo que
+antes eran dos páginas separadas: "Pendientes de mapear" (resolver facturas
+sin alias) y "Catálogo (Maestro)" (editar/fusionar/eliminar productos del
+Maestro — antes `maestro-productos.html`, ya eliminado). `Maestro_Productos`
+ya no tiene "Unidad base" / "Unidad de compra default" — tiene "Categoría" y
+"Área de negocio", elegidas de listas compartidas administradas en la nueva
+`config-catalogos.html`.
+
 Pasos para activarla (todos manuales, vía script.google.com):
 
 1. Abrí el proyecto de Apps Script pegado en ese Sheet (el mismo de
    `Code-compras-backend.gs`), reemplazá el código por la versión actualizada
    de este repo, e Implementar → Gestionar implementaciones → Editar → Nueva
    versión (la URL `/exec` no cambia).
-2. En ese mismo editor, corré **UNA VEZ** la función `migrarNormalizacionAMaestro()`
-   para migrar el catálogo viejo `Normalizacion_Productos` hacia las hojas
-   nuevas `Maestro_Productos` y `Alias_Productos` (crea las hojas
-   `Pendientes_Mapeo` y `Costo_Promedio` automáticamente cuando hagan falta).
-   Después corré también, **UNA VEZ**, `poblarPendientesDesdeDesglose()`: sin
-   esto, `config-productos.html` va a mostrar "Todo mapeado" aunque haya
-   compras viejas sin registrar, porque esa pantalla solo lee
-   `Pendientes_Mapeo` (no escanea `Desglose_IA` directo) y esa hoja recién
-   empieza a llenarse sola con las facturas que se procesen *después* de
-   conectar el paso 3 — las líneas de compra que ya existían antes no caen
-   ahí solas.
+2. En ese mismo editor, corré **UNA VEZ**, en este orden:
+   - `migrarNormalizacionAMaestro()` — migra el catálogo viejo
+     `Normalizacion_Productos` hacia `Maestro_Productos` y `Alias_Productos`.
+   - `poblarPendientesDesdeDesglose()` — carga a `Pendientes_Mapeo` el backlog
+     de compras viejas que `config-productos.html` no puede ver solo (esa
+     pantalla lee `Pendientes_Mapeo`, no escanea `Desglose_IA` directo).
+   - `migrarEsquemaSinUnidades()` — quita "Unidad base"/"Unidad de compra
+     default" de `Maestro_Productos` y `Costo_Promedio`, agrega "Área de
+     negocio" a `Maestro_Productos`.
+   - `inicializarListasCompartidas()` — crea y siembra `Categorias_Productos`
+     y `Areas_Negocio` con los valores por defecto (sin esto, esas hojas
+     recién se crean solas con la primera edición desde `config-catalogos.html`,
+     y hasta entonces todas las páginas que las leen por `gviz` las ven
+     vacías — no es un error, solo falta este paso).
 3. El script de OCR de facturas (vive en su propio Sheet,
    `11dfpbu92aGq-Moadys1BbltxA9iRJORYHPZDMKFw3P4`, código fuente en
    `facturas-extractor/Code.gs` de este repo) escribe cada línea de producto
@@ -84,11 +95,10 @@ Pasos para activarla (todos manuales, vía script.google.com):
    Script de ese Sheet (Extensiones → Apps Script) y guardar — no hace falta
    redesplegar como Web App porque este script no lo es, corre desde el menú
    "Facturas" del propio Sheet.
-4. Hasta que se hagan los pasos 1-3, `historial-precios.html` va a mostrar
-   "Ningún producto mapeado todavía" (porque `Alias_Productos` no existe) y
-   `config-productos.html` va a mostrar "Todo mapeado" (porque
-   `Pendientes_Mapeo` tampoco existe) — ambos estados son correctos para
-   "todavía no desplegado", no errores.
+4. `costos-productos.html` ahora también lee `Categorias_Productos` /
+   `Areas_Negocio` (cruzando al Sheet de compras por `gviz`, de solo lectura)
+   en vez de sus listas locales — no necesita ningún despliegue nuevo, solo
+   que existan esas hojas (paso 2).
 5. Una vez desplegado, cada factura nueva con un producto no reconocido cae en
    `Pendientes_Mapeo` — resolvelo una vez desde `config-productos.html`
    (asignándolo a un producto ya existente en el Maestro o creando uno nuevo)
@@ -98,6 +108,18 @@ Fuera de alcance por ahora: `costos-recetas.html` y
 `costos-menu.html` siguen en `localStorage` sin backend propio, y
 `factura-manual.html` sigue sin generar líneas de producto (solo cabecera
 para cuentas por pagar).
+
+## Base de productos (Code-costos-backend.gs) — fix de esquema pendiente
+
+`Code-costos-backend.gs` (Sheet "COSTOS Y RECETAS - LORITO IA") lee
+`Maestro_Productos` del Sheet de compras para armar `Faltantes_Costeo`. Antes
+usaba columnas "Unidad base"/"Unidad de compra default" que ya no existen
+ahí (ver migración de arriba) — actualicé `ENCABEZADOS_FALTANTES` y
+`calcularFaltantes()` para usar "Área de negocio" en su lugar. Falta pegar
+esta versión en el editor de Apps Script de ese Sheet (Implementar →
+Gestionar implementaciones → Editar → Nueva versión) y correr
+`actualizarControlFaltantes()` una vez para refrescar `Faltantes_Costeo` con
+el esquema nuevo.
 
 ## Base de productos (costos-productos.html) — conectado
 
