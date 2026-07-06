@@ -141,10 +141,28 @@ hoy responde `"Módulo no reconocido: nombres_normalizados"` porque el código
 desplegado es el viejo). La primera vez que corra puede pedir reautorizar el
 script (accede a un Sheet externo por primera vez).
 
-Nota: `cargarProveedoresDesdeSheet()` en `costos-productos.html` todavía apunta
-a `APPS_SCRIPT_COSTOS` con un formato JSONP que ningún backend de este repo
-implementa (los proveedores en realidad viven en `Code-compras-backend.gs`,
-que hoy solo tiene `doPost`, sin `doGet`) — el dropdown de proveedor sigue
-funcionando igual porque lee de `localStorage` compartido con
-`proveedores.html`, pero esa sincronización directa contra el Sheet queda
-pendiente y fuera de alcance de este cambio.
+`Code-costos-backend.gs` también expone `?modulo=proveedores`, que abre el
+Sheet de compras por ID y lee su pestaña `proveedores` — es la fuente real de
+`cargarProveedoresDesdeSheet()` en `costos-productos.html` (antes llamaba a un
+endpoint JSONP que ningún backend implementaba; el dropdown solo funcionaba si
+`proveedores.html` ya había poblado `localStorage` en el mismo navegador).
+Elegí leer `proveedores` desde acá (con `SHEET_COMPRAS_ID`, mismo patrón que
+`Costo_Promedio`/`Maestro_Productos`) en vez de agregarle un `doGet` a
+`Code-compras-backend.gs`, para no tocar ese script ya desplegado y usado en
+vivo por cuentas-por-pagar/factura-manual/maestro-productos/caja-chica/
+config-productos.
+
+**Control de faltantes:** `Code-costos-backend.gs` agrega el menú "Costos" al
+Sheet (función `onOpen()`) con el botón "Actualizar control de faltantes", que
+corre `actualizarControlFaltantes()`: compara `Maestro_Productos` (Sheet de
+compras) contra la pestaña "Productos" de este Sheet por ID, y deja en la
+pestaña nueva `Faltantes_Costeo` los productos del Maestro que todavía no
+tienen precio/costo registrado acá. Es manual (sin trigger automático) porque
+Apps Script no tiene forma simple de detectar cambios en un Sheet externo —
+hay que abrirlo desde el menú cada vez que se quiera revisar qué falta
+registrar.
+
+**Pendiente (de nuevo):** `?modulo=proveedores`, `actualizarControlFaltantes()`
+y el menú "Costos" se agregaron después del último despliegue — hay que volver
+a pegar `Code-costos-backend.gs` y hacer Nueva versión, y correr
+`configurarHojas()` una vez más para crear la pestaña `Faltantes_Costeo`.

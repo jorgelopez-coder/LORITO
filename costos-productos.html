@@ -904,41 +904,36 @@ function getProveedores() {
   catch { return []; }
 }
 
-// Trae la lista de proveedores desde el Sheet (hoja "Proveedores") vía JSONP
-// y la deja en localStorage con el mismo formato que usa proveedores.html.
-function cargarProveedoresDesdeSheet() {
+// Trae la lista de proveedores desde el Sheet (hoja "proveedores" del Sheet de
+// compras, leída por Code-costos-backend.gs vía SHEET_COMPRAS_ID) y la deja en
+// localStorage con el mismo formato que usa proveedores.html.
+async function cargarProveedoresDesdeSheet() {
   if (!APPS_SCRIPT_COSTOS) return;
-  const cbName = 'cbProveedores_' + Date.now();
-  const script = document.createElement('script');
-
-  window[cbName] = function(resp) {
-    if (resp && resp.ok && Array.isArray(resp.registros)) {
-      const proveedores = resp.registros.map(r => ({
-        id:                r['ID'] || '',
-        nombre_juridico:   r['Nombre jurídico'] || '',
-        nombre_comercial:  r['Nombre comercial'] || '',
-        categoria:         r['Categoría'] || '',
-        contacto:          r['Contacto'] || '',
-        telefono:          r['Teléfono'] || '',
-        correo:            r['Correo'] || '',
-        dia_pedido:        r['Días de pedido'] || '',
-        dias_pedido:       (r['Días de pedido'] || '').split(',').map(s=>s.trim()).filter(Boolean),
-        notas_contacto:    r['Notas contacto'] || '',
-        cuenta:            r['Cuenta/IBAN'] || '',
-        condicion_pago:    r['Condición de pago (días)'] || 0,
-        notas_pago:        r['Notas pago'] || '',
-        actualizado:       r['Actualizado'] || ''
-      }));
-      localStorage.setItem('proveedores', JSON.stringify(proveedores));
-      aplicarConfiguracion();
-    }
-    delete window[cbName];
-    script.remove();
-  };
-
-  script.src = `${APPS_SCRIPT_COSTOS}?modulo=proveedores&callback=${cbName}`;
-  script.onerror = () => { delete window[cbName]; script.remove(); };
-  document.body.appendChild(script);
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS + '?modulo=proveedores');
+    const data = await resp.json();
+    if (!data || !data.ok || !Array.isArray(data.registros)) return;
+    const proveedores = data.registros.map(r => ({
+      id:                r['ID'] || '',
+      nombre_juridico:   r['Nombre jurídico'] || '',
+      nombre_comercial:  r['Nombre comercial'] || '',
+      categoria:         r['Categoría'] || '',
+      contacto:          r['Contacto'] || '',
+      telefono:          r['Teléfono'] || '',
+      correo:            r['Correo'] || '',
+      dia_pedido:        r['Días de pedido'] || '',
+      dias_pedido:       (r['Días de pedido'] || '').split(',').map(s=>s.trim()).filter(Boolean),
+      notas_contacto:    r['Notas de contacto'] || '',
+      cuenta:            r['Cuenta'] || '',
+      condicion_pago:    r['Condición de pago'] || 0,
+      notas_pago:        r['Notas de pago'] || '',
+      actualizado:       r['Actualizado'] || ''
+    }));
+    localStorage.setItem('proveedores', JSON.stringify(proveedores));
+    aplicarConfiguracion();
+  } catch (e) {
+    console.warn('No se pudo cargar proveedores desde el Sheet:', e);
+  }
 }
 
 // Exponer globalmente para recetas

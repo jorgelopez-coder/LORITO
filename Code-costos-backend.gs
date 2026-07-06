@@ -9,12 +9,15 @@
  * 1. Abrí el Google Sheet "COSTOS Y RECETAS - LORITO IA" > Extensiones > Apps Script.
  * 2. Pegá este código (reemplazando el contenido del archivo por defecto).
  * 3. Corré UNA VEZ la función configurarHojas() desde el editor (▶ con
- *    configurarHojas seleccionado) para crear la pestaña "Productos" con sus encabezados.
+ *    configurarHojas seleccionado) para crear las pestañas "Productos" y
+ *    "Faltantes_Costeo" con sus encabezados.
  * 4. Implementar > Nueva implementación > Tipo: Aplicación web.
  *    - Ejecutar como: Yo
  *    - Quién tiene acceso: Cualquiera
  * 5. Copiá la URL del Web App resultante y reemplazá TODO_APPS_SCRIPT_COSTOS_LORITO
  *    en costos-productos.html.
+ * 6. Recargá el Sheet (o esperá al próximo Abrir) para que aparezca el menú
+ *    "Costos" con el botón "Actualizar control de faltantes".
  */
 
 const HOJA_PRODUCTOS = 'Productos';
@@ -25,14 +28,65 @@ const ENCABEZADOS_PRODUCTOS = [
   'Proveedor', 'Stock mínimo', 'En uso', 'Actualizado'
 ];
 
-// Sheet de compras ("Registro compras LORITO_Brewhouse - IA"), donde vive Costo_Promedio.
-// Es un Sheet distinto al que tiene pegado este script — se abre por ID.
+// Sheet de compras ("Registro compras LORITO_Brewhouse - IA"), donde viven
+// Costo_Promedio, Maestro_Productos y proveedores. Es un Sheet distinto al
+// que tiene pegado este script — se abre por ID.
 const SHEET_COMPRAS_ID = '1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw';
 const HOJA_COSTO_PROMEDIO = 'Costo_Promedio';
+const HOJA_MAESTRO_PRODUCTOS = 'Maestro_Productos';
+const HOJA_PROVEEDORES = 'proveedores';
+
+// Control de productos del Maestro (Sheet de compras) que todavía no están
+// registrados en la base de productos (pestaña "Productos" de este Sheet).
+const HOJA_FALTANTES = 'Faltantes_Costeo';
+const ENCABEZADOS_FALTANTES = [
+  'ID', 'Nombre normalizado', 'Categoría', 'Unidad base', 'Unidad de compra default', 'Fecha de creación'
+];
 
 // Corré esta función UNA VEZ desde el editor de Apps Script para preparar el Sheet.
 function configurarHojas() {
   prepararHoja(HOJA_PRODUCTOS, ENCABEZADOS_PRODUCTOS);
+  prepararHoja(HOJA_FALTANTES, ENCABEZADOS_FALTANTES);
+}
+
+// Agrega el menú "Costos" al abrir el Sheet, con el botón para refrescar el
+// control de faltantes (no hay forma automática de detectar cambios en el
+// Sheet de compras, así que es una actualización manual bajo demanda).
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('Costos')
+    .addItem('Actualizar control de faltantes', 'actualizarControlFaltantes')
+    .addToUi();
+}
+
+// Compara Maestro_Productos (Sheet de compras) contra la pestaña "Productos"
+// de este Sheet y deja en "Faltantes_Costeo" los productos del Maestro que
+// todavía no tienen precio/costo registrado acá.
+function actualizarControlFaltantes() {
+  const hojaFaltantes = prepararHoja(HOJA_FALTANTES, ENCABEZADOS_FALTANTES);
+  if (hojaFaltantes.getLastRow() > 1) {
+    hojaFaltantes.getRange(2, 1, hojaFaltantes.getLastRow() - 1, ENCABEZADOS_FALTANTES.length).clearContent();
+  }
+
+  const ssCompras = SpreadsheetApp.openById(SHEET_COMPRAS_ID);
+  const hojaMaestro = ssCompras.getSheetByName(HOJA_MAESTRO_PRODUCTOS);
+  const maestro = hojaMaestro ? filasComoObjetos(hojaMaestro) : [];
+
+  const hojaProductos = prepararHoja(HOJA_PRODUCTOS, ENCABEZADOS_PRODUCTOS);
+  const idsRegistrados = new Set(filasComoObjetos(hojaProductos).map(p => p['ID']));
+
+  const faltantes = maestro.filter(m => m['ID producto'] && !idsRegistrados.has(m['ID producto']));
+  if (!faltantes.length) return;
+
+  const filas = faltantes.map(m => [
+    m['ID producto'] || '',
+    m['Nombre normalizado'] || '',
+    m['Categoría'] || '',
+    m['Unidad base'] || '',
+    m['Unidad de compra default'] || '',
+    m['Fecha de creación'] || ''
+  ]);
+  hojaFaltantes.getRange(2, 1, filas.length, ENCABEZADOS_FALTANTES.length).setValues(filas);
 }
 
 function prepararHoja(nombre, encabezados) {
@@ -57,6 +111,11 @@ function doGet(e) {
     const modulo = e.parameter.modulo;
     if (modulo === 'nombres_normalizados') {
       return jsonOut({ ok: true, productos: nombresNormalizados() });
+    }
+    if (modulo === 'proveedores') {
+      const ssCompras = SpreadsheetApp.openById(SHEET_COMPRAS_ID);
+      const hojaProveedores = ssCompras.getSheetByName(HOJA_PROVEEDORES);
+      return jsonOut({ ok: true, registros: hojaProveedores ? filasComoObjetos(hojaProveedores) : [] });
     }
     let hoja;
     switch (modulo) {
