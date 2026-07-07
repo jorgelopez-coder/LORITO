@@ -740,8 +740,12 @@ let areasCompartidas = null;
 function gvizLoadCompartida(hoja, expectedCol) {
   return new Promise(function(resolve) {
     var cb  = '_sh_' + Math.random().toString(36).slice(2,10);
+    // headers=1 fuerza a gviz a tratar la fila 1 como encabezado — sin esto,
+    // hojas de una sola columna con todo texto (Categorias_Productos,
+    // Areas_Negocio) confunden el encabezado con la primera fila de datos.
     var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_COMPRAS_ID
             + '/gviz/tq?tqx=responseHandler:' + cb
+            + '&headers=1'
             + '&sheet=' + encodeURIComponent(hoja);
     var timer = setTimeout(function() { cleanup(); resolve([]); }, 15000);
     function cleanup() {
