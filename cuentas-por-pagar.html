@@ -929,6 +929,29 @@ function _renderFacturas() {
               </tbody>
             </table>` : '<div style="font-size:12px;color:var(--subtle);">Sin abonos registrados.</div>'}
         </div>
+      </div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+        <button type="button" class="proy-toggle" onclick="event.stopPropagation(); toggleProductosFactura('${rowId}')">
+          <span id="prod-txt-${rowId}">Ver detalle de productos (${lineasProducto.length})</span>
+          <svg class="toggle-arrow" id="prod-ico-${rowId}" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;"><path d="M4 6l4 4 4-4"/></svg>
+        </button>
+        <div id="prod-${rowId}" style="display:none;margin-top:8px;">
+          ${lineasProducto.length ? `
+            <table class="detail-table">
+              <thead><tr><th>Producto</th><th>Nombre normalizado</th><th>Categoría</th><th style="text-align:right;">Cant.</th><th>Unidad</th><th style="text-align:right;">P. Unit.</th><th style="text-align:right;">Total línea</th></tr></thead>
+              <tbody>
+                ${lineasProducto.map(l => `<tr>
+                  <td>${l['Producto']||'—'}</td>
+                  <td style="color:var(--muted);">${l['Nombre normalizado']||'—'}</td>
+                  <td style="color:var(--muted);">${l['Categoría']||'—'}</td>
+                  <td class="num">${l['Cantidad']||'—'}</td>
+                  <td style="color:var(--muted);">${l['Unidad de medida']||'—'}</td>
+                  <td class="num">${fmt(l['Precio unitario'])}</td>
+                  <td class="num">${fmt(l['Total línea'])}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>` : '<div style="font-size:12px;color:var(--subtle);">Sin detalle de productos disponible para esta factura (probablemente fue ingresada manualmente).</div>'}
+        </div>
       </div>`;
 
     return `
@@ -989,6 +1012,16 @@ function toggleDetalle(id) {
   const open = !el.classList.contains('open');
   el.classList.toggle('open', open);
   if (ico) ico.classList.toggle('open', open);
+}
+
+// ── DETALLE DE PRODUCTOS DE UNA FACTURA (hoja Desglose_IA) ────────
+function toggleProductosFactura(rowId) {
+  const cont = document.getElementById('prod-' + rowId);
+  const ico  = document.getElementById('prod-ico-' + rowId);
+  if (!cont) return;
+  const abrir = cont.style.display === 'none';
+  cont.style.display = abrir ? 'block' : 'none';
+  if (ico) ico.classList.toggle('open', abrir);
 }
 
 // ── CELDA COLAPSABLE: fecha proyectada de pago ────────────────────
