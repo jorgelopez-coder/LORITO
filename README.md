@@ -77,7 +77,17 @@ Pasos para activarla (todos manuales, vía script.google.com):
      pantalla lee `Pendientes_Mapeo`, no escanea `Desglose_IA` directo).
    - `migrarEsquemaSinUnidades()` — quita "Unidad base"/"Unidad de compra
      default" de `Maestro_Productos` y `Costo_Promedio`, agrega "Área de
-     negocio" a `Maestro_Productos`.
+     negocio" a `Maestro_Productos`. **Importante:** mientras esta función no
+     se corría, el código ya escribía por posición de columna asumiendo el
+     esquema nuevo sobre hojas que todavía tenían el esquema viejo — eso hizo
+     que "Área de negocio" quedara guardándose de verdad, pero bajo la
+     columna todavía rotulada "Unidad base" (por eso no se veía reflejada en
+     ninguna pantalla), y en `Costo_Promedio` llegó a correr números a
+     celdas con formato de fecha y viceversa para los productos tocados
+     recientemente. Esta versión de la función rescata esos datos corridos
+     antes de reacomodar columnas, y al final llama a
+     `recalcularTodosLosCostos()` para recalcular `Costo_Promedio` desde cero
+     y dejarlo consistente — no hace falta correr nada más aparte.
    - `inicializarListasCompartidas()` — crea y siembra `Categorias_Productos`
      y `Areas_Negocio` con los valores por defecto (sin esto, esas hojas
      recién se crean solas con la primera edición desde la pestaña
