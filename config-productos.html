@@ -44,6 +44,7 @@
     .tab-principal.active .tab-badge { background:var(--green); color:#fff; }
 
     .kpi-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:1.25rem; }
+    .kpi-strip.cols-4 { grid-template-columns:repeat(4,1fr); }
     .kpi-box { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; }
     .kpi-val { font-family:var(--font-d); font-size:22px; font-weight:700; letter-spacing:-.02em; color:var(--text); }
     .kpi-lbl { font-size:11px; color:var(--muted); margin-top:2px; }
@@ -152,7 +153,7 @@
     @media (max-width:700px) {
       .grid-2 { grid-template-columns:1fr; }
       header { padding:0 1rem; } main { padding:1.5rem 1rem 3rem; }
-      .kpi-strip { grid-template-columns:1fr; }
+      .kpi-strip, .kpi-strip.cols-4 { grid-template-columns:1fr; }
       .page-header { flex-direction:column; }
     }
   </style>
@@ -239,7 +240,7 @@
       <button class="btn-primary" onclick="abrirModalProducto(null)">+ Nuevo producto</button>
     </div>
 
-    <div class="kpi-strip">
+    <div class="kpi-strip cols-4">
       <div class="kpi-box">
         <div class="kpi-val" id="kpi-cat-total">—</div>
         <div class="kpi-lbl">Productos en el Maestro</div>
@@ -252,6 +253,15 @@
         <div class="kpi-val" id="kpi-cat-categorias">—</div>
         <div class="kpi-lbl">Categorías distintas en uso</div>
       </div>
+      <div class="kpi-box">
+        <div class="kpi-val ambar" id="kpi-cat-duplicados">—</div>
+        <div class="kpi-lbl">Posibles duplicados (fusionar)</div>
+      </div>
+    </div>
+
+    <div class="tabs" id="tabs-catalogo-estado">
+      <button class="tab active" data-estado="" onclick="cambiarTabEstadoCat('', this)">Todos <span class="tab-badge" id="tab-badge-cat-todos">—</span></button>
+      <button class="tab" data-estado="duplicados" onclick="cambiarTabEstadoCat('duplicados', this)">Posibles duplicados <span class="tab-badge" id="tab-badge-cat-duplicados">—</span></button>
     </div>
 
     <div class="toolbar">
@@ -662,6 +672,18 @@ async function guardarPendiente(rowId, nombreFactura, proveedor) {
 // ═══════════════════════ PANEL: CATÁLOGO (MAESTRO) ═══════════════════════
 let productosCatalogo = [];
 let pagActualCat = 1;
+let estadoActivoCat = '';
+
+// Clave de comparación para detectar duplicados: minúsculas, sin acentos,
+// espacios colapsados — así "Limón Mesino" y "Limón mesino" (o "limon  mesino")
+// se reconocen como el mismo nombre aunque no sean un match exacto de texto.
+function claveNormalizada(nombre) {
+  return String(nombre || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ');
+}
 
 function construirVistaCatalogo() {
   const aliasPorId = {};
@@ -689,22 +711,47 @@ function construirVistaCatalogo() {
       costoProm90: costoPorId[id] != null ? costoPorId[id] : null
     };
   }).sort((a,b) => a.nombre.localeCompare(b.nombre));
+
+  // Agrupa por nombre normalizado; cualquier grupo con más de un producto
+  // es candidato a fusionar (mismo nombre real, distinto id_producto).
+  const grupos = {};
+  productosCatalogo.forEach(p => {
+    const clave = claveNormalizada(p.nombre);
+    if (!clave) return;
+    (grupos[clave] = grupos[clave] || []).push(p);
+  });
+  productosCatalogo.forEach(p => {
+    const grupo = grupos[claveNormalizada(p.nombre)] || [];
+    p.duplicado = grupo.length > 1;
+    p.otrosDuplicados = grupo.filter(x => x.id !== p.id).map(x => `${x.nombre} (${x.id})`);
+  });
 }
 
 function inicializarCat() {
   const huerfanos = productosCatalogo.filter(p => p.alias === 0).length;
+  const duplicados = productosCatalogo.filter(p => p.duplicado).length;
   const cats = [...new Set(productosCatalogo.map(p => p.categoria).filter(Boolean))].sort();
 
   document.getElementById('kpi-cat-total').textContent      = productosCatalogo.length;
   document.getElementById('kpi-cat-huerfanos').textContent  = huerfanos;
   document.getElementById('kpi-cat-categorias').textContent = cats.length;
+  document.getElementById('kpi-cat-duplicados').textContent = duplicados;
   document.getElementById('tab-badge-cat-principal').textContent = productosCatalogo.length;
+  document.getElementById('tab-badge-cat-todos').textContent = productosCatalogo.length;
+  document.getElementById('tab-badge-cat-duplicados').textContent = duplicados;
 
   const selCat = document.getElementById('f-cat-cat');
   const valCat = selCat.value;
   selCat.innerHTML = '<option value="">Todas las categorías</option>' +
     cats.map(c => `<option value="${c}"${c===valCat?' selected':''}>${c}</option>`).join('');
 
+  renderTablaCat();
+}
+
+function cambiarTabEstadoCat(estado, el) {
+  estadoActivoCat = estado;
+  document.querySelectorAll('#tabs-catalogo-estado .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
   renderTablaCat();
 }
 
@@ -720,13 +767,15 @@ function renderTablaCat() {
 }
 
 function _renderTablaCat() {
-  const busq = document.getElementById('s-cat').value.toLowerCase();
-  const cat  = document.getElementById('f-cat-cat').value;
+  const busq   = document.getElementById('s-cat').value.toLowerCase();
+  const cat    = document.getElementById('f-cat-cat').value;
+  const estado = estadoActivoCat;
 
   const lista = productosCatalogo.filter(p => {
-    const matchBusq = !busq || p.nombre.toLowerCase().includes(busq) || p.id.toLowerCase().includes(busq);
-    const matchCat  = !cat || p.categoria === cat;
-    return matchBusq && matchCat;
+    const matchBusq   = !busq || p.nombre.toLowerCase().includes(busq) || p.id.toLowerCase().includes(busq);
+    const matchCat    = !cat || p.categoria === cat;
+    const matchEstado = !estado || (estado === 'duplicados' && p.duplicado);
+    return matchBusq && matchCat && matchEstado;
   });
 
   const total  = lista.length;
@@ -735,7 +784,8 @@ function _renderTablaCat() {
 
   if (!lista.length) {
     document.getElementById('tabla-catalogo').innerHTML = '<div class="empty">' +
-      (productosCatalogo.length ? 'Sin resultados.' : 'El Maestro todavía no tiene productos. Creá uno con "+ Nuevo producto".') +
+      (estado === 'duplicados' ? '✓ No se detectaron nombres duplicados.' :
+       productosCatalogo.length ? 'Sin resultados.' : 'El Maestro todavía no tiene productos. Creá uno con "+ Nuevo producto".') +
       '</div>';
     document.getElementById('pag-catalogo').style.display = 'none';
     return;
@@ -748,10 +798,13 @@ function _renderTablaCat() {
     const badgeAlias = p.alias > 0
       ? `<span class="badge b-ok"><span class="b-dot"></span>${p.alias}</span>`
       : `<span class="badge b-huerf"><span class="b-dot"></span>0</span>`;
+    const nombreCelda = p.duplicado
+      ? `${p.nombre} <span class="badge b-huerf" title="Posible duplicado de: ${p.otrosDuplicados.join(', ').replace(/"/g,'&quot;')}"><span class="b-dot"></span>dup.</span>`
+      : p.nombre;
     return `
-      <tr>
+      <tr${p.duplicado ? ' style="background:var(--amber-bg);"' : ''}>
         <td style="font-family:var(--font-d);font-size:12px;color:var(--muted);white-space:nowrap;">${p.id}</td>
-        <td style="font-weight:500;max-width:200px;">${p.nombre}</td>
+        <td style="font-weight:500;max-width:220px;">${nombreCelda}</td>
         <td style="color:var(--muted);">${p.categoria || '—'}</td>
         <td style="color:var(--muted);">${p.area || '—'}</td>
         <td class="num">${p.costoProm90 != null ? fmtC(p.costoProm90) : '—'}</td>
@@ -833,12 +886,15 @@ function abrirModalFusion(idx) {
   const p = window._catalogoFiltrado[idx];
   productoAFusionar = p.id;
 
-  document.getElementById('fusion-nota').textContent =
-    `"${p.nombre}" (${p.id}, ${p.alias} alias) se va a eliminar del Maestro. Todos sus alias van a quedar apuntando al producto que elijas abajo, y su costo promedio se recalcula con el historial combinado.`;
+  const notaBase = `"${p.nombre}" (${p.id}, ${p.alias} alias) se va a eliminar del Maestro. Todos sus alias van a quedar apuntando al producto que elijas abajo, y su costo promedio se recalcula con el historial combinado.`;
+  document.getElementById('fusion-nota').textContent = p.duplicado
+    ? notaBase + ` Detecté que coincide con: ${p.otrosDuplicados.join(', ')} — lo dejé preseleccionado abajo.`
+    : notaBase;
 
   const otros = productosCatalogo.filter(x => x.id !== p.id).sort((a,b) => a.nombre.localeCompare(b.nombre));
+  const clave = claveNormalizada(p.nombre);
   document.getElementById('mf-destino').innerHTML =
-    otros.map(o => `<option value="${o.id}">${o.id} · ${o.nombre}${o.categoria?' ('+o.categoria+')':''}</option>`).join('');
+    otros.map(o => `<option value="${o.id}"${claveNormalizada(o.nombre)===clave?' selected':''}>${o.id} · ${o.nombre}${o.categoria?' ('+o.categoria+')':''}</option>`).join('');
 
   document.getElementById('modal-fusion').classList.add('open');
 }

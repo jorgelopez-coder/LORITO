@@ -470,6 +470,7 @@ const fmtN = n => Number(n||0).toLocaleString('es-CR', { minimumFractionDigits:2
 let dataFacturas = [];   // hoja "Registro Facturas" (una fila por factura)
 let proveedores  = [];   // hoja "proveedores" del Sheet
 let dataAbonos   = [];   // hoja "Abonos" (pagos parciales)
+let dataDesglose = [];   // hoja "Desglose_IA" (líneas de producto por factura)
 let facturasAP   = [];   // dataset ya calculado (estado, saldo, etc.)
 let pagFacturas  = 1;
 const POR_PAGINA = 15;
@@ -529,10 +530,11 @@ function filaAProveedor(r) {
 async function cargarDatos() {
   document.getElementById('status-carga').innerHTML = '<span class="spinner"></span> Conectando con Google Sheets…';
   try {
-    const [dF, dP, dAb] = await Promise.all([
+    const [dF, dP, dAb, dDes] = await Promise.all([
       gvizLoad('Registro Facturas', 'Factura'),
       gvizLoad('proveedores', 'ID').catch(() => []),
-      gvizLoad('Abonos', 'Monto abonado').catch(() => [])
+      gvizLoad('Abonos', 'Monto abonado').catch(() => []),
+      gvizLoad('Desglose_IA', 'Producto').catch(() => [])
     ]);
 
     if (!dF.length) throw new Error('Sin datos en la hoja de facturas');
@@ -540,6 +542,7 @@ async function cargarDatos() {
     dataFacturas = dF;
     proveedores  = dP.filter(r => r['ID']).map(filaAProveedor);
     dataAbonos   = dAb;
+    dataDesglose = dDes;
 
     document.getElementById('conn-dot').classList.remove('off');
     document.getElementById('conn-label').textContent = 'Conectado · Google Sheets';
@@ -678,6 +681,13 @@ function construirFacturasAP() {
 
 function abonosDeFactura(numero) {
   return dataAbonos.filter(a => a['Factura'] === numero);
+}
+
+// Líneas de producto (hoja Desglose_IA) que corresponden a una factura.
+// Las facturas ingresadas manualmente (factura-manual.html) no tienen líneas
+// ahí, así que puede devolver un arreglo vacío.
+function productosDeFactura(numero) {
+  return dataDesglose.filter(l => l['Número de factura'] === numero);
 }
 
 // ── INICIALIZAR ───────────────────────────────────────────────────
@@ -876,6 +886,7 @@ function _renderFacturas() {
 
     const puedeAccionar = f.estado !== 'Cancelada';
     const abonos = abonosDeFactura(f.numero);
+    const lineasProducto = productosDeFactura(f.numero);
 
     const detalleHtml = `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
