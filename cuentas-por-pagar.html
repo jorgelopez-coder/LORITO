@@ -383,12 +383,22 @@
       </div>
       <div class="field">
         <label for="pago-medio">Medio de pago</label>
-        <select id="pago-medio">
+        <select id="pago-medio" onchange="actualizarCamposMedioPago('pago')">
           <option value="Transferencia">Transferencia</option>
           <option value="Tarjeta débito">Tarjeta débito</option>
           <option value="Caja chica">Caja chica</option>
+          <option value="Reembolso">Reembolso</option>
+          <option value="Nota de crédito">Nota de crédito</option>
           <option value="Otro">Otro</option>
         </select>
+      </div>
+      <div class="field" id="pago-campo-reembolso" style="display:none;">
+        <label for="pago-reembolso-a">Reembolsar a</label>
+        <input type="text" id="pago-reembolso-a" placeholder="Nombre de la persona a reembolsar">
+      </div>
+      <div class="field" id="pago-campo-notacredito" style="display:none;">
+        <label for="pago-nota-credito">Nota de crédito asociada</label>
+        <input type="text" id="pago-nota-credito" placeholder="Número de la nota de crédito">
       </div>
       <div class="field">
         <label for="pago-referencia">Referencia bancaria</label>
@@ -426,12 +436,22 @@
       </div>
       <div class="field">
         <label for="abono-medio">Medio de pago</label>
-        <select id="abono-medio">
+        <select id="abono-medio" onchange="actualizarCamposMedioPago('abono')">
           <option value="Transferencia">Transferencia</option>
           <option value="Tarjeta débito">Tarjeta débito</option>
           <option value="Caja chica">Caja chica</option>
+          <option value="Reembolso">Reembolso</option>
+          <option value="Nota de crédito">Nota de crédito</option>
           <option value="Otro">Otro</option>
         </select>
+      </div>
+      <div class="field" id="abono-campo-reembolso" style="display:none;">
+        <label for="abono-reembolso-a">Reembolsar a</label>
+        <input type="text" id="abono-reembolso-a" placeholder="Nombre de la persona a reembolsar">
+      </div>
+      <div class="field" id="abono-campo-notacredito" style="display:none;">
+        <label for="abono-nota-credito">Nota de crédito asociada</label>
+        <input type="text" id="abono-nota-credito" placeholder="Número de la nota de crédito">
       </div>
       <div class="field">
         <label for="abono-referencia">Referencia bancaria</label>
@@ -1373,6 +1393,14 @@ async function guardarTipoCambio(numero, valor) {
   }
 }
 
+// Muestra/oculta los campos condicionales según el medio de pago elegido
+// (Reembolso → nombre a reembolsar; Nota de crédito → nota asociada).
+function actualizarCamposMedioPago(prefix) {
+  const medio = document.getElementById(prefix + '-medio').value;
+  document.getElementById(prefix + '-campo-reembolso').style.display = medio === 'Reembolso' ? '' : 'none';
+  document.getElementById(prefix + '-campo-notacredito').style.display = medio === 'Nota de crédito' ? '' : 'none';
+}
+
 // ── MODAL PAGO TOTAL ───────────────────────────────────────────────
 function abrirModalPago(numero) {
   const f = facturaPorNumero(numero);
@@ -1381,7 +1409,10 @@ function abrirModalPago(numero) {
   document.getElementById('pago-sub').textContent = `${numero} · ${f.proveedor} · ${fmt(f.saldoPendiente)}`;
   document.getElementById('pago-fecha').value = hoyISO;
   document.getElementById('pago-medio').value = 'Transferencia';
+  document.getElementById('pago-reembolso-a').value = '';
+  document.getElementById('pago-nota-credito').value = '';
   document.getElementById('pago-referencia').value = '';
+  actualizarCamposMedioPago('pago');
   document.getElementById('modal-pago').classList.add('open');
 }
 
@@ -1389,15 +1420,20 @@ async function guardarPago() {
   const numero = document.getElementById('pago-numero').value;
   const fecha  = document.getElementById('pago-fecha').value;
   const medio  = document.getElementById('pago-medio').value;
+  const reembolsoA  = document.getElementById('pago-reembolso-a').value.trim();
+  const notaCredito = document.getElementById('pago-nota-credito').value.trim();
   const referencia = document.getElementById('pago-referencia').value.trim();
   if (!fecha) { showToast('Ingresá la fecha de pago.', 'error'); return; }
+  if (medio === 'Reembolso' && !reembolsoA) { showToast('Ingresá a quién se reembolsa.', 'error'); return; }
+  if (medio === 'Nota de crédito' && !notaCredito) { showToast('Ingresá la nota de crédito asociada.', 'error'); return; }
   const f = facturaPorNumero(numero);
   if (!f) return;
   try {
     await postAP({
       modulo: 'registrar_pago',
       numero_factura: numero, ordinal: f.ordinal, proveedor: f.proveedor, fecha_factura: f.fechaFactura,
-      monto: f.monto, fecha_pago: fecha, medio_pago: medio, referencia: referencia
+      monto: f.monto, fecha_pago: fecha, medio_pago: medio, referencia: referencia,
+      reembolso_a: reembolsoA, nota_credito: notaCredito
     });
     f.fechaRealPago = fecha;
     f.medioPago = medio;
@@ -1422,8 +1458,11 @@ function abrirModalAbono(numero) {
   document.getElementById('abono-monto').value = '';
   document.getElementById('abono-monto').max = f.saldoPendiente;
   document.getElementById('abono-medio').value = 'Transferencia';
+  document.getElementById('abono-reembolso-a').value = '';
+  document.getElementById('abono-nota-credito').value = '';
   document.getElementById('abono-referencia').value = '';
   document.getElementById('abono-saldo-hint').textContent = `Saldo pendiente: ${fmt(f.saldoPendiente)}`;
+  actualizarCamposMedioPago('abono');
   document.getElementById('modal-abono').classList.add('open');
 }
 
@@ -1432,9 +1471,13 @@ async function guardarAbono() {
   const fecha  = document.getElementById('abono-fecha').value;
   const monto  = parseFloat(document.getElementById('abono-monto').value);
   const medio  = document.getElementById('abono-medio').value;
+  const reembolsoA  = document.getElementById('abono-reembolso-a').value.trim();
+  const notaCredito = document.getElementById('abono-nota-credito').value.trim();
   const referencia = document.getElementById('abono-referencia').value.trim();
   if (!fecha) { showToast('Ingresá la fecha del abono.', 'error'); return; }
   if (!monto || monto <= 0) { showToast('Ingresá un monto de abono válido.', 'error'); return; }
+  if (medio === 'Reembolso' && !reembolsoA) { showToast('Ingresá a quién se reembolsa.', 'error'); return; }
+  if (medio === 'Nota de crédito' && !notaCredito) { showToast('Ingresá la nota de crédito asociada.', 'error'); return; }
 
   const f = facturaPorNumero(numero);
   if (!f) return;
@@ -1442,7 +1485,8 @@ async function guardarAbono() {
     const result = await postAP({
       modulo: 'registrar_abono',
       numero_factura: numero, ordinal: f.ordinal, fecha_factura: f.fechaFactura,
-      fecha_abono: fecha, monto_abono: monto, medio_pago: medio, referencia: referencia
+      fecha_abono: fecha, monto_abono: monto, medio_pago: medio, referencia: referencia,
+      reembolso_a: reembolsoA, nota_credito: notaCredito
     });
     dataAbonos.push({ 'Factura': numero, 'Fecha de abono': fecha, 'Monto abonado': monto, 'Medio de pago': medio, 'Referencia': referencia });
     f.totalAbonado = result.total_abonado != null ? result.total_abonado : (f.totalAbonado||0) + monto;
