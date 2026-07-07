@@ -160,22 +160,26 @@ todavía no tiene filas). Si se agregan columnas, actualizar
 cambia) y correr `configurarHojas()` de nuevo si hace falta.
 
 `Code-costos-backend.gs` también expone `?modulo=nombres_normalizados`, que
-abre el Sheet de compras por ID (`SHEET_COMPRAS_ID`) y lee de `Costo_Promedio`
-el ID, el "Nombre normalizado" y el "Costo promedio 30 días" de cada producto
-(`{ ok:true, productos:[{id, nombre, costo}] }`) — es la fuente del datalist
-de "Nuevo producto" en `costos-productos.html` (antes era una lista fija en el
-código) y también autocompleta, al elegir un nombre, el precio de compra
-(costo promedio, queda editable igual que siempre) y el ID del producto (se
-reutiliza ese ID en vez de generar uno nuevo, para quedar trazable a
-Costo_Promedio).
+abre el Sheet de compras por ID (`SHEET_COMPRAS_ID`) y lee el catálogo
+completo de `Maestro_Productos` (ID, "Nombre normalizado", "Categoría", "Área
+de negocio"), sumándole el "Costo promedio 30 días" de `Costo_Promedio` cuando
+el producto ya tiene alguna compra registrada
+(`{ ok:true, productos:[{id, nombre, categoria, area, costo}] }`). Es la
+fuente del datalist de "Nuevo producto" en `costos-productos.html` (antes era
+una lista fija en el código, y antes de eso leía solo de `Costo_Promedio` —
+cambié la fuente a `Maestro_Productos` porque es el catálogo completo, 108
+productos vs. los que ya tienen costo) y también autocompleta, al elegir un
+nombre, categoría, área de negocio y precio de compra (costo promedio, si
+existe; todo queda igual de editable que siempre) y el ID del producto (se
+reutiliza en vez de generar uno nuevo, para quedar trazable al catálogo).
 
-**Pendiente:** este módulo (y su cambio de forma, de `{nombres:[...]}` a
-`{productos:[...]}`) se agregó después del primer despliegue, así que hay que
-volver a pegar `Code-costos-backend.gs` en el editor y hacer Implementar →
-Gestionar implementaciones → Editar → Nueva versión (verificado con `curl`,
-hoy responde `"Módulo no reconocido: nombres_normalizados"` porque el código
-desplegado es el viejo). La primera vez que corra puede pedir reautorizar el
-script (accede a un Sheet externo por primera vez).
+**Pendiente:** este módulo (con su nueva forma, que ahora incluye `categoria`
+y `area`) se agregó/cambió después del último despliegue — hay que volver a
+pegar `Code-costos-backend.gs` en el editor y hacer Implementar → Gestionar
+implementaciones → Editar → Nueva versión (verificado con `curl`, hoy todavía
+responde sin `categoria`/`area` porque el código desplegado es el viejo). La
+primera vez que corra puede pedir reautorizar el script (accede a un Sheet
+externo por primera vez).
 
 `Code-costos-backend.gs` también expone `?modulo=proveedores`, que abre el
 Sheet de compras por ID y lee su pestaña `proveedores` — es la fuente real de

@@ -144,21 +144,33 @@ function doGet(e) {
   }
 }
 
-// Lee Costo_Promedio (Sheet de compras) y devuelve, por producto, el ID, el
-// "Nombre normalizado" y el costo promedio de 30 días — usado en
+// Lee Maestro_Productos (catálogo completo, Sheet de compras) y le suma el
+// costo promedio de 30 días de Costo_Promedio cuando existe (no todos los
+// productos del Maestro ya tienen alguna compra registrada). Devuelve, por
+// producto: ID, nombre, categoría, área de negocio y costo — usado en
 // costos-productos.html para el datalist de "Nuevo producto" y para
-// autocompletar precio de compra + ID al elegir un nombre.
+// autocompletar categoría/área/precio/ID al elegir un nombre.
 function nombresNormalizados() {
   const ss = SpreadsheetApp.openById(SHEET_COMPRAS_ID);
-  const hoja = ss.getSheetByName(HOJA_COSTO_PROMEDIO);
-  if (!hoja) return [];
-  const registros = filasComoObjetos(hoja);
-  return registros
-    .filter(r => r['Nombre normalizado'])
-    .map(r => ({
-      id: r['ID producto'] || '',
-      nombre: r['Nombre normalizado'],
-      costo: Number(r['Costo promedio 30 días']) || 0
+  const hojaMaestro = ss.getSheetByName(HOJA_MAESTRO_PRODUCTOS);
+  if (!hojaMaestro) return [];
+  const maestro = filasComoObjetos(hojaMaestro);
+
+  const hojaCosto = ss.getSheetByName(HOJA_COSTO_PROMEDIO);
+  const costos = hojaCosto ? filasComoObjetos(hojaCosto) : [];
+  const costoPorId = {};
+  costos.forEach(c => {
+    if (c['ID producto']) costoPorId[c['ID producto']] = Number(c['Costo promedio 30 días']) || 0;
+  });
+
+  return maestro
+    .filter(m => m['Nombre normalizado'])
+    .map(m => ({
+      id: m['ID producto'] || '',
+      nombre: m['Nombre normalizado'],
+      categoria: m['Categoría'] || '',
+      area: m['Área de negocio'] || '',
+      costo: costoPorId[m['ID producto']] || 0
     }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 }
