@@ -908,12 +908,14 @@ function initConfig() {
   cargarNombresNormalizados();
 }
 
-// Productos normalizados (id, nombre, costo promedio 30 días) cargados desde
-// Costo_Promedio — se usan para el datalist y para autocompletar precio + ID.
+// Productos normalizados (id, nombre, categoría, área, costo promedio) cargados
+// desde el catálogo maestro (Maestro_Productos) — se usan para el datalist y
+// para autocompletar categoría/área/precio/ID.
 let PRODUCTOS_NORMALIZADOS = [];
 
-// Llena el datalist de nombres sugeridos con los "Nombre normalizado" de
-// Costo_Promedio (Sheet de compras) — no con una lista fija en el código.
+// Llena el datalist de nombres sugeridos con los "Nombre normalizado" del
+// catálogo maestro (Maestro_Productos, Sheet de compras) — no con una lista
+// fija en el código.
 async function cargarNombresNormalizados() {
   const dl = document.getElementById('sugerencias-productos');
   if (!dl || !APPS_SCRIPT_COSTOS) return;
@@ -928,15 +930,19 @@ async function cargarNombresNormalizados() {
   }
 }
 
-// Al escribir/elegir un nombre que coincide con un producto de Costo_Promedio,
-// autocompleta el precio de compra (costo promedio) y guarda su ID para que
-// guardar() lo reutilice en vez de generar uno nuevo. El precio queda igual de
-// editable que siempre — esto solo lo precarga.
+// Al escribir/elegir un nombre que coincide con un producto del catálogo
+// maestro, autocompleta categoría, área de negocio, precio de compra (costo
+// promedio, si ya tiene alguna compra registrada) y guarda su ID para que
+// guardar() lo reutilice en vez de generar uno nuevo. Todos estos campos
+// quedan igual de editables que siempre — esto solo los precarga.
 function onNombreInput() {
   const val = document.getElementById('p-nombre').value.trim().toLowerCase();
   const match = PRODUCTOS_NORMALIZADOS.find(p => p.nombre.toLowerCase() === val);
   document.getElementById('p-id-normalizado').value = match ? match.id : '';
-  if (match && match.costo) {
+  if (!match) return;
+  if (match.categoria) document.getElementById('p-categoria').value = match.categoria;
+  if (match.area) document.getElementById('p-area').value = match.area;
+  if (match.costo) {
     document.getElementById('p-precio-sin-iva').value = match.costo;
     calcularCostos();
   }
