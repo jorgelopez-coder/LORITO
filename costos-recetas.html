@@ -695,10 +695,33 @@ function showToast(msg, type='success') {
   setTimeout(() => t.classList.remove('show'), 3500);
 }
 
+// Si se llega desde "+ Nueva receta" de costos-menu.html (?nuevo=1&plato=Nombre),
+// abre directo el formulario y precarga el nombre del plato — como todavía puede
+// no existir en costos_menu (el plato nuevo se guarda después), lo dejamos en el
+// campo personalizado en vez de forzar una coincidencia con el selector.
+function initDesdeQueryParams() {
+  const params = new URLSearchParams(location.search);
+  if (params.get('nuevo') !== '1') return;
+  switchTab('nueva', document.querySelectorAll('.tab')[1]);
+  const plato = params.get('plato');
+  if (!plato) return;
+  const selN = document.getElementById('r-nombre');
+  const yaExiste = Array.from(selN.options).some(o => o.value === plato);
+  if (yaExiste) {
+    selN.value = plato;
+    onNombreChange();
+  } else {
+    selN.value = '__custom__';
+    document.getElementById('r-nombre-custom').style.display = 'block';
+    document.getElementById('r-nombre-custom').value = plato;
+  }
+}
+
 // INIT
 poblarPlatos();
 agregarIngrediente();
 renderLista();
+initDesdeQueryParams();
 </script>
 </body>
 </html>

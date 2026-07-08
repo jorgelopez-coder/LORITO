@@ -180,7 +180,10 @@
       </div>
       <!-- Receta asociada para costo -->
       <div class="field">
-        <label for="m-receta">Receta asociada</label>
+        <label for="m-receta" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <span>Receta asociada</span>
+          <a href="costos-recetas.html?nuevo=1" target="_blank" rel="noopener" onclick="prepararLinkNuevaReceta(this)" style="font-size:11px;font-weight:500;color:var(--purple);text-decoration:none;white-space:nowrap;">+ Nueva receta</a>
+        </label>
         <select id="m-receta" onchange="calcFC()">
           <option value="">Sin receta asociada</option>
         </select>
@@ -240,13 +243,28 @@ function poblarRecetas() {
   const recetas = JSON.parse(localStorage.getItem('costos_recetas')||'[]')
     .filter(r => r.tipo === 'receta');
   const sel = document.getElementById('m-receta');
+  const valorActual = sel.value;
   sel.innerHTML = '<option value="">Sin receta asociada</option>';
   recetas.forEach(r => {
     const o = document.createElement('option');
     o.value = r.id; o.textContent = `${r.nombre} (₡${Number(r.costo_porcion).toLocaleString('es-CR',{minimumFractionDigits:2})}/porción)`;
     sel.appendChild(o);
   });
+  if (recetas.some(r => r.id === valorActual)) sel.value = valorActual;
 }
+
+// "+ Nueva receta" abre costos-recetas.html en otra pestaña, pasándole el
+// nombre que ya se haya escrito para este plato (si hay). Como comparten
+// localStorage, al volver a esta pestaña poblarRecetas() (disparado por el
+// listener de "focus" más abajo) ya va a incluir la receta recién creada.
+function prepararLinkNuevaReceta(a) {
+  const nombre = document.getElementById('m-nombre').value.trim();
+  a.href = 'costos-recetas.html?nuevo=1' + (nombre ? '&plato=' + encodeURIComponent(nombre) : '');
+}
+
+window.addEventListener('focus', () => {
+  if (document.getElementById('tab-nuevo').style.display !== 'none') { poblarRecetas(); calcFC(); }
+});
 
 function calcFC() {
   const precio    = parseFloat(document.getElementById('m-precio').value) || 0;
