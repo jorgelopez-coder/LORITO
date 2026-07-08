@@ -43,7 +43,9 @@ Destinos en Drive (dueño: jorge.lopez@casaaguizotes.com):
 
 `Code-mantenimiento-backend.gs` está desplegado como Web App y `MANT_URL` en `mantenimiento.html` ya apunta a ese `/exec`. `mantenimiento.html` también lee los encargados desde el backend de RRHH (`APPS_SCRIPT_RRHH` apunta al mismo `/exec` que usan las 8 páginas `rrhh-*.html`).
 
-Verificado end-to-end (crear reporte → cambiar estado → agregar nota, todo reflejado en el Sheet). Hay una fila de prueba en la pestaña "Reportes" (encargado "PRUEBA BORRAR TEST", tipo "Bombillo quemado") — se puede borrar manualmente desde el Sheet sin afectar nada.
+`index.html` también apunta su propio `MANT_URL` (widget "🔧 Mantenimiento" del home) a ese mismo `/exec` — muestra los reportes activos (no resueltos) con su badge de estado, igual que `mantenimiento.html`.
+
+Verificado end-to-end (crear reporte → cambiar estado → agregar nota → subida de foto a Drive, todo reflejado en el Sheet y en el widget del home). Hay filas de prueba en la pestaña "Reportes" (encargado "PRUEBA BORRAR TEST") — se pueden borrar manualmente desde el Sheet sin afectar nada.
 
 Si se agregan columnas, actualizar `ENCABEZADOS_REPORTES` en `Code-mantenimiento-backend.gs`, re-desplegar (Implementar → Gestionar implementaciones → Editar → Nueva versión — la URL `/exec` no cambia) y correr `configurarHoja()` de nuevo si hace falta.
 

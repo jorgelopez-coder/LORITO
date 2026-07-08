@@ -93,9 +93,17 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .seg-view{display:flex;gap:6px}
 .seg-view-btn{font-size:12px;font-weight:500;padding:6px 14px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;transition:all .15s}
 .seg-view-btn.active{background:var(--green);color:#fff;border-color:var(--green)}
-.reporte-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:12px}
-.reporte-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}
-.reporte-tipo{font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;font-family:var(--font-d)}
+.reporte-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:12px;transition:border-color .15s}
+.reporte-card.abierto{border-color:var(--border-h)}
+.reporte-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;cursor:pointer;user-select:none}
+.reporte-head:hover .reporte-tipo{color:var(--green)}
+.reporte-tipo{font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;font-family:var(--font-d);transition:color .15s}
+.reporte-head-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.reporte-chevron{font-size:11px;color:var(--subtle);transition:transform .15s;display:inline-block}
+.reporte-card.abierto .reporte-chevron{transform:rotate(180deg)}
+.reporte-idfecha{font-size:12px;color:var(--muted);margin-top:4px;font-family:var(--font-b)}
+.reporte-body{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:none}
+.reporte-card.abierto .reporte-body{display:block}
 .reporte-meta{font-size:12px;color:var(--muted);margin-bottom:8px}
 .reporte-detalle{font-size:13px;color:var(--text);line-height:1.5;margin-bottom:10px;background:var(--surface);border-radius:8px;padding:10px 12px}
 .reporte-foto{width:100%;max-height:200px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer;margin-bottom:10px;display:block}
@@ -287,6 +295,7 @@ let fotoBase64 = null;
 let mantDataSheet = [];
 let segVista = 'activos';
 let encargadoActual = '';
+let focusReporteId = new URLSearchParams(window.location.search).get('id');
 
 // ── TABS ──────────────────────────────────────────────────────────
 function showTab(tab, el) {
@@ -556,26 +565,51 @@ function renderSeguimiento() {
       ? notasArr.map(n => `<div class="nota-item">${escHtml(n)}</div>`).join('')
       : '<div style="font-size:12px;color:var(--subtle);margin-bottom:6px">Sin notas aún.</div>';
 
-    return `<div class="reporte-card">
-      <div class="reporte-head">
-        <div class="reporte-tipo">${icon} ${r.tipo}</div>
-        ${estBadge[r.estado] || ''}
+    const abierto = reportesAbiertos.has(String(r.id));
+
+    return `<div class="reporte-card${abierto ? ' abierto' : ''}" id="reporte-${r.id}">
+      <div class="reporte-head" onclick="toggleReporte('${r.id}')">
+        <div>
+          <div class="reporte-tipo">${icon} ${r.tipo}</div>
+          <div class="reporte-idfecha">#${r.id} · ${fecha}</div>
+        </div>
+        <div class="reporte-head-right">
+          ${estBadge[r.estado] || ''}
+          <span class="reporte-chevron">▾</span>
+        </div>
       </div>
-      <div class="reporte-meta">${fecha} · ${r.hora||''} · 👤 ${r.encargado}</div>
-      <div class="reporte-detalle">${escHtml(r.detalle)}</div>
-      ${fotoHtml}
-      <div class="reporte-actions">${acciones}</div>
-      ${resolucionRow}
-      <div class="notas-section">
-        <div class="notas-titulo">Notas de seguimiento</div>
-        ${notasHtml}
-        <div class="nota-add">
-          <textarea id="nota-input-${r.id}" placeholder="Agregar una nota de seguimiento…"></textarea>
-          <button class="btn-sm" onclick="agregarNotaUI('${r.id}')">Agregar</button>
+      <div class="reporte-body">
+        <div class="reporte-meta">👤 ${r.encargado}${r.hora ? ' · ' + r.hora : ''}</div>
+        <div class="reporte-detalle">${escHtml(r.detalle)}</div>
+        ${fotoHtml}
+        <div class="reporte-actions">${acciones}</div>
+        ${resolucionRow}
+        <div class="notas-section">
+          <div class="notas-titulo">Notas de seguimiento</div>
+          ${notasHtml}
+          <div class="nota-add">
+            <textarea id="nota-input-${r.id}" placeholder="Agregar una nota de seguimiento…"></textarea>
+            <button class="btn-sm" onclick="agregarNotaUI('${r.id}')">Agregar</button>
+          </div>
         </div>
       </div>
     </div>`;
   }).join('');
+
+  if (focusReporteId) {
+    const card = document.getElementById('reporte-' + focusReporteId);
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    focusReporteId = null;
+  }
+}
+
+// IDs de reportes con el detalle expandido (se preserva entre recargas de datos).
+const reportesAbiertos = new Set();
+function toggleReporte(id) {
+  id = String(id);
+  if (reportesAbiertos.has(id)) reportesAbiertos.delete(id);
+  else reportesAbiertos.add(id);
+  renderSeguimiento();
 }
 
 function escHtml(s) {
@@ -655,6 +689,15 @@ document.getElementById('date-chip').textContent =
   new Date().toLocaleDateString('es-CR',{weekday:'long',day:'numeric',month:'long'});
 document.getElementById('mant-fecha').value = hoy();
 cargarEncargados();
+
+// Si venimos de index.html con ?id=..., abrimos directo en Seguimiento con ese reporte expandido.
+if (focusReporteId) {
+  reportesAbiertos.add(String(focusReporteId));
+  segVista = 'todos';
+  document.querySelectorAll('.seg-view-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('seg-btn-todos').classList.add('active');
+  showTab('seguimiento', document.querySelectorAll('.tab-btn')[1]);
+}
 </script>
 </body>
 </html>

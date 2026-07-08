@@ -889,7 +889,7 @@ async function cargarResumenMantenimiento() {
       const vencido  = r.fechaResolucion && r.fechaResolucion < hoyStr;
       const badgeCls = r.estado === 'En proceso' ? 'mb-proceso' : 'mb-pendiente';
       const fechaFmt = r.fecha ? new Date(r.fecha+'T12:00:00').toLocaleDateString('es-CR',{day:'2-digit',month:'short'}) : '';
-      return `<a href="mantenimiento.html" class="mant-item">
+      return `<a href="mantenimiento.html?id=${encodeURIComponent(r.id)}" class="mant-item">
         <span class="mant-icon">${icon}</span>
         <div class="mant-info">
           <div class="mant-tipo">${r.tipo}</div>
