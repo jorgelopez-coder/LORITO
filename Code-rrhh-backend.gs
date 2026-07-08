@@ -21,6 +21,8 @@ const HOJA_AMONESTACIONES  = 'Amonestaciones';
 const HOJA_TERMINACIONES   = 'Terminaciones';
 const HOJA_CAMBIOS_SALARIO = 'CambiosSalario';
 const HOJA_LIQUIDACIONES   = 'Liquidaciones';
+const HOJA_HORARIOS        = 'Horarios';
+const HOJA_HORARIOS_ESTADO = 'HorariosEstado';
 
 const ENCABEZADOS_PERSONAL = [
   'Nombre completo', 'Cédula', 'Puesto', 'Estado', 'Departamento', 'Salario',
@@ -43,6 +45,12 @@ const ENCABEZADOS_CAMBIOS_SALARIO = [
 const ENCABEZADOS_LIQUIDACIONES = [
   'Colaborador', 'Fecha pago', 'Confirmado por', 'Total pagado', 'Preaviso', 'Cesantía', 'Vacaciones', 'Aguinaldo', 'Motivo', 'Registrado'
 ];
+const ENCABEZADOS_HORARIOS = [
+  'Semana inicio', 'Fecha', 'Colaborador', 'Departamento', 'Puesto', 'Estado', 'Hora entrada', 'Hora salida', 'Horas', 'Nota', 'Detalle'
+];
+const ENCABEZADOS_HORARIOS_ESTADO = [
+  'Semana inicio', 'Cerrado', 'Actualizado'
+];
 
 // Corré esta función UNA VEZ desde el editor de Apps Script para preparar el Sheet:
 // reutiliza la pestaña "Staff" (creada vacía junto con el Sheet) como "Personal"
@@ -58,6 +66,8 @@ function configurarHojas() {
   prepararHoja(HOJA_TERMINACIONES, ENCABEZADOS_TERMINACIONES);
   prepararHoja(HOJA_CAMBIOS_SALARIO, ENCABEZADOS_CAMBIOS_SALARIO);
   prepararHoja(HOJA_LIQUIDACIONES, ENCABEZADOS_LIQUIDACIONES);
+  prepararHoja(HOJA_HORARIOS, ENCABEZADOS_HORARIOS);
+  prepararHoja(HOJA_HORARIOS_ESTADO, ENCABEZADOS_HORARIOS_ESTADO);
 }
 
 function prepararHoja(nombre, encabezados) {
@@ -85,6 +95,8 @@ function doGet(e) {
       case 'personal':       hoja = prepararHoja(HOJA_PERSONAL, ENCABEZADOS_PERSONAL); break;
       case 'vacaciones':     hoja = prepararHoja(HOJA_VACACIONES, ENCABEZADOS_VACACIONES); break;
       case 'amonestaciones': hoja = prepararHoja(HOJA_AMONESTACIONES, ENCABEZADOS_AMONESTACIONES); break;
+      case 'horarios':        hoja = prepararHoja(HOJA_HORARIOS, ENCABEZADOS_HORARIOS); break;
+      case 'horarios_estado': hoja = prepararHoja(HOJA_HORARIOS_ESTADO, ENCABEZADOS_HORARIOS_ESTADO); break;
       case 'acciones':       return jsonOut({ ok: true, registros: [] });
       default:
         return jsonOut({ ok: false, error: 'Módulo no reconocido: ' + modulo });
@@ -138,6 +150,9 @@ function doPost(e) {
       case 'terminacion':           result = registrarTerminacion(payload); break;
       case 'cambio_salario':        result = registrarCambioSalario(payload); break;
       case 'confirmar_liquidacion': result = confirmarLiquidacion(payload); break;
+      case 'horario_semana':        result = registrarHorarioSemana(payload); break;
+      case 'cerrar_horario':        result = cambiarEstadoHorarioSemana(payload, 'Sí'); break;
+      case 'reabrir_horario':       result = cambiarEstadoHorarioSemana(payload, 'No'); break;
       default:
         throw new Error('Módulo no reconocido: ' + payload.modulo);
     }
@@ -326,4 +341,85 @@ function confirmarLiquidacion(p) {
     hojaPersonal.getRange(filaP, colEstado).setValue(p.nuevo_estado || 'INACTIVO');
   }
   return { fila: fila };
+}
+
+// ── HORARIOS (compartido con horarios.html / horarios-historial.html) ──
+
+// Busca la fila (1-indexada) donde una columna (por nombre de encabezado) tiene cierto valor.
+function filaPorColumna(hoja, encabezados, nombreCol, valor) {
+  const nFilas = hoja.getLastRow() - 1;
+  if (nFilas <= 0) return -1;
+  const col = encabezados.indexOf(nombreCol) + 1;
+  if (col === 0) return -1;
+  const valores = hoja.getRange(2, col, nFilas, 1).getValues();
+  const buscado = String(valor).trim();
+  for (let i = 0; i < valores.length; i++) {
+    if (String(valores[i][0]).trim() === buscado) return i + 2;
+  }
+  return -1;
+}
+
+// Borra todas las filas donde una columna tiene cierto valor (de abajo hacia arriba,
+// para no romper los índices mientras se borra).
+function eliminarFilasPorColumna(hoja, encabezados, nombreCol, valor) {
+  const nFilas = hoja.getLastRow() - 1;
+  if (nFilas <= 0) return;
+  const col = encabezados.indexOf(nombreCol) + 1;
+  if (col === 0) return;
+  const valores = hoja.getRange(2, col, nFilas, 1).getValues();
+  const buscado = String(valor).trim();
+  for (let i = valores.length - 1; i >= 0; i--) {
+    if (String(valores[i][0]).trim() === buscado) hoja.deleteRow(i + 2);
+  }
+}
+
+function agregarFilaPorEncabezado(hoja, encabezados, valores) {
+  const fila = hoja.getLastRow() + 1;
+  escribirFilaPorEncabezado(hoja, fila, encabezados, valores);
+  return fila;
+}
+
+// "Guardar semana" reemplaza lo guardado antes para esa semana (no acumula
+// duplicados cada vez que se guarda), igual que hace horarios.html en memoria.
+function registrarHorarioSemana(p) {
+  if (!p.semana_inicio) throw new Error('Falta la semana (semana_inicio).');
+  if (!Array.isArray(p.dias)) throw new Error('Faltan los días de la semana.');
+  const hoja = prepararHoja(HOJA_HORARIOS, ENCABEZADOS_HORARIOS);
+
+  eliminarFilasPorColumna(hoja, ENCABEZADOS_HORARIOS, 'Semana inicio', p.semana_inicio);
+
+  p.dias.forEach(function(d) {
+    agregarFilaPorEncabezado(hoja, ENCABEZADOS_HORARIOS, {
+      'Semana inicio': p.semana_inicio,
+      'Fecha': d.fecha || '',
+      'Colaborador': d.colaborador || '',
+      'Departamento': d.departamento || '',
+      'Puesto': d.puesto || '',
+      'Estado': d.estado || 'trabajo',
+      'Hora entrada': d.entrada || '',
+      'Hora salida': d.salida || '',
+      'Horas': Number(d.horas) || 0,
+      'Nota': d.nota || '',
+      'Detalle': d.detalle || ''
+    });
+  });
+
+  return { semana: p.semana_inicio, filas: p.dias.length };
+}
+
+function cambiarEstadoHorarioSemana(p, cerrado) {
+  if (!p.semana_inicio) throw new Error('Falta la semana (semana_inicio).');
+  const hoja = prepararHoja(HOJA_HORARIOS_ESTADO, ENCABEZADOS_HORARIOS_ESTADO);
+  const fila = filaPorColumna(hoja, ENCABEZADOS_HORARIOS_ESTADO, 'Semana inicio', p.semana_inicio);
+  const valores = {
+    'Semana inicio': p.semana_inicio,
+    'Cerrado': cerrado,
+    'Actualizado': new Date().toISOString()
+  };
+  if (fila !== -1) {
+    escribirFilaPorEncabezado(hoja, fila, ENCABEZADOS_HORARIOS_ESTADO, valores);
+  } else {
+    agregarFilaPorEncabezado(hoja, ENCABEZADOS_HORARIOS_ESTADO, valores);
+  }
+  return { semana: p.semana_inicio, cerrado: cerrado };
 }

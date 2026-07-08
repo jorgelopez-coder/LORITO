@@ -59,6 +59,8 @@ Sheet de datos: "RRHH - LORITO IA" — `1m8RLK3GPB8rpJjA92D2_gGfIaU-7CIo_Bz9xKB1
 
 `Code-rrhh-backend.gs` está desplegado como Web App y las 8 páginas (`rrhh-personal.html`, `rrhh-vacaciones.html`, `rrhh-control-vacaciones.html`, `rrhh-amonestaciones.html`, `rrhh-liquidaciones.html`, `rrhh-terminacion.html`, `rrhh-cambio-salario.html`, `rrhh-nuevo-ingreso.html`) ya apuntan a ese `/exec`. `rrhh-vacaciones.html` y `rrhh-amonestaciones.html` leen su historial del Sheet (antes solo vivía en localStorage).
 
+`horarios.html` y `horarios-historial.html` comparten el mismo backend/Sheet (pestañas `Horarios` y `HorariosEstado`) — "Guardar semana" reemplaza las filas de esa semana en vez de acumular duplicados. Requiere la versión de `Code-rrhh-backend.gs` con los módulos `horario_semana`, `cerrar_horario` y `reabrir_horario` (pendiente de pegar la versión actualizada y volver a desplegar, ver más abajo).
+
 Si se agregan columnas o módulos nuevos, actualizar los encabezados (`ENCABEZADOS_*`) en `Code-rrhh-backend.gs`, re-desplegar (Implementar → Gestionar implementaciones → Editar → Nueva versión — la URL `/exec` no cambia) y correr `configurarHojas()` de nuevo si se agregó una pestaña.
 
 ## Maestro de productos · historial de precios — despliegue pendiente
