@@ -266,6 +266,14 @@ window.addEventListener('focus', () => {
   if (document.getElementById('tab-nuevo').style.display !== 'none') { poblarRecetas(); calcFC(); }
 });
 
+// Umbrales de %FC (Food Cost) — mismo criterio para el texto del formulario
+// y para sombrear las tarjetas del menú: <25% verde, 25-35% amarillo, >35% rojo.
+function colorFC(fc) {
+  if (fc < 25) return { text:'var(--green)', bg:'var(--green-bg)', border:'var(--green-lt)' };
+  if (fc <= 35) return { text:'var(--amber)', bg:'var(--amber-bg)', border:'var(--amber)' };
+  return { text:'var(--red)', bg:'var(--red-bg)', border:'var(--red-lt)' };
+}
+
 function calcFC() {
   const precio    = parseFloat(document.getElementById('m-precio').value) || 0;
   const recetaId  = document.getElementById('m-receta').value;
@@ -284,9 +292,8 @@ function calcFC() {
 
   if (precio > 0 && costo > 0) {
     const fc = (costo/precio)*100;
-    const col = fc <= 28 ? 'var(--green)' : fc <= 35 ? 'var(--amber)' : 'var(--red)';
     fcEl.textContent = fc.toFixed(1) + '%';
-    fcEl.style.color = col;
+    fcEl.style.color = colorFC(fc).text;
     fcEl.style.fontWeight = '700';
   } else {
     fcEl.textContent = receta ? 'Ingresá precio' : 'Asociá una receta';
@@ -346,7 +353,11 @@ function renderMenu() {
           </tbody>
         </table>
       </div>` : '';
-    return `<div class="plato-card">
+    const sombra = p.costo_receta > 0 ? colorFC(parseFloat(p.fc)) : null;
+    const estiloCard = sombra
+      ? `background:${sombra.bg};border-left:4px solid ${sombra.border};`
+      : '';
+    return `<div class="plato-card" style="${estiloCard}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div>
           <div class="plato-nombre">${p.nombre}</div>
@@ -358,7 +369,7 @@ function renderMenu() {
       ${p.costo_receta > 0 ? `
         <div style="display:flex;gap:10px;margin-top:6px;font-size:12px;">
           <span style="color:var(--muted);">Costo: <strong>₡${Number(p.costo_receta).toLocaleString('es-CR',{minimumFractionDigits:2})}</strong></span>
-          <span style="font-weight:700;color:${parseFloat(p.fc)<=28?'var(--green)':parseFloat(p.fc)<=35?'var(--amber)':'var(--red)'};">FC ${p.fc}%</span>
+          <span style="font-weight:700;color:${sombra.text};">FC ${p.fc}%</span>
         </div>` : ''}
       ${p.descripcion ? `<div class="plato-desc">${p.descripcion}</div>` : ''}
       ${detalleReceta}
