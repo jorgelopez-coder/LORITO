@@ -53,7 +53,16 @@
     .btn-mini:hover { border-color:var(--border-h); color:var(--text); }
     button:disabled { opacity:.5; cursor:default; }
 
-    .toolbar-caja { display:flex; gap:8px; margin-bottom:1.25rem; flex-wrap:wrap; }
+    .toolbar-caja { display:flex; gap:8px; margin-bottom:1.25rem; flex-wrap:wrap; align-items:center; }
+
+    .tabs { display:flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:4px; margin-bottom:1.25rem; width:fit-content; }
+    .tab { font-size:13px; font-weight:500; padding:6px 16px; border-radius:7px; border:none; cursor:pointer; background:transparent; color:var(--muted); transition:background .15s,color .15s; white-space:nowrap; font-family:var(--font-b); }
+    .tab.active { background:var(--card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+
+    .filter-sel { font-size:13px; padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--text); outline:none; cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:30px; }
+
+    .fondo-section-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:1.25rem 0 .5rem; }
+    .fondo-section-label:first-child { margin-top:0; }
 
     table { width:100%; border-collapse:collapse; font-size:13px; }
     th { text-align:left; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:9px 12px; border-bottom:1px solid var(--border); white-space:nowrap; background:var(--surface); }
@@ -145,18 +154,49 @@
     </div>
   </div>
 
-  <div id="contenido">
-    <div class="empty"><span class="spinner"></span></div>
+  <div class="tabs">
+    <button class="tab active" id="tab-btn-caja" onclick="switchTab('caja',this)">Caja Chica</button>
+    <button class="tab" id="tab-btn-reembolsos" onclick="switchTab('reembolsos',this)">Reembolsos</button>
+    <button class="tab" id="tab-btn-fondo" onclick="switchTab('fondo',this)">Fondo de Caja</button>
   </div>
 
-  <div class="card-head" style="border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;">Reembolsos a colaboradores</div>
-  <div class="card" style="border-top:none;border-radius:0 0 var(--radius) var(--radius);margin-top:-1px;margin-bottom:1.25rem;">
-    <div id="tabla-reembolsos"><div class="empty"><span class="spinner"></span></div></div>
+  <!-- TAB: CAJA CHICA -->
+  <div id="tab-caja">
+    <div id="contenido">
+      <div class="empty"><span class="spinner"></span></div>
+    </div>
+
+    <div class="card-head" style="border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;">Historial de períodos</div>
+    <div class="card" style="border-top:none;border-radius:0 0 var(--radius) var(--radius);margin-top:-1px;">
+      <div id="tabla-historial-periodos"><div class="empty"><span class="spinner"></span></div></div>
+    </div>
   </div>
 
-  <div class="card-head" style="border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;">Historial de períodos</div>
-  <div class="card" style="border-top:none;border-radius:0 0 var(--radius) var(--radius);margin-top:-1px;">
-    <div id="tabla-historial-periodos"><div class="empty"><span class="spinner"></span></div></div>
+  <!-- TAB: REEMBOLSOS -->
+  <div id="tab-reembolsos" style="display:none;">
+    <div class="toolbar-caja">
+      <select class="filter-sel" id="reemb-filtro" onchange="renderReembolsos()">
+        <option value="pendientes">Pendientes</option>
+        <option value="pagados">Pagados</option>
+        <option value="todos">Todos</option>
+      </select>
+    </div>
+    <div class="card-head" style="border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;">Reembolsos a colaboradores</div>
+    <div class="card" style="border-top:none;border-radius:0 0 var(--radius) var(--radius);margin-top:-1px;">
+      <div id="tabla-reembolsos"><div class="empty"><span class="spinner"></span></div></div>
+    </div>
+  </div>
+
+  <!-- TAB: FONDO DE CAJA -->
+  <div id="tab-fondo" style="display:none;">
+    <div id="contenido-fondo">
+      <div class="empty"><span class="spinner"></span></div>
+    </div>
+
+    <div class="card-head" style="border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;">Historial de fondo de caja</div>
+    <div class="card" style="border-top:none;border-radius:0 0 var(--radius) var(--radius);margin-top:-1px;">
+      <div id="tabla-historial-fondo"><div class="empty"><span class="spinner"></span></div></div>
+    </div>
   </div>
 
   <div class="status-bar">
@@ -229,6 +269,81 @@
   </div>
 </div>
 
+<!-- MODAL ABRIR PERIODO DE FONDO DE CAJA -->
+<div class="modal-bg" id="modal-abrir-fondo">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Abrir período de fondo de caja</div>
+      <button class="close-btn" onclick="cerrarModal('modal-abrir-fondo')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label for="af-fecha">Fecha inicial</label>
+        <input type="date" id="af-fecha">
+      </div>
+      <div class="field">
+        <label for="af-monto-crc">Monto de apertura · Colones</label>
+        <input type="number" id="af-monto-crc" step="0.01" min="0" placeholder="0.00">
+      </div>
+      <div class="field">
+        <label for="af-monto-usd">Monto de apertura · Dólares</label>
+        <input type="number" id="af-monto-usd" step="0.01" min="0" placeholder="0.00">
+        <div class="field-hint">Podés dejar uno de los dos en 0 si el fondo solo maneja una moneda.</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="cerrarModal('modal-abrir-fondo')">Cancelar</button>
+      <button class="btn-save" id="btn-abrir-fondo" onclick="abrirPeriodoFondoUI()">Abrir período</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONTEO DE DENOMINACIONES · FONDO DE CAJA (bimoneda) -->
+<div class="modal-bg" id="modal-conteo-fondo">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="conteo-fondo-titulo">Arqueo de fondo de caja</div>
+        <div class="modal-sub" id="conteo-fondo-sub"></div>
+      </div>
+      <button class="close-btn" onclick="cerrarModal('modal-conteo-fondo')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field" id="campo-fecha-cierre-fondo" style="display:none;">
+        <label for="fc-fecha-cierre">Fecha de cierre</label>
+        <input type="date" id="fc-fecha-cierre" onchange="recalcularConteoFondo()">
+      </div>
+
+      <div class="fondo-section-label">Colones · Billetes</div>
+      <div id="denom-billetes-crc"></div>
+      <div class="fondo-section-label">Colones · Monedas</div>
+      <div id="denom-monedas-crc"></div>
+      <div class="fondo-section-label">Dólares · Billetes</div>
+      <div id="denom-billetes-usd"></div>
+      <div class="fondo-section-label">Dólares · Monedas</div>
+      <div id="denom-monedas-usd"></div>
+
+      <div class="field" style="margin-top:1rem;">
+        <label for="fc-notas">Notas (opcional)</label>
+        <input type="text" id="fc-notas" placeholder="Observaciones del conteo…">
+      </div>
+
+      <div class="resumen-conteo">
+        <div class="fila"><span>Balance teórico ₡</span><strong id="rcf-teorico-crc">₡0,00</strong></div>
+        <div class="fila total"><span>Total contado ₡</span><strong id="rcf-contado-crc">₡0,00</strong></div>
+        <div class="fila"><span>Diferencia ₡</span><strong id="rcf-diferencia-crc">₡0,00</strong></div>
+        <div class="fila" style="margin-top:8px;"><span>Balance teórico US$</span><strong id="rcf-teorico-usd">US$0.00</strong></div>
+        <div class="fila total"><span>Total contado US$</span><strong id="rcf-contado-usd">US$0.00</strong></div>
+        <div class="fila"><span>Diferencia US$</span><strong id="rcf-diferencia-usd">US$0.00</strong></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="cerrarModal('modal-conteo-fondo')">Cancelar</button>
+      <button class="btn-save" id="btn-guardar-conteo-fondo" onclick="guardarConteoFondo()">Guardar arqueo</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast">
   <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
   <span id="toast-msg"></span>
@@ -242,6 +357,8 @@ const APPS_SCRIPT_AP = 'https://script.google.com/macros/s/AKfycbyqdI4EGUgcahTiy
 
 const BILLETES = [50000, 20000, 10000, 5000, 2000, 1000];
 const MONEDAS  = [500, 100, 50, 25, 10, 5];
+const BILLETES_USD = [100, 50, 20, 10, 5, 1];
+const MONEDAS_USD  = [0.25, 0.10, 0.05, 0.01];
 
 const hoy = new Date();
 document.getElementById('date-chip').textContent =
@@ -249,13 +366,27 @@ document.getElementById('date-chip').textContent =
 const hoyISO = hoy.toISOString().slice(0,10);
 
 const fmt = n => '₡' + Number(n||0).toLocaleString('es-CR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+const fmtUSD = n => 'US$' + Number(n||0).toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
 
-let dataFacturas   = [];
-let dataReembolsos = [];
-let dataPeriodos   = [];
-let dataArqueos    = [];
-let periodoAbierto = null;
-let modoConteo     = 'arqueo'; // 'arqueo' | 'cierre'
+let dataFacturas    = [];
+let dataReembolsos  = [];
+let dataPeriodos    = [];
+let dataArqueos     = [];
+let periodoAbierto  = null;
+let modoConteo      = 'arqueo'; // 'arqueo' | 'cierre'
+
+let dataPagosFondo    = [];
+let dataPeriodosFondo = [];
+let dataArqueosFondo  = [];
+let periodoFondoAbierto = null;
+let modoConteoFondo   = 'arqueo'; // 'arqueo' | 'cierre'
+
+function switchTab(tab, el) {
+  ['caja','reembolsos','fondo'].forEach(t =>
+    document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
 
 // ── GVIZ ──────────────────────────────────────────────────────────
 function gvizLoad(hoja, expectedCol) {
@@ -316,10 +447,12 @@ function isoDate(str) {
 async function cargarDatos() {
   document.getElementById('status-carga').innerHTML = '<span class="spinner"></span> Conectando con Google Sheets…';
   try {
-    const [dF, dP, dA] = await Promise.all([
+    const [dF, dP, dA, dPF, dAF] = await Promise.all([
       gvizLoad('Registro Facturas', 'Factura'),
       gvizLoad('CajaChica_Periodos', 'ID').catch(() => []),
-      gvizLoad('CajaChica_Arqueos', 'ID').catch(() => [])
+      gvizLoad('CajaChica_Arqueos', 'ID').catch(() => []),
+      gvizLoad('FondoCaja_Periodos', 'ID').catch(() => []),
+      gvizLoad('FondoCaja_Arqueos', 'ID').catch(() => [])
     ]);
 
     // Ordinal = posición física entre filas que comparten el mismo número de
@@ -374,6 +507,42 @@ async function cargarDatos() {
 
     periodoAbierto = dataPeriodos.find(p => p.estado === 'Abierto') || null;
 
+    dataPagosFondo = dFConOrdinal.filter(({r}) => (r['Medio de pago']||'').trim().toLowerCase() === 'fondo de caja').map(({r}) => ({
+      numero: r['Factura'] || '',
+      proveedor: r['Proveedor'] || '',
+      moneda: (r['Moneda'] || 'CRC').trim().toUpperCase() === 'USD' ? 'USD' : 'CRC',
+      monto: limpiarMonto(r['TOTAL']),
+      fechaPago: isoDate(r['Fecha de pago'])
+    })).filter(g => g.fechaPago);
+
+    dataPeriodosFondo = dPF.filter(r => r['ID']).map(r => ({
+      id: r['ID'],
+      fechaInicio: isoDate(r['Fecha inicio']),
+      montoInicialCRC: limpiarMonto(r['Monto inicial CRC']),
+      montoInicialUSD: limpiarMonto(r['Monto inicial USD']),
+      fechaCierre: isoDate(r['Fecha cierre']),
+      montoContadoCRC: limpiarMonto(r['Monto contado cierre CRC']),
+      montoContadoUSD: limpiarMonto(r['Monto contado cierre USD']),
+      diferenciaCRC: limpiarMonto(r['Diferencia cierre CRC']),
+      diferenciaUSD: limpiarMonto(r['Diferencia cierre USD']),
+      estado: r['Estado'] || ''
+    }));
+
+    dataArqueosFondo = dAF.filter(r => r['ID']).map(r => ({
+      id: r['ID'],
+      periodoId: r['Periodo ID'],
+      fecha: r['Fecha'] || '',
+      balanceTeoricoCRC: limpiarMonto(r['Balance teórico CRC']),
+      montoContadoCRC: limpiarMonto(r['Monto contado CRC']),
+      diferenciaCRC: limpiarMonto(r['Diferencia CRC']),
+      balanceTeoricoUSD: limpiarMonto(r['Balance teórico USD']),
+      montoContadoUSD: limpiarMonto(r['Monto contado USD']),
+      diferenciaUSD: limpiarMonto(r['Diferencia USD']),
+      notas: r['Notas'] || ''
+    }));
+
+    periodoFondoAbierto = dataPeriodosFondo.find(p => p.estado === 'Abierto') || null;
+
     document.getElementById('conn-dot').classList.remove('off');
     document.getElementById('conn-label').textContent = 'Conectado · Google Sheets';
     document.getElementById('status-carga').innerHTML = '<span style="color:var(--green);">✓</span> Datos actualizados';
@@ -396,11 +565,22 @@ function totalGastos(gastos) {
   return gastos.reduce((a,g) => a + g.monto, 0);
 }
 
+// Pagos hechos con Fondo de Caja dentro de un rango de fechas [desde, hasta].
+function pagosFondoDelPeriodo(desde, hasta) {
+  return dataPagosFondo.filter(g => g.fechaPago >= desde && (!hasta || g.fechaPago <= hasta));
+}
+
+function totalPorMoneda(lista, moneda) {
+  return lista.filter(x => x.moneda === moneda).reduce((a,x) => a + x.monto, 0);
+}
+
 // ── RENDER PRINCIPAL ──────────────────────────────────────────────
 function render() {
   renderPeriodoActual();
   renderReembolsos();
   renderHistorialPeriodos();
+  renderFondoCaja();
+  renderHistorialFondo();
 }
 
 function renderPeriodoActual() {
@@ -482,13 +662,23 @@ function renderPeriodoActual() {
 // ── REEMBOLSOS A COLABORADORES (Medio de pago: Reembolso) ─────────
 function renderReembolsos() {
   const cont = document.getElementById('tabla-reembolsos');
-  if (!dataReembolsos.length) {
-    cont.innerHTML = '<div class="empty">No hay pagos marcados como reembolso todavía.</div>';
+  const filtro = document.getElementById('reemb-filtro').value;
+  const items = dataReembolsos.filter(r => {
+    if (filtro === 'pendientes') return !r.fechaReembolso;
+    if (filtro === 'pagados') return !!r.fechaReembolso;
+    return true;
+  });
+
+  if (!items.length) {
+    const msg = filtro === 'pendientes' ? 'No hay reembolsos pendientes.'
+              : filtro === 'pagados' ? 'Todavía no se registró ningún reembolso pagado.'
+              : 'No hay pagos marcados como reembolso todavía.';
+    cont.innerHTML = '<div class="empty">' + msg + '</div>';
     return;
   }
 
   const grupos = {};
-  dataReembolsos.forEach(r => { (grupos[r.persona] = grupos[r.persona] || []).push(r); });
+  items.forEach(r => { (grupos[r.persona] = grupos[r.persona] || []).push(r); });
 
   const personas = Object.keys(grupos).sort((a,b) => {
     const pendA = grupos[a].some(r => !r.fechaReembolso);
@@ -589,6 +779,293 @@ function renderHistorialPeriodos() {
       </tr></thead>
       <tbody>${filas}</tbody>
     </table>`;
+}
+
+// ── FONDO DE CAJA (fondo bimoneda CRC + USD) ──────────────────────
+function renderFondoCaja() {
+  const cont = document.getElementById('contenido-fondo');
+
+  if (!periodoFondoAbierto) {
+    cont.innerHTML = `
+      <div class="card">
+        <div class="empty">
+          <p style="margin-bottom:1rem;">No hay un período de fondo de caja abierto.</p>
+          <button class="btn-primary" onclick="abrirModalAbrirFondo()" style="margin:0 auto;">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
+            Abrir período de fondo de caja
+          </button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const pagos = pagosFondoDelPeriodo(periodoFondoAbierto.fechaInicio, null);
+  const pagadoCRC = totalPorMoneda(pagos, 'CRC');
+  const pagadoUSD = totalPorMoneda(pagos, 'USD');
+  const balanceCRC = periodoFondoAbierto.montoInicialCRC - pagadoCRC;
+  const balanceUSD = periodoFondoAbierto.montoInicialUSD - pagadoUSD;
+  const arqueosPeriodo = dataArqueosFondo.filter(a => a.periodoId === periodoFondoAbierto.id)
+    .sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
+
+  const dias = Math.max(1, Math.round((new Date(hoyISO) - new Date(periodoFondoAbierto.fechaInicio)) / 86400000) + 1);
+
+  const filasPagos = pagos.length ? pagos.map(g => `
+    <tr>
+      <td style="color:var(--muted);font-size:12px;">${g.fechaPago}</td>
+      <td style="font-size:12px;color:var(--muted);">${g.numero}</td>
+      <td>${g.proveedor}</td>
+      <td class="num" style="font-weight:600;">${g.moneda==='USD' ? fmtUSD(g.monto) : fmt(g.monto)}</td>
+    </tr>`).join('') : '<tr><td colspan="4" class="empty">Sin pagos hechos con fondo de caja en este período.</td></tr>';
+
+  const filasArqueos = arqueosPeriodo.length ? arqueosPeriodo.map(a => {
+    const okCRC = Math.abs(a.diferenciaCRC) < 1;
+    const okUSD = Math.abs(a.diferenciaUSD) < 0.01;
+    return `<tr>
+      <td style="color:var(--muted);font-size:12px;">${a.fecha}</td>
+      <td class="num">${fmt(a.balanceTeoricoCRC)}</td>
+      <td class="num">${fmt(a.montoContadoCRC)}</td>
+      <td class="num"><span class="badge ${okCRC?'b-ok':'b-dif'}">${fmt(a.diferenciaCRC)}</span></td>
+      <td class="num">${fmtUSD(a.balanceTeoricoUSD)}</td>
+      <td class="num">${fmtUSD(a.montoContadoUSD)}</td>
+      <td class="num"><span class="badge ${okUSD?'b-ok':'b-dif'}">${fmtUSD(a.diferenciaUSD)}</span></td>
+      <td style="color:var(--muted);font-size:12px;">${a.notas||'—'}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="8" class="empty">Sin arqueos registrados todavía.</td></tr>';
+
+  cont.innerHTML = `
+    <div class="kpi-strip">
+      <div class="kpi-box"><div class="kpi-val" style="font-size:16px;">${fmt(periodoFondoAbierto.montoInicialCRC)} + ${fmtUSD(periodoFondoAbierto.montoInicialUSD)}</div><div class="kpi-lbl">Monto inicial · ${periodoFondoAbierto.fechaInicio}</div></div>
+      <div class="kpi-box"><div class="kpi-val rojo" style="font-size:16px;">${fmt(pagadoCRC)} + ${fmtUSD(pagadoUSD)}</div><div class="kpi-lbl">Pagado (${pagos.length} facturas)</div></div>
+      <div class="kpi-box"><div class="kpi-val verde" style="font-size:16px;">${fmt(balanceCRC)} + ${fmtUSD(balanceUSD)}</div><div class="kpi-lbl">Balance teórico</div></div>
+      <div class="kpi-box"><div class="kpi-val ambar">${dias}</div><div class="kpi-lbl">Días abierto</div></div>
+    </div>
+
+    <div class="toolbar-caja">
+      <span class="badge b-abierto">● Período abierto</span>
+      <button class="btn-mini" style="margin-left:auto;color:var(--red);" onclick="eliminarPeriodoFondoUI()" title="Solo si se abrió con datos equivocados">Eliminar período</button>
+      <button class="btn-mini" onclick="abrirModalConteoFondo('arqueo')">Hacer arqueo</button>
+      <button class="btn-primary rojo" onclick="abrirModalConteoFondo('cierre')">Cerrar período</button>
+    </div>
+
+    <div class="card">
+      <div class="card-head">Pagos del período (medio de pago: Fondo de caja)</div>
+      <table>
+        <thead><tr><th>Fecha</th><th>Factura</th><th>Proveedor</th><th style="text-align:right;">Monto</th></tr></thead>
+        <tbody>${filasPagos}</tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-head">Arqueos de este período</div>
+      <table>
+        <thead><tr>
+          <th>Fecha</th><th style="text-align:right;">Teórico ₡</th><th style="text-align:right;">Contado ₡</th><th style="text-align:right;">Dif. ₡</th>
+          <th style="text-align:right;">Teórico US$</th><th style="text-align:right;">Contado US$</th><th style="text-align:right;">Dif. US$</th><th>Notas</th>
+        </tr></thead>
+        <tbody>${filasArqueos}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderHistorialFondo() {
+  const cerrados = dataPeriodosFondo.filter(p => p.estado === 'Cerrado').sort((a,b) => (b.fechaCierre||'').localeCompare(a.fechaCierre||''));
+  const cont = document.getElementById('tabla-historial-fondo');
+  if (!cerrados.length) {
+    cont.innerHTML = '<div class="empty">Todavía no hay períodos de fondo de caja cerrados.</div>';
+    return;
+  }
+  const filas = cerrados.map(p => {
+    const pagos = pagosFondoDelPeriodo(p.fechaInicio, p.fechaCierre);
+    const pagadoCRC = totalPorMoneda(pagos, 'CRC');
+    const pagadoUSD = totalPorMoneda(pagos, 'USD');
+    const teoricoCRC = p.montoInicialCRC - pagadoCRC;
+    const teoricoUSD = p.montoInicialUSD - pagadoUSD;
+    const okCRC = Math.abs(p.diferenciaCRC) < 1;
+    const okUSD = Math.abs(p.diferenciaUSD) < 0.01;
+    return `<tr>
+      <td style="color:var(--muted);font-size:12px;">${p.fechaInicio}</td>
+      <td style="color:var(--muted);font-size:12px;">${p.fechaCierre}</td>
+      <td class="num">${fmt(p.montoInicialCRC)} + ${fmtUSD(p.montoInicialUSD)}</td>
+      <td class="num">${fmt(pagadoCRC)} + ${fmtUSD(pagadoUSD)}</td>
+      <td class="num">${fmt(teoricoCRC)} + ${fmtUSD(teoricoUSD)}</td>
+      <td class="num">${fmt(p.montoContadoCRC)} + ${fmtUSD(p.montoContadoUSD)}</td>
+      <td class="num"><span class="badge ${okCRC?'b-ok':'b-dif'}">${fmt(p.diferenciaCRC)}</span> <span class="badge ${okUSD?'b-ok':'b-dif'}">${fmtUSD(p.diferenciaUSD)}</span></td>
+    </tr>`;
+  }).join('');
+  cont.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Inicio</th><th>Cierre</th><th style="text-align:right;">Monto inicial</th>
+        <th style="text-align:right;">Pagado</th><th style="text-align:right;">Balance teórico</th>
+        <th style="text-align:right;">Contado</th><th style="text-align:right;">Diferencia</th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+}
+
+// ── MODAL: ABRIR PERÍODO DE FONDO DE CAJA ─────────────────────────
+function abrirModalAbrirFondo() {
+  document.getElementById('af-fecha').value = hoyISO;
+  document.getElementById('af-monto-crc').value = '';
+  document.getElementById('af-monto-usd').value = '';
+  document.getElementById('modal-abrir-fondo').classList.add('open');
+}
+
+async function abrirPeriodoFondoUI() {
+  const fecha = document.getElementById('af-fecha').value;
+  const montoCRC = parseFloat(document.getElementById('af-monto-crc').value) || 0;
+  const montoUSD = parseFloat(document.getElementById('af-monto-usd').value) || 0;
+  if (!fecha) { showToast('Ingresá la fecha inicial.', 'error'); return; }
+  if (montoCRC <= 0 && montoUSD <= 0) { showToast('Ingresá un monto de apertura válido (colones o dólares).', 'error'); return; }
+
+  const btn = document.getElementById('btn-abrir-fondo');
+  btn.disabled = true;
+  try {
+    await postAP({ modulo: 'abrir_periodo_fondo', fecha_inicio: fecha, monto_inicial_crc: montoCRC, monto_inicial_usd: montoUSD });
+    showToast('Período de fondo de caja abierto ✓', 'success');
+    cerrarModal('modal-abrir-fondo');
+    await cargarDatos();
+  } catch(e) {
+    showToast('No se pudo abrir el período: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function eliminarPeriodoFondoUI() {
+  if (!periodoFondoAbierto) return;
+  if (!confirm('¿Eliminar este período abierto? Se borrará junto con sus arqueos. Esta acción no se puede deshacer.')) return;
+  try {
+    await postAP({ modulo: 'eliminar_periodo_fondo', periodo_id: periodoFondoAbierto.id });
+    showToast('Período eliminado', 'success');
+    await cargarDatos();
+  } catch(e) {
+    showToast('No se pudo eliminar: ' + e.message, 'error');
+  }
+}
+
+// ── MODAL: CONTEO DE DENOMINACIONES · FONDO DE CAJA (bimoneda) ────
+function filaDenomFondo(valor, moneda) {
+  const label = moneda === 'usd' ? fmtUSD(valor) : fmt(valor);
+  return `
+    <div class="denom-row" data-valor="${valor}" data-moneda="${moneda}">
+      <div class="denom-label">${label}</div>
+      <input type="number" min="0" step="1" value="0" oninput="recalcularConteoFondo()">
+      <div class="denom-sub" data-sub>${moneda === 'usd' ? fmtUSD(0) : fmt(0)}</div>
+    </div>`;
+}
+
+function abrirModalConteoFondo(modo) {
+  if (!periodoFondoAbierto) return;
+  modoConteoFondo = modo;
+  document.getElementById('denom-billetes-crc').innerHTML = BILLETES.map(v => filaDenomFondo(v,'crc')).join('');
+  document.getElementById('denom-monedas-crc').innerHTML  = MONEDAS.map(v => filaDenomFondo(v,'crc')).join('');
+  document.getElementById('denom-billetes-usd').innerHTML = BILLETES_USD.map(v => filaDenomFondo(v,'usd')).join('');
+  document.getElementById('denom-monedas-usd').innerHTML  = MONEDAS_USD.map(v => filaDenomFondo(v,'usd')).join('');
+  document.getElementById('fc-notas').value = '';
+
+  const esCierre = modo === 'cierre';
+  document.getElementById('conteo-fondo-titulo').textContent = esCierre ? 'Cerrar período de fondo de caja' : 'Arqueo de fondo de caja';
+  document.getElementById('conteo-fondo-sub').textContent = 'Desde ' + periodoFondoAbierto.fechaInicio;
+  document.getElementById('campo-fecha-cierre-fondo').style.display = esCierre ? '' : 'none';
+  document.getElementById('fc-fecha-cierre').value = hoyISO;
+  document.getElementById('fc-fecha-cierre').min = periodoFondoAbierto.fechaInicio;
+  document.getElementById('btn-guardar-conteo-fondo').textContent = esCierre ? 'Confirmar cierre' : 'Guardar arqueo';
+
+  recalcularConteoFondo();
+  document.getElementById('modal-conteo-fondo').classList.add('open');
+}
+
+function leerDenominacionesFondo() {
+  const denom = { crc: {}, usd: {} };
+  document.querySelectorAll('#denom-billetes-crc .denom-row, #denom-monedas-crc .denom-row, #denom-billetes-usd .denom-row, #denom-monedas-usd .denom-row').forEach(row => {
+    const valor = row.dataset.valor;
+    const moneda = row.dataset.moneda;
+    const cant = parseInt(row.querySelector('input').value) || 0;
+    if (cant > 0) denom[moneda][valor] = cant;
+    row.querySelector('[data-sub]').textContent = moneda === 'usd' ? fmtUSD(cant * Number(valor)) : fmt(cant * Number(valor));
+  });
+  return denom;
+}
+
+function totalDenom(denom) {
+  return Object.keys(denom).reduce((a,v) => a + Number(v)*denom[v], 0);
+}
+
+function balanceTeoricoFondoActual() {
+  if (!periodoFondoAbierto) return { crc: 0, usd: 0 };
+  const hasta = modoConteoFondo === 'cierre' ? (document.getElementById('fc-fecha-cierre').value || hoyISO) : null;
+  const pagos = pagosFondoDelPeriodo(periodoFondoAbierto.fechaInicio, hasta);
+  return {
+    crc: periodoFondoAbierto.montoInicialCRC - totalPorMoneda(pagos, 'CRC'),
+    usd: periodoFondoAbierto.montoInicialUSD - totalPorMoneda(pagos, 'USD')
+  };
+}
+
+function recalcularConteoFondo() {
+  const denom = leerDenominacionesFondo();
+  const contadoCRC = totalDenom(denom.crc);
+  const contadoUSD = totalDenom(denom.usd);
+  const teorico = balanceTeoricoFondoActual();
+  const diferenciaCRC = contadoCRC - teorico.crc;
+  const diferenciaUSD = contadoUSD - teorico.usd;
+
+  document.getElementById('rcf-teorico-crc').textContent    = fmt(teorico.crc);
+  document.getElementById('rcf-contado-crc').textContent    = fmt(contadoCRC);
+  const rcfDifCRC = document.getElementById('rcf-diferencia-crc');
+  rcfDifCRC.textContent = fmt(diferenciaCRC);
+  rcfDifCRC.style.color = Math.abs(diferenciaCRC) < 1 ? 'var(--green)' : 'var(--red)';
+
+  document.getElementById('rcf-teorico-usd').textContent    = fmtUSD(teorico.usd);
+  document.getElementById('rcf-contado-usd').textContent    = fmtUSD(contadoUSD);
+  const rcfDifUSD = document.getElementById('rcf-diferencia-usd');
+  rcfDifUSD.textContent = fmtUSD(diferenciaUSD);
+  rcfDifUSD.style.color = Math.abs(diferenciaUSD) < 0.01 ? 'var(--green)' : 'var(--red)';
+}
+
+async function guardarConteoFondo() {
+  const denom = leerDenominacionesFondo();
+  const contadoCRC = totalDenom(denom.crc);
+  const contadoUSD = totalDenom(denom.usd);
+  const teorico = balanceTeoricoFondoActual();
+  const diferenciaCRC = contadoCRC - teorico.crc;
+  const diferenciaUSD = contadoUSD - teorico.usd;
+  const notas = document.getElementById('fc-notas').value.trim();
+
+  const btn = document.getElementById('btn-guardar-conteo-fondo');
+  btn.disabled = true;
+  try {
+    if (modoConteoFondo === 'arqueo') {
+      await postAP({
+        modulo: 'guardar_arqueo_fondo', periodo_id: periodoFondoAbierto.id,
+        balance_teorico_crc: teorico.crc, monto_contado_crc: contadoCRC, diferencia_crc: diferenciaCRC,
+        balance_teorico_usd: teorico.usd, monto_contado_usd: contadoUSD, diferencia_usd: diferenciaUSD,
+        denominaciones: denom, notas
+      });
+      showToast('Arqueo guardado ✓', 'success');
+    } else {
+      const fechaCierre = document.getElementById('fc-fecha-cierre').value;
+      if (!fechaCierre) { showToast('Ingresá la fecha de cierre.', 'error'); btn.disabled = false; return; }
+      const pagos = pagosFondoDelPeriodo(periodoFondoAbierto.fechaInicio, fechaCierre);
+      if (!confirm('¿Confirmar el cierre del período? Esta acción bloquea las fechas del período y envía el correo de cierre.')) {
+        btn.disabled = false; return;
+      }
+      await postAP({
+        modulo: 'cerrar_periodo_fondo', periodo_id: periodoFondoAbierto.id, fecha_cierre: fechaCierre,
+        balance_teorico_crc: teorico.crc, monto_contado_crc: contadoCRC, diferencia_crc: diferenciaCRC,
+        balance_teorico_usd: teorico.usd, monto_contado_usd: contadoUSD, diferencia_usd: diferenciaUSD,
+        denominaciones: denom,
+        pagos: pagos.map(g => ({ fecha: g.fechaPago, factura: g.numero, proveedor: g.proveedor, monto: g.monto, moneda: g.moneda }))
+      });
+      showToast('Período cerrado y correo enviado ✓', 'success');
+    }
+    cerrarModal('modal-conteo-fondo');
+    await cargarDatos();
+  } catch(e) {
+    showToast('No se pudo guardar: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ── MODAL: ABRIR PERÍODO ──────────────────────────────────────────

@@ -21,7 +21,7 @@
 const HOJA_FACTURAS = 'Registro Facturas';
 const HOJA_PROVEEDORES = 'proveedores';
 const HOJA_ABONOS = 'Abonos';
-const ABONOS_ENCABEZADOS = ['Factura', 'Fecha de abono', 'Monto abonado', 'Medio de pago', 'Referencia', 'Fecha de registro'];
+const ABONOS_ENCABEZADOS = ['Factura', 'Fecha de abono', 'Monto abonado', 'Medio de pago', 'Referencia', 'Reembolsado a', 'Nota de crédito asociada', 'Fecha de registro'];
 
 // Catálogo viejo Producto (tal cual aparece en Desglose_IA) → Nombre normalizado.
 // Reemplazado por Maestro_Productos + Alias_Productos (ver más abajo). Se deja
@@ -144,6 +144,34 @@ const CAJA_ARQ_ENCABEZADOS = [
   'Diferencia', 'Denominaciones', 'Notas'
 ];
 
+// Hojas de Fondo de Caja: fondo bimoneda (CRC + USD) usado como "Medio de pago"
+// propio en cuentas-por-pagar.html, separado de "Caja chica" (gastos menores).
+const HOJA_FONDO_PERIODOS = 'FondoCaja_Periodos';
+const HOJA_FONDO_ARQUEOS  = 'FondoCaja_Arqueos';
+const CORREO_CIERRE_FONDO = 'jorge.lopez@casaaguizotes.com';
+
+const FONDO_PER_COL = {
+  ID: 1, FECHA_INICIO: 2, MONTO_INICIAL_CRC: 3, MONTO_INICIAL_USD: 4, FECHA_CIERRE: 5,
+  MONTO_CONTADO_CRC: 6, MONTO_CONTADO_USD: 7, DIFERENCIA_CRC: 8, DIFERENCIA_USD: 9,
+  ESTADO: 10, DENOMINACIONES: 11, FECHA_REGISTRO_CIERRE: 12
+};
+const FONDO_PER_ENCABEZADOS = [
+  'ID', 'Fecha inicio', 'Monto inicial CRC', 'Monto inicial USD', 'Fecha cierre',
+  'Monto contado cierre CRC', 'Monto contado cierre USD', 'Diferencia cierre CRC', 'Diferencia cierre USD',
+  'Estado', 'Denominaciones cierre', 'Fecha registro cierre'
+];
+
+const FONDO_ARQ_COL = {
+  ID: 1, PERIODO_ID: 2, FECHA: 3,
+  BALANCE_TEORICO_CRC: 4, MONTO_CONTADO_CRC: 5, DIFERENCIA_CRC: 6,
+  BALANCE_TEORICO_USD: 7, MONTO_CONTADO_USD: 8, DIFERENCIA_USD: 9,
+  DENOMINACIONES: 10, NOTAS: 11
+};
+const FONDO_ARQ_ENCABEZADOS = [
+  'ID', 'Periodo ID', 'Fecha', 'Balance teórico CRC', 'Monto contado CRC', 'Diferencia CRC',
+  'Balance teórico USD', 'Monto contado USD', 'Diferencia USD', 'Denominaciones', 'Notas'
+];
+
 function doPost(e) {
   try {
     const payload = JSON.parse(e.parameter.data);
@@ -170,6 +198,18 @@ function doPost(e) {
       case 'eliminar_periodo_caja':
         result = eliminarPeriodoCaja(payload);
         break;
+      case 'abrir_periodo_fondo':
+        result = abrirPeriodoFondo(payload);
+        break;
+      case 'guardar_arqueo_fondo':
+        result = guardarArqueoFondo(payload);
+        break;
+      case 'cerrar_periodo_fondo':
+        result = cerrarPeriodoFondo(payload);
+        break;
+      case 'eliminar_periodo_fondo':
+        result = eliminarPeriodoFondo(payload);
+        break;
       case 'guardar_proyeccion':
         result = guardarProyeccion(payload);
         break;
@@ -178,6 +218,9 @@ function doPost(e) {
         break;
       case 'registrar_pago':
         result = registrarPago(payload);
+        break;
+      case 'registrar_reembolso':
+        result = registrarReembolso(payload);
         break;
       case 'registrar_abono':
         result = registrarAbono(payload);
@@ -545,6 +588,251 @@ function enviarCorreoCierreCaja(d) {
   });
 }
 
+// ── FONDO DE CAJA (fondo bimoneda CRC + USD) ──────────────────────
+function getHojaFondoPeriodos() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let hoja = ss.getSheetByName(HOJA_FONDO_PERIODOS);
+  if (!hoja) hoja = ss.insertSheet(HOJA_FONDO_PERIODOS);
+  if (hoja.getLastRow() === 0) {
+    hoja.getRange(1, 1, 1, FONDO_PER_ENCABEZADOS.length).setValues([FONDO_PER_ENCABEZADOS]);
+  }
+  return hoja;
+}
+
+function getHojaFondoArqueos() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let hoja = ss.getSheetByName(HOJA_FONDO_ARQUEOS);
+  if (!hoja) hoja = ss.insertSheet(HOJA_FONDO_ARQUEOS);
+  if (hoja.getLastRow() === 0) {
+    hoja.getRange(1, 1, 1, FONDO_ARQ_ENCABEZADOS.length).setValues([FONDO_ARQ_ENCABEZADOS]);
+  }
+  return hoja;
+}
+
+function obtenerPeriodoFondoAbierto(hoja) {
+  const nFilas = hoja.getLastRow() - 1;
+  if (nFilas <= 0) return null;
+  const datos = hoja.getRange(2, 1, nFilas, FONDO_PER_ENCABEZADOS.length).getValues();
+  for (let i = 0; i < datos.length; i++) {
+    if (datos[i][FONDO_PER_COL.ESTADO - 1] === 'Abierto') {
+      return { fila: i + 2, datos: datos[i] };
+    }
+  }
+  return null;
+}
+
+function filaPeriodoFondoPorId(hoja, id) {
+  const nFilas = hoja.getLastRow() - 1;
+  if (nFilas <= 0) return -1;
+  const ids = hoja.getRange(2, FONDO_PER_COL.ID, nFilas, 1).getValues();
+  for (let i = 0; i < ids.length; i++) {
+    if (String(ids[i][0]) === String(id)) return i + 2;
+  }
+  return -1;
+}
+
+function ultimaFechaCierreFondo(hoja) {
+  const nFilas = hoja.getLastRow() - 1;
+  if (nFilas <= 0) return null;
+  const datos = hoja.getRange(2, 1, nFilas, FONDO_PER_ENCABEZADOS.length).getValues();
+  let ultima = null;
+  datos.forEach(function(fila) {
+    const fc = fila[FONDO_PER_COL.FECHA_CIERRE - 1];
+    if (fc && (!ultima || fc > ultima)) ultima = fc;
+  });
+  return ultima;
+}
+
+function abrirPeriodoFondo(p) {
+  if (!p.fecha_inicio) throw new Error('Falta la fecha de inicio.');
+  const montoCRC = Number(p.monto_inicial_crc) || 0;
+  const montoUSD = Number(p.monto_inicial_usd) || 0;
+  if (montoCRC <= 0 && montoUSD <= 0) throw new Error('Falta el monto inicial (en colones o dólares).');
+
+  const hoja = getHojaFondoPeriodos();
+  if (obtenerPeriodoFondoAbierto(hoja)) {
+    throw new Error('Ya hay un período de fondo de caja abierto. Cerralo antes de abrir uno nuevo.');
+  }
+
+  const fechaInicio = new Date(p.fecha_inicio + 'T00:00:00');
+  const ultimaCierre = ultimaFechaCierreFondo(hoja);
+  if (ultimaCierre && fechaInicio <= ultimaCierre) {
+    throw new Error('La fecha de inicio debe ser posterior al último cierre (' +
+      Utilities.formatDate(ultimaCierre, 'America/Costa_Rica', 'dd/MM/yyyy') + ').');
+  }
+
+  const id = 'FONDO-' + Date.now();
+  const fila = hoja.getLastRow() + 1;
+  hoja.getRange(fila, FONDO_PER_COL.ID).setValue(id);
+  hoja.getRange(fila, FONDO_PER_COL.FECHA_INICIO).setValue(fechaInicio);
+  hoja.getRange(fila, FONDO_PER_COL.MONTO_INICIAL_CRC).setValue(montoCRC);
+  hoja.getRange(fila, FONDO_PER_COL.MONTO_INICIAL_USD).setValue(montoUSD);
+  hoja.getRange(fila, FONDO_PER_COL.ESTADO).setValue('Abierto');
+
+  return { id: id, fila: fila };
+}
+
+function guardarArqueoFondo(p) {
+  if (!p.periodo_id) throw new Error('Falta el período de fondo de caja.');
+  const hojaPer = getHojaFondoPeriodos();
+  if (filaPeriodoFondoPorId(hojaPer, p.periodo_id) === -1) throw new Error('No se encontró el período indicado.');
+
+  const hoja = getHojaFondoArqueos();
+  const id = 'ARQF-' + Date.now();
+  const fila = hoja.getLastRow() + 1;
+  hoja.getRange(fila, FONDO_ARQ_COL.ID).setValue(id);
+  hoja.getRange(fila, FONDO_ARQ_COL.PERIODO_ID).setValue(p.periodo_id);
+  hoja.getRange(fila, FONDO_ARQ_COL.FECHA).setValue(new Date());
+  hoja.getRange(fila, FONDO_ARQ_COL.BALANCE_TEORICO_CRC).setValue(Number(p.balance_teorico_crc) || 0);
+  hoja.getRange(fila, FONDO_ARQ_COL.MONTO_CONTADO_CRC).setValue(Number(p.monto_contado_crc) || 0);
+  hoja.getRange(fila, FONDO_ARQ_COL.DIFERENCIA_CRC).setValue(Number(p.diferencia_crc) || 0);
+  hoja.getRange(fila, FONDO_ARQ_COL.BALANCE_TEORICO_USD).setValue(Number(p.balance_teorico_usd) || 0);
+  hoja.getRange(fila, FONDO_ARQ_COL.MONTO_CONTADO_USD).setValue(Number(p.monto_contado_usd) || 0);
+  hoja.getRange(fila, FONDO_ARQ_COL.DIFERENCIA_USD).setValue(Number(p.diferencia_usd) || 0);
+  hoja.getRange(fila, FONDO_ARQ_COL.DENOMINACIONES).setValue(JSON.stringify(p.denominaciones || {}));
+  hoja.getRange(fila, FONDO_ARQ_COL.NOTAS).setValue(p.notas || '');
+
+  return { id: id, fila: fila };
+}
+
+function cerrarPeriodoFondo(p) {
+  if (!p.periodo_id) throw new Error('Falta el período de fondo de caja.');
+  if (!p.fecha_cierre) throw new Error('Falta la fecha de cierre.');
+
+  const hoja = getHojaFondoPeriodos();
+  const fila = filaPeriodoFondoPorId(hoja, p.periodo_id);
+  if (fila === -1) throw new Error('No se encontró el período indicado.');
+
+  const datosFila = hoja.getRange(fila, 1, 1, FONDO_PER_ENCABEZADOS.length).getValues()[0];
+  if (datosFila[FONDO_PER_COL.ESTADO - 1] !== 'Abierto') {
+    throw new Error('Este período ya está cerrado.');
+  }
+  const fechaInicio      = datosFila[FONDO_PER_COL.FECHA_INICIO - 1];
+  const montoInicialCRC  = datosFila[FONDO_PER_COL.MONTO_INICIAL_CRC - 1];
+  const montoInicialUSD  = datosFila[FONDO_PER_COL.MONTO_INICIAL_USD - 1];
+  const fechaCierre      = new Date(p.fecha_cierre + 'T00:00:00');
+  const montoContadoCRC  = Number(p.monto_contado_crc) || 0;
+  const montoContadoUSD  = Number(p.monto_contado_usd) || 0;
+  const diferenciaCRC    = Number(p.diferencia_crc) || 0;
+  const diferenciaUSD    = Number(p.diferencia_usd) || 0;
+  const balanceTeoricoCRC = Number(p.balance_teorico_crc) || 0;
+  const balanceTeoricoUSD = Number(p.balance_teorico_usd) || 0;
+
+  hoja.getRange(fila, FONDO_PER_COL.FECHA_CIERRE).setValue(fechaCierre);
+  hoja.getRange(fila, FONDO_PER_COL.MONTO_CONTADO_CRC).setValue(montoContadoCRC);
+  hoja.getRange(fila, FONDO_PER_COL.MONTO_CONTADO_USD).setValue(montoContadoUSD);
+  hoja.getRange(fila, FONDO_PER_COL.DIFERENCIA_CRC).setValue(diferenciaCRC);
+  hoja.getRange(fila, FONDO_PER_COL.DIFERENCIA_USD).setValue(diferenciaUSD);
+  hoja.getRange(fila, FONDO_PER_COL.ESTADO).setValue('Cerrado');
+  hoja.getRange(fila, FONDO_PER_COL.DENOMINACIONES).setValue(JSON.stringify(p.denominaciones || {}));
+  hoja.getRange(fila, FONDO_PER_COL.FECHA_REGISTRO_CIERRE).setValue(new Date());
+
+  enviarCorreoCierreFondo({
+    periodoId: p.periodo_id,
+    fechaInicio: fechaInicio,
+    fechaCierre: fechaCierre,
+    montoInicialCRC: montoInicialCRC,
+    montoInicialUSD: montoInicialUSD,
+    balanceTeoricoCRC: balanceTeoricoCRC,
+    balanceTeoricoUSD: balanceTeoricoUSD,
+    montoContadoCRC: montoContadoCRC,
+    montoContadoUSD: montoContadoUSD,
+    diferenciaCRC: diferenciaCRC,
+    diferenciaUSD: diferenciaUSD,
+    denominaciones: p.denominaciones || {},
+    pagos: p.pagos || []
+  });
+
+  return { id: p.periodo_id, fila: fila };
+}
+
+function eliminarPeriodoFondo(p) {
+  if (!p.periodo_id) throw new Error('Falta el período a eliminar.');
+  const hoja = getHojaFondoPeriodos();
+  const fila = filaPeriodoFondoPorId(hoja, p.periodo_id);
+  if (fila === -1) throw new Error('No se encontró el período indicado.');
+
+  const estado = hoja.getRange(fila, FONDO_PER_COL.ESTADO).getValue();
+  if (estado !== 'Abierto') throw new Error('Solo se puede eliminar un período que sigue abierto.');
+  hoja.deleteRow(fila);
+
+  const hojaArq = getHojaFondoArqueos();
+  const nFilas = hojaArq.getLastRow() - 1;
+  if (nFilas > 0) {
+    const ids = hojaArq.getRange(2, FONDO_ARQ_COL.PERIODO_ID, nFilas, 1).getValues();
+    for (let i = ids.length - 1; i >= 0; i--) {
+      if (String(ids[i][0]) === String(p.periodo_id)) hojaArq.deleteRow(i + 2);
+    }
+  }
+
+  return { eliminado: p.periodo_id };
+}
+
+function enviarCorreoCierreFondo(d) {
+  const fmtFecha = function(f) { return Utilities.formatDate(f, 'America/Costa_Rica', 'dd/MM/yyyy'); };
+  const fmtCRC = function(n) { return '₡' + Number(n||0).toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+  const fmtUSD = function(n) { return 'US$' + Number(n||0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+
+  const totalPagosCRC = d.pagos.filter(function(g){ return (g.moneda||'CRC') !== 'USD'; }).reduce(function(a, g) { return a + (Number(g.monto)||0); }, 0);
+  const totalPagosUSD = d.pagos.filter(function(g){ return g.moneda === 'USD'; }).reduce(function(a, g) { return a + (Number(g.monto)||0); }, 0);
+
+  const filasPagos = d.pagos.map(function(g) {
+    const monto = g.moneda === 'USD' ? fmtUSD(g.monto) : fmtCRC(g.monto);
+    return '<tr><td>' + (g.fecha||'') + '</td><td>' + (g.factura||'') + '</td><td>' + (g.proveedor||'') +
+           '</td><td style="text-align:right;">' + monto + '</td></tr>';
+  }).join('');
+
+  const denomCRC = (d.denominaciones && d.denominaciones.crc) || {};
+  const denomUSD = (d.denominaciones && d.denominaciones.usd) || {};
+  function filasDenomHtml(denom, fmt) {
+    return Object.keys(denom)
+      .filter(function(k) { return Number(denom[k]) > 0; })
+      .sort(function(a,b) { return Number(b) - Number(a); })
+      .map(function(k) {
+        const cant = Number(denom[k]);
+        return '<tr><td>' + fmt(k) + '</td><td style="text-align:right;">' + cant +
+               '</td><td style="text-align:right;">' + fmt(cant * Number(k)) + '</td></tr>';
+      }).join('');
+  }
+
+  const colorDifCRC = Math.abs(d.diferenciaCRC) < 1 ? '#1a7a4a' : '#c84a20';
+  const colorDifUSD = Math.abs(d.diferenciaUSD) < 1 ? '#1a7a4a' : '#c84a20';
+
+  const html =
+    '<div style="font-family:Arial,sans-serif;font-size:14px;color:#1c3a28;">' +
+    '<h2>Cierre de Fondo de Caja · Lorito</h2>' +
+    '<p><strong>Período:</strong> ' + fmtFecha(d.fechaInicio) + ' – ' + fmtFecha(d.fechaCierre) + '</p>' +
+    '<table cellpadding="6" style="border-collapse:collapse;margin-bottom:16px;">' +
+    '<tr><td>Monto inicial</td><td style="text-align:right;">' + fmtCRC(d.montoInicialCRC) + ' + ' + fmtUSD(d.montoInicialUSD) + '</td></tr>' +
+    '<tr><td>Total de pagos del período</td><td style="text-align:right;">' + fmtCRC(totalPagosCRC) + ' + ' + fmtUSD(totalPagosUSD) + '</td></tr>' +
+    '<tr><td><strong>Balance teórico</strong></td><td style="text-align:right;"><strong>' + fmtCRC(d.balanceTeoricoCRC) + ' + ' + fmtUSD(d.balanceTeoricoUSD) + '</strong></td></tr>' +
+    '<tr><td>Monto contado (arqueo de cierre)</td><td style="text-align:right;">' + fmtCRC(d.montoContadoCRC) + ' + ' + fmtUSD(d.montoContadoUSD) + '</td></tr>' +
+    '<tr><td><strong>Diferencia</strong></td><td style="text-align:right;"><strong><span style="color:' + colorDifCRC + ';">' + fmtCRC(d.diferenciaCRC) + '</span> + <span style="color:' + colorDifUSD + ';">' + fmtUSD(d.diferenciaUSD) + '</span></strong></td></tr>' +
+    '</table>' +
+    '<h3>Denominaciones contadas · Colones</h3>' +
+    '<table cellpadding="5" style="border-collapse:collapse;border:1px solid #ccc;margin-bottom:16px;">' +
+    '<tr style="background:#f2ede2;"><th>Denominación</th><th>Cantidad</th><th>Subtotal</th></tr>' +
+    (filasDenomHtml(denomCRC, fmtCRC) || '<tr><td colspan="3">Sin denominaciones registradas.</td></tr>') +
+    '</table>' +
+    '<h3>Denominaciones contadas · Dólares</h3>' +
+    '<table cellpadding="5" style="border-collapse:collapse;border:1px solid #ccc;margin-bottom:16px;">' +
+    '<tr style="background:#f2ede2;"><th>Denominación</th><th>Cantidad</th><th>Subtotal</th></tr>' +
+    (filasDenomHtml(denomUSD, fmtUSD) || '<tr><td colspan="3">Sin denominaciones registradas.</td></tr>') +
+    '</table>' +
+    '<h3>Pagos del período (' + d.pagos.length + ')</h3>' +
+    '<table cellpadding="5" style="border-collapse:collapse;border:1px solid #ccc;">' +
+    '<tr style="background:#f2ede2;"><th>Fecha</th><th>Factura</th><th>Proveedor</th><th>Monto</th></tr>' +
+    (filasPagos || '<tr><td colspan="4">Sin pagos registrados en el período.</td></tr>') +
+    '</table>' +
+    '</div>';
+
+  MailApp.sendEmail({
+    to: CORREO_CIERRE_FONDO,
+    subject: 'Cierre de Fondo de Caja · ' + fmtFecha(d.fechaInicio) + ' – ' + fmtFecha(d.fechaCierre),
+    htmlBody: html
+  });
+}
+
 // ── ACCIONES DE CUENTAS POR PAGAR (Registro Facturas) ─────────────
 // Como puede haber números de factura repetidos (duplicados), cada acción
 // recibe un "ordinal": la posición (1ra, 2da...) en que esa factura aparece
@@ -598,6 +886,28 @@ function registrarPago(p) {
   hoja.getRange(fila, COL.FECHA_PAGO).setValue(p.fecha_pago);
   hoja.getRange(fila, COL.MEDIO_PAGO).setValue(p.medio_pago || '');
   hoja.getRange(fila, COL.REFERENCIA).setValue(p.referencia || '');
+  if (p.reembolso_a) {
+    hoja.getRange(fila, columnaPorNombre(hoja, 'Reembolsado a')).setValue(p.reembolso_a);
+  }
+  if (p.nota_credito) {
+    hoja.getRange(fila, columnaPorNombre(hoja, 'Nota de crédito asociada')).setValue(p.nota_credito);
+  }
+  return { fila: fila };
+}
+
+// Registra la fecha y referencia con la que la empresa le devolvió el
+// dinero a la persona que pagó una factura de su bolsillo (Medio de pago
+// = "Reembolso"). Son columnas separadas de "Fecha de pago"/"Referencia",
+// que describen cuándo la persona pagó la factura, no cuándo se le reintegró.
+function registrarReembolso(p) {
+  if (!p.numero_factura) throw new Error('Falta número de factura.');
+  if (!p.ordinal)        throw new Error('Falta indicar a cuál copia de la factura aplica.');
+  if (!p.fecha_reembolso) throw new Error('Falta la fecha de reembolso.');
+  const hoja = getHoja();
+  const fila = filaFacturaPorOrdinal(hoja, p.numero_factura, p.ordinal);
+  if (fila === -1) throw new Error('No se encontró esa factura.');
+  hoja.getRange(fila, columnaPorNombre(hoja, 'Fecha de reembolso')).setValue(p.fecha_reembolso);
+  hoja.getRange(fila, columnaPorNombre(hoja, 'Referencia reembolso')).setValue(p.referencia_reembolso || '');
   return { fila: fila };
 }
 
@@ -634,7 +944,8 @@ function registrarAbono(p) {
   if (!p.monto_abono)    throw new Error('Falta el monto del abono.');
 
   getHojaAbonos().appendRow([
-    p.numero_factura, p.fecha_abono, Number(p.monto_abono), p.medio_pago || '', p.referencia || '', new Date()
+    p.numero_factura, p.fecha_abono, Number(p.monto_abono), p.medio_pago || '', p.referencia || '',
+    p.reembolso_a || '', p.nota_credito || '', new Date()
   ]);
 
   const hoja = getHoja();
@@ -1277,34 +1588,107 @@ function eliminarAreaNegocio(p) {
 }
 
 // Función de UN SOLO USO: correr manualmente desde este editor después de
-// pegar esta versión del código. Quita las columnas "Unidad base" y "Unidad
-// de compra default" de Maestro_Productos (siempre vinieron vacías) y agrega
-// "Área de negocio" en su lugar; también quita "Unidad base" de
-// Costo_Promedio. Es seguro correrla más de una vez: si las columnas viejas
-// ya no están, no hace nada.
+// pegar esta versión del código. Ajusta Maestro_Productos y Costo_Promedio
+// al esquema nuevo (sin "Unidad base"/"Unidad de compra default", con "Área
+// de negocio" en Maestro_Productos).
+//
+// OJO: mientras esta migración no se corría, el código ya escribía por
+// POSICIÓN de columna asumiendo el esquema nuevo, sobre hojas que todavía
+// tenían el esquema viejo — eso corrió datos a la celda equivocada (y en
+// Costo_Promedio, hasta mezcló números en celdas con formato de fecha y
+// viceversa). Por eso esta versión rescata/limpia antes de reacomodar, y al
+// final recalcula todo Costo_Promedio desde cero para dejarlo consistente.
+// Segura de correr más de una vez.
 function migrarEsquemaSinUnidades() {
+  // ── Maestro_Productos ──
   const hojaMaestro = getHojaMaestro();
   const encabezadosMaestro = hojaMaestro.getRange(1, 1, 1, hojaMaestro.getLastColumn()).getValues()[0];
+
   if (encabezadosMaestro.indexOf('Unidad base') !== -1) {
-    hojaMaestro.deleteColumn(4); // Unidad base
-    // Si "Unidad de compra default" sigue ahí (ahora en la posición 4), se borra también.
-    const encabezadosAhora = hojaMaestro.getRange(1, 1, 1, hojaMaestro.getLastColumn()).getValues()[0];
-    if (encabezadosAhora[3] === 'Unidad de compra default') hojaMaestro.deleteColumn(4);
-    hojaMaestro.insertColumnAfter(3);
+    const nFilas = hojaMaestro.getLastRow() - 1;
+    if (nFilas > 0) {
+      const datos = hojaMaestro.getRange(2, 1, nFilas, 6).getValues();
+      const hojaAreas = getHojaAreas();
+      const nFilasAreas = hojaAreas.getLastRow() - 1;
+      const areasValidas = new Set(
+        (nFilasAreas > 0 ? hojaAreas.getRange(2, 1, nFilasAreas, 1).getValues() : [])
+          .map(function(r) { return String(r[0]).trim(); }).filter(Boolean)
+      );
+
+      datos.forEach(function(fila, i) {
+        const filaSheet = i + 2;
+        const colArea         = fila[3]; // "Unidad base" vieja → candidata a "Área de negocio"
+        const colUnidadCompra = fila[4]; // "Unidad de compra default" vieja
+        const colFecha        = fila[5]; // "Fecha de creación" vieja
+
+        // Rescata la fecha de creación si el código nuevo ya la escribió por
+        // posición en "Unidad de compra default" (columna 5) en vez de en
+        // "Fecha de creación" (columna 6, esquema viejo).
+        const col5EsFecha = colUnidadCompra instanceof Date ||
+          (typeof colUnidadCompra === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}/.test(colUnidadCompra));
+        if (col5EsFecha && !colFecha) {
+          hojaMaestro.getRange(filaSheet, 6).setValue(colUnidadCompra);
+        }
+
+        // Limpia texto de unidad vieja (ej. "Kilo", "Unidad", "Rollo") que
+        // quedó en esta columna antes de que existiera el campo real de
+        // área de negocio. Si ya es un área válida (alguien la cargó desde
+        // el modal nuevo), se conserva tal cual.
+        if (colArea && !areasValidas.has(String(colArea).trim())) {
+          hojaMaestro.getRange(filaSheet, 4).setValue('');
+        }
+      });
+    }
+
+    hojaMaestro.deleteColumn(5); // "Unidad de compra default" (ya rescatada la fecha si hacía falta)
     hojaMaestro.getRange(1, 4).setValue('Área de negocio');
-    Logger.log('Maestro_Productos actualizado: ID producto | Nombre normalizado | Categoría | Área de negocio | Fecha de creación.');
+    if (nFilas > 0) hojaMaestro.getRange(2, 5, nFilas, 1).setNumberFormat('yyyy-mm-dd'); // Fecha de creación
+    Logger.log('Maestro_Productos actualizado: "Unidad base" → "Área de negocio" (se limpiaron valores que no eran un área válida), "Unidad de compra default" eliminada (se rescataron fechas de creación corridas).');
   } else {
     Logger.log('Maestro_Productos ya estaba con el esquema nuevo.');
   }
 
+  // ── Costo_Promedio ──
   const hojaCosto = getHojaCostoPromedio();
   const encabezadosCosto = hojaCosto.getRange(1, 1, 1, hojaCosto.getLastColumn()).getValues()[0];
   if (encabezadosCosto.indexOf('Unidad base') !== -1) {
     hojaCosto.deleteColumn(4); // Unidad base
-    Logger.log('Costo_Promedio actualizado: se quitó la columna Unidad base.');
+
+    // Por si alguna celda quedó con formato de fecha (o de número) heredado
+    // de cuando los datos se escribían corridos, forzamos el formato
+    // correcto en cada columna antes de recalcular.
+    const nFilasCosto = hojaCosto.getLastRow() - 1;
+    if (nFilasCosto > 0) {
+      hojaCosto.getRange(2, 4, nFilasCosto, 1).setNumberFormat('0.##');       // Costo último
+      hojaCosto.getRange(2, 5, nFilasCosto, 1).setNumberFormat('yyyy-mm-dd'); // Fecha última compra
+      hojaCosto.getRange(2, 6, nFilasCosto, 1).setNumberFormat('0.##');       // Costo prom. 30 días
+      hojaCosto.getRange(2, 7, nFilasCosto, 1).setNumberFormat('0.##');       // Costo prom. 90 días
+      hojaCosto.getRange(2, 8, nFilasCosto, 1).setNumberFormat('yyyy-mm-dd'); // Fecha de actualización
+    }
+
+    recalcularTodosLosCostos();
+    Logger.log('Costo_Promedio actualizado: se quitó "Unidad base", se corrigió el formato de celdas, y se recalcularon todos los productos para arreglar datos corridos.');
   } else {
     Logger.log('Costo_Promedio ya estaba con el esquema nuevo.');
   }
+}
+
+// Recorre Maestro_Productos y recalcula Costo_Promedio para cada producto
+// que tenga al menos un alias. Se usa al final de migrarEsquemaSinUnidades()
+// para dejar todo consistente, pero también sirve como refresco manual si
+// alguna vez hace falta recomputar todo desde cero.
+function recalcularTodosLosCostos() {
+  const hojaMaestro = getHojaMaestro();
+  const nFilas = hojaMaestro.getLastRow() - 1;
+  if (nFilas <= 0) return;
+  const ids = hojaMaestro.getRange(2, MAESTRO_COL.ID_PRODUCTO, nFilas, 1).getValues();
+  let recalculados = 0;
+  ids.forEach(function(r) {
+    const id = String(r[0]).trim();
+    if (!id) return;
+    if (recalcularCostoPromedio(id)) recalculados++;
+  });
+  Logger.log('Costo_Promedio recalculado para ' + recalculados + ' de ' + nFilas + ' productos del Maestro.');
 }
 
 // Función de UN SOLO USO: correr manualmente desde este editor para crear y
