@@ -4,7 +4,7 @@ Sistema de operaciones para Restaurante Lorito (Grupo del Sol), adaptado del eco
 ## Pendientes de conexión
 Los siguientes backends de Apps Script aún no existen (sheets nuevas y vacías) y deben desplegarse y pegarse en el código donde aparece cada placeholder:
 - `TODO_APPS_SCRIPT_COSTOS_LORITO` → hoja "COSTOS Y RECETAS - LORITO IA"
-- `TODO_APPS_SCRIPT_COMPRAS_LORITO`, `TODO_APPS_SCRIPT_MANTENIMIENTO_LORITO` → hoja "Operaciones - Lorito IA"
+- `TODO_APPS_SCRIPT_COMPRAS_LORITO` → hoja "Operaciones - Lorito IA"
 - `TODO_GERENCIA_LORITO@pendiente.com` → correo real de gerencia
 
 mermas.html conserva `APPS_SCRIPT_URL = ''` (nunca estuvo conectado en el original).
@@ -34,6 +34,18 @@ Las fotos de cada cierre se guardan automáticamente en la carpeta fija de Drive
 4. Hasta que se hagan los pasos 1-3, en `depositos.html` la pestaña "Historial de depósitos" va a mostrar datos incorrectos (porque `?action=depositos` todavía no existe en el backend viejo y cae al mismo endpoint que devuelve los cierres) y el botón "Asignar depósito" va a fallar al guardar — la pestaña "Resumen diario" sí funciona ya, porque solo lee `Cierres` con el endpoint que ya existe.
 
 Las fotos de los comprobantes se guardan automáticamente en una carpeta "Depósitos - Comprobantes" en el mismo Drive donde vive "Cierres de caja" — no requiere configuración adicional.
+
+## Mantenimiento — conectado
+
+Destinos en Drive (dueño: jorge.lopez@casaaguizotes.com):
+- Sheet de datos: `1Hd1CuITuquWIhSmT5CHIDliymUN0GwKhI8hvRc5ZAIQ` (https://docs.google.com/spreadsheets/d/1Hd1CuITuquWIhSmT5CHIDliymUN0GwKhI8hvRc5ZAIQ/edit), pestaña "Reportes".
+- Carpeta de fotos: `1S6jva3a7ghN3rXmtrNzDHZHHs3O3JybL` (https://drive.google.com/drive/u/0/folders/1S6jva3a7ghN3rXmtrNzDHZHHs3O3JybL) — sin subcarpetas, un archivo por reporte.
+
+`Code-mantenimiento-backend.gs` está desplegado como Web App y `MANT_URL` en `mantenimiento.html` ya apunta a ese `/exec`. `mantenimiento.html` también lee los encargados desde el backend de RRHH (`APPS_SCRIPT_RRHH` apunta al mismo `/exec` que usan las 8 páginas `rrhh-*.html`).
+
+Verificado end-to-end (crear reporte → cambiar estado → agregar nota, todo reflejado en el Sheet). Hay una fila de prueba en la pestaña "Reportes" (encargado "PRUEBA BORRAR TEST", tipo "Bombillo quemado") — se puede borrar manualmente desde el Sheet sin afectar nada.
+
+Si se agregan columnas, actualizar `ENCABEZADOS_REPORTES` en `Code-mantenimiento-backend.gs`, re-desplegar (Implementar → Gestionar implementaciones → Editar → Nueva versión — la URL `/exec` no cambia) y correr `configurarHoja()` de nuevo si hace falta.
 
 ## RRHH — conectado
 
