@@ -47,6 +47,10 @@ Destinos en Drive (dueño: jorge.lopez@casaaguizotes.com):
 
 Verificado end-to-end (crear reporte → cambiar estado → agregar nota → subida de foto a Drive, todo reflejado en el Sheet y en el widget del home). Hay filas de prueba en la pestaña "Reportes" (encargado "PRUEBA BORRAR TEST") — se pueden borrar manualmente desde el Sheet sin afectar nada.
 
+**Fix — "Guardando…" se quedaba trabado en celular:** las fotos de cámara pesan varios MB, y al convertirlas a base64 (+33%) el POST a `MANT_URL` se volvía gigante; en una red móvil lenta/inestable ese `fetch` podía quedar esperando para siempre sin resolver ni fallar, así que el `try/catch/finally` nunca llegaba a correr y el botón se quedaba en "Guardando…". Dos cambios en `mantenimiento.html`:
+- `comprimirFoto()` redimensiona (máx. 1600px) y recomprime la foto a JPEG (calidad 0.75) client-side antes de convertirla a base64 — un ejemplo de prueba de 3000×2000 quedó en 18 KB de base64 en vez de varios MB.
+- `fetchConTimeout()` envuelve todos los `fetch` a `MANT_URL`/`APPS_SCRIPT_RRHH` con un `AbortController` (30s general, 45s para el guardado con foto); si la conexión se cuelga, aborta y muestra el error en vez de trabarse — el reporte ya quedó guardado en `localStorage` como respaldo, así que no se pierde nada.
+
 Si se agregan columnas, actualizar `ENCABEZADOS_REPORTES` en `Code-mantenimiento-backend.gs`, re-desplegar (Implementar → Gestionar implementaciones → Editar → Nueva versión — la URL `/exec` no cambia) y correr `configurarHoja()` de nuevo si hace falta.
 
 ## RRHH — conectado

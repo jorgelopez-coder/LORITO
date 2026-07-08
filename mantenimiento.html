@@ -297,6 +297,22 @@ let segVista = 'activos';
 let encargadoActual = '';
 let focusReporteId = new URLSearchParams(window.location.search).get('id');
 
+// fetch con límite de tiempo: en redes móviles lentas/inestables, fetch() puede
+// quedarse esperando indefinidamente sin resolver ni fallar — sin esto, el botón
+// "Guardando…" nunca se recupera porque el try/catch/finally nunca llega a correr.
+async function fetchConTimeout(url, options = {}, timeoutMs = 30000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (err) {
+    if (err.name === 'AbortError') throw new Error('Tiempo de espera agotado');
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // ── TABS ──────────────────────────────────────────────────────────
 function showTab(tab, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -326,7 +342,7 @@ async function cargarEncargados() {
   sel.innerHTML = '<option value="" disabled selected>Cargando…</option>';
   errBox.style.display = 'none';
   try {
-    const resp = await fetch(APPS_SCRIPT_RRHH + '?modulo=personal');
+    const resp = await fetchConTimeout(APPS_SCRIPT_RRHH + '?modulo=personal');
     if (!resp.ok) throw new Error('Error ' + resp.status);
     const data = await resp.json();
     if (!data.ok) throw new Error(data.error || 'Sin datos');
@@ -358,18 +374,46 @@ function getTipoMant() {
 }
 
 // ── FOTO ──────────────────────────────────────────────────────────
+// Las fotos de cámara de celular suelen pesar varios MB — se redimensionan y
+// recomprimen client-side antes de convertir a base64, porque ese payload
+// gigante era lo que dejaba el POST colgado ("Guardando…" sin fin) en redes
+// móviles lentas.
+function comprimirFoto(file, maxDim = 1600, calidad = 0.75) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) { height = Math.round(height * maxDim / width); width = maxDim; }
+          else { width = Math.round(width * maxDim / height); height = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', calidad));
+      };
+      img.onerror = () => resolve(e.target.result); // no se pudo decodificar/comprimir: usar la original
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function onFotoSelected(event) {
   const file = event.target.files[0];
   if (!file) return;
   if (file.size > 5 * 1024 * 1024) { showToast('La foto supera 5 MB', 'error'); return; }
-  const reader = new FileReader();
-  reader.onload = e => {
-    fotoBase64 = e.target.result;
+  comprimirFoto(file).then(dataUrl => {
+    fotoBase64 = dataUrl;
     document.getElementById('foto-placeholder').style.display = 'none';
     document.getElementById('foto-preview-wrap').style.display = 'block';
     document.getElementById('foto-preview-img').src = fotoBase64;
-  };
-  reader.readAsDataURL(file);
+  }).catch(() => {
+    showToast('No se pudo procesar la foto', 'error');
+  });
 }
 function quitarFoto(event) {
   event.preventDefault(); event.stopPropagation();
@@ -414,11 +458,11 @@ async function guardarReporte() {
   saveReportes(lista);
 
   try {
-    const resp = await fetch(MANT_URL, {
+    const resp = await fetchConTimeout(MANT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(reporte)
-    });
+    }, 45000); // más tiempo que el resto: este POST puede incluir la foto
     const out = await resp.json();
     if (out.ok && out.fotoUrl) {
       const idx = lista.findIndex(r => r.id === reporte.id);
@@ -426,7 +470,7 @@ async function guardarReporte() {
     }
     showToast('Reporte guardado ✓');
   } catch(e) {
-    showToast('Guardado local — sin conexión al Sheet', 'error');
+    showToast('Guardado local — ' + (e.message === 'Tiempo de espera agotado' ? 'la conexión tardó demasiado' : 'sin conexión al Sheet'), 'error');
   } finally {
     btn.disabled = false; btn.textContent = 'Guardar reporte';
   }
@@ -473,7 +517,7 @@ const TIPO_ICONS = {
 async function cargarMantDesdeSheet() {
   document.getElementById('seg-lista').innerHTML = '<div class="empty-state">Cargando…</div>';
   try {
-    const resp = await fetch(MANT_URL);
+    const resp = await fetchConTimeout(MANT_URL);
     const data = await resp.json();
     if (!data.ok) throw new Error(data.error || 'Error al leer');
 
@@ -630,7 +674,7 @@ async function cambiarEstadoSheet(id, nuevoEstado) {
   if (item) item.estado = nuevoEstado;
   renderSeguimiento();
   try {
-    await fetch(MANT_URL, {
+    await fetchConTimeout(MANT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ accion: 'cambiar_estado', id, estado: nuevoEstado })
@@ -645,7 +689,7 @@ async function guardarFechaResolucion(id, fecha) {
   const item = mantDataSheet.find(r => r.id === id);
   if (item) item.fechaResolucion = fecha;
   try {
-    await fetch(MANT_URL, {
+    await fetchConTimeout(MANT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ accion: 'fijar_resolucion', id, fecha_resolucion: fecha })
@@ -664,7 +708,7 @@ async function agregarNotaUI(id) {
   const autor = encargadoActual || document.getElementById('mant-encargado')?.value || '';
 
   try {
-    await fetch(MANT_URL, {
+    await fetchConTimeout(MANT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ accion: 'agregar_nota', id, nota, autor })
