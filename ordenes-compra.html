@@ -128,6 +128,11 @@
     </div>
   </div>
 
+  <div id="kpi-semanas" style="display:none;margin-bottom:1.25rem;">
+    <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Presupuesto vs. órdenes por semana</div>
+    <div id="kpi-semanas-lista" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+  </div>
+
   <div class="tabs">
     <button class="tab active" onclick="switchTab('ordenes',this)">Órdenes</button>
     <button class="tab" id="tab-btn-actual" onclick="switchTab('actual',this)" style="display:none;">Orden actual</button>
@@ -449,6 +454,64 @@ function fmtDMY(ymd) {
   return p[2] + '/' + p[1];
 }
 
+// ── KPI: PRESUPUESTO vs. ÓRDENES POR SEMANA ───────────────────────
+// Usa el .presupuesto y .total que cada orden ya guarda (calculado al
+// editarla), agrupando por la semana calendario de su fecha — sin pegarle
+// de nuevo al Sheet de cierres.
+function renderKPISemanas() {
+  var cont  = document.getElementById('kpi-semanas');
+  var lista = document.getElementById('kpi-semanas-lista');
+  if (!cont || !lista) return;
+
+  var todas = getOrdenes().filter(function(o){ return o.estado !== 'cancelada' && o.fecha; });
+  if (!todas.length) { cont.style.display = 'none'; return; }
+
+  var semanas = {};
+  todas.forEach(function(o){
+    var r   = rangoSemanaActual(o.fecha);
+    var key = r.inicio;
+    if (!semanas[key]) semanas[key] = { inicio: r.inicio, fin: r.fin, presupuesto: undefined, total: 0 };
+    semanas[key].total += (o.total || 0);
+    if (semanas[key].presupuesto === undefined && o.presupuesto !== undefined) {
+      semanas[key].presupuesto = o.presupuesto;
+    }
+  });
+
+  var keys = Object.keys(semanas).sort().reverse().slice(0, 6);
+  if (!keys.length) { cont.style.display = 'none'; return; }
+  cont.style.display = 'block';
+
+  lista.innerHTML = keys.map(function(k){
+    var s      = semanas[k];
+    var pres   = s.presupuesto;
+    var pct    = (pres && pres > 0) ? Math.round(s.total / pres * 100) : null;
+    var excede = pres !== undefined && s.total > pres;
+    var barPct = pct !== null ? Math.min(100, pct) : 0;
+    var barCol = excede ? 'var(--red)' : 'var(--green)';
+
+    return '<div style="flex:1;min-width:200px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;">'
+      + '<div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px;">Semana ' + fmtDMY(s.inicio) + ' – ' + fmtDMY(s.fin) + '</div>'
+      + '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">'
+      + '<span style="font-size:11px;color:var(--muted);">Disponible</span>'
+      + '<span style="font-family:var(--font-d);font-size:14px;font-weight:700;color:var(--purple);">' + (pres !== undefined ? fmt(pres) : '—') + '</span>'
+      + '</div>'
+      + '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">'
+      + '<span style="font-size:11px;color:var(--muted);">En órdenes</span>'
+      + '<span style="font-family:var(--font-d);font-size:14px;font-weight:700;color:var(--blue);">' + fmt(s.total) + '</span>'
+      + '</div>'
+      + '<div style="height:6px;border-radius:3px;background:var(--surface);overflow:hidden;">'
+      + '<div style="height:100%;width:' + barPct + '%;background:' + barCol + ';"></div>'
+      + '</div>'
+      + '<div style="margin-top:8px;">'
+      + (pres === undefined
+        ? '<span style="font-size:11px;color:var(--subtle);font-style:italic;">Sin presupuesto calculado</span>'
+        : (excede
+          ? '<span class="badge b-out">Excede por ' + fmt(s.total - pres) + '</span>'
+          : '<span class="badge b-ok">' + pct + '% usado</span>'))
+      + '</div></div>';
+  }).join('');
+}
+
 async function calcularPresupuestoSemanal(fechaYMD) {
   var rango    = rangoSemanaAnterior(fechaYMD);
   var cierres  = await cargarCierres();
@@ -493,6 +556,7 @@ async function actualizarPresupuesto() {
 
 function compararConTotal() {
   if (!ordenActual) return;
+  renderKPISemanas();
   var badge = document.getElementById('presupuesto-badge');
   if (!badge) return;
   var saldo = ordenActual.saldo_disponible !== undefined ? ordenActual.saldo_disponible : ordenActual.presupuesto;
@@ -1103,6 +1167,7 @@ function eliminarOrden(id, e) {
 function renderListaOrdenes() {
   var cont  = document.getElementById('lista-ordenes');
   var todas = getOrdenes().filter(function(o){ return o.estado !== 'cancelada'; });
+  renderKPISemanas();
   if (!todas.length) { cont.innerHTML = '<div class="empty">No hay órdenes.</div>'; return; }
   cont.innerHTML = todas.map(function(o){
     var enP = o.estado === 'en_proceso';
