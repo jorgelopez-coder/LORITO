@@ -1181,10 +1181,11 @@ function renderProyeccion() {
       a.proveedor.localeCompare(b.proveedor) || a.numero.localeCompare(b.numero));
 
     const totalesPorDia = {};
+    const cantidadPorDia = {};
     fechas.forEach(fecha => {
-      totalesPorDia[fecha] = conFecha
-        .filter(f => f.fechaProyectada === fecha)
-        .reduce((a,f) => a + f.saldoPendiente, 0);
+      const deEseDia = conFecha.filter(f => f.fechaProyectada === fecha);
+      totalesPorDia[fecha] = deEseDia.reduce((a,f) => a + f.saldoPendiente, 0);
+      cantidadPorDia[fecha] = deEseDia.length;
     });
     const totalGeneral = fechas.reduce((a,fecha) => a + totalesPorDia[fecha], 0);
 
@@ -1214,10 +1215,27 @@ function renderProyeccion() {
       </tr>`;
     }).join('');
 
+    const filaCantidad = `
+      <tr style="background:var(--surface);">
+        <td style="${colFija}background:var(--surface);font-weight:700;">Cantidad de facturas</td>
+        ${fechas.map(fecha => `<td class="num" style="font-weight:700;">${cantidadPorDia[fecha]}</td>`).join('')}
+        <td style="background:var(--surface);"></td>
+      </tr>`;
+
     const filaTotal = `
       <tr style="background:var(--surface);">
         <td style="${colFija}background:var(--surface);font-weight:700;">Total por día</td>
         ${fechas.map(fecha => `<td class="num" style="font-weight:700;color:var(--green);">${fmt(totalesPorDia[fecha])}</td>`).join('')}
+        <td style="background:var(--surface);"></td>
+      </tr>`;
+
+    const filaWhatsapp = `
+      <tr style="background:var(--surface);">
+        <td style="${colFija}background:var(--surface);font-weight:700;">Aviso de pago</td>
+        ${fechas.map(fecha => `
+          <td style="text-align:center;">
+            <button class="btn-mini" style="border-color:#25D36680;background:#25D36615;color:#128C4A;" onclick="enviarWhatsAppDia('${fecha}')">WhatsApp</button>
+          </td>`).join('')}
         <td style="background:var(--surface);"></td>
       </tr>`;
 
@@ -1228,13 +1246,27 @@ function renderProyeccion() {
           ${headFechas}
           <th style="background:var(--surface);">Acción</th>
         </tr></thead>
-        <tbody>${filasHtml}${filaTotal}</tbody>
+        <tbody>${filasHtml}${filaCantidad}${filaTotal}${filaWhatsapp}</tbody>
       </table>`;
 
     document.getElementById('proyeccion-resumen').innerHTML = `
       ${fechas.length} fecha${fechas.length!==1?'s':''} proyectada${fechas.length!==1?'s':''} ·
       ${conFecha.length} factura${conFecha.length!==1?'s':''} · Total: <strong style="color:var(--green);">${fmt(totalGeneral)}</strong>`;
   }
+}
+
+// Arma el mensaje de WhatsApp con las facturas proyectadas para una fecha
+// y abre el chat (sin destinatario fijo: se elige desde WhatsApp).
+function enviarWhatsAppDia(fecha) {
+  const facturasDia = facturasAP
+    .filter(f => f.estado !== 'Cancelada' && f.fechaProyectada === fecha)
+    .sort((a,b) => a.proveedor.localeCompare(b.proveedor));
+  if (!facturasDia.length) { showToast('No hay facturas proyectadas para esa fecha.', 'error'); return; }
+
+  const totalDia = facturasDia.reduce((a,f) => a + f.saldoPendiente, 0);
+  const lineas = facturasDia.map(f => `• ${f.proveedor} (${f.numero}): ${fmt(f.saldoPendiente)}`).join('\n');
+  const mensaje = `Estas facturas ya están listas para ser canceladas el ${fecha}:\n\n${lineas}\n\nTotal: ${fmt(totalDia)}`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(mensaje), '_blank');
 }
 
 // ── RENDER HISTORIAL (pagos registrados) ──────────────────────────
