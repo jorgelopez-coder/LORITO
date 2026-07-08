@@ -62,6 +62,7 @@
     .b-out      { background:var(--red-bg);   color:var(--red); }
     .b-proceso  { background:var(--amber-bg); color:var(--amber); }
     .b-aprobada { background:var(--green-bg); color:var(--green); }
+    .b-recarga  { background:var(--purple-bg); color:var(--purple); }
     .b-dot { width:5px; height:5px; border-radius:50%; background:currentColor; }
     .btn-primary { background:var(--blue); color:#fff; border:none; border-radius:9px; font-family:var(--font-d); font-size:14px; font-weight:700; padding:10px 20px; cursor:pointer; transition:opacity .15s; white-space:nowrap; display:inline-flex; align-items:center; gap:6px; }
     .btn-primary:hover { opacity:.9; }
@@ -115,10 +116,16 @@
       <h1>Órdenes de compra</h1>
       <p>Análisis de inventario · Propuesta de pedido · Aprobación por proveedor</p>
     </div>
-    <button class="btn-primary" onclick="nuevaOrden()">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
-      Nueva orden de compra
-    </button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn-primary" onclick="nuevaOrden()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
+        Nueva orden de compra
+      </button>
+      <button class="btn-sec" style="border-color:var(--amber-lt);color:var(--amber);background:var(--amber-bg);" onclick="nuevaOrdenRecarga()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px;margin-right:2px;"><path d="M8 2v5M8 2l-2.5 2.5M8 2l2.5 2.5"/><path d="M3 8v4a2 2 0 002 2h6a2 2 0 002-2V8"/></svg>
+        Orden de recarga
+      </button>
+    </div>
   </div>
 
   <div class="tabs">
@@ -140,6 +147,7 @@
         <div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <span style="font-family:var(--font-d);font-size:15px;font-weight:700;" id="actual-id"></span>
+            <span id="actual-tipo-badge"></span>
             <span id="actual-estado-badge"></span>
           </div>
           <div style="font-size:12px;color:var(--muted);margin-top:3px;" id="actual-info"></div>
@@ -149,7 +157,7 @@
             <label style="font-size:13px;font-weight:500;">Fecha:</label>
             <input type="date" id="fecha-orden" onchange="guardarFechaOrden()">
           </div>
-          <div style="display:flex;align-items:center;gap:6px;">
+          <div id="inventario-selector-wrap" style="display:flex;align-items:center;gap:6px;">
             <label style="font-size:13px;font-weight:500;">Inventario:</label>
             <select class="inline-sel" id="sel-inventario" onchange="cargarInventarioSeleccionado()">
               <option value="">— Sin inventario —</option>
@@ -160,7 +168,7 @@
       </div>
       <div class="total-strip" id="presupuesto-strip" style="display:none;background:var(--purple-bg);border-bottom:1px solid var(--purple-lt);">
         <div>
-          <span style="font-size:13px;font-weight:600;color:var(--purple);">Presupuesto semanal (35% ventas netas)</span>
+          <span style="font-size:13px;font-weight:600;color:var(--purple);">Saldo disponible (35% ventas netas de la semana)</span>
           <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="presupuesto-detalle">—</div>
         </div>
         <span id="presupuesto-valor" style="font-family:var(--font-d);font-size:22px;font-weight:700;color:var(--purple);">₡0</span>
@@ -233,7 +241,7 @@ var ordenParaPDF = null; // orden aprobada mostrada actualmente, usada para el P
 
 function getOrdenes()   { try { return JSON.parse(localStorage.getItem('ordenes_compra')||'[]'); } catch(e) { return []; } }
 function saveOrdenes(o) { localStorage.setItem('ordenes_compra', JSON.stringify(o)); }
-function genId() { return 'OC-'+hoy.getFullYear()+pad(hoy.getMonth()+1)+pad(hoy.getDate())+'-'+Math.floor(Math.random()*9000+1000); }
+function genId(prefijo) { return (prefijo||'OC')+'-'+hoy.getFullYear()+pad(hoy.getMonth()+1)+pad(hoy.getDate())+'-'+Math.floor(Math.random()*9000+1000); }
 
 var AREAS      = ['Cocina','Bar','Consumible','Otro'];
 var AREA_CLS   = { 'Cocina':'cocina','Bar':'bar','Consumible':'consumible','Otro':'otro' };
@@ -413,6 +421,29 @@ function rangoSemanaAnterior(fechaYMD) {
   return { inicio: toYMD(lunesAnterior), fin: toYMD(domingoAnterior) };
 }
 
+// Lunes-domingo de la semana calendario que contiene fechaYMD (la semana en la que se compra)
+function rangoSemanaActual(fechaYMD) {
+  var d   = new Date(fechaYMD + 'T12:00:00');
+  var dow = d.getDay();
+  var offsetLunes = dow === 0 ? 6 : dow - 1;
+  var lunes   = new Date(d); lunes.setDate(d.getDate() - offsetLunes);
+  var domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 6);
+  var toYMD = function(dt){ return dt.getFullYear()+'-'+pad(dt.getMonth()+1)+'-'+pad(dt.getDate()); };
+  return { inicio: toYMD(lunes), fin: toYMD(domingo) };
+}
+
+// Suma los totales de otras órdenes (no canceladas, distintas de la actual) cuya
+// fecha cae en la misma semana que fechaYMD — lo ya comprometido del presupuesto.
+function calcularComprometidoSemana(fechaYMD, ordenIdExcluir) {
+  var semana = rangoSemanaActual(fechaYMD);
+  return getOrdenes()
+    .filter(function(o){
+      return o.id !== ordenIdExcluir && o.estado !== 'cancelada'
+        && o.fecha && o.fecha >= semana.inicio && o.fecha <= semana.fin;
+    })
+    .reduce(function(a,o){ return a + (o.total||0); }, 0);
+}
+
 function fmtDMY(ymd) {
   var p = ymd.split('-');
   return p[2] + '/' + p[1];
@@ -438,11 +469,17 @@ async function actualizarPresupuesto() {
   document.getElementById('presupuesto-detalle').textContent = 'Calculando con ventas del Sheet de cierres…';
   try {
     var r = await calcularPresupuestoSemanal(fecha);
-    ordenActual.presupuesto = r.presupuesto;
+    var comprometido    = calcularComprometidoSemana(fecha, ordenActual.id);
+    var saldoDisponible = r.presupuesto - comprometido;
+
+    ordenActual.presupuesto         = r.presupuesto;
+    ordenActual.comprometido_semana = comprometido;
+    ordenActual.saldo_disponible    = saldoDisponible;
     ordenActual.presupuesto_info = 'Semana ' + fmtDMY(r.inicio) + ' – ' + fmtDMY(r.fin)
-      + ' · Ventas brutas: ' + fmt(r.brutas) + ' · Netas (sin IVA): ' + fmt(r.netas);
+      + ' · Ventas brutas: ' + fmt(r.brutas) + ' · Netas (sin IVA): ' + fmt(r.netas)
+      + (comprometido > 0 ? ' · Ya comprometido esta semana: ' + fmt(comprometido) : '');
     saveOrdenes(ordenes);
-    document.getElementById('presupuesto-valor').textContent = fmt(r.presupuesto);
+    document.getElementById('presupuesto-valor').textContent = fmt(saldoDisponible);
     document.getElementById('presupuesto-detalle').textContent =
       r.brutas > 0 ? ordenActual.presupuesto_info : 'Semana ' + fmtDMY(r.inicio) + ' – ' + fmtDMY(r.fin) + ' · Sin ventas registradas esa semana';
   } catch(e) {
@@ -458,19 +495,20 @@ function compararConTotal() {
   if (!ordenActual) return;
   var badge = document.getElementById('presupuesto-badge');
   if (!badge) return;
-  var pres = ordenActual.presupuesto;
-  if (pres === undefined || pres <= 0) { badge.innerHTML = ''; return; }
+  var saldo = ordenActual.saldo_disponible !== undefined ? ordenActual.saldo_disponible : ordenActual.presupuesto;
+  if (saldo === undefined || saldo <= 0) { badge.innerHTML = ''; return; }
   var total = ordenActual.total || 0;
-  badge.innerHTML = total <= pres
-    ? '<span class="badge b-ok">Dentro de presupuesto</span>'
-    : '<span class="badge b-out">Excede por ' + fmt(total - pres) + '</span>';
+  badge.innerHTML = total <= saldo
+    ? '<span class="badge b-ok">Dentro del saldo disponible</span>'
+    : '<span class="badge b-out">Excede por ' + fmt(total - saldo) + '</span>';
 }
 
 function mostrarPresupuestoCacheado(orden) {
   var strip = document.getElementById('presupuesto-strip');
   if (orden.presupuesto === undefined) { strip.style.display = 'none'; return; }
   strip.style.display = 'flex';
-  document.getElementById('presupuesto-valor').textContent = fmt(orden.presupuesto);
+  var saldo = orden.saldo_disponible !== undefined ? orden.saldo_disponible : orden.presupuesto;
+  document.getElementById('presupuesto-valor').textContent = fmt(saldo);
   document.getElementById('presupuesto-detalle').textContent = orden.presupuesto_info || '';
   compararConTotal();
 }
@@ -485,7 +523,10 @@ function getStockActual(p) {
            enPresentaciones: s.cerrado + (s.abierto / cantPres) };
 }
 
+// Las órdenes de recarga (suborden a mitad de semana) abren en 0: no se
+// sugiere pedido en base a stock mínimo, el usuario decide qué recargar.
 function calcPedidoSugerido(p) {
+  if (ordenActual && ordenActual.tipo === 'recarga') return 0;
   var min   = parseFloat(p.stock_minimo) || 0;
   var stock = getStockActual(p);
   if (!min)   return 0;
@@ -495,7 +536,7 @@ function calcPedidoSugerido(p) {
 }
 
 // ── NUEVA ORDEN ───────────────────────────────────────────────────
-function nuevaOrden() {
+function iniciarOrden(tipo) {
   // Recargar estado por si init no completó
   if (!ordenes.length) ordenes = getOrdenes();
   if (!productos.length) {
@@ -504,8 +545,8 @@ function nuevaOrden() {
   }
   if (ordenActual && !confirm('Ya hay una orden en proceso. ¿Descartarla?')) return;
   if (ordenActual) { ordenActual.estado = 'cancelada'; saveOrdenes(ordenes); }
-  var id = genId();
-  ordenActual = { id:id, estado:'en_proceso', fecha:fechaHoy,
+  var id = genId(tipo === 'recarga' ? 'REC' : 'OC');
+  ordenActual = { id:id, tipo:tipo, estado:'en_proceso', fecha:fechaHoy,
                   inventario_id:'', lineas:{}, creada:new Date().toISOString() };
   ordenes.unshift(ordenActual);
   saveOrdenes(ordenes);
@@ -518,8 +559,11 @@ function nuevaOrden() {
   renderOrden();
   renderListaOrdenes();
   actualizarPresupuesto();
-  showToast('Orden ' + id + ' iniciada', 'success');
+  showToast((tipo === 'recarga' ? 'Orden de recarga ' : 'Orden ') + id + ' iniciada', 'success');
 }
+
+function nuevaOrden() { iniciarOrden('principal'); }
+function nuevaOrdenRecarga() { iniciarOrden('recarga'); }
 
 function guardarFechaOrden() {
   if (!ordenActual) return;
@@ -532,17 +576,21 @@ function guardarFechaOrden() {
 function renderMeta() {
   if (!ordenActual) return;
   document.getElementById('actual-id').textContent = ordenActual.id;
+  document.getElementById('actual-tipo-badge').innerHTML = ordenActual.tipo === 'recarga'
+    ? '<span class="badge b-recarga">⚡ Recarga</span>' : '';
   document.getElementById('actual-estado-badge').innerHTML = ordenActual.estado === 'en_proceso'
     ? '<span class="badge b-proceso"><span class="b-dot"></span>En proceso</span>'
     : '<span class="badge b-aprobada"><span class="b-dot"></span>Aprobada</span>';
   document.getElementById('actual-info').textContent = 'Creada: ' + new Date(ordenActual.creada).toLocaleString('es-CR');
   document.getElementById('fecha-orden').value = ordenActual.fecha || fechaHoy;
+  document.getElementById('inventario-selector-wrap').style.display = ordenActual.tipo === 'recarga' ? 'none' : 'flex';
   if (ordenActual.inventario_id) document.getElementById('sel-inventario').value = ordenActual.inventario_id;
 }
 
 // ── RENDER TABLA DE LA ORDEN ──────────────────────────────────────
 function renderOrden() {
   if (!ordenActual) return;
+  var esRecarga      = ordenActual.tipo === 'recarga';
   var totalGeneral   = 0;
   var totalesPorArea = {};
   var html = '';
@@ -555,7 +603,7 @@ function renderOrden() {
 
     prods.forEach(function(p) {
       var min       = parseFloat(p.stock_minimo) || 0;
-      var stock     = getStockActual(p);
+      var stock     = esRecarga ? null : getStockActual(p);
       var linea     = ordenActual.lineas[p.id] || {};
       var sugerido  = calcPedidoSugerido(p);
       var pedido    = linea.pedido !== undefined ? linea.pedido : sugerido;
@@ -564,25 +612,29 @@ function renderOrden() {
       var monto     = pedido * precioC;
       subtotal += monto;
 
-      var stockBadge = '<span style="color:var(--subtle);font-size:12px;">Sin datos</span>';
-      var stockSub   = '';
-      if (stock !== null) {
-        stockSub = '<div style="font-size:10px;color:var(--muted);margin-top:2px;">'
-          + stock.cerrado + ' compl. + ' + stock.abierto + ' ' + (p.unidad||'u') + ' en uso</div>';
-        if (stock.enPresentaciones <= 0)
-          stockBadge = '<span class="badge b-out">Sin stock</span>';
-        else if (min > 0 && stock.enPresentaciones < min)
-          stockBadge = '<span class="badge b-low">' + stock.enPresentaciones.toFixed(1) + ' pres.</span>';
-        else
-          stockBadge = '<span class="badge b-ok">' + stock.enPresentaciones.toFixed(1) + ' pres.</span>';
+      var pres     = [p.presentacion, p.tamano].filter(Boolean).join(' ') || '—';
+      var colStock = '';
+      if (!esRecarga) {
+        var stockBadge = '<span style="color:var(--subtle);font-size:12px;">Sin datos</span>';
+        var stockSub   = '';
+        if (stock !== null) {
+          stockSub = '<div style="font-size:10px;color:var(--muted);margin-top:2px;">'
+            + stock.cerrado + ' compl. + ' + stock.abierto + ' ' + (p.unidad||'u') + ' en uso</div>';
+          if (stock.enPresentaciones <= 0)
+            stockBadge = '<span class="badge b-out">Sin stock</span>';
+          else if (min > 0 && stock.enPresentaciones < min)
+            stockBadge = '<span class="badge b-low">' + stock.enPresentaciones.toFixed(1) + ' pres.</span>';
+          else
+            stockBadge = '<span class="badge b-ok">' + stock.enPresentaciones.toFixed(1) + ' pres.</span>';
+        }
+        colStock = '<td>' + stockBadge + stockSub + '</td>'
+          + '<td class="num" style="color:var(--muted);">' + (min > 0 ? min + ' pres.' : '—') + '</td>';
       }
 
-      var pres = [p.presentacion, p.tamano].filter(Boolean).join(' ') || '—';
       filas += '<tr>'
         + '<td><div style="font-weight:500;font-size:13px;">' + p.nombre + '</div>'
         + '<div style="font-size:11px;color:var(--muted);">' + pres + '</div></td>'
-        + '<td>' + stockBadge + stockSub + '</td>'
-        + '<td class="num" style="color:var(--muted);">' + (min > 0 ? min + ' pres.' : '—') + '</td>'
+        + colStock
         + '<td class="num"><input type="number" class="qty-input' + (sugerido > 0 ? ' sugerido' : '')
         + '" id="ped-' + p.id + '" min="0" step="1" value="' + pedido
         + '" oninput="onPedido(\'' + p.id + '\',this)"></td>'
@@ -603,9 +655,9 @@ function renderOrden() {
       + '<span style="font-weight:400;font-size:12px;" id="sub-' + area + '">' + fmt(subtotal) + '</span></div>'
       + '<div id="area-body-' + area + '" style="display:' + (abierto?'block':'none') + ';">'
       + '<table><thead><tr>'
-      + '<th>Producto</th><th>Stock actual</th>'
-      + '<th style="text-align:right;">Stock mín.</th>'
-      + '<th style="text-align:right;">Pedido (pres.)</th>'
+      + '<th>Producto</th>'
+      + (esRecarga ? '' : '<th>Stock actual</th><th style="text-align:right;">Stock mín.</th>')
+      + '<th style="text-align:right;">' + (esRecarga ? 'Cantidad' : 'Pedido (pres.)') + '</th>'
       + '<th style="text-align:right;">Precio compra</th>'
       + '<th style="text-align:right;">Monto estimado</th>'
       + '<th>Proveedor</th>'
@@ -672,21 +724,21 @@ function renderResumenProveedores() {
   if (!provs.length) { cont.style.display = 'none'; return; }
   cont.style.display = 'block';
 
-  var presupuesto    = ordenActual.presupuesto;
+  var saldoPrevio    = ordenActual.saldo_disponible !== undefined ? ordenActual.saldo_disponible : ordenActual.presupuesto;
   var totalEstimado  = provs.reduce(function(a,p){ return a + porProv[p]; }, 0);
-  var saldo          = (presupuesto !== undefined) ? presupuesto - totalEstimado : null;
+  var saldo          = (saldoPrevio !== undefined) ? saldoPrevio - totalEstimado : null;
 
   var resumenTop = '<div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:8px;margin-bottom:8px;border-bottom:1px dashed var(--border);font-size:12px;">'
     + '<span style="color:var(--muted);">Estimado por proveedor (total): <strong style="color:var(--text);font-size:13px;">' + fmt(totalEstimado) + '</strong></span>'
     + (saldo !== null
-      ? '<span style="color:var(--muted);">Saldo disponible del presupuesto: <strong style="font-size:13px;color:' + (saldo >= 0 ? 'var(--green)' : 'var(--red)') + ';">' + fmt(saldo) + '</strong></span>'
+      ? '<span style="color:var(--muted);">Saldo disponible: <strong style="font-size:13px;color:' + (saldo >= 0 ? 'var(--green)' : 'var(--red)') + ';">' + fmt(saldo) + '</strong></span>'
       : '<span style="color:var(--muted);font-style:italic;">Presupuesto sin calcular</span>')
     + '</div>';
 
   var filasProv = provs.map(function(prov) {
     var monto  = porProv[prov];
-    var pctTxt = (presupuesto && presupuesto > 0)
-      ? (monto / presupuesto * 100).toFixed(1) + '% del presupuesto'
+    var pctTxt = (saldoPrevio && saldoPrevio > 0)
+      ? (monto / saldoPrevio * 100).toFixed(1) + '% del saldo disponible'
       : 'Presupuesto sin calcular';
     return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;">'
       + '<span style="font-weight:500;">' + prov + '</span>'
@@ -796,7 +848,8 @@ function renderOrdenAprobada(orden) {
         : '<span style="font-size:12px;color:var(--muted);" id="lbl-' + provKey + '">Pendiente de envío</span>')
       + '<span style="font-size:12px;color:var(--muted);">'
       + items.length + ' producto' + (items.length!==1?'s':'') + ' · ' + fmt(total)
-      + (orden.presupuesto > 0 ? ' · ' + (total / orden.presupuesto * 100).toFixed(1) + '% del presupuesto' : '')
+      + (function(){ var s = orden.saldo_disponible !== undefined ? orden.saldo_disponible : orden.presupuesto;
+                     return s > 0 ? ' · ' + (total / s * 100).toFixed(1) + '% del saldo disponible' : ''; })()
       + '</span>'
       + '</div>'
       + '<div class="send-btns">'
@@ -1054,7 +1107,8 @@ function renderListaOrdenes() {
   cont.innerHTML = todas.map(function(o){
     var enP = o.estado === 'en_proceso';
     return '<div class="hist-item" onclick="' + (enP ? 'abrirOrden()' : 'verOrdenAprobada(\'' + o.id + '\')') + '">'
-      + '<div><div style="font-weight:600;">' + o.id + '</div>'
+      + '<div><div style="font-weight:600;display:flex;align-items:center;gap:6px;">' + o.id
+      + (o.tipo === 'recarga' ? ' <span class="badge b-recarga">⚡ Recarga</span>' : '') + '</div>'
       + '<div style="font-size:12px;color:var(--muted);">Fecha: ' + (o.fecha||'—') + '</div></div>'
       + '<div style="display:flex;align-items:center;gap:10px;">'
       + '<span class="badge ' + (enP?'b-proceso':'b-aprobada') + '"><span class="b-dot"></span>' + (enP?'En proceso':'Aprobada') + '</span>'
@@ -1097,7 +1151,8 @@ function renderHistorial() {
   if (!ap.length) { cont.innerHTML = '<div class="empty">Sin órdenes aprobadas.</div>'; return; }
   cont.innerHTML = ap.map(function(o){
     return '<div class="hist-item" onclick="verOrdenAprobada(\'' + o.id + '\')">'
-      + '<div><div style="font-weight:600;">' + o.id + '</div>'
+      + '<div><div style="font-weight:600;display:flex;align-items:center;gap:6px;">' + o.id
+      + (o.tipo === 'recarga' ? ' <span class="badge b-recarga">⚡ Recarga</span>' : '') + '</div>'
       + '<div style="font-size:12px;color:var(--muted);">Fecha: ' + (o.fecha||'—') + '</div></div>'
       + '<div style="display:flex;align-items:center;gap:10px;">'
       + '<span class="badge b-aprobada"><span class="b-dot"></span>Aprobada</span>'
