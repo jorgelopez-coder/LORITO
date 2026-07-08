@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Caja Chica · Lorito</title>
+  <title>Caja Chica y Reintegros · Lorito</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
@@ -104,6 +104,12 @@
     .toast.success { border-color:var(--green); color:var(--green); }
     .toast.error   { border-color:var(--red);   color:var(--red); }
 
+    .reemb-persona-row td { background:var(--surface); font-weight:700; }
+    .reemb-persona-row .num { color:var(--text); }
+    .reemb-input-fecha { width:130px; background:var(--surface); border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12px; }
+    .reemb-input-ref { width:120px; background:var(--surface); border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12px; }
+    .reemb-input-fecha:focus, .reemb-input-ref:focus { border-color:var(--green); outline:none; }
+
     .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
     .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
     .sdot.off { background:var(--subtle); }
@@ -123,7 +129,7 @@
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
       Inicio
     </a>
-    <span class="page-title">Caja Chica</span>
+    <span class="page-title">Caja Chica y Reintegros</span>
   </div>
   <span class="date-chip" id="date-chip"></span>
 </header>
@@ -131,8 +137,8 @@
 <main>
   <div class="page-header">
     <div>
-      <h1>Caja Chica</h1>
-      <p>Control de saldo, gastos y arqueos del fondo de caja chica</p>
+      <h1>Caja Chica y Reintegros</h1>
+      <p>Control de saldo, gastos, arqueos del fondo de caja chica y reintegros a colaboradores</p>
     </div>
     <div id="status-carga" style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;">
       <span class="spinner"></span> Cargando…
@@ -143,6 +149,11 @@
     <div class="empty"><span class="spinner"></span></div>
   </div>
 
+  <div class="card-head" style="border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;">Reembolsos a colaboradores</div>
+  <div class="card" style="border-top:none;border-radius:0 0 var(--radius) var(--radius);margin-top:-1px;margin-bottom:1.25rem;">
+    <div id="tabla-reembolsos"><div class="empty"><span class="spinner"></span></div></div>
+  </div>
+
   <div class="card-head" style="border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;">Historial de períodos</div>
   <div class="card" style="border-top:none;border-radius:0 0 var(--radius) var(--radius);margin-top:-1px;">
     <div id="tabla-historial-periodos"><div class="empty"><span class="spinner"></span></div></div>
@@ -150,7 +161,7 @@
 
   <div class="status-bar">
     <div style="display:flex;align-items:center;gap:6px;"><span class="sdot" id="conn-dot"></span><span id="conn-label">Conectando…</span></div>
-    <span style="margin-left:auto;">v1.0 · Caja Chica · Lorito</span>
+    <span style="margin-left:auto;">v1.0 · Caja Chica y Reintegros · Lorito</span>
   </div>
 </main>
 
@@ -240,6 +251,7 @@ const hoyISO = hoy.toISOString().slice(0,10);
 const fmt = n => '₡' + Number(n||0).toLocaleString('es-CR', { minimumFractionDigits:2, maximumFractionDigits:2 });
 
 let dataFacturas   = [];
+let dataReembolsos = [];
 let dataPeriodos   = [];
 let dataArqueos    = [];
 let periodoAbierto = null;
@@ -310,12 +322,34 @@ async function cargarDatos() {
       gvizLoad('CajaChica_Arqueos', 'ID').catch(() => [])
     ]);
 
-    dataFacturas = dF.filter(r => (r['Medio de pago']||'').trim().toLowerCase() === 'caja chica').map(r => ({
+    // Ordinal = posición física entre filas que comparten el mismo número de
+    // factura (mismo criterio que cuentas-por-pagar.html), necesario para que
+    // el backend ubique la fila correcta al guardar la fecha de reembolso.
+    const contadorOrdinal = {};
+    const dFConOrdinal = dF.map(r => {
+      const numero = (r['Factura']||'').trim();
+      if (numero) contadorOrdinal[numero] = (contadorOrdinal[numero]||0) + 1;
+      return { r, ordinal: contadorOrdinal[numero] };
+    });
+
+    dataFacturas = dFConOrdinal.filter(({r}) => (r['Medio de pago']||'').trim().toLowerCase() === 'caja chica').map(({r}) => ({
       numero: r['Factura'] || '',
       proveedor: r['Proveedor'] || '',
       moneda: r['Moneda'] || 'CRC',
       monto: limpiarMonto(r['TOTAL']),
       fechaPago: isoDate(r['Fecha de pago'])
+    })).filter(g => g.fechaPago);
+
+    dataReembolsos = dFConOrdinal.filter(({r}) => (r['Medio de pago']||'').trim().toLowerCase() === 'reembolso').map(({r, ordinal}) => ({
+      numero: (r['Factura']||'').trim(),
+      ordinal,
+      proveedor: r['Proveedor'] || '',
+      moneda: r['Moneda'] || 'CRC',
+      monto: limpiarMonto(r['TOTAL']),
+      fechaPago: isoDate(r['Fecha de pago']),
+      persona: (r['Reembolsado a']||'').trim() || 'Sin nombre',
+      fechaReembolso: isoDate(r['Fecha de reembolso']),
+      referencia: r['Referencia reembolso'] || ''
     })).filter(g => g.fechaPago);
 
     dataPeriodos = dP.filter(r => r['ID']).map(r => ({
@@ -365,6 +399,7 @@ function totalGastos(gastos) {
 // ── RENDER PRINCIPAL ──────────────────────────────────────────────
 function render() {
   renderPeriodoActual();
+  renderReembolsos();
   renderHistorialPeriodos();
 }
 
@@ -442,6 +477,85 @@ function renderPeriodoActual() {
         <tbody>${filasArqueos}</tbody>
       </table>
     </div>`;
+}
+
+// ── REEMBOLSOS A COLABORADORES (Medio de pago: Reembolso) ─────────
+function renderReembolsos() {
+  const cont = document.getElementById('tabla-reembolsos');
+  if (!dataReembolsos.length) {
+    cont.innerHTML = '<div class="empty">No hay pagos marcados como reembolso todavía.</div>';
+    return;
+  }
+
+  const grupos = {};
+  dataReembolsos.forEach(r => { (grupos[r.persona] = grupos[r.persona] || []).push(r); });
+
+  const personas = Object.keys(grupos).sort((a,b) => {
+    const pendA = grupos[a].some(r => !r.fechaReembolso);
+    const pendB = grupos[b].some(r => !r.fechaReembolso);
+    if (pendA !== pendB) return pendA ? -1 : 1;
+    return a.localeCompare(b, 'es');
+  });
+
+  const filas = personas.map(persona => {
+    const items = grupos[persona].slice().sort((a,b) => b.fechaPago.localeCompare(a.fechaPago));
+    const totalCRC = items.filter(r => r.moneda !== 'USD').reduce((a,r) => a + r.monto, 0);
+    const totalUSD = items.filter(r => r.moneda === 'USD').reduce((a,r) => a + r.monto, 0);
+    const pendientes = items.filter(r => !r.fechaReembolso).length;
+
+    const filaGrupo = `
+      <tr class="reemb-persona-row">
+        <td colspan="4">${persona}</td>
+        <td class="num" colspan="3">
+          ${fmt(totalCRC)}${totalUSD ? ' + US$'+totalUSD.toFixed(2)+' ⚠' : ''}
+          <span class="badge ${pendientes?'b-dif':'b-ok'}" style="margin-left:8px;">${pendientes ? pendientes + ' pendiente' + (pendientes>1?'s':'') : 'Al día'}</span>
+        </td>
+      </tr>`;
+
+    const filasDetalle = items.map(r => `
+      <tr data-numero="${r.numero}" data-ordinal="${r.ordinal}">
+        <td style="color:var(--muted);font-size:12px;">${r.fechaPago}</td>
+        <td style="font-size:12px;color:var(--muted);">${r.numero}</td>
+        <td>${r.proveedor}</td>
+        <td class="num" style="font-weight:600;">${r.moneda==='USD' ? 'US$'+r.monto.toFixed(2)+' ⚠' : fmt(r.monto)}</td>
+        <td><input type="date" class="reemb-input-fecha" data-campo="fecha" value="${r.fechaReembolso||''}"></td>
+        <td><input type="text" class="reemb-input-ref" data-campo="ref" placeholder="N° referencia" value="${r.referencia||''}"></td>
+        <td><button class="btn-mini" onclick="guardarReembolsoFila(this)">Guardar</button></td>
+      </tr>`).join('');
+
+    return filaGrupo + filasDetalle;
+  }).join('');
+
+  cont.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Fecha de pago</th><th>Factura</th><th>Proveedor</th><th style="text-align:right;">Monto</th>
+        <th>Fecha de reembolso</th><th>Referencia</th><th></th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+}
+
+async function guardarReembolsoFila(btn) {
+  const row = btn.closest('tr');
+  const numero = row.dataset.numero;
+  const ordinal = row.dataset.ordinal;
+  const fecha = row.querySelector('[data-campo="fecha"]').value;
+  const referencia = row.querySelector('[data-campo="ref"]').value.trim();
+  if (!fecha) { showToast('Ingresá la fecha de reembolso.', 'error'); return; }
+
+  btn.disabled = true;
+  try {
+    await postAP({
+      modulo: 'registrar_reembolso', numero_factura: numero, ordinal: Number(ordinal),
+      fecha_reembolso: fecha, referencia_reembolso: referencia
+    });
+    showToast('Reembolso registrado ✓', 'success');
+    await cargarDatos();
+  } catch(e) {
+    showToast('No se pudo guardar: ' + e.message, 'error');
+    btn.disabled = false;
+  }
 }
 
 function renderHistorialPeriodos() {
