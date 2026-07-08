@@ -1505,7 +1505,7 @@ function abrirModalPago(numero) {
   const f = facturaPorNumero(numero);
   if (!f) return;
   document.getElementById('pago-numero').value = numero;
-  document.getElementById('pago-sub').textContent = `${numero} · ${f.proveedor} · ${fmt(f.saldoPendiente)}`;
+  document.getElementById('pago-sub').innerHTML = `${numero} · ${f.proveedor} <span style="color:var(--muted);">(Cta: ${f.cuentaProveedor||'sin registrar'})</span> · ${fmt(f.saldoPendiente)}`;
   document.getElementById('pago-fecha').value = hoyISO;
   document.getElementById('pago-medio').value = 'Transferencia';
   document.getElementById('pago-reembolso-a').value = '';
@@ -1552,7 +1552,7 @@ function abrirModalAbono(numero) {
   const f = facturaPorNumero(numero);
   if (!f) return;
   document.getElementById('abono-numero').value = numero;
-  document.getElementById('abono-sub').textContent = `${numero} · ${f.proveedor}`;
+  document.getElementById('abono-sub').innerHTML = `${numero} · ${f.proveedor} <span style="color:var(--muted);">(Cta: ${f.cuentaProveedor||'sin registrar'})</span>`;
   document.getElementById('abono-fecha').value = hoyISO;
   document.getElementById('abono-monto').value = '';
   document.getElementById('abono-monto').max = f.saldoPendiente;
