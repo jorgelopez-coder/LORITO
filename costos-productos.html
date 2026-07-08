@@ -917,17 +917,27 @@ let PRODUCTOS_NORMALIZADOS = [];
 // catálogo maestro (Maestro_Productos, Sheet de compras) — no con una lista
 // fija en el código.
 async function cargarNombresNormalizados() {
-  const dl = document.getElementById('sugerencias-productos');
-  if (!dl || !APPS_SCRIPT_COSTOS) return;
+  if (!APPS_SCRIPT_COSTOS) return;
   try {
     const resp = await fetch(APPS_SCRIPT_COSTOS + '?modulo=nombres_normalizados');
     const data = await resp.json();
     if (!data || !data.ok || !Array.isArray(data.productos)) return;
     PRODUCTOS_NORMALIZADOS = data.productos;
-    dl.innerHTML = PRODUCTOS_NORMALIZADOS.map(p => `<option value="${p.nombre}">`).join('');
+    renderDatalistNormalizados();
   } catch (e) {
     console.warn('No se pudo cargar la lista de nombres normalizados:', e);
   }
+}
+
+// Reconstruye el datalist excluyendo los productos que ya están en la base
+// (getProductos(), por ID) — se llama de nuevo cada vez que esa lista cambia
+// (carga inicial, guardar, eliminar) para que no se desactualice.
+function renderDatalistNormalizados() {
+  const dl = document.getElementById('sugerencias-productos');
+  if (!dl) return;
+  const idsRegistrados = new Set(getProductos().map(p => p.id));
+  const disponibles = PRODUCTOS_NORMALIZADOS.filter(p => !idsRegistrados.has(p.id));
+  dl.innerHTML = disponibles.map(p => `<option value="${p.nombre}">`).join('');
 }
 
 // Al escribir/elegir un nombre que coincide con un producto del catálogo
@@ -981,6 +991,7 @@ async function cargarProductosDesdeSheet() {
     }));
     saveProductos(productos);
     renderLista();
+    renderDatalistNormalizados();
     document.getElementById('conn-dot').classList.remove('off');
     document.getElementById('conn-label').textContent = 'Sincronizado con Sheet';
   } catch (e) {
@@ -1312,6 +1323,7 @@ async function guardar() {
   limpiarForm();
   switchTab('lista', document.querySelectorAll('.tab')[0]);
   renderLista();
+  renderDatalistNormalizados();
 }
 
 function editar(id) {
@@ -1345,6 +1357,7 @@ async function eliminar(id) {
     catch(e) {}
   }
   renderLista();
+  renderDatalistNormalizados();
   showToast('Producto eliminado', 'success');
 }
 

@@ -65,6 +65,17 @@
     .plato-cat { font-size:12px; color:var(--muted); margin-bottom:8px; }
     .plato-precio { font-family:var(--font-d); font-size:20px; font-weight:700; color:var(--purple); }
     .plato-desc { font-size:12px; color:var(--muted); margin-top:6px; line-height:1.5; }
+    .btn-ver-receta { display:flex; align-items:center; justify-content:space-between; width:100%; gap:6px; margin-top:8px; padding:6px 0; border:none; background:transparent; color:var(--purple); font-size:12px; font-weight:600; cursor:pointer; }
+    .receta-arrow { width:14px; height:14px; color:var(--purple); transition:transform .2s; flex-shrink:0; }
+    .receta-arrow.open { transform:rotate(180deg); }
+    .plato-detail { display:none; margin-top:6px; padding-top:10px; border-top:1px solid var(--border); }
+    .plato-detail.open { display:block; }
+    .det-table { width:100%; border-collapse:collapse; font-size:12px; }
+    .det-table th { text-align:left; font-size:10px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:0 8px 6px 0; border-bottom:1px solid var(--border); }
+    .det-table td { padding:6px 8px 6px 0; border-bottom:1px solid var(--border); }
+    .det-table tr:last-child td { border-bottom:none; }
+    .det-num { text-align:right; font-variant-numeric:tabular-nums; }
+    .badge-sub { font-size:10px; padding:2px 6px; border-radius:20px; background:var(--teal-bg,var(--surface)); color:var(--teal,var(--muted)); font-weight:500; }
     .plato-actions { display:flex; gap:6px; margin-top:10px; }
     .btn-edit { font-size:11px; padding:4px 10px; border-radius:6px; border:1px solid var(--purple-lt); background:var(--purple-bg); color:var(--purple); cursor:pointer; font-weight:500; }
     .btn-edit:hover { background:var(--purple); color:#fff; }
@@ -266,6 +277,21 @@ function calcFC() {
   }
 }
 
+// Trae del localStorage compartido (costos_recetas) la receta asociada a un plato.
+function getRecetaPorId(recetaId) {
+  if (!recetaId) return null;
+  const recetas = JSON.parse(localStorage.getItem('costos_recetas') || '[]');
+  return recetas.find(r => r.id === recetaId) || null;
+}
+
+function toggleDetalleReceta(platoId) {
+  const el  = document.getElementById('det-' + platoId);
+  const ico = document.getElementById('det-' + platoId + '-ico');
+  const open = !el.classList.contains('open');
+  el.classList.toggle('open', open);
+  ico.classList.toggle('open', open);
+}
+
 function renderMenu() {
   const busq = document.getElementById('search').value.toLowerCase();
   const cat  = document.getElementById('f-cat').value;
@@ -283,7 +309,25 @@ function renderMenu() {
 
   const d = DISP_COLORS;
   const cards = lista.map(p => {
-    const disp = DISP_COLORS[p.disponible] || DISP_COLORS['Disponible'];
+    const disp   = DISP_COLORS[p.disponible] || DISP_COLORS['Disponible'];
+    const receta = getRecetaPorId(p.receta_id);
+    const detalleReceta = receta ? `
+      <button type="button" class="btn-ver-receta" onclick="toggleDetalleReceta('${p.id}')">
+        Ver detalle de receta
+        <svg class="receta-arrow" id="det-${p.id}-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+      </button>
+      <div class="plato-detail" id="det-${p.id}">
+        <table class="det-table">
+          <thead><tr><th>Ingrediente</th><th style="text-align:right;">Cantidad</th><th style="text-align:right;">Costo</th></tr></thead>
+          <tbody>${(receta.ingredientes||[]).map(ing => `
+            <tr>
+              <td>${ing.nombre} ${ing.esSub?'<span class="badge-sub">sub</span>':''}</td>
+              <td class="det-num">${ing.cantidad} ${ing.unidad}</td>
+              <td class="det-num">${fmt(ing.costo_linea)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>` : '';
     return `<div class="plato-card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div>
@@ -299,6 +343,7 @@ function renderMenu() {
           <span style="font-weight:700;color:${parseFloat(p.fc)<=28?'var(--green)':parseFloat(p.fc)<=35?'var(--amber)':'var(--red)'};">FC ${p.fc}%</span>
         </div>` : ''}
       ${p.descripcion ? `<div class="plato-desc">${p.descripcion}</div>` : ''}
+      ${detalleReceta}
       <div class="plato-actions">
         <button class="btn-edit" onclick="editar('${p.id}')">Editar</button>
         <button class="btn-del"  onclick="eliminar('${p.id}')">✕</button>
