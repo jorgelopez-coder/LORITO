@@ -107,6 +107,15 @@
     .hor-tot      { font-weight:600; color:var(--green); font-size:12px; }
     .hor-overflow { overflow-x:auto; }
 
+    /* ── FACTURAS CON FECHA DE HOY ──────────────────────────── */
+    .fh-row { display:flex; align-items:center; gap:12px; padding:.85rem 1.25rem; border-bottom:1px solid var(--border); cursor:pointer; transition:background .12s; }
+    .fh-row:hover { background:var(--surface); }
+    .fh-arrow { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.6; color:var(--subtle); transition:transform .15s; flex-shrink:0; }
+    .fh-arrow.open { transform:rotate(180deg); }
+    .fh-detalle { display:none; padding:.15rem 1.25rem .95rem 1.25rem; border-bottom:1px solid var(--border); background:var(--surface); font-size:12px; color:var(--muted); }
+    .fh-detalle div { padding:2px 0; }
+    .fh-detalle strong { color:var(--text); font-weight:600; }
+
     /* ── MÓDULOS GRID ───────────────────────────────────────── */
     .modules-section { margin-bottom:1.5rem; }
     .modules-section-title { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; padding:0 2px; }
@@ -215,6 +224,15 @@
       <div class="kpi-lbl">Productos en base</div>
       <div class="kpi-sub" id="kpi-prod-sub" style="color:var(--muted);"></div>
     </div>
+  </div>
+
+  <!-- Facturas con fecha de hoy -->
+  <div class="section-card" id="card-facturas-hoy" style="display:none;margin-bottom:1.5rem;">
+    <div class="section-head">
+      <span class="section-title">Facturas con fecha de hoy <span id="facturas-hoy-count" style="color:var(--text);"></span></span>
+      <a href="cuentas-por-pagar.html" class="section-link">Ver cuentas por pagar →</a>
+    </div>
+    <div id="lista-facturas-hoy"></div>
   </div>
 
   <!-- Grid principal -->
@@ -543,6 +561,7 @@ const hoy   = new Date();
 const pad   = n => String(n).padStart(2,'0');
 const fmt   = n => '₡' + Number(n||0).toLocaleString('es-CR',{minimumFractionDigits:0,maximumFractionDigits:0});
 const SHEET_COSTOS = '1PtT9AHv2drY7oLygHKWMhHQgeOuT20_cD_igqu6ijyA';
+const REGISTRO_SHEET_ID = '1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw';
 
 // Saludo según hora
 const hora = hoy.getHours();
@@ -697,6 +716,102 @@ function aplicarRol(sesion) {
   document.querySelectorAll('.quick-action[data-mod]').forEach(qa => {
     if (!sesion.modulos.includes(qa.dataset.mod)) qa.style.display = 'none';
   });
+}
+
+// ── FACTURAS CON FECHA DE HOY (proyectadas para pago) ──────────
+function limpiarMontoFactura(v) { return parseFloat(String(v||'0').replace(/[,₡\s]/g,'')) || 0; }
+
+// Convierte fechas formateadas por gviz como "D/M/YYYY" a ISO "YYYY-MM-DD".
+function isoDateFactura(str) {
+  const s = String(str||'').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return '';
+  const [, d, mo, y] = m;
+  return y + '-' + mo.padStart(2,'0') + '-' + d.padStart(2,'0');
+}
+
+let facturasHoy = [];
+
+async function cargarFacturasHoy() {
+  const card = document.getElementById('card-facturas-hoy');
+  try {
+    const [filasFact, filasProv] = await Promise.all([
+      gvizLoad(REGISTRO_SHEET_ID, 'Registro Facturas'),
+      gvizLoad(REGISTRO_SHEET_ID, 'proveedores').catch(() => [])
+    ]);
+
+    const hoyISO = new Date().toISOString().slice(0,10);
+    const proveedores = filasProv.map(r => ({
+      nombre_juridico: r['Nombre jurídico'] || '',
+      nombre_comercial: r['Nombre comercial'] || '',
+      cuenta: r['Cuenta'] || '',
+      condicion_pago: r['Condición de pago']
+    }));
+    const buscarProveedor = nombre => {
+      const n = (nombre||'').trim().toLowerCase();
+      if (!n) return null;
+      return proveedores.find(p => (p.nombre_juridico||'').trim().toLowerCase() === n || (p.nombre_comercial||'').trim().toLowerCase() === n) || null;
+    };
+
+    facturasHoy = filasFact
+      .filter(r => (r['Factura']||'').trim())
+      .map(r => {
+        const numero          = r['Factura'].trim();
+        const proveedorNombre = r['Proveedor'] || '';
+        const monto           = limpiarMontoFactura(r['TOTAL']);
+        const moneda          = r['Moneda'] || 'CRC';
+        const tipoCambio      = limpiarMontoFactura(r['Tipo de cambio']) || null;
+        const montoColones    = moneda === 'CRC' ? monto : (tipoCambio ? Math.round(monto * tipoCambio * 100) / 100 : null);
+        const fechaFactura    = isoDateFactura(r['Fecha']);
+        const fechaProyectada = isoDateFactura(r['Fecha proyectada de pago']);
+        const fechaRealPago   = isoDateFactura(r['Fecha de pago']);
+        const totalAbonado    = parseFloat(r['Total abonado'])||0;
+        const prov            = buscarProveedor(proveedorNombre);
+        return {
+          numero, proveedor: proveedorNombre, fechaFactura, monto, moneda, montoColones, fechaProyectada,
+          cuenta: prov ? (prov.cuenta||'') : '', condicionPago: prov ? prov.condicion_pago : '',
+          saldoPendiente: montoColones != null ? Math.round((montoColones - totalAbonado) * 100) / 100 : null,
+          cancelada: !!fechaRealPago
+        };
+      })
+      .filter(f => !f.cancelada && f.fechaProyectada === hoyISO);
+
+    if (!facturasHoy.length) { card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    document.getElementById('facturas-hoy-count').textContent = '(' + facturasHoy.length + ')';
+
+    document.getElementById('lista-facturas-hoy').innerHTML = facturasHoy.map((f, i) => `
+      <div class="fh-row" onclick="toggleDetalleFacturaHoy(${i})">
+        <div class="qa-icon ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.proveedor}</div>
+          <div style="font-size:11px;color:var(--muted);">${f.numero}</div>
+        </div>
+        <div style="font-weight:600;font-family:var(--font-d);white-space:nowrap;">
+          ${f.montoColones != null ? fmt(f.saldoPendiente) : 'US$' + f.monto.toLocaleString('es-CR',{minimumFractionDigits:2})}
+        </div>
+        <svg class="fh-arrow" id="fh-ico-${i}" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg>
+      </div>
+      <div class="fh-detalle" id="fh-det-${i}">
+        <div>Fecha de factura: <strong>${f.fechaFactura || '—'}</strong></div>
+        <div>Número de cuenta: <strong>${f.cuenta || 'Sin registrar'}</strong></div>
+        <div>Condición de pago: <strong>${f.condicionPago!=null && f.condicionPago!=='' ? f.condicionPago + ' días' : 'Sin definir'}</strong></div>
+        <div>Monto: <strong>${f.moneda === 'USD' ? 'US$' + f.monto.toLocaleString('es-CR',{minimumFractionDigits:2}) : fmt(f.monto)}</strong>${f.moneda === 'USD' && f.montoColones == null ? ' <span style="color:var(--amber);">(falta tipo de cambio)</span>' : ''}</div>
+        <div>Saldo pendiente: <strong>${f.saldoPendiente != null ? fmt(f.saldoPendiente) : '—'}</strong></div>
+      </div>`).join('');
+  } catch(e) {
+    card.style.display = 'none';
+  }
+}
+
+function toggleDetalleFacturaHoy(i) {
+  const det = document.getElementById('fh-det-' + i);
+  const ico = document.getElementById('fh-ico-' + i);
+  if (!det) return;
+  const abrir = det.style.display !== 'block';
+  det.style.display = abrir ? 'block' : 'none';
+  if (ico) ico.classList.toggle('open', abrir);
 }
 
 // ── PEDIDOS DEL DÍA ────────────────────────────────────────────
@@ -912,6 +1027,7 @@ document.addEventListener('DOMContentLoaded', function() {
   cargarKPIs();
   cargarResumenHorario();
   cargarResumenMantenimiento();
+  cargarFacturasHoy();
 });
 </script>
 </body>
