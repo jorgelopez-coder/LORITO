@@ -102,6 +102,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .reporte-chevron{font-size:11px;color:var(--subtle);transition:transform .15s;display:inline-block}
 .reporte-card.abierto .reporte-chevron{transform:rotate(180deg)}
 .reporte-idfecha{font-size:12px;color:var(--muted);margin-top:4px;font-family:var(--font-b)}
+.reporte-antiguedad{color:var(--muted)}
+.reporte-antiguedad.alerta{color:var(--red);font-weight:600}
 .reporte-body{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:none}
 .reporte-card.abierto .reporte-body{display:block}
 .reporte-meta{font-size:12px;color:var(--muted);margin-bottom:8px}
@@ -582,6 +584,9 @@ function renderSeguimiento() {
   document.getElementById('seg-lista').innerHTML = lista.map(r => {
     const icon  = TIPO_ICONS[r.tipo] || '📋';
     const fecha = r.fecha ? new Date(r.fecha+'T12:00:00').toLocaleDateString('es-CR',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+    const antiguedadTxt   = calcularAntiguedad(r.fecha);
+    const diasAbierto     = r.fecha ? Math.round((new Date(hoy()+'T00:00:00') - new Date(r.fecha+'T00:00:00')) / 86400000) : 0;
+    const antiguedadAlerta = r.estado !== 'Resuelto' && diasAbierto >= 7;
 
     let fotoHtml = '';
     if (r.foto) fotoHtml = `<img src="${r.foto}" class="reporte-foto" onclick="verFoto(this.src)" alt="Foto"/>`;
@@ -615,7 +620,7 @@ function renderSeguimiento() {
       <div class="reporte-head" onclick="toggleReporte('${r.id}')">
         <div>
           <div class="reporte-tipo">${icon} ${r.tipo}</div>
-          <div class="reporte-idfecha">#${r.id} · ${fecha}</div>
+          <div class="reporte-idfecha">#${r.id} · ${fecha} · <span class="reporte-antiguedad${antiguedadAlerta ? ' alerta' : ''}">${antiguedadAlerta ? '⚠️ ' : ''}${antiguedadTxt}</span></div>
         </div>
         <div class="reporte-head-right">
           ${estBadge[r.estado] || ''}
@@ -654,6 +659,18 @@ function toggleReporte(id) {
   if (reportesAbiertos.has(id)) reportesAbiertos.delete(id);
   else reportesAbiertos.add(id);
   renderSeguimiento();
+}
+
+// Antigüedad del reporte en base a su fecha de creación (r.fecha).
+function calcularAntiguedad(fechaStr) {
+  if (!fechaStr) return '';
+  const dias = Math.round((new Date(hoy()+'T00:00:00') - new Date(fechaStr+'T00:00:00')) / 86400000);
+  if (dias <= 0) return 'Hoy';
+  if (dias === 1) return 'Hace 1 día';
+  if (dias < 7) return `Hace ${dias} días`;
+  if (dias < 30) { const s = Math.floor(dias/7); return s === 1 ? 'Hace 1 semana' : `Hace ${s} semanas`; }
+  const m = Math.floor(dias/30);
+  return m === 1 ? 'Hace 1 mes' : `Hace ${m} meses`;
 }
 
 function escHtml(s) {

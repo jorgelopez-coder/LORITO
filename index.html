@@ -972,6 +972,18 @@ const MANT_TIPO_ICONS = {
   'Vidrio roto':'🪟','Daño en equipo de cocina':'🍳','Plaga detectada':'🐛','Otro':'📋'
 };
 
+// Antigüedad del reporte en base a su fecha de creación.
+function calcularAntiguedadMant(fechaStr) {
+  if (!fechaStr) return '';
+  const dias = Math.round((new Date(new Date().toISOString().slice(0,10)+'T00:00:00') - new Date(fechaStr+'T00:00:00')) / 86400000);
+  if (dias <= 0) return 'Hoy';
+  if (dias === 1) return 'Hace 1 día';
+  if (dias < 7) return `Hace ${dias} días`;
+  if (dias < 30) { const s = Math.floor(dias/7); return s === 1 ? 'Hace 1 semana' : `Hace ${s} semanas`; }
+  const m = Math.floor(dias/30);
+  return m === 1 ? 'Hace 1 mes' : `Hace ${m} meses`;
+}
+
 async function cargarResumenMantenimiento() {
   const body = document.getElementById('mant-grid-body');
   try {
@@ -1004,11 +1016,12 @@ async function cargarResumenMantenimiento() {
       const vencido  = r.fechaResolucion && r.fechaResolucion < hoyStr;
       const badgeCls = r.estado === 'En proceso' ? 'mb-proceso' : 'mb-pendiente';
       const fechaFmt = r.fecha ? new Date(r.fecha+'T12:00:00').toLocaleDateString('es-CR',{day:'2-digit',month:'short'}) : '';
+      const antiguedadTxt = calcularAntiguedadMant(r.fecha);
       return `<a href="mantenimiento.html?id=${encodeURIComponent(r.id)}" class="mant-item">
         <span class="mant-icon">${icon}</span>
         <div class="mant-info">
           <div class="mant-tipo">${r.tipo}</div>
-          <div class="mant-meta">${fechaFmt}${vencido ? ' · <span class="mant-vencido">⚠ Vencido</span>' : ''}</div>
+          <div class="mant-meta">${fechaFmt}${antiguedadTxt ? ' · ' + antiguedadTxt : ''}${vencido ? ' · <span class="mant-vencido">⚠ Vencido</span>' : ''}</div>
         </div>
         <span class="mant-badge ${badgeCls}">${r.estado}</span>
       </a>`;
