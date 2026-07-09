@@ -216,6 +216,9 @@ function doPost(e) {
       case 'guardar_tc':
         result = guardarTC(payload);
         break;
+      case 'guardar_nota':
+        result = guardarNota(payload);
+        break;
       case 'registrar_pago':
         result = registrarPago(payload);
         break;
@@ -873,6 +876,17 @@ function guardarTC(p) {
   if (fila === -1) throw new Error('No se encontró esa factura.');
   const col = columnaPorNombre(hoja, 'Tipo de cambio');
   hoja.getRange(fila, col).setValue(Number(p.tipo_cambio));
+  return { fila: fila };
+}
+
+function guardarNota(p) {
+  if (!p.numero_factura) throw new Error('Falta número de factura.');
+  if (!p.ordinal) throw new Error('Falta indicar a cuál copia de la factura aplica.');
+  const hoja = getHoja();
+  const fila = filaFacturaPorOrdinal(hoja, p.numero_factura, p.ordinal);
+  if (fila === -1) throw new Error('No se encontró esa factura.');
+  const col = columnaPorNombre(hoja, 'Notas');
+  hoja.getRange(fila, col).setValue(p.nota || '');
   return { fila: fila };
 }
 
