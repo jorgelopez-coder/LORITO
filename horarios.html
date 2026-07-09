@@ -226,6 +226,9 @@ let extraTarget = null;
 
 let restos=[], employees=[], schedule={}, activeResto=null, vacaciones=[];
 let semanaCerrada=false;
+// URL del PDF guardado en Drive al cerrar la semana actual (vacío si no está cerrada
+// o si se reabrió y todavía no se volvió a cerrar con el contenido nuevo).
+let horarioPdfUrl='';
 // Código de administrador para reabrir/editar una semana cerrada.
 // Cambialo acá si querés otro código.
 const ADMIN_CODE='admin';
@@ -395,11 +398,13 @@ async function guardarSemana(){
    Reabrir requiere el código de administrador. */
 async function cargarEstadoSemana(){
   const semana=document.getElementById('week-start').value;
+  horarioPdfUrl='';
   try{
     const resp=await fetch(APPS_SCRIPT_URL+'?modulo=horarios_estado');
     const data=await resp.json();
     const reg=(data.ok?data.registros:[]).find(r=>(r['Semana inicio']||'')===semana);
     semanaCerrada=!!(reg && (reg['Cerrado']||'').toString().trim().toLowerCase()==='sí');
+    horarioPdfUrl=(reg && reg['PDF URL'])||'';
   }catch(e){
     semanaCerrada=false;
   }
@@ -409,18 +414,29 @@ async function cargarEstadoSemana(){
 async function cerrarSemana(){
   if(!confirm('¿Cerrar el horario de esta semana?\n\nNo se podrán hacer más cambios hasta reabrirlo con el código de administrador.'))return;
   const semana=document.getElementById('week-start').value;
+
+  const btn=document.getElementById('btn-cerrar-semana');
+  if(btn){btn.disabled=true;btn.textContent='Generando PDF…';}
+
+  const r=await generarPDF();
+  if(!r){ if(btn){btn.disabled=false;btn.innerHTML='&#128274; Cerrar horario';} return }
+  const pdfBase64=pdfABase64(r.pdf);
+
   try{
     const resp=await fetch(APPS_SCRIPT_URL,{
       method:'POST',
-      body:new URLSearchParams({data:JSON.stringify({modulo:'cerrar_horario',semana_inicio:semana})})
+      body:new URLSearchParams({data:JSON.stringify({modulo:'cerrar_horario',semana_inicio:semana,pdf_base64:pdfBase64})})
     });
     const out=await resp.json();
     if(!out.ok){toast('Error al cerrar: '+(out.error||'desconocido'));return}
     semanaCerrada=true;
+    horarioPdfUrl=(out.result&&out.result.pdf_url)||'';
     aplicarEstadoUI();
-    toast('Horario cerrado 🔒');
+    toast('Horario cerrado 🔒 — copia guardada en Drive');
   }catch(e){
     toast('Sin conexión — no se pudo cerrar');
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML='&#128274; Cerrar horario';}
   }
 }
 
@@ -437,6 +453,7 @@ async function reabrirSemana(){
     const out=await resp.json();
     if(!out.ok){toast('Error al reabrir: '+(out.error||'desconocido'));return}
     semanaCerrada=false;
+    horarioPdfUrl='';
     aplicarEstadoUI();
     toast('Horario reabierto 🔓');
   }catch(e){
@@ -750,11 +767,11 @@ function buildPDVHtml(resto,dates){
     otro:{bg:'#f1f5f9',text:'#334155',icon:'📌',label:'Otro'},
   };
   const emps=employees.filter(e=>e.restoId===resto.id);
-  let tbl='<table><thead><tr><th>Empleado</th><th>Depto / Puesto</th>';
+  let tbl='<table><thead><tr><th>Empleado</th>';
   dates.forEach(d=>{tbl+='<th>'+d.label+'<br><small>'+d.date+'</small></th>'});
   tbl+='</tr></thead><tbody>';
   emps.forEach(emp=>{
-    tbl+='<tr><td class="n">'+esc(emp.name)+'</td><td class="a">'+esc([emp.area,emp.puesto].filter(Boolean).join(' / '))+'</td>';
+    tbl+='<tr><td class="n">'+esc(emp.name)+'</td>';
     DAYS.forEach((_,i)=>{
       const s=schedule[emp.id]?.[i];const st=s?.status||'trabajo';
       if(st!=='trabajo'){
@@ -831,6 +848,11 @@ async function generarPDF(){
   return {pdf,filename};
 }
 
+function pdfABase64(pdf){
+  const datauri=pdf.output('datauristring');
+  return datauri.split(',')[1];
+}
+
 async function descargarPDF(){
   const r=await generarPDF();
   if(!r)return;
@@ -839,30 +861,17 @@ async function descargarPDF(){
 }
 
 /* ── Enviar por WhatsApp ──
-   En navegadores con Web Share API (Chrome/Safari en celular) se abre el
-   selector nativo y se puede elegir WhatsApp directamente con el PDF adjunto.
-   Si el navegador no lo soporta (la mayoría de escritorio), se descarga el
-   PDF y se abre WhatsApp con un mensaje para que el archivo se adjunte a mano. */
+   No se adjunta el PDF: se envían las fechas de la semana y el enlace al PDF
+   que ya quedó guardado en Drive al cerrar el horario (ver cerrarSemana()). */
 async function enviarWhatsApp(){
-  const r=await generarPDF();
-  if(!r)return;
-  const blob=r.pdf.output('blob');
-  const file=new File([blob],r.filename,{type:'application/pdf'});
-  const texto='Horario de la semana '+getWeekLabel();
-
-  if(navigator.canShare && navigator.canShare({files:[file]})){
-    try{
-      await navigator.share({files:[file],title:'Horario',text:texto});
-      toast('Compartido ✓');
-      return;
-    }catch(e){
-      if(e && e.name==='AbortError')return; // el usuario canceló el share
-    }
+  if(!horarioPdfUrl){
+    toast('No hay un PDF guardado para esta semana — cerrá el horario primero');
+    return;
   }
-
-  r.pdf.save(r.filename);
-  window.open('https://wa.me/?text='+encodeURIComponent(texto+' — adjuntá el PDF que se acaba de descargar.'),'_blank');
-  toast('PDF descargado — adjuntalo en WhatsApp');
+  const dates=getWeekDates();
+  const rango=dates[0].date+' al '+dates[6].date+' · '+getWeekLabel();
+  const texto='Horario de la semana '+rango+'\n'+horarioPdfUrl;
+  window.open('https://wa.me/?text='+encodeURIComponent(texto),'_blank');
 }
 
 initWeek();

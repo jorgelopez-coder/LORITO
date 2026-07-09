@@ -49,8 +49,12 @@ const ENCABEZADOS_HORARIOS = [
   'Semana inicio', 'Fecha', 'Colaborador', 'Departamento', 'Puesto', 'Estado', 'Hora entrada', 'Hora salida', 'Horas', 'Nota', 'Detalle'
 ];
 const ENCABEZADOS_HORARIOS_ESTADO = [
-  'Semana inicio', 'Cerrado', 'Actualizado'
+  'Semana inicio', 'Cerrado', 'Actualizado', 'PDF URL'
 ];
+
+// Carpeta de Drive donde se guarda una copia del PDF al cerrar una semana.
+// https://drive.google.com/drive/u/0/folders/1-XilXMN08Ic0u_-Xg2Goc-iTwRRD8dQ9
+const FOLDER_ID_HORARIOS = '1-XilXMN08Ic0u_-Xg2Goc-iTwRRD8dQ9';
 
 // Corré esta función UNA VEZ desde el editor de Apps Script para preparar el Sheet:
 // reutiliza la pestaña "Staff" (creada vacía junto con el Sheet) como "Personal"
@@ -70,6 +74,16 @@ function configurarHojas() {
   prepararHoja(HOJA_HORARIOS_ESTADO, ENCABEZADOS_HORARIOS_ESTADO);
 }
 
+// Corré esta función UNA VEZ después de desplegar el fix de "Semana inicio"/"Hora
+// entrada"/"Hora salida" (Sheets las autoconvertía a fecha/hora antes de forzar
+// el formato de texto). Borra todas las filas de datos de Horarios (deja el
+// encabezado) para arrancar limpio, sin las filas corruptas/duplicadas de prueba.
+function limpiarHorariosDePrueba() {
+  const hoja = prepararHoja(HOJA_HORARIOS, ENCABEZADOS_HORARIOS);
+  const nFilas = hoja.getLastRow() - 1;
+  if (nFilas > 0) hoja.deleteRows(2, nFilas);
+}
+
 function prepararHoja(nombre, encabezados) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let hoja = ss.getSheetByName(nombre);
@@ -78,8 +92,41 @@ function prepararHoja(nombre, encabezados) {
     hoja.getRange(1, 1, 1, encabezados.length).setValues([encabezados]);
     hoja.getRange(1, 1, 1, encabezados.length).setFontWeight('bold');
     hoja.setFrozenRows(1);
+  } else {
+    // Si se agregó una columna nueva a un ENCABEZADOS_* después de que la hoja ya
+    // tenía datos (p.ej. "PDF URL"), completar los encabezados faltantes al final
+    // sin tocar los existentes. Requiere que las columnas nuevas SIEMPRE se agreguen
+    // al final del array de encabezados correspondiente, nunca en el medio.
+    const actuales = hoja.getRange(1, 1, 1, Math.max(hoja.getLastColumn(), 1)).getValues()[0];
+    const faltantes = encabezados.filter(function(h) { return actuales.indexOf(h) === -1; });
+    if (faltantes.length) {
+      hoja.getRange(1, actuales.length + 1, 1, faltantes.length).setValues([faltantes]);
+      hoja.getRange(1, actuales.length + 1, 1, faltantes.length).setFontWeight('bold');
+    }
   }
+  // "Semana inicio"/"Fecha"/"Hora entrada"/"Hora salida" son strings ("yyyy-MM-dd" /
+  // "HH:mm"), no fechas ni horas de reloj reales: forzar formato de texto para que
+  // Sheets no las autoconvierta a un valor de fecha/hora. Si se autoconvierten, se
+  // rompe tanto la lectura (se pierde la hora) como la comparación exacta que usan
+  // eliminarFilasPorColumna/filaPorColumna para reemplazar una semana ya guardada.
+  const COLUMNAS_TEXTO_POR_HOJA = {};
+  COLUMNAS_TEXTO_POR_HOJA[HOJA_HORARIOS] = ['Semana inicio', 'Fecha', 'Hora entrada', 'Hora salida'];
+  COLUMNAS_TEXTO_POR_HOJA[HOJA_HORARIOS_ESTADO] = ['Semana inicio'];
+  (COLUMNAS_TEXTO_POR_HOJA[nombre] || []).forEach(function(col) {
+    const idx = encabezados.indexOf(col) + 1;
+    if (idx > 0) hoja.getRange(2, idx, Math.max(hoja.getMaxRows() - 1, 1), 1).setNumberFormat('@');
+  });
   return hoja;
+}
+
+// Normaliza un valor de celda a texto comparable: si Sheets autoconvirtió un string
+// tipo fecha/hora a un objeto Date a pesar del formato de texto (puede pasar con
+// datos ya existentes de antes de aplicar setNumberFormat), lo devuelve como
+// "yyyy-MM-dd" en vez del toString() por defecto de Date, para que las comparaciones
+// de igualdad seguan funcionando.
+function valorComoTexto(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, 'America/Costa_Rica', 'yyyy-MM-dd');
+  return String(v);
 }
 
 function jsonOut(obj) {
@@ -119,7 +166,14 @@ function filasComoObjetos(hoja) {
     encabezados.forEach(function(h, i) {
       if (!h) return;
       let v = fila[i];
-      if (v instanceof Date) v = Utilities.formatDate(v, 'America/Costa_Rica', 'yyyy-MM-dd');
+      if (v instanceof Date) {
+        // "Hora entrada"/"Hora salida" son horas de reloj (guardadas como "HH:mm"),
+        // no fechas — si Sheets las autoconvirtió antes de forzar el formato de texto,
+        // recuperar la hora en vez del "yyyy-MM-dd" (que sería 1899-12-30, sin sentido).
+        v = (h === 'Hora entrada' || h === 'Hora salida')
+          ? Utilities.formatDate(v, 'America/Costa_Rica', 'HH:mm')
+          : Utilities.formatDate(v, 'America/Costa_Rica', 'yyyy-MM-dd');
+      }
       obj[h] = v;
     });
     return obj;
@@ -354,7 +408,7 @@ function filaPorColumna(hoja, encabezados, nombreCol, valor) {
   const valores = hoja.getRange(2, col, nFilas, 1).getValues();
   const buscado = String(valor).trim();
   for (let i = 0; i < valores.length; i++) {
-    if (String(valores[i][0]).trim() === buscado) return i + 2;
+    if (valorComoTexto(valores[i][0]).trim() === buscado) return i + 2;
   }
   return -1;
 }
@@ -369,7 +423,7 @@ function eliminarFilasPorColumna(hoja, encabezados, nombreCol, valor) {
   const valores = hoja.getRange(2, col, nFilas, 1).getValues();
   const buscado = String(valor).trim();
   for (let i = valores.length - 1; i >= 0; i--) {
-    if (String(valores[i][0]).trim() === buscado) hoja.deleteRow(i + 2);
+    if (valorComoTexto(valores[i][0]).trim() === buscado) hoja.deleteRow(i + 2);
   }
 }
 
@@ -411,15 +465,40 @@ function cambiarEstadoHorarioSemana(p, cerrado) {
   if (!p.semana_inicio) throw new Error('Falta la semana (semana_inicio).');
   const hoja = prepararHoja(HOJA_HORARIOS_ESTADO, ENCABEZADOS_HORARIOS_ESTADO);
   const fila = filaPorColumna(hoja, ENCABEZADOS_HORARIOS_ESTADO, 'Semana inicio', p.semana_inicio);
+
+  // Al cerrar, si el front-end mandó el PDF ya generado, guardarlo en Drive.
+  // Al reabrir se limpia la URL: el contenido puede cambiar antes del próximo cierre,
+  // así que el PDF viejo queda obsoleto hasta que se vuelva a cerrar la semana.
+  let pdfUrl = '';
+  if (cerrado === 'Sí' && p.pdf_base64) {
+    pdfUrl = guardarPDFHorarioEnDrive(p.semana_inicio, p.pdf_base64);
+  }
+
   const valores = {
     'Semana inicio': p.semana_inicio,
     'Cerrado': cerrado,
-    'Actualizado': new Date().toISOString()
+    'Actualizado': new Date().toISOString(),
+    'PDF URL': pdfUrl
   };
   if (fila !== -1) {
     escribirFilaPorEncabezado(hoja, fila, ENCABEZADOS_HORARIOS_ESTADO, valores);
   } else {
     agregarFilaPorEncabezado(hoja, ENCABEZADOS_HORARIOS_ESTADO, valores);
   }
-  return { semana: p.semana_inicio, cerrado: cerrado };
+  return { semana: p.semana_inicio, cerrado: cerrado, pdf_url: pdfUrl };
+}
+
+// Guarda el PDF (base64) en la carpeta fija de Drive, reemplazando una copia
+// previa de la misma semana si existe (para no acumular versiones viejas).
+function guardarPDFHorarioEnDrive(semanaInicio, base64) {
+  const folder = DriveApp.getFolderById(FOLDER_ID_HORARIOS);
+  const nombre = 'Horario_' + semanaInicio + '.pdf';
+  const existentes = folder.getFilesByName(nombre);
+  while (existentes.hasNext()) existentes.next().setTrashed(true);
+
+  const bytes = Utilities.base64Decode(base64);
+  const blob = Utilities.newBlob(bytes, 'application/pdf', nombre);
+  const file = folder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return file.getUrl();
 }
