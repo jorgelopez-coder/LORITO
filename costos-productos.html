@@ -980,6 +980,29 @@ async function cargarHistorialCompras() {
   }
 }
 
+// Campos que se sacaron de las columnas de la tabla (Área, Unidad, Precio sin
+// IVA, IVA, Proveedor, Presentación) — se muestran acá arriba del historial
+// de compras al desplegar el producto, para no perderlos de vista.
+function campoDetalle(label, valor) {
+  return `<div>
+    <div style="font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);">${label}</div>
+    <div style="font-size:13px;color:var(--text);margin-top:2px;">${valor}</div>
+  </div>`;
+}
+function renderDetalleProducto(p) {
+  const presentacionTxt = p.presentacion
+    ? p.presentacion + (p.cantidad_compra ? ' · ' + p.cantidad_compra + ' ' + (p.unidad_compra||'') : '')
+    : '—';
+  return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px 16px;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--border);">
+    ${campoDetalle('Área', p.area || '—')}
+    ${campoDetalle('Unidad', p.unidad || '—')}
+    ${campoDetalle('Precio sin IVA', fmt(parseFloat(p.precio_sin_iva || p.costo) || 0))}
+    ${campoDetalle('IVA', (p.iva || 0) + '%')}
+    ${campoDetalle('Proveedor', p.proveedor || '—')}
+    ${campoDetalle('Presentación', presentacionTxt)}
+  </div>`;
+}
+
 function toggleHistorial(id) {
   const fila = document.getElementById('hist-' + id);
   const ico = document.getElementById('hist-' + id + '-ico');
@@ -989,12 +1012,15 @@ function toggleHistorial(id) {
   if (ico) ico.style.transform = abrir ? 'rotate(90deg)' : '';
   if (!abrir) return;
 
+  const producto = getProductos().find(x => x.id === id);
+  const detalle = producto ? renderDetalleProducto(producto) : '';
+
   const compras = HISTORIAL_COMPRAS.filter(h => h.id_producto === id)
     .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
   const contenido = document.getElementById('hist-' + id + '-contenido');
   if (!compras.length) {
-    contenido.innerHTML = '<div style="font-size:12px;color:var(--subtle);padding:2px 0;">Sin compras registradas todavía.</div>';
+    contenido.innerHTML = detalle + '<div style="font-size:12px;color:var(--subtle);padding:2px 0;">Sin compras registradas todavía.</div>';
     return;
   }
 
@@ -1008,7 +1034,7 @@ function toggleHistorial(id) {
       <td style="padding:5px 0 5px 0;font-size:12px;text-align:right;">${c.cantidad}</td>
     </tr>`).join('');
 
-  contenido.innerHTML = `
+  contenido.innerHTML = detalle + `
     <table style="width:100%;border-collapse:collapse;">
       <thead><tr>${th('Fecha')}${th('Factura')}${th('Proveedor')}<th style="text-align:right;font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:0 12px 6px 0;">Precio unit.</th><th style="text-align:right;font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:0 0 6px 0;">Cantidad</th></tr></thead>
       <tbody>${filas}</tbody>
@@ -1458,14 +1484,12 @@ function renderListaAgrupada(lista, campo) {
   });
 
   const thead = `<thead><tr>
-    <th style="width:26%;">Producto</th><th>Área</th><th>Unidad</th>
-    <th style="text-align:right;">Precio sin IVA</th>
-    <th style="text-align:right;">IVA</th>
+    <th style="width:45%;">Producto</th>
     <th style="text-align:right;">Costo/u</th>
     <th style="text-align:right;">Rendimiento</th>
     <th style="text-align:right;">Costo real/u</th>
     <th style="text-align:right;">Stock mín.</th>
-    <th>Proveedor</th><th>Presentación</th><th></th>
+    <th></th>
   </tr></thead>`;
 
   const bloques = Object.keys(grupos).sort().map(clave => {
@@ -1476,7 +1500,7 @@ function renderListaAgrupada(lista, campo) {
     const claveAttr = clave.replace(/'/g, "\\'");
     return `
       <tr style="background:var(--surface);cursor:pointer;" onclick="toggleGrupo('${claveAttr}')">
-        <td colspan="12" style="padding:8px 12px 8px 0;">
+        <td colspan="6" style="padding:8px 12px 8px 0;">
           <div style="display:flex;align-items:center;justify-content:space-between;">
             <div style="display:flex;align-items:center;gap:6px;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;color:var(--purple);transition:transform .15s;transform:rotate(${abierto?90:0}deg);"><polyline points="9 18 15 12 9 6"/></svg>
@@ -1512,16 +1536,10 @@ function buildFila(p) {
       </span>
       ${enUsoBadge} ${noAplicaBadge}
     </td>
-    <td style="color:var(--muted);font-size:12px;">${p.area||'—'}</td>
-    <td style="color:var(--muted);">${p.unidad}</td>
-    <td class="num">${fmt(parseFloat(p.precio_sin_iva||p.costo)||0)}</td>
-    <td class="num" style="color:var(--muted);">${p.iva || 0}%</td>
     <td class="num" style="font-weight:600;color:var(--purple);">${fmt(parseFloat(p.costo)||0)}${p.costo_auto ? ' <span style="font-size:9px;font-weight:600;color:var(--green);vertical-align:1px;" title="Costo real, calculado de compras registradas">auto</span>' : ''}</td>
     <td class="num" style="color:var(--muted);">${p.rendimiento||100}%</td>
     <td class="num" style="font-weight:700;color:var(--green);">${fmt(costoReal)}</td>
     <td class="num" style="color:var(--muted);">${p.stock_minimo > 0 ? p.stock_minimo + ' pres.' : '—'}</td>
-    <td style="color:var(--muted);font-size:12px;">${p.proveedor||'—'}</td>
-    <td style="color:var(--muted);font-size:12px;">${p.presentacion ? p.presentacion + (p.cantidad_compra ? ' · ' + p.cantidad_compra + ' ' + (p.unidad_compra||'') : '') : '—'}</td>
     <td><div style="display:flex;gap:4px;">
       <button class="btn-edit" onclick="editar('${p.id}')">Editar</button>
       <button class="btn-edit" onclick="abrirModalFusion('${p.id}')" title="Fusionar con otro producto" style="border-color:var(--amber);background:var(--amber-bg);color:var(--amber);">Fusionar</button>
@@ -1529,7 +1547,7 @@ function buildFila(p) {
     </div></td>
   </tr>
   <tr id="hist-${p.id}" style="display:none;">
-    <td colspan="12" style="padding:0;background:var(--surface);">
+    <td colspan="6" style="padding:0;background:var(--surface);">
       <div id="hist-${p.id}-contenido" style="padding:10px 16px;"></div>
     </td>
   </tr>`;
@@ -1627,14 +1645,12 @@ function renderLista() {
   document.getElementById('tabla-lista').innerHTML = `
     <table>
       <thead><tr>
-        <th style="width:26%;">Producto</th><th>Área</th><th>Unidad</th>
-        <th style="text-align:right;">Precio sin IVA</th>
-        <th style="text-align:right;">IVA</th>
+        <th style="width:45%;">Producto</th>
         <th style="text-align:right;">Costo/u</th>
         <th style="text-align:right;">Rendimiento</th>
         <th style="text-align:right;">Costo real/u</th>
         <th style="text-align:right;">Stock mín.</th>
-        <th>Proveedor</th><th>Presentación</th><th></th>
+        <th></th>
       </tr></thead>
       <tbody>${filas}</tbody>
     </table>`;
