@@ -306,7 +306,10 @@ async function cargarProductosParaFuentes() {
 
 // ── OBTENER FUENTES (productos + subrecetas) ───────────────────────
 function getFuentes() {
-  const productos = JSON.parse(localStorage.getItem('costos_productos') || '[]');
+  // Excluye productos marcados "No aplica para recetas" (limpieza, empaques,
+  // servicios, etc.) para que no aparezcan como opción de ingrediente.
+  const productos = JSON.parse(localStorage.getItem('costos_productos') || '[]')
+    .filter(p => p.aplica_receta !== false && p.aplica_receta !== 'false');
   const recetas   = getRecetas();
   const subrecetas = recetas.filter(r => r.tipo === 'subreceta').map(r => ({
     id:       'SUB-' + r.id,

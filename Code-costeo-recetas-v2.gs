@@ -27,7 +27,7 @@ const CATALOGO_ENCABEZADOS = [
   'ID_Producto', 'Nombre_Estandar', 'Categoria', 'Area_Negocio', 'Unidad_Medida',
   'Presentacion', 'Tamano', 'Cantidad_Presentacion', 'Precio_Sin_IVA', 'IVA',
   'Costo_Actual', 'Rendimiento', 'Proveedor_Habitual', 'Stock_Minimo', 'En_Uso',
-  'Fecha_Ultima_Actualizacion'
+  'Fecha_Ultima_Actualizacion', 'Aplica_Receta'
 ];
 
 // Mismos valores por defecto que ya usa Code-compras-backend.gs, para que
@@ -168,6 +168,29 @@ function sembrarListaCompartida(ss, nombreHoja, valoresDefault) {
   sh.getRange(2, 1, filas.length, 1).setValues(filas);
 }
 
+// Migración: agrega la columna Aplica_Receta a un Catalogo_Maestro que ya
+// tiene datos (crearHojaConEncabezados solo escribe encabezados en hojas
+// vacías, así que un despliegue ya en uso no la recibe sola). Corré esto UNA
+// VEZ si el Sheet ya tenía productos antes de este cambio. Todos los
+// productos existentes quedan en `true` — revisá a mano los que no
+// correspondan (limpieza, empaques, servicios, etc.) y pasalos a "No" desde
+// costos-productos.html.
+function migrarAgregarAplicaReceta() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_CATALOGO);
+  const encabezados = encabezadosDe(sh);
+  if (encabezados.indexOf('Aplica_Receta') !== -1) {
+    Logger.log('La columna Aplica_Receta ya existe, no hace falta migrar.');
+    return;
+  }
+  const nuevaCol = encabezados.length + 1;
+  sh.getRange(1, nuevaCol).setValue('Aplica_Receta');
+  const nFilas = sh.getLastRow() - 1;
+  if (nFilas > 0) {
+    sh.getRange(2, nuevaCol, nFilas, 1).setValues(Array(nFilas).fill([true]));
+  }
+  Logger.log('Columna Aplica_Receta agregada; ' + nFilas + ' producto(s) existentes quedaron en true.');
+}
+
 // ============================================
 // 0.1 POBLAR Catalogo_Maestro CON PRODUCTOS ÚNICOS DE Desglose_IA
 // Correr UNA VEZ, después de crearHojasIniciales(). Es seguro re-correrla:
@@ -219,7 +242,8 @@ function poblarCatalogoDesdeDesglose() {
       'Unidad_Medida': unidad,
       'Cantidad_Presentacion': 1,
       'Rendimiento': 100,
-      'En_Uso': true
+      'En_Uso': true,
+      'Aplica_Receta': true
     }));
   }
 
@@ -227,6 +251,107 @@ function poblarCatalogoDesdeDesglose() {
     shCatalogo.getRange(shCatalogo.getLastRow() + 1, 1, filasNuevas.length, CATALOGO_ENCABEZADOS.length).setValues(filasNuevas);
   }
   Logger.log(filasNuevas.length + ' productos nuevos agregados al catálogo.');
+}
+
+// Claves de deduplicación para el backfill — permiten re-correrlo sin
+// duplicar filas ya cargadas.
+function claveHistorial(refFactura, idProducto, fecha) {
+  const fechaStr = fecha instanceof Date ? Utilities.formatDate(fecha, 'America/Costa_Rica', 'yyyy-MM-dd') : String(fecha || '');
+  return [String(refFactura || ''), String(idProducto || ''), fechaStr].join('|');
+}
+function clavePendiente(refFactura, nombre, proveedor) {
+  return [String(refFactura || ''), normalizarTexto(nombre), String(proveedor || '')].join('|');
+}
+
+// ============================================
+// 0.2 BACKFILL: procesar TODO el historial existente de Desglose_IA
+// Corre UNA VEZ, después de poblarCatalogoDesdeDesglose(). Esa función solo
+// arma el catálogo (nombres/ID) a partir de Desglose_IA — nunca registra las
+// compras viejas como compras reales, así que los productos que ya existían
+// ahí quedan con Costo_Actual vacío hasta que llega una compra NUEVA (vía
+// el trigger onNuevaLineaFactura). Este backfill corre el mismo matching
+// (procesarLineaFactura) sobre TODO el histórico para que el costo ya
+// arranque poblado. Es segura de re-correr: no duplica ni Historial_Precios
+// ni Compras_Pendientes (dedup por referencia de factura + producto/nombre).
+// Carga Alias_Proveedores/Catalogo_Maestro una sola vez en memoria (en vez
+// de releerlos por cada línea) para no quedarse sin tiempo de ejecución en
+// facturas con muchas líneas.
+// ============================================
+function backfillHistorialDesdeDesglose() {
+  const shDesglose = abrirHojaDesglose();
+  if (!shDesglose) {
+    throw new Error('No encontré la hoja "' + SHEET_FACTURAS + '" en el archivo con ID ' + SOURCE_SPREADSHEET_ID + '.');
+  }
+
+  const ss = SpreadsheetApp.getActive();
+  const shAlias = ss.getSheetByName(SHEET_ALIAS);
+  const shCatalogo = ss.getSheetByName(SHEET_CATALOGO);
+  const shHistorial = ss.getSheetByName(SHEET_HISTORIAL);
+  const shPendientes = ss.getSheetByName(SHEET_PENDIENTES);
+
+  const aliasData = shAlias.getDataRange().getValues();
+  const catData = shCatalogo.getDataRange().getValues();
+
+  const yaCargadas = new Set(filasComoObjetos(shHistorial).map(function(r) {
+    return claveHistorial(r['Ref_Factura'], r['ID_Producto'], r['Fecha_Factura']);
+  }));
+  const yaPendientes = new Set(filasComoObjetos(shPendientes).map(function(r) {
+    return clavePendiente(r['Ref_Factura'], r['Nombre_Producto'], r['Proveedor']);
+  }));
+
+  const data = shDesglose.getDataRange().getValues();
+  const productosAfectados = new Set();
+  const filasHistorial = [];
+  const filasPendientes = [];
+  let omitidas = 0;
+
+  for (let i = 1; i < data.length; i++) {
+    const v = data[i];
+    const moneda = v[1], refFactura = v[2], fecha = v[3], proveedor = v[5],
+          categoria = v[6], nombreProducto = v[7], nombreNormalizado = v[8],
+          cantidad = v[10], precioUnitario = v[11];
+
+    if (!nombreProducto && !nombreNormalizado) continue;
+    const llave = nombreNormalizado || nombreProducto;
+
+    if (moneda && moneda !== MONEDA_COSTEO) {
+      const cp = clavePendiente(refFactura, llave, proveedor);
+      if (yaPendientes.has(cp)) { omitidas++; continue; }
+      yaPendientes.add(cp);
+      filasPendientes.push([new Date(), fecha, llave, proveedor, moneda, precioUnitario, cantidad, refFactura, '']);
+      continue;
+    }
+
+    const resuelto = resolverIdProductoConDatos(llave, proveedor, categoria, aliasData, catData, shAlias);
+    if (!resuelto.aprobado) {
+      const cp = clavePendiente(refFactura, llave, proveedor);
+      if (yaPendientes.has(cp)) { omitidas++; continue; }
+      yaPendientes.add(cp);
+      filasPendientes.push([new Date(), fecha, llave, proveedor, moneda, precioUnitario, cantidad, refFactura, resuelto.id || '']);
+      continue;
+    }
+
+    const ch = claveHistorial(refFactura, resuelto.id, fecha);
+    if (yaCargadas.has(ch)) { omitidas++; continue; }
+    yaCargadas.add(ch);
+    filasHistorial.push([new Date(), fecha, resuelto.id, proveedor, moneda, precioUnitario, cantidad, refFactura]);
+    productosAfectados.add(resuelto.id);
+  }
+
+  if (filasHistorial.length > 0) {
+    shHistorial.getRange(shHistorial.getLastRow() + 1, 1, filasHistorial.length, 8).setValues(filasHistorial);
+  }
+  if (filasPendientes.length > 0) {
+    shPendientes.getRange(shPendientes.getLastRow() + 1, 1, filasPendientes.length, 9).setValues(filasPendientes);
+  }
+  // Recién ahora, con Historial_Precios ya escrito: recalcula Costo_Actual
+  // por producto (una vez por producto, no por línea) y dispara la cascada
+  // hacia recetas/menú.
+  productosAfectados.forEach(function(id) { actualizarCostoProducto(id); });
+
+  Logger.log(filasHistorial.length + ' líneas cargadas a Historial_Precios, ' +
+             filasPendientes.length + ' a Compras_Pendientes, ' + omitidas + ' ya existían, ' +
+             productosAfectados.size + ' productos recosteados.');
 }
 
 // ============================================
@@ -265,41 +390,25 @@ function similitud(a, b) {
 // ============================================
 // 2. MATCHING AUTOMÁTICO
 // ============================================
-// linea = { nombreProducto, nombreNormalizado, categoria, proveedor,
-//           moneda, precioUnitario, cantidad, fecha, refFactura }
-function procesarLineaFactura(linea) {
-  const ss = SpreadsheetApp.getActive();
-  const shAlias = ss.getSheetByName(SHEET_ALIAS);
-  const shCatalogo = ss.getSheetByName(SHEET_CATALOGO);
-  const aliasData = shAlias.getDataRange().getValues();
-
-  // Llave de comparación: Nombre normalizado (si viene vacío, cae al Producto crudo)
-  const llave = linea.nombreNormalizado || linea.nombreProducto;
-
-  // Moneda distinta a la de costeo → siempre a revisión manual, no se mezcla
-  if (linea.moneda && linea.moneda !== MONEDA_COSTEO) {
-    guardarPendiente(linea, null);
-    return;
-  }
-
-  // ¿Alias ya conocido para este proveedor?
+// Resuelve el ID_Producto para (llave, proveedor): alias ya conocido, o
+// mejor match por similitud contra el catálogo (crea el alias si hace
+// falta). Devuelve { id, aprobado } — aprobado=false significa "quedó como
+// Pendiente revisión", el llamador decide qué hacer con eso (guardarPendiente).
+// Recibe aliasData/catData ya cargados (arrays crudos) para que el backfill
+// masivo no tenga que releer las hojas en cada línea; si crea un alias
+// nuevo, lo agrega también a aliasData en memoria para que la siguiente
+// línea con el mismo nombre lo vea sin releer.
+function resolverIdProductoConDatos(llave, proveedor, categoria, aliasData, catData, shAlias) {
   for (let i = 1; i < aliasData.length; i++) {
-    if (normalizarTexto(aliasData[i][0]) === normalizarTexto(llave) && aliasData[i][2] === linea.proveedor) {
-      const estado = aliasData[i][4];
-      if (estado === 'Pendiente revisión') {
-        guardarPendiente(linea, aliasData[i][1]);
-      } else {
-        registrarCompra(aliasData[i][1], linea);
-      }
-      return;
+    if (normalizarTexto(aliasData[i][0]) === normalizarTexto(llave) && aliasData[i][2] === proveedor) {
+      return { id: aliasData[i][1], aprobado: aliasData[i][4] !== 'Pendiente revisión' };
     }
   }
 
   // Alias nuevo: buscar mejor match en catálogo, acotado a la misma categoría si existe
-  const catData = shCatalogo.getDataRange().getValues();
   let mejorMatch = null, mejorScore = 0;
   for (let i = 1; i < catData.length; i++) {
-    if (linea.categoria && catData[i][2] && catData[i][2] !== linea.categoria) continue; // misma categoría
+    if (categoria && catData[i][2] && catData[i][2] !== categoria) continue; // misma categoría
     const score = similitud(llave, catData[i][1]);
     if (score > mejorScore) { mejorScore = score; mejorMatch = catData[i][0]; }
   }
@@ -312,12 +421,37 @@ function procesarLineaFactura(linea) {
   }
 
   const estado = mejorScore >= UMBRAL_AUTOMATCH ? 'Auto-aprobado' : 'Pendiente revisión';
-  shAlias.appendRow([llave, mejorMatch, linea.proveedor, mejorScore.toFixed(2), estado]);
+  const filaAlias = [llave, mejorMatch, proveedor, mejorScore.toFixed(2), estado];
+  shAlias.appendRow(filaAlias);
+  aliasData.push(filaAlias);
+  return { id: mejorMatch, aprobado: estado === 'Auto-aprobado' };
+}
 
-  if (estado === 'Auto-aprobado') {
-    registrarCompra(mejorMatch, linea);
+function resolverIdProducto(llave, proveedor, categoria) {
+  const ss = SpreadsheetApp.getActive();
+  const shAlias = ss.getSheetByName(SHEET_ALIAS);
+  const shCatalogo = ss.getSheetByName(SHEET_CATALOGO);
+  return resolverIdProductoConDatos(llave, proveedor, categoria,
+    shAlias.getDataRange().getValues(), shCatalogo.getDataRange().getValues(), shAlias);
+}
+
+// linea = { nombreProducto, nombreNormalizado, categoria, proveedor,
+//           moneda, precioUnitario, cantidad, fecha, refFactura }
+function procesarLineaFactura(linea) {
+  // Llave de comparación: Nombre normalizado (si viene vacío, cae al Producto crudo)
+  const llave = linea.nombreNormalizado || linea.nombreProducto;
+
+  // Moneda distinta a la de costeo → siempre a revisión manual, no se mezcla
+  if (linea.moneda && linea.moneda !== MONEDA_COSTEO) {
+    guardarPendiente(linea, null);
+    return;
+  }
+
+  const resuelto = resolverIdProducto(llave, linea.proveedor, linea.categoria);
+  if (resuelto.aprobado) {
+    registrarCompra(resuelto.id, linea);
   } else {
-    guardarPendiente(linea, mejorMatch);
+    guardarPendiente(linea, resuelto.id);
   }
 }
 
@@ -660,6 +794,7 @@ function moduloProductos() {
       proveedor: r['Proveedor_Habitual'] || '',
       stock_minimo: Number(r['Stock_Minimo']) || 0,
       en_uso: r['En_Uso'] !== false && r['En_Uso'] !== 'FALSE',
+      aplica_receta: r['Aplica_Receta'] !== false && r['Aplica_Receta'] !== 'FALSE',
       actualizado: r['Fecha_Ultima_Actualizacion'] || ''
     };
   });
@@ -781,6 +916,7 @@ function guardarProducto(p) {
     'Proveedor_Habitual': p.proveedor || '',
     'Stock_Minimo': Number(p.stock_minimo) || 0,
     'En_Uso': p.en_uso === false || p.en_uso === 'false' ? false : true,
+    'Aplica_Receta': p.aplica_receta === false || p.aplica_receta === 'false' ? false : true,
     'Fecha_Ultima_Actualizacion': new Date()
   });
 

@@ -171,7 +171,7 @@
         <select class="filter-sel" id="f-agrupar" onchange="renderLista()">
           <option value="">Sin agrupar</option>
           <option value="area">Agrupar por área</option>
-          <option value="categoria">Agrupar por categoría</option>
+          <option value="categoria" selected>Agrupar por categoría</option>
         </select>
       </div>
       <div class="tabla-wrap" id="tabla-lista">
@@ -282,6 +282,22 @@
     <!-- SECCIÓN 4: Información para recetas -->
     <div class="card" style="margin-bottom:12px;">
       <p class="card-title" style="margin-bottom:1rem;">Información para recetas</p>
+
+      <div style="margin-bottom:1rem;">
+        <label style="font-size:13px;font-weight:500;margin-bottom:8px;display:block;">Aplica para recetas</label>
+        <div style="display:flex;gap:8px;">
+          <button type="button" id="toggle-aplica-si" onclick="setAplicaReceta(true)"
+            style="padding:8px 20px;border-radius:8px;border:2px solid var(--green);background:var(--green);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">
+            ✓ Sí
+          </button>
+          <button type="button" id="toggle-aplica-no" onclick="setAplicaReceta(false)"
+            style="padding:8px 20px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;">
+            ✕ No
+          </button>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Si es "No", no aparece como ingrediente al armar recetas (ej. limpieza, empaques, servicios)</div>
+        <input type="hidden" id="p-aplica-receta" value="true">
+      </div>
 
       <div class="field-row" style="margin-bottom:1rem;">
         <div class="field">
@@ -420,6 +436,20 @@ function setEnUso(activo) {
     btnNo.style.cssText = 'padding:8px 20px;border-radius:8px;border:2px solid var(--red);background:var(--red);color:#fff;font-size:13px;font-weight:600;cursor:pointer;';
   }
 }
+// ── APLICA PARA RECETAS ─────────────────────────────────────────────
+function setAplicaReceta(activo) {
+  document.getElementById('p-aplica-receta').value = activo ? 'true' : 'false';
+  const btnSi = document.getElementById('toggle-aplica-si');
+  const btnNo = document.getElementById('toggle-aplica-no');
+  if (activo) {
+    btnSi.style.cssText = 'padding:8px 20px;border-radius:8px;border:2px solid var(--green);background:var(--green);color:#fff;font-size:13px;font-weight:600;cursor:pointer;';
+    btnNo.style.cssText = 'padding:8px 20px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;';
+  } else {
+    btnSi.style.cssText = 'padding:8px 20px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;';
+    btnNo.style.cssText = 'padding:8px 20px;border-radius:8px;border:2px solid var(--red);background:var(--red);color:#fff;font-size:13px;font-weight:600;cursor:pointer;';
+  }
+}
+
 // ── HINT STOCK MÍNIMO ─────────────────────────────────────────────
 function actualizarHintStock() {
   const stockMin  = parseFloat(document.getElementById('p-stock-minimo').value) || 0;
@@ -1060,7 +1090,17 @@ function catBadge(cat) {
   return `<span class="badge" style="background:${col}20;color:${col};">${label}</span>`;
 }
 
-// Render agrupado
+// Render agrupado — las secciones arrancan colapsadas (solo el encabezado
+// con el conteo) y se expanden al hacer clic. gruposExpandidos persiste
+// entre renders (búsqueda, filtros) para no perder qué tenías abierto.
+let gruposExpandidos = new Set();
+
+function toggleGrupo(clave) {
+  if (gruposExpandidos.has(clave)) gruposExpandidos.delete(clave);
+  else gruposExpandidos.add(clave);
+  renderLista();
+}
+
 function renderListaAgrupada(lista, campo) {
   const grupos = {};
   lista.forEach(p => {
@@ -1082,13 +1122,18 @@ function renderListaAgrupada(lista, campo) {
 
   const bloques = Object.keys(grupos).sort().map(clave => {
     const items = grupos[clave];
-    const filas = items.map(p => buildFila(p)).join('');
+    const abierto = gruposExpandidos.has(clave);
+    const filas = abierto ? items.map(p => buildFila(p)).join('') : '';
     const totalItems = items.length;
+    const claveAttr = clave.replace(/'/g, "\\'");
     return `
-      <tr style="background:var(--surface);">
-        <td colspan="11" style="padding:8px 12px 8px 0;">
+      <tr style="background:var(--surface);cursor:pointer;" onclick="toggleGrupo('${claveAttr}')">
+        <td colspan="13" style="padding:8px 12px 8px 0;">
           <div style="display:flex;align-items:center;justify-content:space-between;">
-            <span style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--purple);">${clave}</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;color:var(--purple);transition:transform .15s;transform:rotate(${abierto?90:0}deg);"><polyline points="9 18 15 12 9 6"/></svg>
+              <span style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--purple);">${clave}</span>
+            </div>
             <span style="font-size:11px;color:var(--muted);">${totalItems} producto${totalItems!==1?'s':''}</span>
           </div>
         </td>
@@ -1108,8 +1153,11 @@ function buildFila(p) {
   const enUsoBadge = enUsoVal
     ? '<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:var(--green-bg);color:var(--green);font-weight:500;">En uso</span>'
     : '<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:var(--surface);color:var(--subtle);font-weight:500;">Sin uso</span>';
+  const aplicaRecetaVal = p.aplica_receta === false || p.aplica_receta === 'false' ? false : true;
+  const noAplicaBadge = aplicaRecetaVal ? '' :
+    '<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:var(--amber-bg);color:var(--amber);font-weight:500;" title="No aparece como ingrediente al armar recetas">No aplica a recetas</span>';
   return `<tr style="opacity:${enUsoVal ? 1 : 0.5}">
-    <td style="font-weight:500;">${p.nombre} ${enUsoBadge}</td>
+    <td style="font-weight:500;">${p.nombre} ${enUsoBadge} ${noAplicaBadge}</td>
     <td>${catBadge(p.categoria)}</td>
     <td style="color:var(--muted);font-size:12px;">${p.area||'—'}</td>
     <td style="color:var(--muted);">${p.unidad}</td>
@@ -1249,6 +1297,7 @@ async function guardar() {
     tamano,
     area,
     en_uso: document.getElementById('p-en-uso').value === 'true',
+    aplica_receta: document.getElementById('p-aplica-receta').value === 'true',
     stock_minimo: parseFloat(document.getElementById('p-stock-minimo').value) || 0
   };
 
@@ -1293,6 +1342,7 @@ function editar(id) {
   document.getElementById('p-proveedor').value              = p.proveedor || '';
   document.getElementById('p-area').value = p.area || '';
   setEnUso(p.en_uso === false || p.en_uso === 'false' ? false : true);
+  setAplicaReceta(p.aplica_receta === false || p.aplica_receta === 'false' ? false : true);
   document.getElementById('p-stock-minimo').value = p.stock_minimo || '';
   actualizarHintStock();
   document.getElementById('p-presentacion').value           = p.presentacion || '';
@@ -1327,6 +1377,7 @@ function limpiarForm() {
   document.getElementById('p-proveedor').value              = '';
   document.getElementById('p-area').value = '';
   setEnUso(true);
+  setAplicaReceta(true);
   document.getElementById('p-stock-minimo').value = '';
   document.getElementById('p-stock-minimo-equiv').textContent = '';
   document.getElementById('p-presentacion').value           = '';
