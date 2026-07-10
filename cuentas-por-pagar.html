@@ -362,13 +362,16 @@
 
   <!-- ══ TAB DUPLICADOS ═══════════════════════════════════════════ -->
   <div id="tab-duplicados" style="display:none;">
-    <div class="banner banner-warn" style="align-items:flex-start;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <div>
-        Estas facturas comparten el mismo número y probablemente se cargaron dos veces desde el archivo de Drive.
-        Revisá cada grupo y eliminá la copia que sobra directamente del origen (hoja <strong>Registro Facturas</strong>).
-        Esta acción no se puede deshacer.
+    <div class="banner banner-warn" style="align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div>
+          Estas facturas comparten el mismo número y fecha, y probablemente se cargaron dos veces desde el archivo de Drive.
+          Revisá cada grupo: aceptalo si es un registro legítimo, o eliminá la copia que sobra directamente del origen (hoja <strong>Registro Facturas</strong>).
+          Esta acción no se puede deshacer.
+        </div>
       </div>
+      <button class="btn-mini" style="border-color:var(--red-lt);background:#fff;color:var(--red);white-space:nowrap;" onclick="eliminarTodasCopias2()">Eliminar todas las copias 2</button>
     </div>
     <div id="lista-duplicados">
       <div class="empty"><span class="spinner"></span></div>
@@ -643,15 +646,23 @@ function construirFacturasAP() {
     r,
     numero: r['Factura'].trim(),
     proveedorNombre: r['Proveedor'] || '',
-    fechaFactura: isoDate(r['Fecha'])
+    fechaFactura: isoDate(r['Fecha']),
+    aceptado: ['sí','si','true'].includes(String(r['Duplicado aceptado']||'').trim().toLowerCase())
   }));
 
-  // Duplicado = mismo número de factura + misma fecha.
+  // Duplicado = mismo número de factura + misma fecha, salvo que ya se haya
+  // aceptado explícitamente como registro legítimo (columna "Duplicado aceptado").
   const claveDup = p => p.numero + '||' + p.fechaFactura;
   const conteo = {};
-  parsed.forEach(p => { const k = claveDup(p); conteo[k] = (conteo[k]||0) + 1; });
+  const grupoAceptado = {};
+  parsed.forEach(p => {
+    const k = claveDup(p);
+    conteo[k] = (conteo[k]||0) + 1;
+    if (p.aceptado) grupoAceptado[k] = true;
+  });
+  const esDuplicada = p => conteo[claveDup(p)] > 1 && !grupoAceptado[claveDup(p)];
 
-  const numerosDuplicados = [...new Set(parsed.filter(p => conteo[claveDup(p)] > 1).map(p => p.numero))];
+  const numerosDuplicados = [...new Set(parsed.filter(esDuplicada).map(p => p.numero))];
   const bannerDup = document.getElementById('banner-duplicados');
   if (numerosDuplicados.length) {
     bannerDup.style.display = 'flex';
@@ -715,7 +726,7 @@ function construirFacturasAP() {
     return {
       numero, proveedor: proveedorNombre, fechaFactura, monto, moneda, tipoCambio, montoColones,
       sinProveedor, cuentaProveedor, diasCredito, fechaVencimiento, fechaProyectada, fechaRealPago, referenciaPago, medioPago, totalAbonado, nota,
-      saldoPendiente, estado, duplicada: conteo[claveDup(p)] > 1, ordinal: contadorOrdinal[numero]
+      saldoPendiente, estado, duplicada: esDuplicada(p), ordinal: contadorOrdinal[numero]
     };
   });
 }
@@ -1364,6 +1375,7 @@ function renderDuplicados() {
             <span style="font-family:var(--font-d);font-weight:700;font-size:14px;">${numero}</span>
             <span class="badge b-dup" style="margin-left:8px;">${grupos[numero].length} copias</span>
           </div>
+          <button class="btn-mini" onclick="aceptarDuplicadoGrupo('${numero}')">Aceptar duplicado</button>
         </div>
         <div class="tabla-wrap">
           <table>
@@ -1396,6 +1408,51 @@ async function eliminarFacturaDuplicada(numero, ordinal) {
   } catch(e) {
     showToast('No se pudo eliminar: ' + e.message, 'error');
   }
+}
+
+// Marca todas las copias de un grupo como "duplicado aceptado" (registro
+// legítimo, no error de carga): dejan de aparecer en el banner y en esta lista.
+async function aceptarDuplicadoGrupo(numero) {
+  const grupo = obtenerDuplicados()[numero] || [];
+  if (!grupo.length) return;
+  if (!confirm(`¿Aceptar que estas ${grupo.length} facturas con número ${numero} son registros legítimos (no un error de carga duplicada)?\n\nDejarán de aparecer en el control de duplicados.`)) return;
+
+  try {
+    await postAP({ modulo: 'aceptar_duplicado', numero_factura: numero, ordinales: grupo.map(o => o.ordinal) });
+    showToast('Duplicado aceptado. Actualizando datos…', 'success');
+    await cargarDatos();
+  } catch(e) {
+    showToast('No se pudo aceptar: ' + e.message, 'error');
+  }
+}
+
+// Elimina, en cada grupo de duplicados actual, la fila marcada como "Copia 2".
+async function eliminarTodasCopias2() {
+  const grupos = obtenerDuplicados();
+  const objetivos = Object.keys(grupos).map(numero => {
+    const copia2 = grupos[numero].find(o => o.ordinal === 2);
+    return copia2 ? { numero, ordinal: 2, detalle: `${copia2.fechaFactura||'—'} · ${copia2.proveedor} · ${copia2.montoColones!=null ? fmt(copia2.montoColones) : 'US$'+fmtN(copia2.monto)}` } : null;
+  }).filter(Boolean);
+
+  if (!objetivos.length) { showToast('No hay copias 2 para eliminar.', 'error'); return; }
+
+  const confirmMsg = `¿Eliminar la "Copia 2" de ${objetivos.length} factura${objetivos.length!==1?'s':''} duplicada${objetivos.length!==1?'s':''}?\n\n` +
+    objetivos.slice(0,10).map(o => `• ${o.numero} — ${o.detalle}`).join('\n') +
+    (objetivos.length > 10 ? `\n… y ${objetivos.length - 10} más` : '') +
+    `\n\nSe borrarán de la hoja Registro Facturas en el archivo de Drive. Esta acción no se puede deshacer.`;
+  if (!confirm(confirmMsg)) return;
+
+  let ok = 0, fail = 0;
+  for (const o of objetivos) {
+    try {
+      await postAP({ modulo: 'eliminar_factura', numero_factura: o.numero, ordinal: o.ordinal });
+      ok++;
+    } catch(e) {
+      fail++;
+    }
+  }
+  showToast(`${ok} copia(s) eliminada(s)${fail ? `, ${fail} con error` : ''}. Actualizando datos…`, fail ? 'error' : 'success');
+  await cargarDatos();
 }
 
 // ── PAGINACIÓN ────────────────────────────────────────────────────

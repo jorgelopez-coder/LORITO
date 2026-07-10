@@ -901,6 +901,7 @@ function doPost(e) {
       case 'receta':    result = guardarReceta(payload); break;
       case 'plato':     result = guardarPlato(payload); break;
       case 'config':    result = guardarTipoCambioUSD(payload.tipo_cambio_usd); break;
+      case 'fusionar':  result = fusionarProductos(payload.id_conservar, payload.id_descartar); break;
       case 'eliminar':  result = eliminarRegistro(payload); break;
       default:
         throw new Error('Módulo no reconocido: ' + payload.modulo);
@@ -1071,6 +1072,74 @@ function eliminarProducto(id) {
   if (fila === -1) throw new Error('No se encontró el producto.');
   sh.deleteRow(fila);
   return { eliminado: id };
+}
+
+// Repunta una columna (por nombre) de todas las filas de una hoja que
+// apuntaban a idDescartar, para que apunten a idConservar. Devuelve cuántas
+// filas movió.
+function repuntarColumna(hoja, nombreColumna, idConservar, idDescartar) {
+  const encabezados = encabezadosDe(hoja);
+  const col = encabezados.indexOf(nombreColumna) + 1;
+  const nFilas = hoja.getLastRow() - 1;
+  if (col === 0 || nFilas <= 0) return 0;
+  const valores = hoja.getRange(2, col, nFilas, 1).getValues();
+  let movidas = 0;
+  for (let i = 0; i < valores.length; i++) {
+    if (String(valores[i][0]) === String(idDescartar)) {
+      hoja.getRange(i + 2, col).setValue(idConservar);
+      movidas++;
+    }
+  }
+  return movidas;
+}
+
+// Fusiona dos productos del catálogo: todo lo que apuntaba a idDescartar
+// (alias de proveedores, historial de compras, sugerencias pendientes,
+// ingredientes de receta) pasa a apuntar a idConservar, y idDescartar se
+// borra. El costo de idConservar se recalcula con el historial ya
+// combinado (actualizarCostoProducto ya dispara la cascada hacia
+// recetas/menú, incluyendo las que antes usaban idDescartar como
+// ingrediente — quedaron repuntadas antes de recalcular).
+function fusionarProductos(idConservar, idDescartar) {
+  if (!idConservar || !idDescartar) throw new Error('Faltan los IDs de producto.');
+  if (idConservar === idDescartar) throw new Error('Elegí dos productos distintos.');
+
+  const ss = SpreadsheetApp.getActive();
+  const shCatalogo = ss.getSheetByName(SHEET_CATALOGO);
+  if (filaPorId(shCatalogo, 'ID_Producto', idConservar) === -1) throw new Error('No se encontró el producto a conservar.');
+  const filaDescartar = filaPorId(shCatalogo, 'ID_Producto', idDescartar);
+  if (filaDescartar === -1) throw new Error('No se encontró el producto a descartar.');
+
+  const aliasMovidos = repuntarColumna(ss.getSheetByName(SHEET_ALIAS), 'ID_Producto_Maestro', idConservar, idDescartar);
+  const comprasMovidas = repuntarColumna(ss.getSheetByName(SHEET_HISTORIAL), 'ID_Producto', idConservar, idDescartar);
+  repuntarColumna(ss.getSheetByName(SHEET_PENDIENTES), 'ID_Producto_Sugerido', idConservar, idDescartar);
+
+  const shIng = ss.getSheetByName(SHEET_RECETA_ING);
+  const ing = leerHojaConEncabezados(shIng);
+  const cTipo = ing.encabezados.indexOf('Fuente_Tipo');
+  const cFuenteId = ing.encabezados.indexOf('Fuente_ID');
+  let ingredientesMovidos = 0;
+  ing.datos.forEach(function(fila) {
+    if (fila[cTipo] === 'producto' && String(fila[cFuenteId]) === String(idDescartar)) {
+      fila[cFuenteId] = idConservar;
+      ingredientesMovidos++;
+    }
+  });
+  if (ingredientesMovidos > 0) escribirDatos(shIng, ing.encabezados, ing.datos);
+
+  shCatalogo.deleteRow(filaPorId(shCatalogo, 'ID_Producto', idDescartar));
+
+  // Recalcula Costo_Actual con el historial combinado y dispara la cascada
+  // hacia recetas/menú (incluye las repuntadas arriba, ya que ahora apuntan a idConservar).
+  actualizarCostoProducto(idConservar);
+
+  return {
+    conservado: idConservar,
+    descartado: idDescartar,
+    alias_movidos: aliasMovidos,
+    compras_movidas: comprasMovidas,
+    ingredientes_movidos: ingredientesMovidos
+  };
 }
 
 // ── Módulos POST: categorías / áreas ─────────────────────────────────

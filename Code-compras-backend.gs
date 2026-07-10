@@ -231,6 +231,9 @@ function doPost(e) {
       case 'eliminar_factura':
         result = eliminarFactura(payload);
         break;
+      case 'aceptar_duplicado':
+        result = aceptarDuplicado(payload);
+        break;
       case 'procesar_linea_compra':
         result = procesarLineaCompra(payload);
         break;
@@ -981,6 +984,25 @@ function eliminarFactura(p) {
   if (fila === -1) throw new Error('No se encontró esa copia (puede que ya se haya eliminado).');
   hoja.deleteRow(fila);
   return { eliminado: true, fila: fila };
+}
+
+// Marca una o varias copias de una factura como "duplicado aceptado": queda
+// registrado en la hoja para que el control de duplicados deje de marcarlas.
+function aceptarDuplicado(p) {
+  if (!p.numero_factura) throw new Error('Falta número de factura.');
+  if (!Array.isArray(p.ordinales) || !p.ordinales.length) throw new Error('Falta indicar cuáles copias aceptar.');
+  const hoja = getHoja();
+  const col = columnaPorNombre(hoja, 'Duplicado aceptado');
+  var marcadas = 0;
+  p.ordinales.forEach(function(ordinal) {
+    const fila = filaFacturaPorOrdinal(hoja, p.numero_factura, ordinal);
+    if (fila !== -1) {
+      hoja.getRange(fila, col).setValue('Sí');
+      marcadas++;
+    }
+  });
+  if (!marcadas) throw new Error('No se encontraron copias para marcar.');
+  return { marcadas: marcadas };
 }
 
 // ── MAESTRO DE PRODUCTOS · ALIAS · PENDIENTES · COSTO PROMEDIO ───────

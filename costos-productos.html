@@ -422,6 +422,28 @@
     </div>
   </div>
 
+  <!-- MODAL FUSIONAR PRODUCTOS -->
+  <div id="modal-fusion" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;">
+    <div style="background:var(--card);border-radius:var(--radius);padding:1.75rem;max-width:440px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.2);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <h2 style="font-family:var(--font-d);font-size:18px;font-weight:700;">Fusionar producto</h2>
+        <button onclick="cerrarModalFusion()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);">×</button>
+      </div>
+      <p id="fusion-nota" style="font-size:13px;color:var(--muted);margin-bottom:1rem;"></p>
+      <div class="field">
+        <label for="fusion-destino">Conservar todo bajo este producto</label>
+        <select id="fusion-destino"></select>
+      </div>
+      <div style="font-size:11px;color:var(--amber);background:var(--amber-bg);border:1px solid var(--amber);border-radius:8px;padding:8px 10px;margin-top:12px;">
+        No se puede deshacer: mueve historial de compras, alias de proveedores y recetas que usan este producto al que elijas, y lo borra del catálogo.
+      </div>
+      <div style="display:flex;gap:8px;margin-top:1.25rem;">
+        <button onclick="cerrarModalFusion()" style="padding:10px 16px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;cursor:pointer;">Cancelar</button>
+        <button id="btn-confirmar-fusion" onclick="confirmarFusion()" style="flex:1;padding:10px 16px;border-radius:9px;background:var(--purple);color:#fff;border:none;font-family:var(--font-d);font-size:14px;font-weight:700;cursor:pointer;">Fusionar</button>
+      </div>
+    </div>
+  </div>
+
   <div class="status-bar">
     <div style="display:flex;align-items:center;gap:6px;"><span class="sdot" id="conn-dot"></span><span id="conn-label">Cargando…</span></div>
     <span class="ssep"></span>
@@ -1261,6 +1283,7 @@ function buildFila(p) {
     <td style="color:var(--muted);font-size:12px;">${p.presentacion ? p.presentacion + (p.tamano ? ' · ' + p.tamano : '') : '—'}</td>
     <td><div style="display:flex;gap:4px;">
       <button class="btn-edit" onclick="editar('${p.id}')">Editar</button>
+      <button class="btn-edit" onclick="abrirModalFusion('${p.id}')" title="Fusionar con otro producto" style="border-color:var(--amber);background:var(--amber-bg);color:var(--amber);">Fusionar</button>
       <button class="btn-del" onclick="eliminar('${p.id}')">✕</button>
     </div></td>
   </tr>`;
@@ -1459,6 +1482,54 @@ async function eliminar(id) {
   renderLista();
   renderDatalistProductos();
   showToast('Producto eliminado', 'success');
+}
+
+// ── FUSIONAR DUPLICADOS ──────────────────────────────────────────────
+let productoAFusionar = null;
+
+function abrirModalFusion(id) {
+  const p = getProductos().find(x => x.id === id);
+  if (!p) return;
+  productoAFusionar = id;
+
+  document.getElementById('fusion-nota').textContent =
+    `"${p.nombre}" se va a eliminar del catálogo. Todo su historial de compras, alias de proveedores y recetas que lo usan van a quedar apuntando al producto que elijas abajo.`;
+
+  const otros = getProductos().filter(x => x.id !== id).sort((a, b) => a.nombre.localeCompare(b.nombre));
+  document.getElementById('fusion-destino').innerHTML = otros.map(o =>
+    `<option value="${o.id}">${o.nombre}${o.categoria ? ' (' + o.categoria + ')' : ''}</option>`
+  ).join('');
+
+  document.getElementById('modal-fusion').style.display = 'flex';
+}
+
+function cerrarModalFusion() {
+  document.getElementById('modal-fusion').style.display = 'none';
+  productoAFusionar = null;
+}
+
+async function confirmarFusion() {
+  const destino = document.getElementById('fusion-destino').value;
+  if (!destino) { showToast('No hay otro producto para fusionar.', 'error'); return; }
+
+  const btn = document.getElementById('btn-confirmar-fusion');
+  btn.disabled = true;
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS, {
+      method: 'POST',
+      body: new URLSearchParams({ data: JSON.stringify({ modulo: 'fusionar', id_conservar: destino, id_descartar: productoAFusionar }) })
+    });
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error || 'Error al fusionar');
+    const r = json.result || {};
+    showToast(`Fusionado ✓ · ${r.alias_movidos||0} alias, ${r.compras_movidas||0} compras, ${r.ingredientes_movidos||0} ingredientes de receta movidos`, 'success');
+    cerrarModalFusion();
+    await cargarProductosDesdeSheet();
+  } catch(e) {
+    showToast('No se pudo fusionar: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function limpiarForm() {
