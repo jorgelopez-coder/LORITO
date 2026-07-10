@@ -36,6 +36,10 @@
     .tab.active { background:var(--card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.08); }
     .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.4rem 1.5rem; margin-bottom:12px; }
     .card-title { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:1.1rem; }
+    .cfg-section-title { font-family:var(--font-d); font-size:13px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--purple); margin:1.75rem 0 .85rem; padding-top:1.25rem; border-top:1px solid var(--border); }
+    .cfg-section-title:first-child { margin-top:0; padding-top:0; border-top:none; }
+    .cfg-section-sub { font-size:12px; color:var(--muted); margin:-.5rem 0 .85rem; }
+    .cfg-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
     .field { margin-bottom:1rem; }
     .field:last-child { margin-bottom:0; }
     .field-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -207,6 +211,20 @@
           </select>
         </div>
       </div>
+      <div class="field-row" style="margin-top:1rem;">
+        <div class="field">
+          <label for="p-familia">Familia</label>
+          <select id="p-familia" onchange="actualizarSubfamiliasForm()">
+            <option value="">Sin definir</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="p-subfamilia">Subfamilia</label>
+          <select id="p-subfamilia">
+            <option value="">Sin definir</option>
+          </select>
+        </div>
+      </div>
       <div style="margin-top:1rem;">
         <label style="font-size:13px;font-weight:500;margin-bottom:8px;display:block;">En uso</label>
         <div style="display:flex;gap:8px;">
@@ -359,44 +377,9 @@
 
   <!-- CONFIGURACIÓN -->
   <div id="tab-config" style="display:none;">
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
 
-      <div class="card">
-        <p class="card-title">Categorías</p>
-        <div id="cfg-cat-lista" style="margin-bottom:10px;"></div>
-        <div style="display:flex;gap:6px;">
-          <input type="text" id="cfg-cat-nueva" placeholder="Nueva categoría…" style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key==='Enter')addItem('cat')">
-          <button onclick="addItem('cat')" style="padding:7px 12px;border-radius:8px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;font-weight:600;white-space:nowrap;">+ Agregar</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <p class="card-title">Unidades de medida</p>
-        <div id="cfg-uni-lista" style="margin-bottom:10px;"></div>
-        <div style="display:flex;gap:6px;">
-          <input type="text" id="cfg-uni-nueva" placeholder="Nueva unidad…" style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key==='Enter')addItem('uni')">
-          <button onclick="addItem('uni')" style="padding:7px 12px;border-radius:8px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;font-weight:600;white-space:nowrap;">+ Agregar</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <p class="card-title">Áreas de negocio</p>
-        <div id="cfg-area-lista" style="margin-bottom:10px;"></div>
-        <div style="display:flex;gap:6px;">
-          <input type="text" id="cfg-area-nueva" placeholder="Nueva área…" style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key==='Enter')addItem('area')">
-          <button onclick="addItem('area')" style="padding:7px 12px;border-radius:8px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;font-weight:600;white-space:nowrap;">+ Agregar</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <p class="card-title">Presentaciones del proveedor</p>
-        <div id="cfg-pre-lista" style="margin-bottom:10px;"></div>
-        <div style="display:flex;gap:6px;">
-          <input type="text" id="cfg-pre-nueva" placeholder="Nueva presentación…" style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key==='Enter')addItem('pre')">
-          <button onclick="addItem('pre')" style="padding:7px 12px;border-radius:8px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;font-weight:600;white-space:nowrap;">+ Agregar</button>
-        </div>
-      </div>
-
+    <p class="cfg-section-title">Tipo de cambio</p>
+    <div class="cfg-grid">
       <div class="card">
         <p class="card-title">Tipo de cambio (₡ por US$)</p>
         <div id="cfg-tipo-cambio-actual" style="font-family:var(--font-d);font-size:20px;font-weight:700;color:var(--purple);margin-bottom:10px;">—</div>
@@ -406,8 +389,74 @@
         </div>
         <p style="font-size:12px;color:var(--muted);margin-top:8px;">Se usa para convertir sola cualquier compra en dólares (facturas automáticas y "Nuevo producto"). Al guardar un tipo de cambio nuevo, las compras en dólares que estaban pendientes se resuelven solas.</p>
       </div>
-
     </div>
+
+    <p class="cfg-section-title">Clasificación</p>
+    <div class="cfg-grid">
+      <div class="card">
+        <p class="card-title">Área de negocio</p>
+        <div id="cfg-area-lista" style="margin-bottom:10px;"></div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="cfg-area-nueva" placeholder="Nueva área…" style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key==='Enter')addItem('area')">
+          <button onclick="addItem('area')" style="padding:7px 12px;border-radius:8px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;font-weight:600;white-space:nowrap;">+ Agregar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Categoría</p>
+        <div id="cfg-cat-lista" style="margin-bottom:10px;"></div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="cfg-cat-nueva" placeholder="Nueva categoría…" style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key==='Enter')addItem('cat')">
+          <button onclick="addItem('cat')" style="padding:7px 12px;border-radius:8px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;font-weight:600;white-space:nowrap;">+ Agregar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Familia</p>
+        <div id="cfg-familia-lista" style="margin-bottom:10px;"></div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="cfg-familia-nueva" placeholder="Nueva familia…" style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key==='Enter')addItem('familia')">
+          <button onclick="addItem('familia')" style="padding:7px 12px;border-radius:8px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;font-weight:600;white-space:nowrap;">+ Agregar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Subfamilia</p>
+        <div class="field" style="margin-bottom:10px;">
+          <label for="cfg-subfamilia-familia" style="font-size:12px;">Familia</label>
+          <select id="cfg-subfamilia-familia" onchange="renderCfgSubfamilias()"></select>
+        </div>
+        <div id="cfg-subfamilia-lista" style="margin-bottom:10px;"></div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="cfg-subfamilia-nueva" placeholder="Nueva subfamilia…" style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key==='Enter')agregarSubfamilia()">
+          <button onclick="agregarSubfamilia()" style="padding:7px 12px;border-radius:8px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;font-weight:600;white-space:nowrap;">+ Agregar</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="cfg-section-title">Unidades</p>
+    <p class="cfg-section-sub">Unidad de compra y unidad de receta.</p>
+    <div class="cfg-grid">
+      <div class="card">
+        <p class="card-title">Presentación del proveedor</p>
+        <div id="cfg-pre-lista" style="margin-bottom:10px;"></div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="cfg-pre-nueva" placeholder="Nueva presentación…" style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key==='Enter')addItem('pre')">
+          <button onclick="addItem('pre')" style="padding:7px 12px;border-radius:8px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;font-weight:600;white-space:nowrap;">+ Agregar</button>
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin-top:8px;">Ej. Caja, bolsa, kilo, galón…</p>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Unidades de receta</p>
+        <div id="cfg-uni-lista" style="margin-bottom:10px;"></div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="cfg-uni-nueva" placeholder="Nueva unidad…" style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key==='Enter')addItem('uni')">
+          <button onclick="addItem('uni')" style="padding:7px 12px;border-radius:8px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;font-weight:600;white-space:nowrap;">+ Agregar</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- MODAL CARGA MASIVA -->
@@ -835,35 +884,56 @@ async function confirmarCarga() {
 const CFG_DEFAULTS = {
   cat: ['Carnes','Mariscos','Aves','Lácteos','Frutas y Verduras','Granos y Cereales',
         'Bebidas','Condimentos y Especias','Aceites y Grasas','Panadería','Limpieza','Otros'],
-  uni: ['kg','g','lb','L','ml','unidad','paquete','caja','lata','botella','galón','saco'],
+  uni: ['Unidad','Litro','Mililitro','Onza','Kilo','Gramo','Pizca'],
   pre: ['Caja','Bolsa','Bandeja','Botella','Lata','Paquete','Frasco','Balde','Galón','Saco','Unidad','Rollo'],
   area: ['Cocina','Bar','Consumible','Otro']
 };
 
-// Categorías / Área de negocio ya no son locales: viven en Catalogo_Maestro
-// (hojas Categorias_Productos / Areas_Negocio) y se administran acá mismo,
-// en la pestaña "Configuración" — reemplaza lo que antes hacía
-// config-productos.html (retirada).
-let catCompartidas   = null; // null mientras carga; después, array de strings
-let areasCompartidas = null;
+// Categorías / Área de negocio / Unidades de receta / Familias ya no son
+// locales: viven en el backend (hojas Categorias_Productos, Areas_Negocio,
+// Unidades_Receta, Familias) y se administran acá mismo, en la pestaña
+// "Configuración" — reemplaza lo que antes hacía config-productos.html
+// (retirada). Solo "Presentaciones del proveedor" sigue siendo local
+// (localStorage), sin contraparte en el Sheet.
+let catCompartidas      = null; // null mientras carga; después, array de strings
+let areasCompartidas    = null;
+let unidadesCompartidas = null;
+let familiasCompartidas = null;
+let subfamiliasCompartidas = []; // array de {familia, subfamilia}
 
 async function cargarListasCompartidas() {
-  if (!APPS_SCRIPT_COSTOS) { catCompartidas = CFG_DEFAULTS.cat; areasCompartidas = CFG_DEFAULTS.area; return; }
+  if (!APPS_SCRIPT_COSTOS) {
+    catCompartidas = CFG_DEFAULTS.cat; areasCompartidas = CFG_DEFAULTS.area;
+    unidadesCompartidas = CFG_DEFAULTS.uni; familiasCompartidas = []; subfamiliasCompartidas = [];
+    return;
+  }
   try {
-    const [rCat, rArea] = await Promise.all([
+    const [rCat, rArea, rUni, rFam, rSub] = await Promise.all([
       fetch(APPS_SCRIPT_COSTOS + '?modulo=categorias').then(r => r.json()),
-      fetch(APPS_SCRIPT_COSTOS + '?modulo=areas').then(r => r.json())
+      fetch(APPS_SCRIPT_COSTOS + '?modulo=areas').then(r => r.json()),
+      fetch(APPS_SCRIPT_COSTOS + '?modulo=unidades_receta').then(r => r.json()),
+      fetch(APPS_SCRIPT_COSTOS + '?modulo=familias').then(r => r.json()),
+      fetch(APPS_SCRIPT_COSTOS + '?modulo=subfamilias').then(r => r.json())
     ]);
-    catCompartidas   = (rCat && rCat.ok && rCat.valores.length) ? rCat.valores : CFG_DEFAULTS.cat;
-    areasCompartidas = (rArea && rArea.ok && rArea.valores.length) ? rArea.valores : CFG_DEFAULTS.area;
+    catCompartidas      = (rCat && rCat.ok && rCat.valores.length) ? rCat.valores : CFG_DEFAULTS.cat;
+    areasCompartidas    = (rArea && rArea.ok && rArea.valores.length) ? rArea.valores : CFG_DEFAULTS.area;
+    unidadesCompartidas = (rUni && rUni.ok && rUni.valores.length) ? rUni.valores : CFG_DEFAULTS.uni;
+    familiasCompartidas = (rFam && rFam.ok) ? rFam.valores : [];
+    subfamiliasCompartidas = (rSub && rSub.ok) ? rSub.registros : [];
   } catch (e) {
-    console.warn('No se pudieron cargar categorías/áreas:', e);
-    catCompartidas   = catCompartidas   || CFG_DEFAULTS.cat;
-    areasCompartidas = areasCompartidas || CFG_DEFAULTS.area;
+    console.warn('No se pudieron cargar categorías/áreas/unidades/familias:', e);
+    catCompartidas      = catCompartidas      || CFG_DEFAULTS.cat;
+    areasCompartidas    = areasCompartidas    || CFG_DEFAULTS.area;
+    unidadesCompartidas = unidadesCompartidas || CFG_DEFAULTS.uni;
+    familiasCompartidas = familiasCompartidas || [];
+    subfamiliasCompartidas = subfamiliasCompartidas || [];
   }
   aplicarConfiguracion();
   renderCfgLista('cat');
   renderCfgLista('area');
+  renderCfgLista('uni');
+  renderCfgLista('familia');
+  renderCfgSubfamilias();
 }
 
 async function cargarConfiguracion() {
@@ -951,9 +1021,16 @@ async function guardarTipoCambioGlobal() {
   }
 }
 
+// 'cat'/'area'/'uni'/'familia' viven en el backend; 'pre' sigue siendo solo
+// local (localStorage), sin contraparte en el Sheet. 'subfamilia' no entra acá
+// — es un par (familia, subfamilia), tiene su propio flujo más abajo.
+const MODULO_POR_TIPO = { cat: 'categoria', area: 'area', uni: 'unidad_receta', familia: 'familia' };
+
 function getCfg(tipo) {
-  if (tipo === 'cat')  return catCompartidas   || CFG_DEFAULTS.cat;
-  if (tipo === 'area') return areasCompartidas || CFG_DEFAULTS.area;
+  if (tipo === 'cat')     return catCompartidas      || CFG_DEFAULTS.cat;
+  if (tipo === 'area')    return areasCompartidas    || CFG_DEFAULTS.area;
+  if (tipo === 'uni')     return unidadesCompartidas || CFG_DEFAULTS.uni;
+  if (tipo === 'familia') return familiasCompartidas || [];
   try {
     const stored = JSON.parse(localStorage.getItem('cfg_productos_' + tipo) || 'null');
     return stored || CFG_DEFAULTS[tipo];
@@ -962,6 +1039,14 @@ function getCfg(tipo) {
 
 function saveCfg(tipo, lista) {
   localStorage.setItem('cfg_productos_' + tipo, JSON.stringify(lista));
+}
+
+function setCfg(tipo, lista) {
+  if (tipo === 'cat') catCompartidas = lista;
+  else if (tipo === 'area') areasCompartidas = lista;
+  else if (tipo === 'uni') unidadesCompartidas = lista;
+  else if (tipo === 'familia') familiasCompartidas = lista;
+  else saveCfg(tipo, lista);
 }
 
 function renderCfgLista(tipo) {
@@ -974,8 +1059,6 @@ function renderCfgLista(tipo) {
     </div>`).join('');
 }
 
-// 'cat'/'area' viven en el backend (Categorias_Productos/Areas_Negocio);
-// 'uni'/'pre' siguen siendo solo locales (localStorage), sin contraparte en el Sheet.
 async function addItem(tipo) {
   const input = document.getElementById('cfg-' + tipo + '-nueva');
   const val   = input.value.trim();
@@ -983,16 +1066,16 @@ async function addItem(tipo) {
   const lista = getCfg(tipo);
   if (lista.includes(val)) { showToast('Ya existe en la lista.', 'error'); return; }
 
-  if (tipo === 'cat' || tipo === 'area') {
+  if (MODULO_POR_TIPO[tipo]) {
     try {
-      const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo: tipo === 'cat' ? 'categoria' : 'area', valor: val }) }) });
+      const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo: MODULO_POR_TIPO[tipo], valor: val }) }) });
       const json = await resp.json();
       if (!json.ok) throw new Error(json.error || 'Error al guardar');
     } catch(e) { showToast('No se pudo guardar: ' + e.message, 'error'); return; }
   }
 
   lista.push(val);
-  if (tipo === 'cat') catCompartidas = lista; else if (tipo === 'area') areasCompartidas = lista; else saveCfg(tipo, lista);
+  setCfg(tipo, lista);
   input.value = '';
   renderCfgLista(tipo);
   aplicarConfiguracion();
@@ -1003,17 +1086,73 @@ async function removeItem(tipo, idx) {
   const lista = getCfg(tipo);
   const val = lista[idx];
 
-  if (tipo === 'cat' || tipo === 'area') {
+  if (MODULO_POR_TIPO[tipo]) {
     try {
-      const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'eliminar', tipo: tipo === 'cat' ? 'categoria' : 'area', valor: val }) }) });
+      const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'eliminar', tipo: MODULO_POR_TIPO[tipo], valor: val }) }) });
       const json = await resp.json();
       if (!json.ok) throw new Error(json.error || 'Error al eliminar');
     } catch(e) { showToast('No se pudo eliminar: ' + e.message, 'error'); return; }
   }
 
   lista.splice(idx, 1);
-  if (tipo === 'cat') catCompartidas = lista; else if (tipo === 'area') areasCompartidas = lista; else saveCfg(tipo, lista);
+  setCfg(tipo, lista);
   renderCfgLista(tipo);
+  aplicarConfiguracion();
+}
+
+// ── SUBFAMILIA (depende de la Familia elegida) ───────────────────────
+function renderCfgSubfamilias() {
+  const selFamilia = document.getElementById('cfg-subfamilia-familia');
+  if (!selFamilia) return;
+  const familias = getCfg('familia');
+  const valActual = selFamilia.value;
+  selFamilia.innerHTML = familias.length
+    ? familias.map(f => `<option${f===valActual?' selected':''}>${f}</option>`).join('')
+    : '<option value="">Agregá una familia primero</option>';
+
+  const familiaElegida = selFamilia.value;
+  const lista = (subfamiliasCompartidas || []).filter(s => s.familia === familiaElegida);
+  const cont = document.getElementById('cfg-subfamilia-lista');
+  cont.innerHTML = lista.length
+    ? lista.map(s => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:7px;background:var(--surface);margin-bottom:4px;font-size:13px;">
+          <span>${s.subfamilia}</span>
+          <button onclick="eliminarSubfamilia('${familiaElegida.replace(/'/g,"\\'")}','${s.subfamilia.replace(/'/g,"\\'")}')" style="background:none;border:none;color:var(--subtle);cursor:pointer;font-size:16px;line-height:1;padding:0 4px;" title="Eliminar">×</button>
+        </div>`).join('')
+    : '<div style="font-size:12px;color:var(--subtle);padding:4px 0;">Sin subfamilias para esta familia.</div>';
+}
+
+async function agregarSubfamilia() {
+  const familia = document.getElementById('cfg-subfamilia-familia').value;
+  const input = document.getElementById('cfg-subfamilia-nueva');
+  const val = input.value.trim();
+  if (!familia) { showToast('Agregá (o elegí) una familia primero.', 'error'); return; }
+  if (!val) return;
+  if ((subfamiliasCompartidas || []).some(s => s.familia === familia && s.subfamilia === val)) {
+    showToast('Ya existe en la lista.', 'error'); return;
+  }
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'subfamilia', familia, valor: val }) }) });
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error || 'Error al guardar');
+  } catch(e) { showToast('No se pudo guardar: ' + e.message, 'error'); return; }
+
+  subfamiliasCompartidas.push({ familia, subfamilia: val });
+  input.value = '';
+  renderCfgSubfamilias();
+  aplicarConfiguracion();
+  showToast(`"${val}" agregada`, 'success');
+}
+
+async function eliminarSubfamilia(familia, subfamilia) {
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'eliminar', tipo:'subfamilia', familia, valor: subfamilia }) }) });
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error || 'Error al eliminar');
+  } catch(e) { showToast('No se pudo eliminar: ' + e.message, 'error'); return; }
+
+  subfamiliasCompartidas = subfamiliasCompartidas.filter(s => !(s.familia === familia && s.subfamilia === subfamilia));
+  renderCfgSubfamilias();
   aplicarConfiguracion();
 }
 
@@ -1083,6 +1222,30 @@ function aplicarConfiguracion() {
     filtCat.innerHTML = '<option value="">Todas las categorías</option>' +
       cats.map(c => `<option${c===valActual?' selected':''}>${c}</option>`).join('');
   }
+
+  // Actualizar select de familia
+  const familias = getCfg('familia');
+  const selFamilia = document.getElementById('p-familia');
+  if (selFamilia) {
+    const valActual = selFamilia.value;
+    selFamilia.innerHTML = '<option value="">Sin definir</option>' +
+      familias.map(f => `<option${f===valActual?' selected':''}>${f}</option>`).join('');
+  }
+
+  // Actualizar select de subfamilia (según la familia ya elegida en el formulario)
+  actualizarSubfamiliasForm();
+}
+
+// La subfamilia depende de qué familia esté elegida en el formulario de producto.
+function actualizarSubfamiliasForm() {
+  const selFamilia = document.getElementById('p-familia');
+  const selSub = document.getElementById('p-subfamilia');
+  if (!selFamilia || !selSub) return;
+  const familia = selFamilia.value;
+  const valActual = selSub.value;
+  const opciones = (subfamiliasCompartidas || []).filter(s => s.familia === familia).map(s => s.subfamilia);
+  selSub.innerHTML = '<option value="">Sin definir</option>' +
+    opciones.map(s => `<option${s===valActual?' selected':''}>${s}</option>`).join('');
 }
 
 function initConfig() {
@@ -1090,6 +1253,8 @@ function initConfig() {
   renderCfgLista('uni');
   renderCfgLista('pre');
   renderCfgLista('area');
+  renderCfgLista('familia');
+  renderCfgSubfamilias();
   aplicarConfiguracion();
 }
 
@@ -1115,6 +1280,8 @@ function onNombreInput() {
   if (!match) return;
   if (match.categoria) document.getElementById('p-categoria').value = match.categoria;
   if (match.area) document.getElementById('p-area').value = match.area;
+  if (match.familia) { document.getElementById('p-familia').value = match.familia; actualizarSubfamiliasForm(); }
+  if (match.subfamilia) document.getElementById('p-subfamilia').value = match.subfamilia;
   if (match.unidad) document.getElementById('p-unidad').value = match.unidad;
   if (match.presentacion) document.getElementById('p-presentacion').value = match.presentacion;
   if (match.tamano) document.getElementById('p-tamano').value = match.tamano;
@@ -1451,6 +1618,8 @@ async function guardar() {
   const presentacion         = document.getElementById('p-presentacion').value.trim();
   const tamano               = document.getElementById('p-tamano').value.trim();
   const area                 = document.getElementById('p-area').value;
+  const familia              = document.getElementById('p-familia').value;
+  const subfamilia           = document.getElementById('p-subfamilia').value;
   const editId               = document.getElementById('edit-id').value;
   const idNormalizado        = document.getElementById('p-id-normalizado').value;
 
@@ -1475,6 +1644,8 @@ async function guardar() {
     presentacion,
     tamano,
     area,
+    familia,
+    subfamilia,
     en_uso: document.getElementById('p-en-uso').value === 'true',
     aplica_receta: document.getElementById('p-aplica-receta').value === 'true',
     stock_minimo: parseFloat(document.getElementById('p-stock-minimo').value) || 0
@@ -1525,6 +1696,9 @@ function editar(id) {
   document.getElementById('p-rendimiento').value            = p.rendimiento || 100;
   document.getElementById('p-proveedor').value              = p.proveedor || '';
   document.getElementById('p-area').value = p.area || '';
+  document.getElementById('p-familia').value = p.familia || '';
+  actualizarSubfamiliasForm();
+  document.getElementById('p-subfamilia').value = p.subfamilia || '';
   setEnUso(p.en_uso === false || p.en_uso === 'false' ? false : true);
   setAplicaReceta(p.aplica_receta === false || p.aplica_receta === 'false' ? false : true);
   document.getElementById('p-stock-minimo').value = p.stock_minimo || '';
@@ -1611,6 +1785,9 @@ function limpiarForm() {
   document.getElementById('p-rendimiento').value            = '100';
   document.getElementById('p-proveedor').value              = '';
   document.getElementById('p-area').value = '';
+  document.getElementById('p-familia').value = '';
+  actualizarSubfamiliasForm();
+  document.getElementById('p-subfamilia').value = '';
   setEnUso(true);
   setAplicaReceta(true);
   document.getElementById('p-stock-minimo').value = '';
@@ -1628,7 +1805,7 @@ function switchTab(tab, el) {
   document.getElementById('tab-config').style.display = tab==='config' ? 'block':'none';
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  if (tab==='config') { renderCfgLista('cat'); renderCfgLista('uni'); renderCfgLista('pre'); renderCfgLista('area'); }
+  if (tab==='config') { renderCfgLista('cat'); renderCfgLista('uni'); renderCfgLista('pre'); renderCfgLista('area'); renderCfgLista('familia'); renderCfgSubfamilias(); }
   if (tab==='nuevo')  { aplicarConfiguracion(); }
 }
 

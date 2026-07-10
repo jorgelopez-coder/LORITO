@@ -19,6 +19,9 @@ const SHEET_RECETAS     = 'Recetas';
 const SHEET_RECETA_ING  = 'Receta_Ingredientes';
 const SHEET_MENU        = 'Menu';
 const SHEET_CONFIG      = 'Configuracion';
+const SHEET_FAMILIAS    = 'Familias';
+const SHEET_SUBFAMILIAS = 'Subfamilias';
+const SHEET_UNIDADES_RECETA = 'Unidades_Receta';
 
 const CLAVE_TIPO_CAMBIO = 'TipoCambio_USD';
 
@@ -27,11 +30,13 @@ const VENTANA_COMPRAS  = 5;
 const MONEDA_COSTEO    = 'CRC'; // facturas en otra moneda van a revisión manual
 
 const CATALOGO_ENCABEZADOS = [
-  'ID_Producto', 'Nombre_Estandar', 'Categoria', 'Area_Negocio', 'Unidad_Medida',
+  'ID_Producto', 'Nombre_Estandar', 'Categoria', 'Area_Negocio', 'Familia', 'Subfamilia', 'Unidad_Medida',
   'Presentacion', 'Tamano', 'Cantidad_Presentacion', 'Precio_Sin_IVA', 'IVA',
   'Costo_Actual', 'Rendimiento', 'Proveedor_Habitual', 'Stock_Minimo', 'En_Uso',
   'Fecha_Ultima_Actualizacion', 'Aplica_Receta'
 ];
+
+const UNIDADES_RECETA_DEFAULT = ['Unidad', 'Litro', 'Mililitro', 'Onza', 'Kilo', 'Gramo', 'Pizca'];
 
 // Mismos valores por defecto que ya usa Code-compras-backend.gs, para que
 // Categorías/Áreas se vean familiares aunque ahora vivan en este spreadsheet.
@@ -140,6 +145,9 @@ function crearHojasIniciales() {
 
   crearHojaConEncabezados(ss, SHEET_CATEGORIAS, ['Categoria']);
   crearHojaConEncabezados(ss, SHEET_AREAS, ['Area_Negocio']);
+  crearHojaConEncabezados(ss, SHEET_FAMILIAS, ['Familia']);
+  crearHojaConEncabezados(ss, SHEET_SUBFAMILIAS, ['Familia', 'Subfamilia']);
+  crearHojaConEncabezados(ss, SHEET_UNIDADES_RECETA, ['Unidad']);
 
   crearHojaConEncabezados(ss, SHEET_RECETAS,
     ['ID_Receta', 'Nombre', 'Tipo', 'Porciones', 'Unidad', 'ID_Plato', 'Costo_Total', 'Costo_Porcion', 'Fecha_Actualizacion']);
@@ -152,6 +160,7 @@ function crearHojasIniciales() {
 
   sembrarListaCompartida(ss, SHEET_CATEGORIAS, CATEGORIAS_DEFAULT);
   sembrarListaCompartida(ss, SHEET_AREAS, AREAS_DEFAULT);
+  sembrarListaCompartida(ss, SHEET_UNIDADES_RECETA, UNIDADES_RECETA_DEFAULT);
 
   Logger.log('Hojas creadas/verificadas.');
 }
@@ -194,6 +203,22 @@ function migrarAgregarAplicaReceta() {
     sh.getRange(2, nuevaCol, nFilas, 1).setValues(Array(nFilas).fill([true]));
   }
   Logger.log('Columna Aplica_Receta agregada; ' + nFilas + ' producto(s) existentes quedaron en true.');
+}
+
+// Migración: agrega Familia/Subfamilia a un Catalogo_Maestro que ya tiene
+// datos. Quedan vacías en los productos existentes (no hay un valor por
+// defecto razonable) — se van completando desde costos-productos.html.
+function migrarAgregarClasificacion() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_CATALOGO);
+  const encabezados = encabezadosDe(sh);
+  const faltantes = ['Familia', 'Subfamilia'].filter(function(h) { return encabezados.indexOf(h) === -1; });
+  if (faltantes.length === 0) {
+    Logger.log('Las columnas Familia/Subfamilia ya existen, no hace falta migrar.');
+    return;
+  }
+  let col = encabezados.length + 1;
+  faltantes.forEach(function(h) { sh.getRange(1, col).setValue(h); col++; });
+  Logger.log('Columnas agregadas a Catalogo_Maestro: ' + faltantes.join(', ') + '.');
 }
 
 // Migración: agrega Moneda_Original/Tipo_Cambio_Usado a un Historial_Precios
@@ -870,10 +895,14 @@ function doGet(e) {
       case 'pendientes':  return jsonOut({ ok: true, registros: moduloPendientes() });
       case 'categorias':  return jsonOut({ ok: true, valores: moduloCategorias() });
       case 'areas':       return jsonOut({ ok: true, valores: moduloAreas() });
+      case 'familias':    return jsonOut({ ok: true, valores: moduloFamilias() });
+      case 'subfamilias': return jsonOut({ ok: true, registros: moduloSubfamilias() });
+      case 'unidades_receta': return jsonOut({ ok: true, valores: moduloUnidadesReceta() });
       case 'proveedores': return jsonOut({ ok: true, registros: moduloProveedores() });
       case 'recetas':     return jsonOut({ ok: true, registros: moduloRecetas() });
       case 'menu':        return jsonOut({ ok: true, registros: moduloMenu() });
       case 'config':      return jsonOut({ ok: true, tipo_cambio_usd: obtenerTipoCambioUSD() });
+      case 'historial':   return jsonOut({ ok: true, registros: moduloHistorial() });
       default:
         return jsonOut({ ok: false, error: 'Módulo no reconocido: ' + modulo });
     }
@@ -898,6 +927,9 @@ function doPost(e) {
       case 'producto':  result = guardarProducto(payload); break;
       case 'categoria': result = guardarCategoria(payload); break;
       case 'area':      result = guardarArea(payload); break;
+      case 'familia':   result = guardarFamilia(payload); break;
+      case 'subfamilia': result = guardarSubfamilia(payload); break;
+      case 'unidad_receta': result = guardarUnidadReceta(payload); break;
       case 'receta':    result = guardarReceta(payload); break;
       case 'plato':     result = guardarPlato(payload); break;
       case 'config':    result = guardarTipoCambioUSD(payload.tipo_cambio_usd); break;
@@ -924,6 +956,8 @@ function moduloProductos() {
       nombre: r['Nombre_Estandar'],
       categoria: r['Categoria'] || '',
       area: r['Area_Negocio'] || '',
+      familia: r['Familia'] || '',
+      subfamilia: r['Subfamilia'] || '',
       unidad: r['Unidad_Medida'] || '',
       presentacion: r['Presentacion'] || '',
       tamano: r['Tamano'] || '',
@@ -967,6 +1001,22 @@ function moduloCategorias() {
 function moduloAreas() {
   return filasComoObjetos(SpreadsheetApp.getActive().getSheetByName(SHEET_AREAS))
     .map(function(r) { return r['Area_Negocio']; }).filter(Boolean);
+}
+
+function moduloFamilias() {
+  return filasComoObjetos(SpreadsheetApp.getActive().getSheetByName(SHEET_FAMILIAS))
+    .map(function(r) { return r['Familia']; }).filter(Boolean);
+}
+
+function moduloSubfamilias() {
+  return filasComoObjetos(SpreadsheetApp.getActive().getSheetByName(SHEET_SUBFAMILIAS))
+    .map(function(r) { return { familia: r['Familia'] || '', subfamilia: r['Subfamilia'] || '' }; })
+    .filter(function(r) { return r.subfamilia; });
+}
+
+function moduloUnidadesReceta() {
+  return filasComoObjetos(SpreadsheetApp.getActive().getSheetByName(SHEET_UNIDADES_RECETA))
+    .map(function(r) { return r['Unidad']; }).filter(Boolean);
 }
 
 function moduloProveedores() {
@@ -1027,6 +1077,21 @@ function moduloMenu() {
   });
 }
 
+function moduloHistorial() {
+  return filasComoObjetos(SpreadsheetApp.getActive().getSheetByName(SHEET_HISTORIAL)).map(function(r) {
+    return {
+      id_producto: r['ID_Producto'],
+      fecha: r['Fecha_Factura'] || '',
+      proveedor: r['Proveedor'] || '',
+      moneda: r['Moneda'] || '',
+      precio_unitario: Number(r['Precio_Unitario']) || 0,
+      cantidad: Number(r['Cantidad']) || 0,
+      ref_factura: r['Ref_Factura'] || '',
+      moneda_original: r['Moneda_Original'] || ''
+    };
+  });
+}
+
 // ── Módulos POST: productos ──────────────────────────────────────────
 function guardarProducto(p) {
   if (!p.nombre) throw new Error('Falta el nombre del producto.');
@@ -1047,6 +1112,8 @@ function guardarProducto(p) {
     'Nombre_Estandar': p.nombre,
     'Categoria': p.categoria || '',
     'Area_Negocio': p.area || '',
+    'Familia': p.familia || '',
+    'Subfamilia': p.subfamilia || '',
     'Unidad_Medida': p.unidad || '',
     'Presentacion': p.presentacion || '',
     'Tamano': p.tamano || '',
@@ -1142,15 +1209,18 @@ function fusionarProductos(idConservar, idDescartar) {
   };
 }
 
-// ── Módulos POST: categorías / áreas ─────────────────────────────────
-function guardarValorCompartido(nombreHoja, nombreColumna, valor, valorAnterior) {
+// ── Módulos POST: categorías / áreas / familias / unidades de receta ─
+// Todas listas simples (un valor por fila). `cascadas` son otras hojas/columnas
+// que hay que actualizar si se renombra un valor (ej. Familia también vive en
+// Subfamilias, no solo en Catalogo_Maestro).
+function guardarValorCompartido(nombreHoja, nombreColumna, valor, valorAnterior, cascadas) {
   if (!valor) throw new Error('Falta el valor.');
   const sh = SpreadsheetApp.getActive().getSheetByName(nombreHoja);
   if (valorAnterior && valorAnterior !== valor) {
     const fila = filaPorId(sh, nombreColumna, valorAnterior);
     if (fila === -1) throw new Error('No se encontró "' + valorAnterior + '".');
     sh.getRange(fila, 1).setValue(valor);
-    renombrarValorEnCatalogo(nombreColumna === 'Categoria' ? 'Categoria' : 'Area_Negocio', valorAnterior, valor);
+    (cascadas || []).forEach(function(c) { renombrarValorEnHoja(c.hoja, c.columna, valorAnterior, valor); });
     return { renombrado: valor };
   }
   if (filaPorId(sh, nombreColumna, valor) !== -1) return { ya_existia: valor };
@@ -1158,8 +1228,8 @@ function guardarValorCompartido(nombreHoja, nombreColumna, valor, valorAnterior)
   return { creado: valor };
 }
 
-function renombrarValorEnCatalogo(columna, valorAnterior, valorNuevo) {
-  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_CATALOGO);
+function renombrarValorEnHoja(nombreHoja, columna, valorAnterior, valorNuevo) {
+  const sh = SpreadsheetApp.getActive().getSheetByName(nombreHoja);
   const encabezados = encabezadosDe(sh);
   const col = encabezados.indexOf(columna) + 1;
   if (col === 0) return;
@@ -1171,14 +1241,52 @@ function renombrarValorEnCatalogo(columna, valorAnterior, valorNuevo) {
   }
 }
 
-function guardarCategoria(p) { return guardarValorCompartido(SHEET_CATEGORIAS, 'Categoria', p.valor, p.valor_anterior); }
-function guardarArea(p) { return guardarValorCompartido(SHEET_AREAS, 'Area_Negocio', p.valor, p.valor_anterior); }
+function guardarCategoria(p) { return guardarValorCompartido(SHEET_CATEGORIAS, 'Categoria', p.valor, p.valor_anterior, [{hoja: SHEET_CATALOGO, columna: 'Categoria'}]); }
+function guardarArea(p) { return guardarValorCompartido(SHEET_AREAS, 'Area_Negocio', p.valor, p.valor_anterior, [{hoja: SHEET_CATALOGO, columna: 'Area_Negocio'}]); }
+function guardarFamilia(p) {
+  return guardarValorCompartido(SHEET_FAMILIAS, 'Familia', p.valor, p.valor_anterior,
+    [{hoja: SHEET_CATALOGO, columna: 'Familia'}, {hoja: SHEET_SUBFAMILIAS, columna: 'Familia'}]);
+}
+function guardarUnidadReceta(p) { return guardarValorCompartido(SHEET_UNIDADES_RECETA, 'Unidad', p.valor, p.valor_anterior, [{hoja: SHEET_CATALOGO, columna: 'Unidad_Medida'}]); }
+
+// Subfamilia no es una lista simple: cada fila es un par (Familia, Subfamilia).
+// Solo admite crear/eliminar (no renombrar) — para eso, borrar y volver a crear.
+function guardarSubfamilia(p) {
+  if (!p.valor) throw new Error('Falta la subfamilia.');
+  if (!p.familia) throw new Error('Falta la familia a la que pertenece.');
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_SUBFAMILIAS);
+  const existe = filasComoObjetos(sh).some(function(r) { return r['Familia'] === p.familia && r['Subfamilia'] === p.valor; });
+  if (existe) return { ya_existia: p.valor };
+  sh.appendRow([p.familia, p.valor]);
+  return { creado: p.valor };
+}
+
+function eliminarSubfamilia(familia, subfamilia) {
+  if (!familia || !subfamilia) throw new Error('Falta la familia o subfamilia a eliminar.');
+  const catalogo = filasComoObjetos(SpreadsheetApp.getActive().getSheetByName(SHEET_CATALOGO));
+  const enUso = catalogo.some(function(p) { return p['Familia'] === familia && p['Subfamilia'] === subfamilia; });
+  if (enUso) throw new Error('No se puede eliminar: hay productos del catálogo usando "' + subfamilia + '".');
+
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_SUBFAMILIAS);
+  const filas = leerHojaConEncabezados(sh);
+  const cFam = filas.encabezados.indexOf('Familia');
+  const cSub = filas.encabezados.indexOf('Subfamilia');
+  const idx = filas.datos.findIndex(function(f) { return f[cFam] === familia && f[cSub] === subfamilia; });
+  if (idx === -1) throw new Error('No se encontró "' + subfamilia + '".');
+  sh.deleteRow(idx + 2);
+  return { eliminado: subfamilia };
+}
 
 function eliminarValorCompartido(nombreHoja, nombreColumna, valor) {
   if (!valor) throw new Error('Falta el valor a eliminar.');
   const catalogo = filasComoObjetos(SpreadsheetApp.getActive().getSheetByName(SHEET_CATALOGO));
   const enUso = catalogo.some(function(prod) { return prod[nombreColumna] === valor; });
   if (enUso) throw new Error('No se puede eliminar: hay productos del catálogo usando "' + valor + '".');
+
+  if (nombreHoja === SHEET_FAMILIAS) {
+    const subEnUso = filasComoObjetos(SpreadsheetApp.getActive().getSheetByName(SHEET_SUBFAMILIAS)).some(function(s) { return s['Familia'] === valor; });
+    if (subEnUso) throw new Error('No se puede eliminar: hay subfamilias registradas bajo "' + valor + '". Borralas primero.');
+  }
 
   const sh = SpreadsheetApp.getActive().getSheetByName(nombreHoja);
   const fila = filaPorId(sh, nombreColumna, valor);
@@ -1306,6 +1414,9 @@ function eliminarRegistro(p) {
     case 'menu':      return eliminarPlato(p.id);
     case 'categoria': return eliminarValorCompartido(SHEET_CATEGORIAS, 'Categoria', p.valor);
     case 'area':      return eliminarValorCompartido(SHEET_AREAS, 'Area_Negocio', p.valor);
+    case 'familia':   return eliminarValorCompartido(SHEET_FAMILIAS, 'Familia', p.valor);
+    case 'subfamilia':    return eliminarSubfamilia(p.familia, p.valor);
+    case 'unidad_receta': return eliminarValorCompartido(SHEET_UNIDADES_RECETA, 'Unidad', p.valor);
     default:
       throw new Error('Tipo no reconocido: ' + p.tipo);
   }
