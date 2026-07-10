@@ -850,26 +850,41 @@ async function confirmarCarga() {
   // Guardar en localStorage
   const lista = getProductos();
   let guardados = 0;
+  let errores = 0;
   for (const p of nuevos) {
-    lista.push(p);
-    guardados++;
-    // Sincronizar con Sheet si está configurado
+    // Sincronizar con Sheet si está configurado. Igual que en guardar(): el
+    // Web App responde HTTP 200 aunque el backend haya rechazado el guardado
+    // (doPost atrapa el error y devuelve {ok:false}), así que hay que revisar
+    // el body — un fetch "exitoso" no garantiza que el producto haya quedado
+    // en el Sheet. Si falla, no se agrega al cache local: cargarProductosDesdeSheet()
+    // lo va a borrar en el próximo refresco de todos modos, y mostrarlo mientras
+    // tanto como si estuviera guardado es lo que oculta este tipo de fallo.
     if (APPS_SCRIPT_COSTOS) {
       try {
-        await fetch(APPS_SCRIPT_COSTOS, {
+        const resp = await fetch(APPS_SCRIPT_COSTOS, {
           method: 'POST',
           body: new URLSearchParams({ data: JSON.stringify({ modulo: 'producto', ...p }) })
         });
-      } catch(e) {}
+        const json = await resp.json();
+        if (!json.ok) throw new Error(json.error || 'rechazado');
+        lista.push(p);
+        guardados++;
+      } catch(e) {
+        errores++;
+        console.warn('No se pudo guardar en el Sheet:', p.nombre, e);
+      }
+    } else {
+      lista.push(p);
+      guardados++;
     }
   }
   saveProductos(lista);
 
   document.getElementById('modal-contenido').innerHTML = `
     <div style="text-align:center;padding:1.5rem;">
-      <div style="font-size:40px;margin-bottom:12px;">✓</div>
-      <div style="font-family:var(--font-d);font-size:18px;font-weight:700;color:var(--green);">${guardados} productos importados</div>
-      <div style="font-size:13px;color:var(--muted);margin-top:6px;">Los datos ya están disponibles en la lista.</div>
+      <div style="font-size:40px;margin-bottom:12px;">${errores ? '⚠' : '✓'}</div>
+      <div style="font-family:var(--font-d);font-size:18px;font-weight:700;color:${errores ? 'var(--red)' : 'var(--green)'};">${guardados} producto${guardados!==1?'s':''} importado${guardados!==1?'s':''}${errores ? ` · ${errores} con error` : ''}</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:6px;">${errores ? 'Los que fallaron no quedaron guardados en el Sheet — revisá la consola y volvé a intentarlo.' : 'Los datos ya están disponibles en la lista.'}</div>
     </div>`;
   document.getElementById('modal-acciones').innerHTML =
     '<button onclick="cerrarModal();renderLista();" style="flex:1;padding:10px 16px;border-radius:9px;background:var(--green);color:#fff;border:none;font-family:var(--font-d);font-size:14px;font-weight:700;cursor:pointer;">Ver productos</button>';
@@ -1692,14 +1707,26 @@ async function guardar() {
   }
   saveProductos(lista);
 
-  // Sincronizar con Google Sheets
+  // Sincronizar con Google Sheets. El Web App de Apps Script siempre responde
+  // HTTP 200 (hasta cuando doPost atrapa un error interno y devuelve
+  // {ok:false}), así que un fetch que no tira excepción NO significa que se
+  // haya guardado — hay que revisar el body. Si no se revisa, un guardado que
+  // el backend rechazó queda como "éxito" acá y se pierde en el próximo
+  // cargarProductosDesdeSheet() (que pisa el localStorage con lo que de
+  // verdad hay en el Sheet).
   if (APPS_SCRIPT_COSTOS) {
     try {
-      await fetch(APPS_SCRIPT_COSTOS, {
+      const resp = await fetch(APPS_SCRIPT_COSTOS, {
         method: 'POST',
         body: new URLSearchParams({ data: JSON.stringify({ modulo: 'producto', ...registro }) })
       });
-    } catch(e) { console.warn('Sin conexión al Sheet:', e); }
+      const json = await resp.json();
+      if (!json.ok) throw new Error(json.error || 'El Sheet rechazó el guardado.');
+    } catch(e) {
+      showToast(`No se guardó en el Sheet: ${e.message}`, 'error');
+      console.warn('Error guardando producto en Sheet:', e);
+      return;
+    }
   }
 
   showToast(`${nombre} ${editId ? 'actualizado' : 'agregado'}`, 'success');
