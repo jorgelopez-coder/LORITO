@@ -18,6 +18,9 @@ const SHEET_AREAS       = 'Areas_Negocio';
 const SHEET_RECETAS     = 'Recetas';
 const SHEET_RECETA_ING  = 'Receta_Ingredientes';
 const SHEET_MENU        = 'Menu';
+const SHEET_CONFIG      = 'Configuracion';
+
+const CLAVE_TIPO_CAMBIO = 'TipoCambio_USD';
 
 const UMBRAL_AUTOMATCH = 0.82;
 const VENTANA_COMPRAS  = 5;
@@ -128,7 +131,9 @@ function crearHojasIniciales() {
     ['Nombre_Factura', 'ID_Producto_Maestro', 'Proveedor', 'Confianza', 'Estado']);
 
   crearHojaConEncabezados(ss, SHEET_HISTORIAL,
-    ['Fecha_Registro', 'Fecha_Factura', 'ID_Producto', 'Proveedor', 'Moneda', 'Precio_Unitario', 'Cantidad', 'Ref_Factura']);
+    ['Fecha_Registro', 'Fecha_Factura', 'ID_Producto', 'Proveedor', 'Moneda', 'Precio_Unitario', 'Cantidad', 'Ref_Factura', 'Moneda_Original', 'Tipo_Cambio_Usado']);
+
+  crearHojaConEncabezados(ss, SHEET_CONFIG, ['Clave', 'Valor']);
 
   crearHojaConEncabezados(ss, SHEET_PENDIENTES,
     ['Fecha_Registro', 'Fecha_Factura', 'Nombre_Producto', 'Proveedor', 'Moneda', 'Precio_Unitario', 'Cantidad', 'Ref_Factura', 'ID_Producto_Sugerido']);
@@ -189,6 +194,122 @@ function migrarAgregarAplicaReceta() {
     sh.getRange(2, nuevaCol, nFilas, 1).setValues(Array(nFilas).fill([true]));
   }
   Logger.log('Columna Aplica_Receta agregada; ' + nFilas + ' producto(s) existentes quedaron en true.');
+}
+
+// Migración: agrega Moneda_Original/Tipo_Cambio_Usado a un Historial_Precios
+// que ya tiene datos (mismo motivo que migrarAgregarAplicaReceta — hojas ya
+// pobladas no reciben columnas nuevas solas). Las filas existentes son todas
+// compras en CRC nativo, así que quedan en blanco (correcto, no hubo conversión).
+function migrarAgregarColumnasConversionUSD() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_HISTORIAL);
+  const encabezados = encabezadosDe(sh);
+  const faltantes = ['Moneda_Original', 'Tipo_Cambio_Usado'].filter(function(h) { return encabezados.indexOf(h) === -1; });
+  if (faltantes.length === 0) {
+    Logger.log('Las columnas de conversión ya existen en Historial_Precios, no hace falta migrar.');
+    return;
+  }
+  let col = encabezados.length + 1;
+  faltantes.forEach(function(h) { sh.getRange(1, col).setValue(h); col++; });
+  Logger.log('Columnas agregadas a Historial_Precios: ' + faltantes.join(', ') + '.');
+}
+
+// ============================================
+// TIPO DE CAMBIO (conversión automática de compras en USD)
+// ============================================
+function obtenerValorConfig(clave) {
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_CONFIG);
+  if (!sh) return null;
+  const fila = filaPorId(sh, 'Clave', clave);
+  if (fila === -1) return null;
+  return sh.getRange(fila, 2).getValue();
+}
+
+function guardarValorConfig(clave, valor) {
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_CONFIG);
+  let fila = filaPorId(sh, 'Clave', clave);
+  if (fila === -1) fila = sh.getLastRow() + 1;
+  sh.getRange(fila, 1, 1, 2).setValues([[clave, valor]]);
+}
+
+function obtenerTipoCambioUSD() {
+  const v = obtenerValorConfig(CLAVE_TIPO_CAMBIO);
+  return v ? Number(v) : null;
+}
+
+// Convierte una línea a la moneda de costeo (CRC) si hace falta y se puede:
+// ya está en CRC → se devuelve tal cual; está en USD y hay tipo de cambio
+// configurado → se devuelve convertida (con Moneda_Original/Tipo_Cambio_Usado
+// para el historial); cualquier otro caso (otra moneda, o USD sin tipo de
+// cambio todavía) → null, el llamador debe mandarla a Compras_Pendientes.
+function convertirAMonedaCosteo(linea, tipoCambioUSD) {
+  if (!linea.moneda || linea.moneda === MONEDA_COSTEO) return linea;
+  if (linea.moneda === 'USD' && tipoCambioUSD) {
+    return Object.assign({}, linea, {
+      moneda: MONEDA_COSTEO,
+      precioUnitario: Number(linea.precioUnitario) * tipoCambioUSD,
+      monedaOriginal: 'USD',
+      tipoCambioUsado: tipoCambioUSD
+    });
+  }
+  return null;
+}
+
+// Corre cuando se guarda un tipo de cambio nuevo: resuelve todas las compras
+// en Compras_Pendientes que estaban ahí SOLO por ser USD sin tipo de cambio
+// (no por falta de match de producto) y las pasa a Historial_Precios.
+function reprocesarPendientesUSD(tipoCambioUSD) {
+  const shPendientes = SpreadsheetApp.getActive().getSheetByName(SHEET_PENDIENTES);
+  const shAlias = SpreadsheetApp.getActive().getSheetByName(SHEET_ALIAS);
+  const shCatalogo = SpreadsheetApp.getActive().getSheetByName(SHEET_CATALOGO);
+  const aliasData = shAlias.getDataRange().getValues();
+  const catData = shCatalogo.getDataRange().getValues();
+
+  const pend = leerHojaConEncabezados(shPendientes);
+  const cMoneda = pend.encabezados.indexOf('Moneda');
+  const cNombre = pend.encabezados.indexOf('Nombre_Producto');
+  const cProveedor = pend.encabezados.indexOf('Proveedor');
+  const cFecha = pend.encabezados.indexOf('Fecha_Factura');
+  const cPrecio = pend.encabezados.indexOf('Precio_Unitario');
+  const cCantidad = pend.encabezados.indexOf('Cantidad');
+  const cRef = pend.encabezados.indexOf('Ref_Factura');
+
+  const productosAfectados = new Set();
+  const filasRestantes = [];
+  let resueltas = 0;
+
+  pend.datos.forEach(function(fila) {
+    if (fila[cMoneda] !== 'USD') { filasRestantes.push(fila); return; }
+
+    const resuelto = resolverIdProductoConDatos(fila[cNombre], fila[cProveedor], '', aliasData, catData, shAlias);
+    if (!resuelto.aprobado) { filasRestantes.push(fila); return; } // sigue pendiente por producto, no por moneda
+
+    SpreadsheetApp.getActive().getSheetByName(SHEET_HISTORIAL).appendRow([
+      new Date(), fila[cFecha], resuelto.id, fila[cProveedor], MONEDA_COSTEO,
+      Number(fila[cPrecio]) * tipoCambioUSD, fila[cCantidad], fila[cRef], 'USD', tipoCambioUSD
+    ]);
+    productosAfectados.add(resuelto.id);
+    resueltas++;
+  });
+
+  if (resueltas > 0) {
+    if (shPendientes.getLastRow() > 1) {
+      shPendientes.getRange(2, 1, shPendientes.getLastRow() - 1, pend.encabezados.length).clearContent();
+    }
+    if (filasRestantes.length > 0) {
+      shPendientes.getRange(2, 1, filasRestantes.length, pend.encabezados.length).setValues(filasRestantes);
+    }
+    productosAfectados.forEach(function(id) { actualizarCostoProducto(id); });
+  }
+
+  return { resueltas: resueltas, restantes: filasRestantes.length };
+}
+
+function guardarTipoCambioUSD(valor) {
+  const n = Number(valor);
+  if (!n || n <= 0) throw new Error('Tipo de cambio inválido.');
+  guardarValorConfig(CLAVE_TIPO_CAMBIO, n);
+  const resultado = reprocesarPendientesUSD(n);
+  return { tipo_cambio_usd: n, pendientes_resueltas: resultado.resueltas };
 }
 
 // ============================================
@@ -291,6 +412,7 @@ function backfillHistorialDesdeDesglose() {
 
   const aliasData = shAlias.getDataRange().getValues();
   const catData = shCatalogo.getDataRange().getValues();
+  const tipoCambioUSD = obtenerTipoCambioUSD();
 
   const yaCargadas = new Set(filasComoObjetos(shHistorial).map(function(r) {
     return claveHistorial(r['Ref_Factura'], r['ID_Producto'], r['Fecha_Factura']);
@@ -314,7 +436,8 @@ function backfillHistorialDesdeDesglose() {
     if (!nombreProducto && !nombreNormalizado) continue;
     const llave = nombreNormalizado || nombreProducto;
 
-    if (moneda && moneda !== MONEDA_COSTEO) {
+    const convertida = convertirAMonedaCosteo({ moneda: moneda, precioUnitario: precioUnitario }, tipoCambioUSD);
+    if (!convertida) {
       const cp = clavePendiente(refFactura, llave, proveedor);
       if (yaPendientes.has(cp)) { omitidas++; continue; }
       yaPendientes.add(cp);
@@ -327,6 +450,8 @@ function backfillHistorialDesdeDesglose() {
       const cp = clavePendiente(refFactura, llave, proveedor);
       if (yaPendientes.has(cp)) { omitidas++; continue; }
       yaPendientes.add(cp);
+      // Guarda la línea original (no convertida) — Compras_Pendientes debe
+      // seguir reflejando la moneda real de la factura.
       filasPendientes.push([new Date(), fecha, llave, proveedor, moneda, precioUnitario, cantidad, refFactura, resuelto.id || '']);
       continue;
     }
@@ -334,12 +459,13 @@ function backfillHistorialDesdeDesglose() {
     const ch = claveHistorial(refFactura, resuelto.id, fecha);
     if (yaCargadas.has(ch)) { omitidas++; continue; }
     yaCargadas.add(ch);
-    filasHistorial.push([new Date(), fecha, resuelto.id, proveedor, moneda, precioUnitario, cantidad, refFactura]);
+    filasHistorial.push([new Date(), fecha, resuelto.id, proveedor, convertida.moneda, convertida.precioUnitario,
+                          cantidad, refFactura, convertida.monedaOriginal || '', convertida.tipoCambioUsado || '']);
     productosAfectados.add(resuelto.id);
   }
 
   if (filasHistorial.length > 0) {
-    shHistorial.getRange(shHistorial.getLastRow() + 1, 1, filasHistorial.length, 8).setValues(filasHistorial);
+    shHistorial.getRange(shHistorial.getLastRow() + 1, 1, filasHistorial.length, 10).setValues(filasHistorial);
   }
   if (filasPendientes.length > 0) {
     shPendientes.getRange(shPendientes.getLastRow() + 1, 1, filasPendientes.length, 9).setValues(filasPendientes);
@@ -441,16 +567,21 @@ function procesarLineaFactura(linea) {
   // Llave de comparación: Nombre normalizado (si viene vacío, cae al Producto crudo)
   const llave = linea.nombreNormalizado || linea.nombreProducto;
 
-  // Moneda distinta a la de costeo → siempre a revisión manual, no se mezcla
-  if (linea.moneda && linea.moneda !== MONEDA_COSTEO) {
+  // Moneda distinta a la de costeo: si es USD y hay tipo de cambio
+  // configurado, se convierte sola; si no, a revisión manual.
+  const convertida = convertirAMonedaCosteo(linea, obtenerTipoCambioUSD());
+  if (!convertida) {
     guardarPendiente(linea, null);
     return;
   }
 
-  const resuelto = resolverIdProducto(llave, linea.proveedor, linea.categoria);
+  const resuelto = resolverIdProducto(llave, convertida.proveedor, convertida.categoria);
   if (resuelto.aprobado) {
-    registrarCompra(resuelto.id, linea);
+    registrarCompra(resuelto.id, convertida);
   } else {
+    // Guarda la línea original (no la convertida): si era USD, que Compras_Pendientes
+    // lo siga mostrando así — liberarPendientes() la convierte de nuevo al
+    // tipo de cambio vigente en el momento en que se resuelva el alias.
     guardarPendiente(linea, resuelto.id);
   }
 }
@@ -481,16 +612,23 @@ function onEditAlias(e) {
 function liberarPendientes(nombreFactura, proveedor, idProducto) {
   const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_PENDIENTES);
   const data = sh.getDataRange().getValues();
+  const tipoCambioUSD = obtenerTipoCambioUSD();
   // [FechaRegistro, Fecha, Nombre, Proveedor, Moneda, Precio, Cantidad, Ref, IDSugerido]
   for (let i = data.length - 1; i >= 1; i--) {
-    if (normalizarTexto(data[i][2]) === normalizarTexto(nombreFactura) && data[i][3] === proveedor
-        && data[i][4] === MONEDA_COSTEO) {
-      registrarCompra(idProducto, {
-        fecha: data[i][1], proveedor: data[i][3], moneda: data[i][4],
-        precioUnitario: data[i][5], cantidad: data[i][6], refFactura: data[i][7]
-      });
-      sh.deleteRow(i + 1);
-    }
+    if (normalizarTexto(data[i][2]) !== normalizarTexto(nombreFactura) || data[i][3] !== proveedor) continue;
+
+    const linea = {
+      fecha: data[i][1], proveedor: data[i][3], moneda: data[i][4],
+      precioUnitario: data[i][5], cantidad: data[i][6], refFactura: data[i][7]
+    };
+
+    // CRC directo, o USD con tipo de cambio ya configurado — cualquier otro
+    // caso (otra moneda, o USD sin tipo de cambio todavía) se deja pendiente.
+    const convertida = convertirAMonedaCosteo(linea, tipoCambioUSD);
+    if (!convertida) continue;
+
+    registrarCompra(idProducto, convertida);
+    sh.deleteRow(i + 1);
   }
 }
 
@@ -500,7 +638,8 @@ function liberarPendientes(nombreFactura, proveedor, idProducto) {
 function registrarCompra(idProducto, linea) {
   SpreadsheetApp.getActive().getSheetByName(SHEET_HISTORIAL)
     .appendRow([new Date(), linea.fecha, idProducto, linea.proveedor, linea.moneda,
-                linea.precioUnitario, linea.cantidad, linea.refFactura]);
+                linea.precioUnitario, linea.cantidad, linea.refFactura,
+                linea.monedaOriginal || '', linea.tipoCambioUsado || '']);
   actualizarCostoProducto(idProducto);
 }
 
@@ -734,6 +873,7 @@ function doGet(e) {
       case 'proveedores': return jsonOut({ ok: true, registros: moduloProveedores() });
       case 'recetas':     return jsonOut({ ok: true, registros: moduloRecetas() });
       case 'menu':        return jsonOut({ ok: true, registros: moduloMenu() });
+      case 'config':      return jsonOut({ ok: true, tipo_cambio_usd: obtenerTipoCambioUSD() });
       default:
         return jsonOut({ ok: false, error: 'Módulo no reconocido: ' + modulo });
     }
@@ -760,6 +900,7 @@ function doPost(e) {
       case 'area':      result = guardarArea(payload); break;
       case 'receta':    result = guardarReceta(payload); break;
       case 'plato':     result = guardarPlato(payload); break;
+      case 'config':    result = guardarTipoCambioUSD(payload.tipo_cambio_usd); break;
       case 'eliminar':  result = eliminarRegistro(payload); break;
       default:
         throw new Error('Módulo no reconocido: ' + payload.modulo);

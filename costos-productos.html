@@ -226,10 +226,24 @@
     <!-- SECCIÓN 2: Precio -->
     <div class="card" style="margin-bottom:12px;">
       <p class="card-title" style="margin-bottom:1rem;">Precio de compra</p>
+      <div class="field-row" style="margin-bottom:1rem;">
+        <div class="field">
+          <label for="p-moneda-precio">Moneda del precio</label>
+          <select id="p-moneda-precio" onchange="onMonedaPrecioChange()">
+            <option value="CRC" selected>₡ Colones</option>
+            <option value="USD">US$ Dólares</option>
+          </select>
+        </div>
+        <div class="field" id="wrap-tipo-cambio" style="display:none;">
+          <label for="p-tipo-cambio">Tipo de cambio (₡ por US$)</label>
+          <input type="number" id="p-tipo-cambio" min="0" step="0.01" placeholder="Ej. 520" oninput="calcularCostos()">
+        </div>
+      </div>
       <div class="field-row">
         <div class="field">
-          <label for="p-precio-sin-iva">Precio de compra sin impuestos (₡) <span class="req">*</span></label>
+          <label for="p-precio-sin-iva"><span id="lbl-precio-moneda">Precio de compra sin impuestos (₡)</span> <span class="req">*</span></label>
           <input type="number" id="p-precio-sin-iva" min="0" step="1" placeholder="0" oninput="calcularCostos()">
+          <div id="precio-crc-equiv" style="font-size:11px;color:var(--purple);margin-top:4px;display:none;"></div>
         </div>
         <div class="field">
           <label for="p-iva">% IVA</label>
@@ -345,7 +359,7 @@
 
   <!-- CONFIGURACIÓN -->
   <div id="tab-config" style="display:none;">
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
 
       <div class="card">
         <p class="card-title">Categorías</p>
@@ -381,6 +395,16 @@
           <input type="text" id="cfg-pre-nueva" placeholder="Nueva presentación…" style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key==='Enter')addItem('pre')">
           <button onclick="addItem('pre')" style="padding:7px 12px;border-radius:8px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;font-weight:600;white-space:nowrap;">+ Agregar</button>
         </div>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Tipo de cambio (₡ por US$)</p>
+        <div id="cfg-tipo-cambio-actual" style="font-family:var(--font-d);font-size:20px;font-weight:700;color:var(--purple);margin-bottom:10px;">—</div>
+        <div style="display:flex;gap:6px;">
+          <input type="number" id="cfg-tipo-cambio" min="0" step="0.01" placeholder="Ej. 520" style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key==='Enter')guardarTipoCambioGlobal()">
+          <button onclick="guardarTipoCambioGlobal()" style="padding:7px 12px;border-radius:8px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;font-weight:600;white-space:nowrap;">Guardar</button>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:8px;">Se usa para convertir sola cualquier compra en dólares (facturas automáticas y "Nuevo producto"). Al guardar un tipo de cambio nuevo, las compras en dólares que estaban pendientes se resuelven solas.</p>
       </div>
 
     </div>
@@ -534,11 +558,44 @@ function aplicarConversion(val) {
   document.getElementById('conversion-sugerida').style.display = 'none';
 }
 
+// ── MONEDA DEL PRECIO (CRC / USD con tipo de cambio) ───────────────
+let TIPO_CAMBIO_ACTUAL = null; // tipo de cambio global (Configuración), prefill de referencia
+
+function onMonedaPrecioChange() {
+  const moneda = document.getElementById('p-moneda-precio').value;
+  const esUSD = moneda === 'USD';
+  document.getElementById('wrap-tipo-cambio').style.display = esUSD ? '' : 'none';
+  document.getElementById('lbl-precio-moneda').textContent = esUSD
+    ? 'Precio de compra sin impuestos (US$)'
+    : 'Precio de compra sin impuestos (₡)';
+  if (esUSD && !document.getElementById('p-tipo-cambio').value && TIPO_CAMBIO_ACTUAL) {
+    document.getElementById('p-tipo-cambio').value = TIPO_CAMBIO_ACTUAL;
+  }
+  calcularCostos();
+}
+
+function precioEnCRC() {
+  const moneda = document.getElementById('p-moneda-precio').value;
+  const precioIngresado = parseFloat(document.getElementById('p-precio-sin-iva').value) || 0;
+  if (moneda !== 'USD') return precioIngresado;
+  const tipoCambio = parseFloat(document.getElementById('p-tipo-cambio').value) || 0;
+  return precioIngresado * tipoCambio;
+}
+
 // ── CÁLCULO EN TIEMPO REAL ────────────────────────────────────────
 function calcularCostos() {
-  const precioSinIva  = parseFloat(document.getElementById('p-precio-sin-iva').value) || 0;
+  const moneda        = document.getElementById('p-moneda-precio').value;
+  const precioSinIva  = precioEnCRC();
   const cantidad      = parseFloat(document.getElementById('p-cantidad-presentacion').value) || 1;
   const rendimiento   = parseFloat(document.getElementById('p-rendimiento').value) || 100;
+
+  const equivEl = document.getElementById('precio-crc-equiv');
+  if (moneda === 'USD' && precioSinIva > 0) {
+    equivEl.style.display = 'block';
+    equivEl.textContent = `≈ ${fmt(precioSinIva)} al tipo de cambio ingresado`;
+  } else {
+    equivEl.style.display = 'none';
+  }
 
   const costoU     = cantidad > 0 ? precioSinIva / cantidad : 0;
   const costoReal  = rendimiento > 0 ? costoU / (rendimiento / 100) : costoU;
@@ -785,6 +842,39 @@ async function cargarListasCompartidas() {
   aplicarConfiguracion();
   renderCfgLista('cat');
   renderCfgLista('area');
+}
+
+async function cargarConfiguracion() {
+  if (!APPS_SCRIPT_COSTOS) return;
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS + '?modulo=config');
+    const data = await resp.json();
+    if (!data || !data.ok) return;
+    TIPO_CAMBIO_ACTUAL = data.tipo_cambio_usd || null;
+    document.getElementById('cfg-tipo-cambio-actual').textContent =
+      TIPO_CAMBIO_ACTUAL ? '₡' + Number(TIPO_CAMBIO_ACTUAL).toLocaleString('es-CR', {minimumFractionDigits:2}) : 'Sin definir';
+    document.getElementById('cfg-tipo-cambio').value = TIPO_CAMBIO_ACTUAL || '';
+  } catch (e) {
+    console.warn('No se pudo cargar la configuración:', e);
+  }
+}
+
+async function guardarTipoCambioGlobal() {
+  const valor = parseFloat(document.getElementById('cfg-tipo-cambio').value);
+  if (!valor || valor <= 0) { showToast('Ingresá un tipo de cambio válido.', 'error'); return; }
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'config', tipo_cambio_usd: valor }) }) });
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error || 'Error al guardar');
+    TIPO_CAMBIO_ACTUAL = valor;
+    document.getElementById('cfg-tipo-cambio-actual').textContent = '₡' + valor.toLocaleString('es-CR', {minimumFractionDigits:2});
+    const resueltas = (json.result && json.result.pendientes_resueltas) || 0;
+    showToast(`Tipo de cambio guardado ✓${resueltas ? ' · ' + resueltas + ' compra(s) en dólares resueltas' : ''}`, 'success');
+    cargarPendientes();
+    cargarProductosDesdeSheet();
+  } catch(e) {
+    showToast('No se pudo guardar: ' + e.message, 'error');
+  }
 }
 
 function getCfg(tipo) {
@@ -1264,7 +1354,9 @@ async function guardar() {
   const nombre               = document.getElementById('p-nombre').value.trim();
   const categoria            = document.getElementById('p-categoria').value;
   const unidad               = document.getElementById('p-unidad').value;
-  const precioSinIva         = parseFloat(document.getElementById('p-precio-sin-iva').value) || 0;
+  const monedaPrecio         = document.getElementById('p-moneda-precio').value;
+  const tipoCambio           = parseFloat(document.getElementById('p-tipo-cambio').value) || 0;
+  const precioSinIva         = precioEnCRC(); // siempre en ₡, ya convertido si la moneda era USD
   const iva                  = parseFloat(document.getElementById('p-iva').value) || 0;
   const cantidadPresentacion = parseFloat(document.getElementById('p-cantidad-presentacion').value) || 1;
   const costo                = parseFloat(document.getElementById('p-costo').value) || 0;
@@ -1279,6 +1371,7 @@ async function guardar() {
   if (!nombre)      { showToast('Ingresá el nombre.', 'error'); return; }
   if (!categoria)   { showToast('Seleccioná una categoría.', 'error'); return; }
   if (!unidad)      { showToast('Seleccioná la unidad.', 'error'); return; }
+  if (monedaPrecio === 'USD' && !tipoCambio) { showToast('Ingresá el tipo de cambio.', 'error'); return; }
   if (!precioSinIva){ showToast('Ingresá el precio de compra.', 'error'); return; }
   if (!area)        { showToast('Seleccioná el área de negocio.', 'error'); return; }
 
@@ -1335,6 +1428,11 @@ function editar(id) {
   document.getElementById('p-nombre').value                 = p.nombre;
   document.getElementById('p-categoria').value              = p.categoria;
   document.getElementById('p-unidad').value                 = p.unidad;
+  // Catalogo_Maestro solo guarda el precio ya convertido a ₡ — el formulario
+  // siempre reabre en colones, aunque se haya cargado originalmente en USD.
+  document.getElementById('p-moneda-precio').value          = 'CRC';
+  document.getElementById('p-tipo-cambio').value             = '';
+  onMonedaPrecioChange();
   document.getElementById('p-precio-sin-iva').value         = p.precio_sin_iva || p.costo || '';
   document.getElementById('p-iva').value                    = p.iva ?? 13;
   document.getElementById('p-cantidad-presentacion').value  = p.cantidad_presentacion || 1;
@@ -1369,6 +1467,9 @@ function limpiarForm() {
   document.getElementById('p-nombre').value                 = '';
   document.getElementById('p-categoria').value              = '';
   document.getElementById('p-unidad').value                 = '';
+  document.getElementById('p-moneda-precio').value          = 'CRC';
+  document.getElementById('p-tipo-cambio').value            = '';
+  onMonedaPrecioChange();
   document.getElementById('p-precio-sin-iva').value         = '';
   document.getElementById('p-iva').value                    = '13';
   document.getElementById('p-cantidad-presentacion').value  = '1';
@@ -1411,6 +1512,7 @@ function showToast(msg, type='success') {
 document.addEventListener("DOMContentLoaded", () => {
   initConfig();
   cargarListasCompartidas();
+  cargarConfiguracion();
   renderLista();
   cargarProveedoresDesdeSheet();
   cargarProductosDesdeSheet();
