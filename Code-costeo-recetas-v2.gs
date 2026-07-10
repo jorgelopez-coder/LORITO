@@ -31,7 +31,7 @@ const MONEDA_COSTEO    = 'CRC'; // facturas en otra moneda van a revisión manua
 
 const CATALOGO_ENCABEZADOS = [
   'ID_Producto', 'Nombre_Estandar', 'Categoria', 'Area_Negocio', 'Familia', 'Subfamilia', 'Unidad_Medida',
-  'Presentacion', 'Tamano', 'Cantidad_Presentacion', 'Precio_Sin_IVA', 'IVA',
+  'Presentacion', 'Tamano', 'Cantidad_Compra', 'Unidad_Compra', 'Cantidad_Presentacion', 'Precio_Sin_IVA', 'IVA',
   'Costo_Actual', 'Rendimiento', 'Proveedor_Habitual', 'Stock_Minimo', 'En_Uso',
   'Fecha_Ultima_Actualizacion', 'Aplica_Receta'
 ];
@@ -219,6 +219,54 @@ function migrarAgregarClasificacion() {
   let col = encabezados.length + 1;
   faltantes.forEach(function(h) { sh.getRange(1, col).setValue(h); col++; });
   Logger.log('Columnas agregadas a Catalogo_Maestro: ' + faltantes.join(', ') + '.');
+}
+
+// Migración: agrega Cantidad_Compra/Unidad_Compra a un Catalogo_Maestro que
+// ya tiene datos. Son el "cuánto y en qué unidad viene la presentación de
+// compra" (ej. Cantidad_Compra=25, Unidad_Compra=Kilo para un saco de 25 kg)
+// — separado de Cantidad_Presentacion, que es ese mismo valor ya convertido
+// a la unidad de receta. Quedan vacías en los productos existentes.
+function migrarAgregarUnidadCompra() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_CATALOGO);
+  const encabezados = encabezadosDe(sh);
+  const faltantes = ['Cantidad_Compra', 'Unidad_Compra'].filter(function(h) { return encabezados.indexOf(h) === -1; });
+  if (faltantes.length === 0) {
+    Logger.log('Las columnas Cantidad_Compra/Unidad_Compra ya existen, no hace falta migrar.');
+    return;
+  }
+  let col = encabezados.length + 1;
+  faltantes.forEach(function(h) { sh.getRange(1, col).setValue(h); col++; });
+  Logger.log('Columnas agregadas a Catalogo_Maestro: ' + faltantes.join(', ') + '.');
+}
+
+// Corrige el encabezado de Área de negocio si quedó con otro nombre (tilde,
+// mayúsculas, espacios — típico si el Sheet arrancó con la convención del
+// sistema viejo, "Área de negocio"). Como todo el código busca la columna
+// por el nombre EXACTO "Area_Negocio", un encabezado distinto hace que los
+// guardados y las lecturas de esa columna fallen en silencio (se guarda/lee
+// como vacío) sin tirar ningún error. Renombra el encabezado en el lugar sin
+// tocar los datos que ya tenga esa columna; si no encuentra ninguna columna
+// parecida, crea "Area_Negocio" nueva y vacía.
+function migrarNormalizarEncabezadoArea() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_CATALOGO);
+  const encabezados = encabezadosDe(sh);
+  if (encabezados.indexOf('Area_Negocio') !== -1) {
+    Logger.log('La columna Area_Negocio ya tiene el nombre correcto.');
+    return;
+  }
+  const normalizar = function(s) {
+    return String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Z]/g, '');
+  };
+  const idx = encabezados.findIndex(function(h) { return normalizar(h) === 'AREADENEGOCIO' || normalizar(h) === 'AREANEGOCIO'; });
+  if (idx !== -1) {
+    const nombreViejo = encabezados[idx];
+    sh.getRange(1, idx + 1).setValue('Area_Negocio');
+    Logger.log('Encabezado renombrado de "' + nombreViejo + '" a "Area_Negocio" (columna ' + (idx + 1) + '). Los datos existentes en esa columna no se tocaron.');
+    return;
+  }
+  const nuevaCol = encabezados.length + 1;
+  sh.getRange(1, nuevaCol).setValue('Area_Negocio');
+  Logger.log('No encontré ninguna columna de área existente — se creó "Area_Negocio" nueva y vacía en la columna ' + nuevaCol + '.');
 }
 
 // Migración: agrega Moneda_Original/Tipo_Cambio_Usado a un Historial_Precios
@@ -961,6 +1009,8 @@ function moduloProductos() {
       unidad: r['Unidad_Medida'] || '',
       presentacion: r['Presentacion'] || '',
       tamano: r['Tamano'] || '',
+      cantidad_compra: Number(r['Cantidad_Compra']) || 0,
+      unidad_compra: r['Unidad_Compra'] || '',
       cantidad_presentacion: cantidadPresentacion,
       precio_sin_iva: Number(r['Precio_Sin_IVA']) || 0,
       iva: Number(r['IVA']) || 0,
@@ -1117,6 +1167,8 @@ function guardarProducto(p) {
     'Unidad_Medida': p.unidad || '',
     'Presentacion': p.presentacion || '',
     'Tamano': p.tamano || '',
+    'Cantidad_Compra': Number(p.cantidad_compra) || 0,
+    'Unidad_Compra': p.unidad_compra || '',
     'Cantidad_Presentacion': Number(p.cantidad_presentacion) || 1,
     'Precio_Sin_IVA': Number(p.precio_sin_iva) || 0,
     'IVA': Number(p.iva) || 0,

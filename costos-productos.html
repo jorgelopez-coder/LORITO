@@ -138,6 +138,11 @@
         <div style="font-size:12px;color:var(--muted);margin-top:2px;">Productos inactivos</div>
       </div>
     </div>
+
+    <div class="card" style="margin-bottom:12px;">
+      <p class="card-title" style="margin-bottom:.75rem;">Productos por categoría</p>
+      <div id="kpi-categoria-lista" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+    </div>
     <div class="card" id="faltantes-card" style="display:none;margin-bottom:12px;border-color:var(--amber);background:var(--amber-bg);">
       <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="toggleFaltantesDetalle()">
         <span style="font-size:13px;font-weight:600;color:var(--amber);">⚠ <span id="faltantes-count">0</span> compra(s) pendientes de asignar a un producto</span>
@@ -281,13 +286,22 @@
       <div class="field-row-3">
         <div class="field">
           <label for="p-presentacion">Presentación del proveedor</label>
-          <input type="text" id="p-presentacion" list="presentacion-opciones" placeholder="Ej. Bolsa, Caja, Botella…" autocomplete="off">
-          <datalist id="presentacion-opciones"></datalist>
+          <select id="p-presentacion">
+            <option value="">Seleccioná…</option>
+          </select>
         </div>
         <div class="field">
-          <label for="p-tamano">Tamaño / Peso por presentación</label>
-          <input type="text" id="p-tamano" placeholder="Ej. 1 kg, 500 ml, 12 u…" oninput="sugerirConversion()">
+          <label for="p-cantidad-compra">Cantidad</label>
+          <input type="number" id="p-cantidad-compra" min="0" step="0.001" placeholder="Ej. 25" oninput="actualizarConversionUnidades()">
         </div>
+        <div class="field">
+          <label for="p-unidad-compra">Unidad de medida</label>
+          <select id="p-unidad-compra" onchange="actualizarConversionUnidades()">
+            <option value="">Seleccioná…</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row" style="margin-top:1rem;">
         <div class="field">
           <label for="p-proveedor" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
             <span>Proveedor habitual</span>
@@ -297,13 +311,13 @@
             <option value="">Seleccioná…</option>
           </select>
         </div>
-      </div>
-      <div class="field-row" style="margin-top:1rem;">
         <div class="field">
           <label for="p-stock-minimo">Stock mínimo esperado</label>
           <input type="number" id="p-stock-minimo" min="0" step="1" placeholder="0" oninput="actualizarHintStock()">
           <div id="p-stock-minimo-hint" style="font-size:11px;color:var(--muted);margin-top:4px;">En unidades de presentación de compra</div>
         </div>
+      </div>
+      <div class="field-row" style="margin-top:1rem;">
         <div class="field" style="display:flex;flex-direction:column;justify-content:flex-end;">
           <div id="p-stock-minimo-equiv" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--muted);min-height:39px;"></div>
           <div style="font-size:11px;color:var(--muted);margin-top:4px;">Equivalente en unidad de receta</div>
@@ -334,18 +348,15 @@
       <div class="field-row" style="margin-bottom:1rem;">
         <div class="field">
           <label for="p-unidad">Unidad de medida para receta <span class="req">*</span></label>
-          <select id="p-unidad" onchange="sugerirConversion(); calcularCostos()">
+          <select id="p-unidad" onchange="actualizarConversionUnidades()">
             <option value="" disabled selected>Seleccioná…</option>
           </select>
           <div style="font-size:11px;color:var(--muted);margin-top:4px;">La unidad con la que medís el ingrediente en tus recetas</div>
         </div>
         <div class="field">
-          <label for="p-cantidad-presentacion">
-            Cantidad en presentación
-            <span id="lbl-cantidad-hint" style="font-weight:400;color:var(--muted);"></span>
-          </label>
+          <label for="p-cantidad-presentacion">Cantidad en presentación</label>
           <input type="number" id="p-cantidad-presentacion" min="0" step="0.001" placeholder="0" value="1" oninput="calcularCostos()">
-          <div id="conversion-sugerida" style="font-size:11px;color:var(--purple);margin-top:4px;display:none;"></div>
+          <div id="conversion-nota" style="font-size:11px;color:var(--purple);margin-top:4px;display:none;"></div>
         </div>
       </div>
 
@@ -551,12 +562,12 @@ function actualizarHintStock() {
   const cantidad  = parseFloat(document.getElementById('p-cantidad-presentacion').value) || 1;
   const unidad    = document.getElementById('p-unidad').value;
   const presentacion = document.getElementById('p-presentacion').value;
-  const tamano    = document.getElementById('p-tamano').value;
+  const unidadCompra = document.getElementById('p-unidad-compra').value;
   const hintEl   = document.getElementById('p-stock-minimo-hint');
   const equivEl  = document.getElementById('p-stock-minimo-equiv');
 
   // Actualizar hint del campo
-  const pres = [presentacion, tamano].filter(Boolean).join(' ');
+  const pres = [presentacion, unidadCompra].filter(Boolean).join(' · ');
   hintEl.textContent = pres
     ? `Unidades de presentación (${pres})`
     : 'En unidades de presentación de compra';
@@ -572,61 +583,47 @@ function actualizarHintStock() {
   }
 }
 
-// ── CONVERSIÓN AUTOMÁTICA DE UNIDADES ────────────────────────────
-// Mapa de conversiones: presentación → unidad de receta → cantidad
-const CONVERSIONES = {
-  // Peso
-  'kg':   { 'g': 1000, 'kg': 1, 'lb': 2.20462 },
-  'lb':   { 'g': 453.592, 'kg': 0.453592, 'lb': 1 },
-  'g':    { 'g': 1, 'kg': 0.001 },
-  // Volumen
-  'L':    { 'ml': 1000, 'L': 1, 'litros': 1 },
-  'litros':{ 'ml': 1000, 'L': 1, 'litros': 1 },
-  'ml':   { 'ml': 1, 'L': 0.001 },
-  'gal':  { 'ml': 3785.41, 'L': 3.78541, 'litros': 3.78541 },
-  'galón':{ 'ml': 3785.41, 'L': 3.78541, 'litros': 3.78541 },
-  // Unidad sin conversión
-  'unidad': { 'unidad': 1, 'unidades': 1, 'piezas': 1 },
-  'unidades': { 'unidad': 1, 'unidades': 1, 'piezas': 1 },
-  'piezas': { 'unidad': 1, 'unidades': 1, 'piezas': 1 },
+// ── CONVERSIÓN AUTOMÁTICA DE UNIDADES (compra → receta) ────────────
+// Factor para convertir 1 unidad de compra en cuántas unidades de receta
+// equivalen. Ej.: CONVERSION_UNIDADES['Kilo']['Gramo'] = 1000 (1 kilo =
+// 1000 gramos). "Pizca" y otras unidades sin factor fijo quedan afuera —
+// para esos casos no hay conversión automática, se completa a mano.
+const CONVERSION_UNIDADES = {
+  'Kilo':      { 'Kilo': 1, 'Gramo': 1000, 'Onza': 35.274 },
+  'Gramo':     { 'Gramo': 1, 'Kilo': 0.001, 'Onza': 0.035274 },
+  'Onza':      { 'Onza': 1, 'Gramo': 28.3495, 'Kilo': 0.0283495 },
+  'Litro':     { 'Litro': 1, 'Mililitro': 1000 },
+  'Mililitro': { 'Mililitro': 1, 'Litro': 0.001 },
+  'Unidad':    { 'Unidad': 1 }
 };
 
-function sugerirConversion() {
-  const tamano   = document.getElementById('p-tamano').value.trim().toLowerCase();
-  const unidadR  = document.getElementById('p-unidad').value.toLowerCase();
-  const convDiv  = document.getElementById('conversion-sugerida');
-  const lbl      = document.getElementById('lbl-cantidad-hint');
+// Convierte Cantidad (compra) + Unidad de medida (compra) a la Unidad de
+// receta elegida, y deja el resultado en "Cantidad en presentación" — ya no
+// hace falta tocar ese campo a mano salvo que la conversión no exista.
+function actualizarConversionUnidades() {
+  const cantidadCompra = parseFloat(document.getElementById('p-cantidad-compra').value) || 0;
+  const unidadCompra   = document.getElementById('p-unidad-compra').value;
+  const unidadReceta   = document.getElementById('p-unidad').value;
+  const nota = document.getElementById('conversion-nota');
 
-  if (!tamano || !unidadR) { convDiv.style.display = 'none'; lbl.textContent = ''; return; }
+  if (!cantidadCompra || !unidadCompra || !unidadReceta) { nota.style.display = 'none'; actualizarHintStock(); return; }
 
-  // Extraer número y unidad del campo tamaño (ej "1 kg", "500 ml", "2.5 lb")
-  const match = tamano.match(/^([\d.,]+)\s*([a-záéíóúü]+)$/i);
-  if (!match) { convDiv.style.display = 'none'; lbl.textContent = ''; return; }
-
-  const cantidad   = parseFloat(match[1].replace(',', '.'));
-  const unidadComp = match[2].toLowerCase();
-
-  const mapa = CONVERSIONES[unidadComp];
-  if (!mapa || !mapa[unidadR]) {
-    convDiv.style.display = 'none';
-    lbl.textContent = '';
+  const factor = (CONVERSION_UNIDADES[unidadCompra] || {})[unidadReceta];
+  if (factor == null) {
+    nota.style.display = 'block';
+    nota.style.color = 'var(--amber)';
+    nota.textContent = `No hay conversión automática de ${unidadCompra} a ${unidadReceta} — completá "Cantidad en presentación" a mano.`;
+    actualizarHintStock();
     return;
   }
 
-  const resultado = Math.round(cantidad * mapa[unidadR] * 10000) / 10000;
-  lbl.textContent = '';
-  convDiv.style.display = 'block';
-  convDiv.innerHTML = `💡 Conversión sugerida: ${cantidad} ${unidadComp} = <strong>${resultado} ${unidadR}</strong>
-    <button type="button" onclick="aplicarConversion(${resultado})"
-      style="margin-left:8px;font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;">
-      Usar este valor
-    </button>`;
-}
-
-function aplicarConversion(val) {
-  document.getElementById('p-cantidad-presentacion').value = val;
+  const convertido = Math.round(cantidadCompra * factor * 10000) / 10000;
+  document.getElementById('p-cantidad-presentacion').value = convertido;
+  nota.style.display = 'block';
+  nota.style.color = 'var(--purple)';
+  nota.textContent = `${cantidadCompra} ${unidadCompra} = ${convertido} ${unidadReceta} (conversión automática)`;
   calcularCostos();
-  document.getElementById('conversion-sugerida').style.display = 'none';
+  actualizarHintStock();
 }
 
 // ── MONEDA DEL PRECIO (CRC / USD con tipo de cambio) ───────────────
@@ -1166,12 +1163,20 @@ function aplicarConfiguracion() {
       cats.map(c => `<option${c===valActual?' selected':''}>${c}</option>`).join('');
   }
 
-  // Actualizar select de unidades
+  // Actualizar select de unidades (receta)
   const unis = getCfg('uni');
   const selUni = document.getElementById('p-unidad');
   if (selUni) {
     const valActual = selUni.value;
     selUni.innerHTML = '<option value="" disabled selected>Seleccioná…</option>' +
+      unis.map(u => `<option${u===valActual?' selected':''}>${u}</option>`).join('');
+  }
+
+  // Actualizar select de unidad de medida (compra) — misma lista que unidades de receta
+  const selUniCompra = document.getElementById('p-unidad-compra');
+  if (selUniCompra) {
+    const valActual = selUniCompra.value;
+    selUniCompra.innerHTML = '<option value="">Seleccioná…</option>' +
       unis.map(u => `<option${u===valActual?' selected':''}>${u}</option>`).join('');
   }
 
@@ -1192,11 +1197,13 @@ function aplicarConfiguracion() {
       areas.map(a => `<option${a===valActual?' selected':''}>${a}</option>`).join('');
   }
 
-  // Actualizar datalist de presentaciones
+  // Actualizar select de presentación del proveedor — limitado a lo cargado en Configuración
   const pres = getCfg('pre');
-  const dlPre = document.getElementById('presentacion-opciones');
-  if (dlPre) {
-    dlPre.innerHTML = pres.map(p => `<option value="${p}">`).join('');
+  const selPre = document.getElementById('p-presentacion');
+  if (selPre) {
+    const valActual = selPre.value;
+    selPre.innerHTML = '<option value="">Seleccioná…</option>' +
+      pres.map(p => `<option${p===valActual?' selected':''}>${p}</option>`).join('');
   }
 
   // Actualizar select de proveedor habitual (base de datos de proveedores)
@@ -1284,7 +1291,8 @@ function onNombreInput() {
   if (match.subfamilia) document.getElementById('p-subfamilia').value = match.subfamilia;
   if (match.unidad) document.getElementById('p-unidad').value = match.unidad;
   if (match.presentacion) document.getElementById('p-presentacion').value = match.presentacion;
-  if (match.tamano) document.getElementById('p-tamano').value = match.tamano;
+  if (match.cantidad_compra) document.getElementById('p-cantidad-compra').value = match.cantidad_compra;
+  if (match.unidad_compra) document.getElementById('p-unidad-compra').value = match.unidad_compra;
   if (match.proveedor) document.getElementById('p-proveedor').value = match.proveedor;
   if (match.precio_sin_iva) document.getElementById('p-precio-sin-iva').value = match.precio_sin_iva;
   if (match.cantidad_presentacion) document.getElementById('p-cantidad-presentacion').value = match.cantidad_presentacion;
@@ -1505,7 +1513,7 @@ function buildFila(p) {
     <td class="num" style="font-weight:700;color:var(--green);">${fmt(costoReal)}</td>
     <td class="num" style="color:var(--muted);">${p.stock_minimo > 0 ? p.stock_minimo + ' pres.' : '—'}</td>
     <td style="color:var(--muted);font-size:12px;">${p.proveedor||'—'}</td>
-    <td style="color:var(--muted);font-size:12px;">${p.presentacion ? p.presentacion + (p.tamano ? ' · ' + p.tamano : '') : '—'}</td>
+    <td style="color:var(--muted);font-size:12px;">${p.presentacion ? p.presentacion + (p.cantidad_compra ? ' · ' + p.cantidad_compra + ' ' + (p.unidad_compra||'') : '') : '—'}</td>
     <td><div style="display:flex;gap:4px;">
       <button class="btn-edit" onclick="editar('${p.id}')">Editar</button>
       <button class="btn-edit" onclick="abrirModalFusion('${p.id}')" title="Fusionar con otro producto" style="border-color:var(--amber);background:var(--amber-bg);color:var(--amber);">Fusionar</button>
@@ -1548,6 +1556,28 @@ function actualizarIndicadores() {
   const activos = todos.filter(p => p.en_uso !== false && p.en_uso !== 'false').length;
   document.getElementById('stat-activos').textContent = activos;
   document.getElementById('stat-inactivos').textContent = todos.length - activos;
+  renderKpiPorCategoria(todos);
+}
+
+// Desglose de cantidad de productos por categoría (sobre toda la base, sin
+// aplicar los filtros de la vista) — ordenado de más a menos productos.
+function renderKpiPorCategoria(todos) {
+  const cont = document.getElementById('kpi-categoria-lista');
+  if (!cont) return;
+  const conteo = {};
+  todos.forEach(p => {
+    const cat = p.categoria || 'Sin categoría';
+    conteo[cat] = (conteo[cat] || 0) + 1;
+  });
+  const ordenado = Object.entries(conteo).sort((a, b) => b[1] - a[1]);
+  if (!ordenado.length) { cont.innerHTML = '<span style="font-size:12px;color:var(--subtle);">Sin productos todavía.</span>'; return; }
+  cont.innerHTML = ordenado.map(([cat, n]) => {
+    const col = CAT_COLORS[cat] || '#5a8a6a';
+    return `<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:5px 10px 5px 12px;border-radius:20px;background:${col}20;color:${col};">
+      ${cat}
+      <span style="background:${col};color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;">${n}</span>
+    </span>`;
+  }).join('');
 }
 
 function renderLista() {
@@ -1615,8 +1645,9 @@ async function guardar() {
   const costo                = parseFloat(document.getElementById('p-costo').value) || 0;
   const rendimiento          = parseFloat(document.getElementById('p-rendimiento').value) || 100;
   const proveedor            = document.getElementById('p-proveedor').value.trim();
-  const presentacion         = document.getElementById('p-presentacion').value.trim();
-  const tamano               = document.getElementById('p-tamano').value.trim();
+  const presentacion         = document.getElementById('p-presentacion').value;
+  const cantidadCompra       = parseFloat(document.getElementById('p-cantidad-compra').value) || 0;
+  const unidadCompra         = document.getElementById('p-unidad-compra').value;
   const area                 = document.getElementById('p-area').value;
   const familia              = document.getElementById('p-familia').value;
   const subfamilia           = document.getElementById('p-subfamilia').value;
@@ -1642,7 +1673,8 @@ async function guardar() {
     rendimiento,
     proveedor,
     presentacion,
-    tamano,
+    cantidad_compra: cantidadCompra,
+    unidad_compra: unidadCompra,
     area,
     familia,
     subfamilia,
@@ -1704,7 +1736,8 @@ function editar(id) {
   document.getElementById('p-stock-minimo').value = p.stock_minimo || '';
   actualizarHintStock();
   document.getElementById('p-presentacion').value           = p.presentacion || '';
-  document.getElementById('p-tamano').value                 = p.tamano || '';
+  document.getElementById('p-cantidad-compra').value        = p.cantidad_compra || '';
+  document.getElementById('p-unidad-compra').value          = p.unidad_compra || '';
   document.getElementById('form-title').textContent         = 'Editar producto';
   calcularCostos();
   switchTab('nuevo', document.querySelectorAll('.tab')[1]);
@@ -1793,7 +1826,9 @@ function limpiarForm() {
   document.getElementById('p-stock-minimo').value = '';
   document.getElementById('p-stock-minimo-equiv').textContent = '';
   document.getElementById('p-presentacion').value           = '';
-  document.getElementById('p-tamano').value                 = '';
+  document.getElementById('p-cantidad-compra').value        = '';
+  document.getElementById('p-unidad-compra').value          = '';
+  document.getElementById('conversion-nota').style.display  = 'none';
   document.getElementById('p-costo-display').textContent    = '₡0.00';
   document.getElementById('p-costo-real-display').textContent = '₡0.00';
   document.getElementById('form-title').textContent         = 'Nuevo producto';
