@@ -646,8 +646,8 @@ function construirFacturasAP() {
     fechaFactura: isoDate(r['Fecha'])
   }));
 
-  // Duplicado = mismo número de factura + misma fecha + mismo proveedor.
-  const claveDup = p => p.numero + '||' + p.fechaFactura + '||' + p.proveedorNombre.trim().toLowerCase();
+  // Duplicado = mismo número de factura + misma fecha.
+  const claveDup = p => p.numero + '||' + p.fechaFactura;
   const conteo = {};
   parsed.forEach(p => { const k = claveDup(p); conteo[k] = (conteo[k]||0) + 1; });
 
