@@ -261,7 +261,7 @@
 
 <script>
 const STORAGE_KEY = 'costos_recetas';
-const APPS_SCRIPT_COSTOS = 'TODO_APPS_SCRIPT_COSTOS_LORITO'; // Pegá la URL del Apps Script de costos
+const APPS_SCRIPT_COSTOS = 'TODO_APPS_SCRIPT_COSTEO_RECETAS_LORITO'; // Pegá acá la URL del nuevo backend (Code-costeo-recetas-v2.gs)
 const hoy = new Date();
 document.getElementById('date-chip').textContent =
   hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
@@ -275,6 +275,34 @@ function getRecetas() {
   catch { return []; }
 }
 function saveRecetas(lista) { localStorage.setItem(STORAGE_KEY, JSON.stringify(lista)); }
+
+// Trae recetas y productos directo del backend en vez de depender de que
+// costos-productos.html/costos-menu.html ya hayan corrido en este navegador
+// (antes, si esta página se abría primero, getFuentes() no tenía nada).
+async function cargarRecetasDesdeSheet() {
+  if (!APPS_SCRIPT_COSTOS) return;
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS + '?modulo=recetas');
+    const data = await resp.json();
+    if (!data || !data.ok || !Array.isArray(data.registros)) return;
+    saveRecetas(data.registros);
+    renderLista();
+  } catch (e) {
+    console.warn('No se pudo cargar recetas del Sheet:', e);
+  }
+}
+
+async function cargarProductosParaFuentes() {
+  if (!APPS_SCRIPT_COSTOS) return;
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS + '?modulo=productos');
+    const data = await resp.json();
+    if (!data || !data.ok || !Array.isArray(data.registros)) return;
+    localStorage.setItem('costos_productos', JSON.stringify(data.registros));
+  } catch (e) {
+    console.warn('No se pudo cargar productos del Sheet:', e);
+  }
+}
 
 // ── OBTENER FUENTES (productos + subrecetas) ───────────────────────
 function getFuentes() {
@@ -539,8 +567,21 @@ async function guardar() {
   saveRecetas(lista);
 
   if (APPS_SCRIPT_COSTOS) {
-    try { await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'receta', ...registro }) }) }); }
-    catch(e) {}
+    try {
+      const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'receta', ...registro }) }) });
+      const json = await resp.json();
+      if (!json.ok) throw new Error(json.error || 'Error al guardar');
+    } catch(e) {
+      showToast('Se guardó localmente, pero no se pudo sincronizar: ' + e.message, 'error');
+      limpiarForm();
+      switchTab('lista', document.querySelectorAll('.tab')[0]);
+      renderLista();
+      return;
+    }
+    // El backend recalcula costo_total/costo_porcion (y cascada a subrecetas/menú)
+    // con los precios reales del catálogo — se refresca desde ahí en vez de
+    // confiar en el cálculo optimista del navegador.
+    await cargarRecetasDesdeSheet();
   }
 
   showToast(`${nombre} ${editId ? 'actualizado' : 'guardado'}`, 'success');
@@ -655,11 +696,17 @@ function editar(id) {
 }
 
 async function eliminar(id) {
-  saveRecetas(getRecetas().filter(r => r.id !== id));
   if (APPS_SCRIPT_COSTOS) {
-    try { await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'eliminar', tipo:'recetas', id }) }) }); }
-    catch(e) {}
+    try {
+      const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'eliminar', tipo:'recetas', id }) }) });
+      const json = await resp.json();
+      if (!json.ok) throw new Error(json.error || 'Error al eliminar');
+    } catch(e) {
+      showToast('No se pudo eliminar: ' + e.message, 'error');
+      return;
+    }
   }
+  saveRecetas(getRecetas().filter(r => r.id !== id));
   renderLista();
   showToast('Receta eliminada', 'success');
 }
@@ -722,6 +769,8 @@ poblarPlatos();
 agregarIngrediente();
 renderLista();
 initDesdeQueryParams();
+cargarProductosParaFuentes();
+cargarRecetasDesdeSheet();
 </script>
 </body>
 </html>

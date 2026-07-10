@@ -3,11 +3,45 @@ Sistema de operaciones para Restaurante Lorito (Grupo del Sol), adaptado del eco
 
 ## Pendientes de conexión
 Los siguientes backends de Apps Script aún no existen (sheets nuevas y vacías) y deben desplegarse y pegarse en el código donde aparece cada placeholder:
-- `TODO_APPS_SCRIPT_COSTOS_LORITO` → hoja "COSTOS Y RECETAS - LORITO IA"
+- `TODO_APPS_SCRIPT_COSTEO_RECETAS_LORITO` → hoja nueva "COSTEO Y RECETAS - LORITO IA" (ver sección "Costeo y recetas — reemplazo del módulo viejo" más abajo)
 - `TODO_APPS_SCRIPT_COMPRAS_LORITO` → hoja "Operaciones - Lorito IA"
 - `TODO_GERENCIA_LORITO@pendiente.com` → correo real de gerencia
 
 mermas.html conserva `APPS_SCRIPT_URL = ''` (nunca estuvo conectado en el original).
+
+## Costeo y recetas — reemplazo del módulo viejo
+
+El módulo de "Maestro de productos · historial de precios" descrito más abajo
+(`Maestro_Productos`/`Alias_Productos`/`Costo_Promedio`/`Pendientes_Mapeo`,
+Sheet de compras + `Code-compras-backend.gs`, UI en `config-productos.html`)
+**queda reemplazado** por un sistema nuevo, en un spreadsheet separado:
+
+- Backend: `Code-costeo-recetas-v2.gs`, a desplegar en un Sheet nuevo ("COSTEO
+  Y RECETAS - LORITO IA", por crear). Sigue leyendo `Desglose_IA` y
+  `proveedores` del Sheet de compras por ID (`SOURCE_SPREADSHEET_ID`), pero
+  nunca escribe ahí — todo lo nuevo (`Catalogo_Maestro`, `Alias_Proveedores`,
+  `Historial_Precios`, `Compras_Pendientes`, `Categorias_Productos`,
+  `Areas_Negocio`, `Recetas`, `Receta_Ingredientes`, `Menu`) vive en el
+  spreadsheet nuevo. Pasos de despliegue al final del archivo `.gs`.
+- `costos-productos.html`, `costos-recetas.html` y `costos-menu.html` ya
+  apuntan a `APPS_SCRIPT_COSTEO_RECETAS_LORITO` (placeholder, pendiente de
+  pegar la URL real tras desplegar) y ahora tienen carga/guardado real contra
+  este backend — antes `costos-recetas.html`/`costos-menu.html` vivían
+  100% en `localStorage`, sin persistencia server-side.
+- `config-productos.html` quedó **retirada** (borrada del repo y de
+  `index.html`/`admin-accesos.html`): los "Pendientes de mapear" se resuelven
+  ahora editando directo la columna `ID_Producto_Maestro` en la hoja
+  `Alias_Proveedores` del Sheet nuevo — al guardar esa celda,
+  `onEditAlias()` libera sola la(s) compra(s) en espera. Categorías/áreas se
+  administran desde la pestaña "Configuración" de `costos-productos.html`.
+- `historial-precios.html` **no se migró** (fuera de alcance) — sigue
+  leyendo `Maestro_Productos`/`Costo_Promedio` del Sheet de compras, que ya
+  no reciben altas nuevas. Va a mostrar datos congelados a la fecha de este
+  cambio. Los dos links que tenía hacia `config-productos.html` se quitaron
+  para que no queden rotos.
+- `inventario.html` y `proveedores.html` (en `Operaciones/`) y el resto de
+  `Code-compras-backend.gs` (facturas, proveedores, caja chica, fondo de
+  caja, abonos) **no se tocaron** — siguen funcionando igual que antes.
 
 ## Cierre de Caja — despliegue pendiente
 

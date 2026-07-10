@@ -492,7 +492,7 @@ function inicializar() {
 
   const notaPendientes = document.getElementById('nota-pendientes');
   notaPendientes.innerHTML = lineasSinMapear
-    ? `⚠ ${lineasSinMapear} línea${lineasSinMapear!==1?'s':''} de compra sin mapear a un producto — <a href="config-productos.html" style="color:var(--amber);font-weight:600;">resolver en Configuración de productos →</a>`
+    ? `⚠ ${lineasSinMapear} línea${lineasSinMapear!==1?'s':''} de compra sin mapear a un producto (esquema anterior — este módulo ya no recibe altas nuevas, ver Costeo y recetas)`
     : '';
   notaPendientes.style.display = lineasSinMapear ? '' : 'none';
 
@@ -537,7 +537,7 @@ function _renderTabla() {
   if (!lista.length) {
     document.getElementById('tabla-productos').innerHTML = '<div class="empty">' + (
       historial.length ? 'Sin resultados.' :
-      dataDesglose.length ? 'Ningún producto mapeado todavía. Resolvé los pendientes en <a href="config-productos.html">Configuración de productos</a>.' :
+      dataDesglose.length ? 'Ningún producto mapeado todavía en este esquema (ver Costeo y recetas para el sistema vigente).' :
       'Sin resultados.'
     ) + '</div>';
     document.getElementById('pag-productos').style.display = 'none';

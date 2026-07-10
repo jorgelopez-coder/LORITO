@@ -181,7 +181,7 @@
           <select id="m-disponible">
             <option value="Disponible">Disponible</option>
             <option value="No disponible">No disponible</option>
-            <option value="Temporada">De temporada</option>
+            <option value="De temporada">De temporada</option>
           </select>
         </div>
         <div class="field">
@@ -230,7 +230,7 @@
 
 <script>
 const STORAGE_KEY = 'costos_menu';
-const APPS_SCRIPT_COSTOS = 'TODO_APPS_SCRIPT_COSTOS_LORITO'; // Pegá la URL del Apps Script de costos
+const APPS_SCRIPT_COSTOS = 'TODO_APPS_SCRIPT_COSTEO_RECETAS_LORITO'; // Pegá acá la URL del nuevo backend (Code-costeo-recetas-v2.gs)
 const hoy = new Date();
 document.getElementById('date-chip').textContent =
   hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
@@ -243,6 +243,34 @@ function getPlatos() {
 }
 function savePlatos(lista) { localStorage.setItem(STORAGE_KEY, JSON.stringify(lista)); }
 window.getPlatos = getPlatos;
+
+// Trae menú y recetas directo del backend en vez de depender de que
+// costos-recetas.html ya haya corrido en este navegador.
+async function cargarMenuDesdeSheet() {
+  if (!APPS_SCRIPT_COSTOS) return;
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS + '?modulo=menu');
+    const data = await resp.json();
+    if (!data || !data.ok || !Array.isArray(data.registros)) return;
+    savePlatos(data.registros);
+    renderMenu();
+  } catch (e) {
+    console.warn('No se pudo cargar el menú del Sheet:', e);
+  }
+}
+
+async function cargarRecetasParaMenu() {
+  if (!APPS_SCRIPT_COSTOS) return;
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS + '?modulo=recetas');
+    const data = await resp.json();
+    if (!data || !data.ok || !Array.isArray(data.registros)) return;
+    localStorage.setItem('costos_recetas', JSON.stringify(data.registros));
+    if (document.getElementById('tab-nuevo').style.display !== 'none') { poblarRecetas(); calcFC(); }
+  } catch (e) {
+    console.warn('No se pudo cargar recetas del Sheet:', e);
+  }
+}
 
 const DISP_COLORS = {
   'Disponible':    { bg:'var(--green-bg)', col:'var(--green)' },
@@ -458,8 +486,20 @@ async function guardar() {
   savePlatos(lista);
 
   if (APPS_SCRIPT_COSTOS) {
-    try { await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'plato', ...registro }) }) }); }
-    catch(e) {}
+    try {
+      const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'plato', ...registro }) }) });
+      const json = await resp.json();
+      if (!json.ok) throw new Error(json.error || 'Error al guardar');
+    } catch(e) {
+      showToast('Se guardó localmente, pero no se pudo sincronizar: ' + e.message, 'error');
+      limpiarForm();
+      switchTab('lista', document.querySelectorAll('.tab')[0]);
+      renderMenu();
+      return;
+    }
+    // El backend recalcula costo_receta/FC con el costo real de la receta —
+    // se refresca desde ahí en vez de confiar en el cálculo optimista.
+    await cargarMenuDesdeSheet();
   }
 
   showToast(`${nombre} ${editId ? 'actualizado' : 'agregado al menú'}`, 'success');
@@ -484,11 +524,17 @@ function editar(id) {
 }
 
 async function eliminar(id) {
-  savePlatos(getPlatos().filter(p => p.id !== id));
   if (APPS_SCRIPT_COSTOS) {
-    try { await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'eliminar', tipo:'menu', id }) }) }); }
-    catch(e) {}
+    try {
+      const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'eliminar', tipo:'menu', id }) }) });
+      const json = await resp.json();
+      if (!json.ok) throw new Error(json.error || 'Error al eliminar');
+    } catch(e) {
+      showToast('No se pudo eliminar: ' + e.message, 'error');
+      return;
+    }
   }
+  savePlatos(getPlatos().filter(p => p.id !== id));
   renderMenu();
   showToast('Plato eliminado', 'success');
 }
@@ -523,6 +569,8 @@ function showToast(msg, type='success') {
 }
 
 renderMenu();
+cargarRecetasParaMenu();
+cargarMenuDesdeSheet();
 </script>
 </body>
 </html>
