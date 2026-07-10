@@ -881,6 +881,58 @@ async function cargarConfiguracion() {
   }
 }
 
+// Historial de compras (Historial_Precios completo), para el detalle que se
+// despliega al hacer clic en el nombre de un producto. Se carga una sola
+// vez y se filtra por id_producto en el navegador.
+let HISTORIAL_COMPRAS = [];
+
+async function cargarHistorialCompras() {
+  if (!APPS_SCRIPT_COSTOS) return;
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS + '?modulo=historial');
+    const data = await resp.json();
+    if (!data || !data.ok || !Array.isArray(data.registros)) return;
+    HISTORIAL_COMPRAS = data.registros;
+  } catch (e) {
+    console.warn('No se pudo cargar el historial de compras:', e);
+  }
+}
+
+function toggleHistorial(id) {
+  const fila = document.getElementById('hist-' + id);
+  const ico = document.getElementById('hist-' + id + '-ico');
+  if (!fila) return;
+  const abrir = fila.style.display === 'none' || !fila.style.display;
+  fila.style.display = abrir ? 'table-row' : 'none';
+  if (ico) ico.style.transform = abrir ? 'rotate(90deg)' : '';
+  if (!abrir) return;
+
+  const compras = HISTORIAL_COMPRAS.filter(h => h.id_producto === id)
+    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+  const contenido = document.getElementById('hist-' + id + '-contenido');
+  if (!compras.length) {
+    contenido.innerHTML = '<div style="font-size:12px;color:var(--subtle);padding:2px 0;">Sin compras registradas todavía.</div>';
+    return;
+  }
+
+  const th = txt => `<th style="text-align:left;font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:0 12px 6px 0;">${txt}</th>`;
+  const filas = compras.map(c => `
+    <tr>
+      <td style="padding:5px 12px 5px 0;font-size:12px;white-space:nowrap;">${c.fecha || '—'}</td>
+      <td style="padding:5px 12px 5px 0;font-size:12px;">${c.ref_factura || '—'}</td>
+      <td style="padding:5px 12px 5px 0;font-size:12px;">${c.proveedor || '—'}</td>
+      <td style="padding:5px 12px 5px 0;font-size:12px;text-align:right;">${fmt(c.precio_unitario)}${c.moneda_original === 'USD' ? ' <span style="color:var(--muted);font-size:10px;">(conv. USD)</span>' : ''}</td>
+      <td style="padding:5px 0 5px 0;font-size:12px;text-align:right;">${c.cantidad}</td>
+    </tr>`).join('');
+
+  contenido.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;">
+      <thead><tr>${th('Fecha')}${th('Factura')}${th('Proveedor')}<th style="text-align:right;font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:0 12px 6px 0;">Precio unit.</th><th style="text-align:right;font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:0 0 6px 0;">Cantidad</th></tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+}
+
 async function guardarTipoCambioGlobal() {
   const valor = parseFloat(document.getElementById('cfg-tipo-cambio').value);
   if (!valor || valor <= 0) { showToast('Ingresá un tipo de cambio válido.', 'error'); return; }
@@ -1269,7 +1321,13 @@ function buildFila(p) {
   const noAplicaBadge = aplicaRecetaVal ? '' :
     '<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:var(--amber-bg);color:var(--amber);font-weight:500;" title="No aparece como ingrediente al armar recetas">No aplica a recetas</span>';
   return `<tr style="opacity:${enUsoVal ? 1 : 0.5}">
-    <td style="font-weight:500;">${p.nombre} ${enUsoBadge} ${noAplicaBadge}</td>
+    <td style="font-weight:500;">
+      <span style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;" onclick="toggleHistorial('${p.id}')" title="Ver historial de compras">
+        <svg id="hist-${p.id}-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:9px;height:9px;color:var(--subtle);transition:transform .15s;flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
+        ${p.nombre}
+      </span>
+      ${enUsoBadge} ${noAplicaBadge}
+    </td>
     <td>${catBadge(p.categoria)}</td>
     <td style="color:var(--muted);font-size:12px;">${p.area||'—'}</td>
     <td style="color:var(--muted);">${p.unidad}</td>
@@ -1286,6 +1344,11 @@ function buildFila(p) {
       <button class="btn-edit" onclick="abrirModalFusion('${p.id}')" title="Fusionar con otro producto" style="border-color:var(--amber);background:var(--amber-bg);color:var(--amber);">Fusionar</button>
       <button class="btn-del" onclick="eliminar('${p.id}')">✕</button>
     </div></td>
+  </tr>
+  <tr id="hist-${p.id}" style="display:none;">
+    <td colspan="13" style="padding:0;background:var(--surface);">
+      <div id="hist-${p.id}-contenido" style="padding:10px 16px;"></div>
+    </td>
   </tr>`;
 }
 
@@ -1588,6 +1651,7 @@ document.addEventListener("DOMContentLoaded", () => {
   cargarProveedoresDesdeSheet();
   cargarProductosDesdeSheet();
   cargarPendientes();
+  cargarHistorialCompras();
 });
 </script>
 </body>
