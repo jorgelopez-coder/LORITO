@@ -1438,12 +1438,6 @@ const CAT_COLORS = {
   'Bebidas':'#185fa5','Condimentos y Especias':'#c84a20','Aceites y Grasas':'#c87820',
   'Panadería':'#854F0B','Limpieza':'#4a5568','Otros':'#5a8a6a'
 };
-function catBadge(cat) {
-  const col = (cat && CAT_COLORS[cat]) ? CAT_COLORS[cat] : '#5a8a6a';
-  const label = cat || '—';
-  return `<span class="badge" style="background:${col}20;color:${col};">${label}</span>`;
-}
-
 // Render agrupado — las secciones arrancan colapsadas (solo el encabezado
 // con el conteo) y se expanden al hacer clic. gruposExpandidos persiste
 // entre renders (búsqueda, filtros) para no perder qué tenías abierto.
@@ -1464,7 +1458,7 @@ function renderListaAgrupada(lista, campo) {
   });
 
   const thead = `<thead><tr>
-    <th>Producto</th><th>Categoría</th><th>Área</th><th>Unidad</th>
+    <th style="width:26%;">Producto</th><th>Área</th><th>Unidad</th>
     <th style="text-align:right;">Precio sin IVA</th>
     <th style="text-align:right;">IVA</th>
     <th style="text-align:right;">Costo/u</th>
@@ -1482,7 +1476,7 @@ function renderListaAgrupada(lista, campo) {
     const claveAttr = clave.replace(/'/g, "\\'");
     return `
       <tr style="background:var(--surface);cursor:pointer;" onclick="toggleGrupo('${claveAttr}')">
-        <td colspan="13" style="padding:8px 12px 8px 0;">
+        <td colspan="12" style="padding:8px 12px 8px 0;">
           <div style="display:flex;align-items:center;justify-content:space-between;">
             <div style="display:flex;align-items:center;gap:6px;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;color:var(--purple);transition:transform .15s;transform:rotate(${abierto?90:0}deg);"><polyline points="9 18 15 12 9 6"/></svg>
@@ -1518,7 +1512,6 @@ function buildFila(p) {
       </span>
       ${enUsoBadge} ${noAplicaBadge}
     </td>
-    <td>${catBadge(p.categoria)}</td>
     <td style="color:var(--muted);font-size:12px;">${p.area||'—'}</td>
     <td style="color:var(--muted);">${p.unidad}</td>
     <td class="num">${fmt(parseFloat(p.precio_sin_iva||p.costo)||0)}</td>
@@ -1536,7 +1529,7 @@ function buildFila(p) {
     </div></td>
   </tr>
   <tr id="hist-${p.id}" style="display:none;">
-    <td colspan="13" style="padding:0;background:var(--surface);">
+    <td colspan="12" style="padding:0;background:var(--surface);">
       <div id="hist-${p.id}-contenido" style="padding:10px 16px;"></div>
     </td>
   </tr>`;
@@ -1634,7 +1627,7 @@ function renderLista() {
   document.getElementById('tabla-lista').innerHTML = `
     <table>
       <thead><tr>
-        <th>Producto</th><th>Categoría</th><th>Área</th><th>Unidad</th>
+        <th style="width:26%;">Producto</th><th>Área</th><th>Unidad</th>
         <th style="text-align:right;">Precio sin IVA</th>
         <th style="text-align:right;">IVA</th>
         <th style="text-align:right;">Costo/u</th>
