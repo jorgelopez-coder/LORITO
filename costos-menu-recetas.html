@@ -647,14 +647,36 @@ function calcularCostoIngrediente(fuente, cantidad) {
 // puedan estar desplegadas al mismo tiempo sin pisarse.
 let ingCounts = {};
 
+function fuenteLabel(f) {
+  return `${f.nombre} (${f.unidad})`;
+}
+
+function renderFuentesDatalist() {
+  let dl = document.getElementById('ing-fuentes-datalist');
+  if (!dl) {
+    dl = document.createElement('datalist');
+    dl.id = 'ing-fuentes-datalist';
+    document.body.appendChild(dl);
+  }
+  dl.innerHTML = getFuentes().map(f => `<option value="${fuenteLabel(f)}">`).join('');
+}
+
+function onIngFuenteInput(scope, rid) {
+  const txtEl = document.getElementById(`ing-fuente-txt-${scope}-${rid}`);
+  const hidEl = document.getElementById(`ing-fuente-${scope}-${rid}`);
+  const match = getFuentes().find(f => fuenteLabel(f) === txtEl.value);
+  hidEl.value = match ? match.id : '';
+  actualizarUnidad(scope, rid);
+  recalcular(scope);
+}
+
 function agregarIngrediente(scope, nombre='', cantidad='', fuenteId='') {
   ingCounts[scope] = (ingCounts[scope] || 0) + 1;
   const rid = ingCounts[scope];
   const fuentes = getFuentes();
+  renderFuentesDatalist();
 
-  const opts = fuentes.map(f =>
-    `<option value="${f.id}" ${f.id===fuenteId?'selected':''}>${f.nombre} (${f.unidad})</option>`
-  ).join('');
+  const fuenteInicial = fuenteId ? fuentes.find(f => f.id === fuenteId) : null;
 
   const div = document.createElement('div');
   div.className = 'ing-row';
@@ -662,10 +684,11 @@ function agregarIngrediente(scope, nombre='', cantidad='', fuenteId='') {
   div.innerHTML = `
     <div class="field">
       ${rid===1 ? '<label>Ingrediente / Subreceta</label>' : ''}
-      <select onchange="recalcular('${scope}')" id="ing-fuente-${scope}-${rid}">
-        <option value="" disabled selected>Seleccioná…</option>
-        ${opts}
-      </select>
+      <input type="text" id="ing-fuente-txt-${scope}-${rid}" list="ing-fuentes-datalist"
+        placeholder="Escribí para buscar…" autocomplete="off"
+        value="${fuenteInicial ? fuenteLabel(fuenteInicial) : ''}"
+        oninput="onIngFuenteInput('${scope}', ${rid})">
+      <input type="hidden" id="ing-fuente-${scope}-${rid}" value="${fuenteId}">
     </div>
     <div class="field">
       ${rid===1 ? '<label>Cantidad</label>' : ''}
@@ -696,16 +719,7 @@ function agregarIngrediente(scope, nombre='', cantidad='', fuenteId='') {
   if (!cont) return;
   cont.appendChild(div);
 
-  if (fuenteId) {
-    const sel = document.getElementById(`ing-fuente-${scope}-${rid}`);
-    sel.value = fuenteId;
-    actualizarUnidad(scope, rid);
-  }
-
-  document.getElementById(`ing-fuente-${scope}-${rid}`).addEventListener('change', () => {
-    actualizarUnidad(scope, rid);
-    recalcular(scope);
-  });
+  if (fuenteId) actualizarUnidad(scope, rid);
 }
 
 // Costo real por unidad de la fuente (ajustado por rendimiento) — el mismo
