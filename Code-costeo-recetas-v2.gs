@@ -35,7 +35,7 @@ const CATALOGO_ENCABEZADOS = [
   'ID_Producto', 'Nombre_Estandar', 'Categoria', 'Area_Negocio', 'Familia', 'Subfamilia', 'Unidad_Medida',
   'Presentacion', 'Tamano', 'Cantidad_Compra', 'Unidad_Compra', 'Cantidad_Presentacion', 'Precio_Sin_IVA', 'IVA',
   'Costo_Actual', 'Rendimiento', 'Proveedor_Habitual', 'Stock_Minimo', 'En_Uso',
-  'Fecha_Ultima_Actualizacion', 'Aplica_Receta'
+  'Fecha_Ultima_Actualizacion', 'Aplica_Receta', 'Usar_Precio_Manual'
 ];
 
 const UNIDADES_RECETA_DEFAULT = ['Unidad', 'Litro', 'Mililitro', 'Onza', 'Kilo', 'Gramo', 'Pizca'];
@@ -999,13 +999,25 @@ function actualizarCostoProducto(idProducto) {
 // por la cantidad de una línea de receta. Si el producto todavía no tiene
 // compras registradas (Costo_Actual vacío), usa Precio_Sin_IVA/Cantidad_Presentacion
 // como valor de referencia — nunca escribe ese fallback de vuelta al catálogo.
+// Usar_Precio_Manual: interruptor por producto (tab "Información para
+// recetas" de costos-productos.html) para que Precio_Sin_IVA ÷
+// Cantidad_Presentacion gane sobre Costo_Actual (el promedio automático de
+// compras) en el costeo de recetas — por defecto el automático sigue
+// ganando, igual que siempre. Sirve para corregir de inmediato un producto
+// puntual sin esperar a que entren compras nuevas (ej. mientras
+// Costo_Actual todavía arrastra el desfase de unidad de compras viejas).
+function usaPrecioManual(row) {
+  return row['Usar_Precio_Manual'] === true || row['Usar_Precio_Manual'] === 'TRUE';
+}
+
 function costoRealProducto(idProducto) {
   const productos = filasComoObjetos(SpreadsheetApp.getActive().getSheetByName(SHEET_CATALOGO));
   const p = productos.find(function(r) { return r['ID_Producto'] === idProducto; });
   if (!p) return 0;
   const costoAuto = Number(p['Costo_Actual']) || 0;
   const cantidadPresentacion = Number(p['Cantidad_Presentacion']) || 1;
-  const costoBase = costoAuto > 0 ? costoAuto : (Number(p['Precio_Sin_IVA']) || 0) / cantidadPresentacion;
+  const costoManual = (Number(p['Precio_Sin_IVA']) || 0) / cantidadPresentacion;
+  const costoBase = (usaPrecioManual(p) && costoManual > 0) ? costoManual : (costoAuto > 0 ? costoAuto : costoManual);
   const rendimiento = Number(p['Rendimiento']) || 100;
   return costoBase / (rendimiento / 100);
 }
@@ -1252,6 +1264,8 @@ function moduloProductos() {
     const cantidadPresentacion = Number(r['Cantidad_Presentacion']) || 1;
     const costoAuto = Number(r['Costo_Actual']) || 0;
     const costoReferencia = (Number(r['Precio_Sin_IVA']) || 0) / cantidadPresentacion;
+    const usarManual = usaPrecioManual(r) && costoReferencia > 0;
+    const costoElegido = usarManual ? costoReferencia : (costoAuto > 0 ? costoAuto : costoReferencia);
     return {
       id: r['ID_Producto'],
       nombre: r['Nombre_Estandar'],
@@ -1267,8 +1281,9 @@ function moduloProductos() {
       cantidad_presentacion: cantidadPresentacion,
       precio_sin_iva: Number(r['Precio_Sin_IVA']) || 0,
       iva: Number(r['IVA']) || 0,
-      costo: costoAuto > 0 ? costoAuto : costoReferencia,
-      costo_auto: costoAuto > 0,
+      costo: costoElegido,
+      costo_auto: !usarManual && costoAuto > 0,
+      usar_precio_manual: usaPrecioManual(r),
       rendimiento: Number(r['Rendimiento']) || 100,
       proveedor: r['Proveedor_Habitual'] || '',
       stock_minimo: Number(r['Stock_Minimo']) || 0,
@@ -1443,6 +1458,7 @@ function guardarProducto(p) {
     'Stock_Minimo': Number(p.stock_minimo) || 0,
     'En_Uso': p.en_uso === false || p.en_uso === 'false' ? false : true,
     'Aplica_Receta': p.aplica_receta === false || p.aplica_receta === 'false' ? false : true,
+    'Usar_Precio_Manual': p.usar_precio_manual === true || p.usar_precio_manual === 'true' ? true : false,
     'Fecha_Ultima_Actualizacion': new Date()
   });
 

@@ -60,8 +60,19 @@ Sheet de compras + `Code-compras-backend.gs`, UI en `config-productos.html`)
   `ALIAS_UNIDAD` en el `.gs` (lista de variantes de texto de unidad que
   reconoce, tipo "kg"/"KG"/"Kilogramo") contra los nombres reales que
   aparecen en la columna J de `Desglose_IA` — se armó con una lista razonable
-  pero sin ver facturas reales para confirmarla. Mientras tanto, se puede
-  corregir `Costo_Actual` a mano para productos urgentes como Camarón.
+  pero sin ver facturas reales para confirmarla.
+- Mientras `Costo_Actual` se autocorrige solo (punto anterior), se agregó un
+  interruptor por producto — `Usar_Precio_Manual` (nueva columna en
+  `Catalogo_Maestro`, ya cubierta por `migrarAgregarColumnasFaltantesCatalogo()`,
+  no hace falta correr nada nuevo para esta) — para que el costeo de recetas
+  use `Precio_Sin_IVA ÷ Cantidad_Presentacion` (el "Costo real por unidad" de
+  la sección "Información para recetas" en `costos-productos.html`) en vez
+  del promedio automático de compras, mientras ese esté corregido a mano y el
+  automático todavía no. Por defecto sigue ganando el automático, igual que
+  siempre — hay que activar el check "Usar este precio manual en las
+  recetas" producto por producto. Afecta `costoRealProducto()` (recetas/menú)
+  y `moduloProductos()` (columna "Costo/u" de la lista, ahora con badge
+  "manual" cuando aplica).
 - `Categorias_Menu` y `Subcategorias_Menu` son nuevas y todavía no existen en
   el spreadsheet en producción — hay que correr `migrarCrearCategoriasMenu()`
   y `migrarAgregarSubcategoriaMenu()` una vez cada una desde el editor de

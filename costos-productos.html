@@ -378,6 +378,16 @@
           <div style="font-size:11px;color:var(--muted);margin-top:4px;">Costo/u ÷ rendimiento</div>
         </div>
       </div>
+
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-top:1rem;padding:10px 12px;background:var(--surface);border-radius:8px;">
+        <input type="checkbox" id="p-usar-precio-manual" style="width:auto;margin-top:3px;" onchange="calcularCostos()">
+        <label for="p-usar-precio-manual" style="margin-bottom:0;">
+          Usar este precio manual en las recetas
+          <div style="font-size:11px;color:var(--muted);font-weight:400;margin-top:2px;">
+            Por defecto las recetas usan el costo automático de compras (arriba en "Costo/u", con la etiqueta "auto") cuando existe, aunque acá arriba veas otro número. Activá esto para que las recetas usen el "Costo real por unidad" de esta sección en su lugar — útil para corregir un producto puntual sin esperar a que entren compras nuevas.
+          </div>
+        </label>
+      </div>
     </div>
 
     <div class="submit-area">
@@ -1536,7 +1546,7 @@ function buildFila(p) {
       </span>
       ${enUsoBadge} ${noAplicaBadge}
     </td>
-    <td class="num" style="font-weight:600;color:var(--purple);">${fmt(parseFloat(p.costo)||0)}${p.costo_auto ? ' <span style="font-size:9px;font-weight:600;color:var(--green);vertical-align:1px;" title="Costo real, calculado de compras registradas">auto</span>' : ''}</td>
+    <td class="num" style="font-weight:600;color:var(--purple);">${fmt(parseFloat(p.costo)||0)}${p.costo_auto ? ' <span style="font-size:9px;font-weight:600;color:var(--green);vertical-align:1px;" title="Costo real, calculado de compras registradas">auto</span>' : ''}${!p.costo_auto && p.usar_precio_manual ? ' <span style="font-size:9px;font-weight:600;color:var(--amber);vertical-align:1px;" title="Precio cargado a mano en Información para recetas, en vez del automático de compras">manual</span>' : ''}</td>
     <td class="num" style="color:var(--muted);">${p.rendimiento||100}%</td>
     <td class="num" style="font-weight:700;color:var(--green);">${fmt(costoReal)}</td>
     <td class="num" style="color:var(--muted);">${p.stock_minimo > 0 ? p.stock_minimo + ' pres.' : '—'}</td>
@@ -1704,6 +1714,7 @@ async function guardar() {
     subfamilia,
     en_uso: document.getElementById('p-en-uso').value === 'true',
     aplica_receta: document.getElementById('p-aplica-receta').value === 'true',
+    usar_precio_manual: document.getElementById('p-usar-precio-manual').checked,
     stock_minimo: parseFloat(document.getElementById('p-stock-minimo').value) || 0
   };
 
@@ -1774,6 +1785,7 @@ function editar(id) {
   document.getElementById('p-presentacion').value           = p.presentacion || '';
   document.getElementById('p-cantidad-compra').value        = p.cantidad_compra || '';
   document.getElementById('p-unidad-compra').value          = p.unidad_compra || '';
+  document.getElementById('p-usar-precio-manual').checked   = p.usar_precio_manual === true || p.usar_precio_manual === 'true';
   document.getElementById('form-title').textContent         = 'Editar producto';
   calcularCostos();
   switchTab('nuevo', document.querySelectorAll('.tab')[1]);
@@ -1867,6 +1879,7 @@ function limpiarForm() {
   document.getElementById('conversion-nota').style.display  = 'none';
   document.getElementById('p-costo-display').textContent    = '₡0.00';
   document.getElementById('p-costo-real-display').textContent = '₡0.00';
+  document.getElementById('p-usar-precio-manual').checked   = false;
   document.getElementById('form-title').textContent         = 'Nuevo producto';
 }
 
