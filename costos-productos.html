@@ -181,6 +181,7 @@
           <option value="">Sin agrupar</option>
           <option value="area">Agrupar por área</option>
           <option value="categoria" selected>Agrupar por categoría</option>
+          <option value="familia">Agrupar por familia</option>
         </select>
       </div>
       <div class="tabla-wrap" id="tabla-lista">
@@ -1488,7 +1489,7 @@ function toggleGrupo(clave) {
 function renderListaAgrupada(lista, campo) {
   const grupos = {};
   lista.forEach(p => {
-    const clave = (campo === 'area' ? p.area : p.categoria) || 'Sin clasificar';
+    const clave = (campo === 'area' ? p.area : campo === 'familia' ? p.familia : p.categoria) || 'Sin clasificar';
     if (!grupos[clave]) grupos[clave] = [];
     grupos[clave].push(p);
   });
