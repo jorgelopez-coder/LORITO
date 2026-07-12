@@ -82,7 +82,7 @@
 
     /* Ingredientes dinámicos (compartido: tarjetas de plato y subrecetas) */
     .ing-lista { display:flex; flex-direction:column; gap:8px; }
-    .ing-row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr auto; gap:8px; align-items:end; }
+    .ing-row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr auto; gap:8px; align-items:end; }
     .ing-row label { margin-bottom:4px; }
     .btn-rm { width:36px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; transition:color .15s,border-color .15s,background .15s; flex-shrink:0; }
     .btn-rm:hover { color:var(--red); border-color:var(--red); background:var(--red-bg); }
@@ -125,7 +125,7 @@
     .toast.success { border-color:var(--green); color:var(--green); }
     .toast.error { border-color:var(--red); color:var(--red); }
     .toast svg { width:16px; height:16px; }
-    @media (max-width:640px) { header{padding:0 1rem;} main{padding:1.5rem 1rem 3rem;} .field-row,.field-row-3{grid-template-columns:1fr;} .ing-row{grid-template-columns:1fr 1fr auto;} .ing-row .field:nth-child(3){display:none;} }
+    @media (max-width:640px) { header{padding:0 1rem;} main{padding:1.5rem 1rem 3rem;} .field-row,.field-row-3{grid-template-columns:1fr;} .ing-row{grid-template-columns:1fr 1fr auto;} .ing-row .field:nth-child(3),.ing-row .field:nth-child(4){display:none;} }
   </style>
 </head>
 <body>
@@ -478,6 +478,10 @@ function agregarIngrediente(scope, nombre='', cantidad='', fuenteId='') {
       <input type="text" id="ing-unit-${scope}-${rid}" placeholder="kg / ml…" style="background:var(--surface);pointer-events:none;color:var(--muted);" readonly>
     </div>
     <div class="field">
+      ${rid===1 ? '<label>Costo unitario</label>' : ''}
+      <div id="ing-costou-${scope}-${rid}" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:13px;color:var(--muted);min-height:39px;">—</div>
+    </div>
+    <div class="field">
       ${rid===1 ? '<label>Costo línea</label>' : ''}
       <div id="ing-costo-${scope}-${rid}" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:13px;color:var(--muted);min-height:39px;">—</div>
     </div>
@@ -505,10 +509,25 @@ function agregarIngrediente(scope, nombre='', cantidad='', fuenteId='') {
   });
 }
 
+// Costo real por unidad de la fuente (ajustado por rendimiento) — el mismo
+// número que se multiplica por la cantidad para armar el costo de línea,
+// pero visible apenas se elige el ingrediente, sin esperar a que se escriba
+// una cantidad.
+function costoUnitarioFuente(fuente) {
+  if (!fuente) return 0;
+  return fuente.costo / ((fuente.rendimiento || 100) / 100);
+}
+
 function actualizarUnidad(scope, rid) {
   const fuenteId = document.getElementById(`ing-fuente-${scope}-${rid}`)?.value;
   const fuente   = getFuentes().find(f => f.id === fuenteId);
-  if (fuente) document.getElementById(`ing-unit-${scope}-${rid}`).value = fuente.unidad || '';
+  const costouEl = document.getElementById(`ing-costou-${scope}-${rid}`);
+  if (fuente) {
+    document.getElementById(`ing-unit-${scope}-${rid}`).value = fuente.unidad || '';
+    if (costouEl) costouEl.textContent = `${fmt(costoUnitarioFuente(fuente))} / ${fuente.unidad || 'u'}`;
+  } else if (costouEl) {
+    costouEl.textContent = '—';
+  }
 }
 
 function removeIng(scope, btn) {
