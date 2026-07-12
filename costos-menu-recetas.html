@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menú y Recetas · Costos · Grupo del Sol</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#faf7f0; --surface:#f2ede2; --card:#fff;
+      --border:#c8ddd0; --border-h:#8ab89e;
+      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
+      --purple:#6a3a9a; --purple-bg:#f3eefb; --purple-lt:#d4b8f0;
+      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
+      --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
+      --amber:#c87820; --amber-bg:#fdf6e3; --amber-lt:#f0d890;
+      --teal:#0e7a7a; --teal-bg:#eaf6f6; --teal-lt:#a8d8d8;
+      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+    header { height:56px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; background:var(--bg); position:sticky; top:0; z-index:20; }
+    .nav-left { display:flex; align-items:center; gap:10px; }
+    .back-btn { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--muted); text-decoration:none; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); }
+    .back-btn:hover { color:var(--text); border-color:var(--border-h); }
+    .back-btn svg { width:13px; height:13px; }
+    .page-title { font-family:var(--font-d); font-size:14px; font-weight:700; }
+    .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 10px; }
+    main { max-width:1000px; margin:0 auto; padding:2rem 2rem 5rem; }
+    .page-header { margin-bottom:1.5rem; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .page-header h1 { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+    .page-header p { font-size:13px; color:var(--muted); }
+    .tabs { display:flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:4px; margin-bottom:1.5rem; width:fit-content; flex-wrap:wrap; }
+    .tab { font-size:13px; font-weight:500; padding:6px 16px; border-radius:7px; border:none; cursor:pointer; background:transparent; color:var(--muted); transition:background .15s,color .15s; }
+    .tab.active { background:var(--card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.4rem 1.5rem; margin-bottom:12px; }
+    .card-title { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:1.1rem; }
+    .cfg-section-title { font-family:var(--font-d); font-size:13px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--purple); margin:1.75rem 0 .85rem; padding-top:1.25rem; border-top:1px solid var(--border); }
+    .cfg-section-title:first-child { margin-top:0; padding-top:0; border-top:none; }
+    .cfg-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+    .field { margin-bottom:1rem; }
+    .field:last-child { margin-bottom:0; }
+    .field-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .field-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+    label { display:block; font-size:13px; font-weight:500; color:var(--text); margin-bottom:5px; }
+    .req { color:var(--red); margin-left:2px; }
+    input, select, textarea { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--font-b); font-size:14px; padding:9px 12px; outline:none; appearance:none; transition:border-color .15s,box-shadow .15s; }
+    input:focus, select:focus, textarea:focus { border-color:var(--purple); box-shadow:0 0 0 3px rgba(106,58,154,.1); }
+    input::placeholder, textarea::placeholder { color:var(--subtle); }
+    select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:36px; cursor:pointer; }
+    textarea { resize:vertical; min-height:60px; line-height:1.5; }
+    .submit-area { display:flex; gap:10px; margin-top:1.25rem; }
+    .btn-primary { flex:1; background:var(--purple); color:#fff; border:none; border-radius:9px; font-family:var(--font-d); font-size:15px; font-weight:700; padding:12px; cursor:pointer; transition:opacity .15s; }
+    .btn-primary:hover { opacity:.9; }
+    .btn-primary:disabled { opacity:.4; cursor:not-allowed; }
+    .btn-secondary { padding:12px 16px; border-radius:9px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; cursor:pointer; }
+    .btn-secondary:hover { color:var(--text); border-color:var(--border-h); }
+    .toolbar { display:flex; gap:8px; margin-bottom:1rem; flex-wrap:wrap; align-items:center; }
+    .search-wrap { position:relative; flex:1; min-width:180px; }
+    .search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--subtle); pointer-events:none; }
+    .search-input { padding-left:32px; font-size:13px; }
+    .filter-sel { font-size:13px; padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--text); outline:none; cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:30px; }
+
+    .menu-list { display:flex; flex-direction:column; gap:20px; }
+    .categoria-group { display:flex; flex-direction:column; gap:8px; }
+    .categoria-header { display:flex; align-items:center; justify-content:space-between; padding-bottom:6px; border-bottom:1px solid var(--border); }
+    .categoria-header span:first-child { font-family:var(--font-d); font-size:13px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--purple); }
+    .categoria-header span:last-child { font-size:11px; color:var(--muted); }
+    .plato-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; transition:border-color .15s,box-shadow .15s; }
+    .plato-card:hover { border-color:var(--purple-lt); box-shadow:0 2px 12px rgba(106,58,154,.08); }
+    .plato-row-main { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .plato-nombre { font-family:var(--font-d); font-size:15px; font-weight:700; color:var(--text); margin-bottom:3px; cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
+    .plato-nombre:hover { color:var(--purple); }
+    .plato-cat { font-size:12px; color:var(--muted); margin-bottom:8px; }
+    .plato-precio { font-family:var(--font-d); font-size:18px; font-weight:700; color:var(--purple); text-align:right; }
+    .plato-desc { font-size:12px; color:var(--muted); margin-top:6px; line-height:1.5; }
+    .plato-actions { display:flex; gap:6px; margin-top:10px; }
+    .arrow-ico { width:12px; height:12px; color:var(--subtle); transition:transform .15s; flex-shrink:0; }
+    .arrow-ico.open { transform:rotate(90deg); }
+
+    /* Ingredientes dinámicos (compartido: tarjetas de plato y subrecetas) */
+    .ing-lista { display:flex; flex-direction:column; gap:8px; }
+    .ing-row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr auto; gap:8px; align-items:end; }
+    .ing-row label { margin-bottom:4px; }
+    .btn-rm { width:36px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; transition:color .15s,border-color .15s,background .15s; flex-shrink:0; }
+    .btn-rm:hover { color:var(--red); border-color:var(--red); background:var(--red-bg); }
+    .btn-rm svg { width:14px; height:14px; }
+    .btn-add { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:500; color:var(--purple); background:var(--purple-bg); border:1px solid var(--purple-lt); border-radius:8px; padding:8px 14px; cursor:pointer; margin-top:8px; width:fit-content; transition:background .15s; }
+    .btn-add:hover { background:var(--purple-lt); }
+    .btn-add svg { width:14px; height:14px; }
+    .costo-box { background:var(--purple-bg); border:1px solid var(--purple-lt); border-radius:var(--radius); padding:1rem 1.25rem; display:flex; align-items:center; justify-content:space-between; margin-top:12px; }
+    .costo-label { font-size:13px; color:var(--purple); }
+    .costo-valor { font-family:var(--font-d); font-size:26px; font-weight:700; color:var(--purple); letter-spacing:-.02em; }
+    .receta-capture { display:none; margin-top:10px; padding-top:12px; border-top:1px solid var(--border); }
+
+    /* Subrecetas */
+    .recetas-lista { display:flex; flex-direction:column; gap:10px; }
+    .receta-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; transition:border-color .15s; }
+    .receta-card:hover { border-color:var(--purple-lt); }
+    .receta-head { display:flex; align-items:center; justify-content:space-between; padding:1rem 1.25rem; cursor:pointer; }
+    .receta-nombre { font-family:var(--font-d); font-size:15px; font-weight:700; }
+    .receta-meta { font-size:12px; color:var(--muted); margin-top:2px; }
+    .receta-costo { font-family:var(--font-d); font-size:18px; font-weight:700; color:var(--purple); }
+    .receta-detail { display:none; border-top:1px solid var(--border); padding:1rem 1.25rem; background:var(--surface); }
+    .receta-detail.open { display:block; }
+    .det-table { width:100%; border-collapse:collapse; font-size:12px; }
+    .det-table th { text-align:left; font-size:10px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:0 8px 6px 0; border-bottom:1px solid var(--border); }
+    .det-table td { padding:7px 8px 7px 0; border-bottom:1px solid var(--border); }
+    .det-table tr:last-child td { border-bottom:none; }
+    .det-num { text-align:right; font-variant-numeric:tabular-nums; }
+    .badge-sub { font-size:10px; padding:2px 6px; border-radius:20px; background:var(--teal-bg); color:var(--teal); font-weight:500; }
+
+    .btn-edit { font-size:11px; padding:4px 10px; border-radius:6px; border:1px solid var(--purple-lt); background:var(--purple-bg); color:var(--purple); cursor:pointer; font-weight:500; }
+    .btn-edit:hover { background:var(--purple); color:#fff; }
+    .btn-del { font-size:11px; padding:4px 10px; border-radius:6px; border:1px solid var(--red-lt); background:var(--red-bg); color:var(--red); cursor:pointer; font-weight:500; }
+    .btn-del:hover { background:var(--red); color:#fff; }
+    .empty { text-align:center; padding:2.5rem; color:var(--subtle); font-size:13px; }
+    .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
+    .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+    .ssep { width:1px; height:14px; background:var(--border); }
+    .toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px); background:var(--card); border:1px solid var(--border); border-radius:10px; padding:11px 18px; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s; opacity:0; z-index:100; box-shadow:0 4px 20px rgba(0,0,0,.08); }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+    .toast.success { border-color:var(--green); color:var(--green); }
+    .toast.error { border-color:var(--red); color:var(--red); }
+    .toast svg { width:16px; height:16px; }
+    @media (max-width:640px) { header{padding:0 1rem;} main{padding:1.5rem 1rem 3rem;} .field-row,.field-row-3{grid-template-columns:1fr;} .ing-row{grid-template-columns:1fr 1fr auto;} .ing-row .field:nth-child(3){display:none;} }
+  </style>
+</head>
+<body>
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Menú y Recetas</span>
+  </div>
+  <span class="date-chip" id="date-chip"></span>
+</header>
+
+<main>
+  <div class="page-header">
+    <div>
+      <h1>Menú y Recetas</h1>
+      <p>Platos, categorías y sus recetas — todo en un solo lugar.</p>
+    </div>
+    <button class="btn-primary" style="width:auto;padding:10px 20px;font-size:13px;" onclick="switchTab('nuevo', document.querySelectorAll('.tab')[1])">+ Nuevo plato</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('lista',this)">Menú</button>
+    <button class="tab" onclick="switchTab('nuevo',this)">Nuevo plato</button>
+    <button class="tab" onclick="switchTab('subrecetas',this)">Subrecetas</button>
+    <button class="tab" onclick="switchTab('config',this)">⚙ Configuración</button>
+  </div>
+
+  <!-- MENÚ -->
+  <div id="tab-lista">
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="search-input" id="search" placeholder="Buscar plato…" oninput="renderMenu()">
+      </div>
+      <select class="filter-sel" id="f-cat" onchange="renderMenu()">
+        <option value="">Todas las categorías</option>
+      </select>
+      <select class="filter-sel" id="f-disp" onchange="renderMenu()">
+        <option value="">Todos los estados</option>
+        <option value="Disponible">Disponible</option>
+        <option value="No disponible">No disponible</option>
+        <option value="De temporada">De temporada</option>
+      </select>
+    </div>
+
+    <div class="card" id="kpi-fc-card" style="display:none;">
+      <p class="card-title">Mejor food cost por categoría</p>
+      <div id="kpi-fc-container"></div>
+    </div>
+
+    <div id="menu-container">
+      <div class="empty">No hay platos en el menú. Agregá el primero.</div>
+    </div>
+  </div>
+
+  <!-- NUEVO / EDITAR PLATO -->
+  <div id="tab-nuevo" style="display:none;">
+    <div class="card">
+      <p class="card-title" id="form-title">Nuevo plato</p>
+      <input type="hidden" id="edit-id">
+
+      <div class="field-row">
+        <div class="field">
+          <label for="m-nombre">Nombre del plato <span class="req">*</span></label>
+          <input type="text" id="m-nombre" placeholder="Ej. Lomo al chimichurri">
+        </div>
+        <div class="field">
+          <label for="m-categoria">Categoría <span class="req">*</span></label>
+          <select id="m-categoria">
+            <option value="" disabled selected>Seleccioná…</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="m-precio">Precio de venta (₡) <span class="req">*</span></label>
+          <input type="number" id="m-precio" min="0" step="100" placeholder="0">
+        </div>
+        <div class="field">
+          <label for="m-disponible">Disponibilidad</label>
+          <select id="m-disponible">
+            <option value="Disponible">Disponible</option>
+            <option value="No disponible">No disponible</option>
+            <option value="De temporada">De temporada</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="m-descripcion">Descripción</label>
+        <textarea id="m-descripcion" placeholder="Descripción del plato para el menú…"></textarea>
+      </div>
+      <p style="font-size:12px;color:var(--muted);">Los ingredientes y el costo de receta se cargan después, desde la tarjeta del plato en la lista de Menú (clic en su nombre).</p>
+    </div>
+
+    <div class="submit-area">
+      <button class="btn-secondary" onclick="limpiarFormPlato()">Cancelar</button>
+      <button class="btn-primary" onclick="guardarPlato()">Guardar plato</button>
+    </div>
+  </div>
+
+  <!-- SUBRECETAS -->
+  <div id="tab-subrecetas" style="display:none;">
+    <div id="sub-vista-lista">
+      <div class="toolbar">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" class="search-input" id="sub-search" placeholder="Buscar subreceta…" oninput="renderSubrecetas()">
+        </div>
+        <button class="btn-primary" style="flex:none;width:auto;padding:8px 16px;font-size:13px;" onclick="abrirFormSub()">+ Nueva subreceta</button>
+      </div>
+      <div id="lista-subrecetas">
+        <div class="empty">No hay subrecetas. Agregá la primera.</div>
+      </div>
+    </div>
+
+    <div id="sub-vista-form" style="display:none;">
+      <div class="card">
+        <p class="card-title" id="sub-form-title">Nueva subreceta</p>
+        <input type="hidden" id="sub-edit-id">
+        <div class="field">
+          <label for="sub-nombre">Nombre <span class="req">*</span></label>
+          <input type="text" id="sub-nombre" placeholder="Ej. Chimichurri base">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="sub-porciones">Rinde (cantidad) <span class="req">*</span></label>
+            <input type="number" id="sub-porciones" min="1" value="1" oninput="recalcular('sub')">
+          </div>
+          <div class="field">
+            <label for="sub-unidad">Unidad de producción final <span class="req">*</span></label>
+            <input type="text" id="sub-unidad" list="unidad-opciones" placeholder="Ej. mililitros, gramos…" autocomplete="off">
+            <datalist id="unidad-opciones">
+              <option value="Porción"><option value="Porciones"><option value="gramos"><option value="kg">
+              <option value="mililitros"><option value="litros"><option value="tazas"><option value="unidades">
+              <option value="piezas"><option value="lata"><option value="caja">
+            </datalist>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Ingredientes</p>
+        <div class="ing-lista" id="ing-lista-sub"></div>
+        <button type="button" class="btn-add" onclick="agregarIngrediente('sub')">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
+          Agregar ingrediente
+        </button>
+        <div class="costo-box">
+          <div>
+            <div class="costo-label">Costo total</div>
+            <div style="font-size:11px;color:var(--muted);" id="costo-por-porcion-sub">Por unidad: ₡0</div>
+          </div>
+          <div class="costo-valor" id="costo-total-sub">₡0</div>
+        </div>
+      </div>
+
+      <div class="submit-area">
+        <button class="btn-secondary" onclick="limpiarFormSub()">Cancelar</button>
+        <button class="btn-primary" onclick="guardarSubreceta()">Guardar subreceta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIGURACIÓN -->
+  <div id="tab-config" style="display:none;">
+    <p class="cfg-section-title">Categorías de menú</p>
+    <div class="cfg-grid">
+      <div class="card">
+        <p class="card-title">Categorías</p>
+        <div id="cfg-catmenu-lista" style="margin-bottom:10px;"></div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="cfg-catmenu-nueva" placeholder="Nueva categoría…" style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key==='Enter')agregarCategoriaMenu()">
+          <button onclick="agregarCategoriaMenu()" style="padding:7px 12px;border-radius:8px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;font-weight:600;white-space:nowrap;">+ Agregar</button>
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin-top:8px;">Define el orden de agrupación del menú y las opciones del selector de categoría al crear un plato.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <span class="sdot"></span>
+    <span id="status-msg">—</span>
+    <span class="ssep"></span>
+    <span style="margin-left:auto;">v1.0 · Costos · Grupo del Sol</span>
+  </div>
+</main>
+
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+const APPS_SCRIPT_COSTOS = 'https://script.google.com/macros/s/AKfycbz1B6crIkwwWLGx-xkZdXRmySsmlLfE1aQtF9_BP-H2C4TPyeiuURl-YhxoX9fbVUivaQ/exec';
+const hoy = new Date();
+document.getElementById('date-chip').textContent =
+  hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long' });
+
+const fmt = n => '₡' + Number(n).toLocaleString('es-CR', {minimumFractionDigits:2});
+
+// ── STORAGE (caché local, siempre se refresca del backend al cargar) ──
+function getPlatos() {
+  try { return JSON.parse(localStorage.getItem('costos_menu') || '[]'); }
+  catch { return []; }
+}
+function savePlatos(lista) { localStorage.setItem('costos_menu', JSON.stringify(lista)); }
+
+function getRecetas() {
+  try { return JSON.parse(localStorage.getItem('costos_recetas') || '[]'); }
+  catch { return []; }
+}
+function saveRecetas(lista) { localStorage.setItem('costos_recetas', JSON.stringify(lista)); }
+
+async function cargarMenuDesdeSheet() {
+  if (!APPS_SCRIPT_COSTOS) return;
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS + '?modulo=menu');
+    const data = await resp.json();
+    if (!data || !data.ok || !Array.isArray(data.registros)) return;
+    savePlatos(data.registros);
+    renderMenu();
+  } catch (e) {
+    console.warn('No se pudo cargar el menú del Sheet:', e);
+  }
+}
+
+async function cargarRecetasDesdeSheet() {
+  if (!APPS_SCRIPT_COSTOS) return;
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS + '?modulo=recetas');
+    const data = await resp.json();
+    if (!data || !data.ok || !Array.isArray(data.registros)) return;
+    saveRecetas(data.registros);
+    renderSubrecetas();
+  } catch (e) {
+    console.warn('No se pudo cargar recetas del Sheet:', e);
+  }
+}
+
+async function cargarProductosParaFuentes() {
+  if (!APPS_SCRIPT_COSTOS) return;
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS + '?modulo=productos');
+    const data = await resp.json();
+    if (!data || !data.ok || !Array.isArray(data.registros)) return;
+    localStorage.setItem('costos_productos', JSON.stringify(data.registros));
+  } catch (e) {
+    console.warn('No se pudo cargar productos del Sheet:', e);
+  }
+}
+
+// ── CATEGORÍAS DE MENÚ (administrables desde Configuración) ───────────
+// Mismo default que CATEGORIAS_MENU_DEFAULT en el backend — se usa mientras
+// carga el Sheet, y como fallback si el endpoint categorias_menu todavía no
+// está desplegado (hay que correr migrarCrearCategoriasMenu() una vez).
+const CATEGORIAS_MENU_DEFAULT_FE = ['Entradas','Sopas','Ensaladas','Platos fuertes','Postres','Bebidas','Especiales'];
+let CATEGORIAS_MENU = CATEGORIAS_MENU_DEFAULT_FE.slice();
+
+async function cargarCategoriasMenu() {
+  if (APPS_SCRIPT_COSTOS) {
+    try {
+      const resp = await fetch(APPS_SCRIPT_COSTOS + '?modulo=categorias_menu');
+      const data = await resp.json();
+      if (data && data.ok && Array.isArray(data.valores) && data.valores.length) {
+        CATEGORIAS_MENU = data.valores;
+      }
+    } catch (e) {
+      console.warn('No se pudo cargar categorías de menú, uso el default local:', e);
+    }
+  }
+  poblarSelectsCategoria();
+  renderCfgCategoriasMenu();
+  renderMenu();
+}
+
+function poblarSelectsCategoria() {
+  const opts = CATEGORIAS_MENU.map(c => `<option>${c}</option>`).join('');
+  document.getElementById('f-cat').innerHTML = '<option value="">Todas las categorías</option>' + opts;
+  const selActual = document.getElementById('m-categoria').value;
+  document.getElementById('m-categoria').innerHTML = '<option value="" disabled selected>Seleccioná…</option>' + opts;
+  if (selActual) document.getElementById('m-categoria').value = selActual;
+}
+
+function ordenarPorCategoria(keys) {
+  return keys.slice().sort((a, b) => {
+    const ia = CATEGORIAS_MENU.indexOf(a), ib = CATEGORIAS_MENU.indexOf(b);
+    if (ia === -1 && ib === -1) return a.localeCompare(b);
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+}
+
+// ── FUENTES DE INGREDIENTE (productos + subrecetas) ────────────────────
+function getFuentes() {
+  const productos = JSON.parse(localStorage.getItem('costos_productos') || '[]')
+    .filter(p => p.aplica_receta !== false && p.aplica_receta !== 'false');
+  const subrecetas = getRecetas().filter(r => r.tipo === 'subreceta').map(r => ({
+    id: 'SUB-' + r.id, nombre: r.nombre + ' (subreceta)', unidad: r.unidad || 'porciones',
+    costo: r.costo_porcion || 0, rendimiento: 100, esSub: true, refId: r.id,
+  }));
+  return [...productos, ...subrecetas];
+}
+
+function calcularCostoIngrediente(fuente, cantidad) {
+  if (!fuente || !cantidad) return 0;
+  const costoReal = fuente.costo / ((fuente.rendimiento || 100) / 100);
+  return costoReal * cantidad;
+}
+
+// ── ARMADOR DE INGREDIENTES (compartido, namespaceado por "scope") ────
+// scope puede ser el id de un plato (una tarjeta desplegada en la lista de
+// Menú) o 'sub' (el único formulario de Subrecetas). Los ids de los
+// elementos del DOM llevan el scope para que varias tarjetas de plato
+// puedan estar desplegadas al mismo tiempo sin pisarse.
+let ingCounts = {};
+
+function agregarIngrediente(scope, nombre='', cantidad='', fuenteId='') {
+  ingCounts[scope] = (ingCounts[scope] || 0) + 1;
+  const rid = ingCounts[scope];
+  const fuentes = getFuentes();
+
+  const opts = fuentes.map(f =>
+    `<option value="${f.id}" ${f.id===fuenteId?'selected':''}>${f.nombre} (${f.unidad})</option>`
+  ).join('');
+
+  const div = document.createElement('div');
+  div.className = 'ing-row';
+  div.dataset.id = rid;
+  div.innerHTML = `
+    <div class="field">
+      ${rid===1 ? '<label>Ingrediente / Subreceta</label>' : ''}
+      <select onchange="recalcular('${scope}')" id="ing-fuente-${scope}-${rid}">
+        <option value="" disabled selected>Seleccioná…</option>
+        ${opts}
+      </select>
+    </div>
+    <div class="field">
+      ${rid===1 ? '<label>Cantidad</label>' : ''}
+      <input type="number" id="ing-cant-${scope}-${rid}" min="0" step="0.001" placeholder="0"
+        value="${cantidad}" oninput="recalcular('${scope}')">
+    </div>
+    <div class="field">
+      ${rid===1 ? '<label>Unidad</label>' : ''}
+      <input type="text" id="ing-unit-${scope}-${rid}" placeholder="kg / ml…" style="background:var(--surface);pointer-events:none;color:var(--muted);" readonly>
+    </div>
+    <div class="field">
+      ${rid===1 ? '<label>Costo línea</label>' : ''}
+      <div id="ing-costo-${scope}-${rid}" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:13px;color:var(--muted);min-height:39px;">—</div>
+    </div>
+    <div class="field">
+      ${rid===1 ? '<label>% del total</label>' : ''}
+      <div id="ing-pct-${scope}-${rid}" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:13px;color:var(--muted);min-height:39px;">—</div>
+    </div>
+    <button type="button" class="btn-rm" onclick="removeIng('${scope}', this)">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>
+    </button>`;
+
+  const cont = document.getElementById(`ing-lista-${scope}`);
+  if (!cont) return;
+  cont.appendChild(div);
+
+  if (fuenteId) {
+    const sel = document.getElementById(`ing-fuente-${scope}-${rid}`);
+    sel.value = fuenteId;
+    actualizarUnidad(scope, rid);
+  }
+
+  document.getElementById(`ing-fuente-${scope}-${rid}`).addEventListener('change', () => {
+    actualizarUnidad(scope, rid);
+    recalcular(scope);
+  });
+}
+
+function actualizarUnidad(scope, rid) {
+  const fuenteId = document.getElementById(`ing-fuente-${scope}-${rid}`)?.value;
+  const fuente   = getFuentes().find(f => f.id === fuenteId);
+  if (fuente) document.getElementById(`ing-unit-${scope}-${rid}`).value = fuente.unidad || '';
+}
+
+function removeIng(scope, btn) {
+  btn.closest('.ing-row').remove();
+  if (!document.querySelectorAll(`#ing-lista-${scope} .ing-row`).length) agregarIngrediente(scope);
+  recalcular(scope);
+}
+
+function recalcular(scope) {
+  const fuentes = getFuentes();
+  const porcionesEl = document.getElementById(`porciones-${scope}`);
+  const porciones = parseFloat(porcionesEl?.value) || 1;
+
+  const costos = [];
+  document.querySelectorAll(`#ing-lista-${scope} .ing-row`).forEach(row => {
+    const rid      = row.dataset.id;
+    const fuenteId = document.getElementById(`ing-fuente-${scope}-${rid}`)?.value;
+    const cantidad = parseFloat(document.getElementById(`ing-cant-${scope}-${rid}`)?.value) || 0;
+    const fuente   = fuentes.find(f => f.id === fuenteId);
+    const costoLin = calcularCostoIngrediente(fuente, cantidad);
+    costos.push({ rid, costoLin, fuente, cantidad });
+  });
+
+  const total = costos.reduce((a, c) => a + c.costoLin, 0);
+
+  costos.forEach(({ rid, costoLin, fuente, cantidad }) => {
+    const costoEl = document.getElementById(`ing-costo-${scope}-${rid}`);
+    const pctEl   = document.getElementById(`ing-pct-${scope}-${rid}`);
+    if (costoEl) {
+      if (fuente && cantidad) {
+        costoEl.textContent = fmt(costoLin);
+        costoEl.style.color = 'var(--purple)';
+        costoEl.style.fontWeight = '600';
+      } else {
+        costoEl.textContent = '—';
+        costoEl.style.color = 'var(--muted)';
+        costoEl.style.fontWeight = '400';
+      }
+    }
+    if (pctEl) {
+      if (total > 0 && costoLin > 0) {
+        const pct = (costoLin / total * 100).toFixed(1);
+        const col = pct > 30 ? 'var(--red)' : pct > 15 ? 'var(--amber)' : 'var(--muted)';
+        pctEl.textContent = pct + '%';
+        pctEl.style.color = col;
+        pctEl.style.fontWeight = '600';
+      } else {
+        pctEl.textContent = '—';
+        pctEl.style.color = 'var(--muted)';
+        pctEl.style.fontWeight = '400';
+      }
+    }
+  });
+
+  const totalEl = document.getElementById(`costo-total-${scope}`);
+  const porPorcionEl = document.getElementById(`costo-por-porcion-${scope}`);
+  if (totalEl) totalEl.textContent = fmt(total);
+  if (porPorcionEl) {
+    const unidad = scope === 'sub' ? (document.getElementById('sub-unidad')?.value || 'unidad') : 'porción';
+    porPorcionEl.textContent = `Por ${unidad}: ${fmt(total / porciones)}`;
+  }
+  return total;
+}
+
+function leerIngredientesDeScope(scope) {
+  const fuentes = getFuentes();
+  const ingredientes = [];
+  document.querySelectorAll(`#ing-lista-${scope} .ing-row`).forEach(row => {
+    const rid      = row.dataset.id;
+    const fuenteId = document.getElementById(`ing-fuente-${scope}-${rid}`)?.value;
+    const cantidad = parseFloat(document.getElementById(`ing-cant-${scope}-${rid}`)?.value) || 0;
+    const fuente   = fuentes.find(f => f.id === fuenteId);
+    if (fuente && cantidad > 0) {
+      ingredientes.push({
+        fuenteId, nombre: fuente.nombre, unidad: fuente.unidad,
+        cantidad, costo_linea: calcularCostoIngrediente(fuente, cantidad), esSub: fuente.esSub || false
+      });
+    }
+  });
+  return ingredientes;
+}
+
+// ── FC (Food Cost %) ────────────────────────────────────────────────
+function colorFC(fc) {
+  if (fc < 25) return { text:'var(--green)', bg:'var(--green-bg)', border:'var(--green-lt)' };
+  if (fc <= 35) return { text:'var(--amber)', bg:'var(--amber-bg)', border:'var(--amber)' };
+  return { text:'var(--red)', bg:'var(--red-bg)', border:'var(--red-lt)' };
+}
+
+const DISP_COLORS = {
+  'Disponible':    { bg:'var(--green-bg)', col:'var(--green)' },
+  'No disponible': { bg:'var(--red-bg)',   col:'var(--red)'   },
+  'De temporada':  { bg:'var(--amber-bg)', col:'var(--amber)' },
+};
+
+function getRecetaPorId(recetaId) {
+  if (!recetaId) return null;
+  return getRecetas().find(r => r.id === recetaId) || null;
+}
+
+// ── KPI: mejor food cost por categoría ─────────────────────────────
+function renderKpiFC() {
+  const platos = getPlatos();
+  const porCategoria = {};
+  platos.forEach(p => {
+    const fc = parseFloat(p.fc);
+    if (p.fc === '' || p.fc == null || isNaN(fc)) return;
+    const cat = p.categoria || 'Sin categoría';
+    if (!porCategoria[cat] || fc < porCategoria[cat].fc) porCategoria[cat] = { nombre: p.nombre, fc };
+  });
+  const categorias = ordenarPorCategoria(Object.keys(porCategoria));
+  const card = document.getElementById('kpi-fc-card');
+  const cont = document.getElementById('kpi-fc-container');
+  if (!categorias.length) { card.style.display = 'none'; return; }
+  card.style.display = '';
+  cont.innerHTML = categorias.map(cat => {
+    const { nombre, fc } = porCategoria[cat];
+    const col = colorFC(fc);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);">${cat}</div>
+        <div style="font-size:13px;font-weight:600;">${nombre}</div>
+      </div>
+      <div style="font-family:var(--font-d);font-weight:700;color:${col.text};">${fc.toFixed(1)}%</div>
+    </div>`;
+  }).join('');
+  cont.lastElementChild.style.borderBottom = 'none';
+}
+
+// ── DESPLIEGUE INLINE DE LA RECETA EN LA TARJETA DEL PLATO ─────────
+// Se re-arma cada vez que se abre (el set se limpia en cada renderMenu(),
+// porque renderMenu() reconstruye el HTML de las tarjetas desde cero).
+let RECETA_CAPTURE_INIT = new Set();
+
+function toggleRecetaCapture(platoId) {
+  const panel = document.getElementById('rc-' + platoId);
+  const ico   = document.getElementById('rc-' + platoId + '-ico');
+  if (!panel) return;
+  const abrir = panel.style.display === 'none' || !panel.style.display;
+  panel.style.display = abrir ? 'block' : 'none';
+  if (ico) ico.classList.toggle('open', abrir);
+  if (!abrir) return;
+  if (!RECETA_CAPTURE_INIT.has(platoId)) {
+    RECETA_CAPTURE_INIT.add(platoId);
+    inicializarRecetaCapture(platoId);
+  }
+}
+
+function inicializarRecetaCapture(platoId) {
+  const plato  = getPlatos().find(p => p.id === platoId);
+  const receta = getRecetaPorId(plato?.receta_id);
+  document.getElementById(`porciones-${platoId}`).value = receta ? receta.porciones : 1;
+  document.getElementById(`ing-lista-${platoId}`).innerHTML = '';
+  ingCounts[platoId] = 0;
+  if (receta && receta.ingredientes && receta.ingredientes.length) {
+    receta.ingredientes.forEach(ing => agregarIngrediente(platoId, ing.nombre, ing.cantidad, ing.fuenteId));
+  } else {
+    agregarIngrediente(platoId);
+  }
+  recalcular(platoId);
+}
+
+async function guardarRecetaDePlato(platoId) {
+  const plato = getPlatos().find(p => p.id === platoId);
+  if (!plato) return;
+  const porciones = parseFloat(document.getElementById(`porciones-${platoId}`).value) || 1;
+  const ingredientes = leerIngredientesDeScope(platoId);
+  if (!ingredientes.length) { showToast('Agregá al menos un ingrediente.', 'error'); return; }
+
+  const costoTotal = ingredientes.reduce((a, i) => a + i.costo_linea, 0);
+  const recetaId = plato.receta_id || 'REC-' + Date.now();
+  const registroReceta = {
+    id: recetaId, nombre: plato.nombre, tipo: 'receta', porciones, plato_id: plato.id,
+    unidad: 'porciones', ingredientes, costo_total: costoTotal, costo_porcion: costoTotal / porciones,
+    actualizado: new Date().toISOString()
+  };
+
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'receta', ...registroReceta }) }) });
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error || 'Error al guardar la receta');
+
+    // Reescribe el plato con el receta_id ya conocido (nuevo o existente) para
+    // que el backend recalcule Costo_Receta/FC con el costo recién guardado.
+    const registroPlato = { ...plato, receta_id: recetaId };
+    const resp2 = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'plato', ...registroPlato }) }) });
+    const json2 = await resp2.json();
+    if (!json2.ok) throw new Error(json2.error || 'Error al actualizar el plato');
+  } catch(e) {
+    showToast('No se pudo guardar la receta: ' + e.message, 'error');
+    return;
+  }
+
+  showToast('Receta guardada', 'success');
+  await Promise.all([cargarMenuDesdeSheet(), cargarRecetasDesdeSheet()]);
+  toggleRecetaCapture(platoId); // reabre el panel con los valores ya recalculados por el backend
+}
+
+// ── RENDER: tarjeta de plato ────────────────────────────────────────
+function renderPlatoCard(p) {
+  const disp = DISP_COLORS[p.disponible] || DISP_COLORS['Disponible'];
+  const sombra = p.costo_receta > 0 ? colorFC(parseFloat(p.fc)) : null;
+  const estiloCard = sombra ? `background:${sombra.bg};border-left:4px solid ${sombra.border};` : '';
+  return `<div class="plato-card" style="${estiloCard}" data-plato-id="${p.id}">
+    <div class="plato-row-main">
+      <div>
+        <span class="plato-nombre" onclick="toggleRecetaCapture('${p.id}')" title="Ver / editar receta">
+          <svg class="arrow-ico" id="rc-${p.id}-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4"/></svg>
+          ${p.nombre}
+        </span>
+        ${p.descripcion ? `<div class="plato-desc">${p.descripcion}</div>` : ''}
+      </div>
+      <div>
+        <div class="plato-precio">${fmt(p.precio)}</div>
+        <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end;margin-top:4px;">
+          <span style="font-size:11px;padding:3px 8px;border-radius:20px;background:${disp.bg};color:${disp.col};">${p.disponible}</span>
+        </div>
+      </div>
+    </div>
+    ${p.costo_receta > 0 ? `
+      <div style="display:flex;gap:10px;margin-top:6px;font-size:12px;">
+        <span style="color:var(--muted);">Costo: <strong>₡${Number(p.costo_receta).toLocaleString('es-CR',{minimumFractionDigits:2})}</strong></span>
+        <span style="font-weight:700;color:${sombra.text};">FC ${p.fc}%</span>
+      </div>` : ''}
+    <div class="plato-actions">
+      <button class="btn-edit" onclick="editarPlato('${p.id}')">Editar plato</button>
+      <button class="btn-del" onclick="eliminarPlato('${p.id}')">✕</button>
+    </div>
+    <div class="receta-capture" id="rc-${p.id}" style="display:none;">
+      <div class="field" style="max-width:200px;">
+        <label>Porciones que rinde</label>
+        <input type="number" id="porciones-${p.id}" min="1" value="1" oninput="recalcular('${p.id}')">
+      </div>
+      <div class="ing-lista" id="ing-lista-${p.id}"></div>
+      <button type="button" class="btn-add" onclick="agregarIngrediente('${p.id}')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
+        Agregar ingrediente
+      </button>
+      <div class="costo-box">
+        <div>
+          <div class="costo-label">Costo total de la receta</div>
+          <div style="font-size:11px;color:var(--muted);" id="costo-por-porcion-${p.id}">Por porción: ₡0</div>
+        </div>
+        <div class="costo-valor" id="costo-total-${p.id}">₡0</div>
+      </div>
+      <div class="submit-area">
+        <button class="btn-secondary" onclick="toggleRecetaCapture('${p.id}')">Cerrar</button>
+        <button class="btn-primary" onclick="guardarRecetaDePlato('${p.id}')">Guardar receta</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderMenu() {
+  const busq = document.getElementById('search').value.toLowerCase();
+  const cat  = document.getElementById('f-cat').value;
+  const disp = document.getElementById('f-disp').value;
+  let lista  = getPlatos().filter(p =>
+    (!busq || p.nombre.toLowerCase().includes(busq))
+ && (!cat  || p.categoria === cat)
+ && (!disp || p.disponible === disp)
+  );
+
+  document.getElementById('status-msg').textContent = `${lista.length} de ${getPlatos().length} platos`;
+  RECETA_CAPTURE_INIT.clear(); // el HTML de las tarjetas se reconstruye entero abajo
+
+  renderKpiFC();
+
+  if (!lista.length) {
+    document.getElementById('menu-container').innerHTML =
+      '<div class="empty">No hay platos que coincidan con los filtros.</div>';
+    return;
+  }
+
+  const grupos = {};
+  lista.forEach(p => {
+    const clave = p.categoria || 'Sin categoría';
+    if (!grupos[clave]) grupos[clave] = [];
+    grupos[clave].push(p);
+  });
+  const categoriasOrdenadas = ordenarPorCategoria(Object.keys(grupos));
+
+  const bloques = categoriasOrdenadas.map(clave => {
+    const items = grupos[clave];
+    return `<div class="categoria-group">
+      <div class="categoria-header">
+        <span>${clave}</span>
+        <span>${items.length} plato${items.length!==1?'s':''}</span>
+      </div>
+      ${items.map(renderPlatoCard).join('')}
+    </div>`;
+  }).join('');
+
+  document.getElementById('menu-container').innerHTML = `<div class="menu-list">${bloques}</div>`;
+}
+
+// ── NUEVO / EDITAR PLATO (datos básicos, sin receta) ───────────────
+async function guardarPlato() {
+  const nombre      = document.getElementById('m-nombre').value.trim();
+  const categoria   = document.getElementById('m-categoria').value;
+  const precio      = parseFloat(document.getElementById('m-precio').value) || 0;
+  const disponible  = document.getElementById('m-disponible').value;
+  const descripcion = document.getElementById('m-descripcion').value.trim();
+  const editId      = document.getElementById('edit-id').value;
+
+  if (!nombre)    { showToast('Ingresá el nombre.', 'error'); return; }
+  if (!categoria) { showToast('Seleccioná una categoría.', 'error'); return; }
+  if (!precio)    { showToast('Ingresá el precio.', 'error'); return; }
+
+  const existente = editId ? getPlatos().find(p => p.id === editId) : null;
+  const id = editId || 'PLT-' + Date.now();
+  const registro = { id, nombre, categoria, precio, disponible, descripcion, receta_id: existente ? (existente.receta_id || '') : '' };
+
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'plato', ...registro }) }) });
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error || 'Error al guardar');
+  } catch(e) {
+    showToast('No se pudo guardar: ' + e.message, 'error');
+    return;
+  }
+
+  showToast(`${nombre} ${editId ? 'actualizado' : 'agregado al menú'}`, 'success');
+  limpiarFormPlato();
+  await cargarMenuDesdeSheet();
+  switchTab('lista', document.querySelectorAll('.tab')[0]);
+
+  if (!editId) {
+    const el = document.querySelector(`[data-plato-id="${id}"]`);
+    if (el) el.scrollIntoView({ behavior:'smooth', block:'center' });
+    toggleRecetaCapture(id);
+  }
+}
+
+function editarPlato(id) {
+  const p = getPlatos().find(p => p.id === id);
+  if (!p) return;
+  document.getElementById('edit-id').value       = p.id;
+  document.getElementById('m-nombre').value      = p.nombre;
+  document.getElementById('m-categoria').value   = p.categoria;
+  document.getElementById('m-precio').value      = p.precio;
+  document.getElementById('m-disponible').value  = p.disponible;
+  document.getElementById('m-descripcion').value = p.descripcion || '';
+  document.getElementById('form-title').textContent = 'Editar plato';
+  switchTab('nuevo', document.querySelectorAll('.tab')[1]);
+}
+
+async function eliminarPlato(id) {
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'eliminar', tipo:'menu', id }) }) });
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error || 'Error al eliminar');
+  } catch(e) {
+    showToast('No se pudo eliminar: ' + e.message, 'error');
+    return;
+  }
+  showToast('Plato eliminado', 'success');
+  await Promise.all([cargarMenuDesdeSheet(), cargarRecetasDesdeSheet()]);
+}
+
+function limpiarFormPlato() {
+  document.getElementById('edit-id').value = '';
+  document.getElementById('m-nombre').value = '';
+  document.getElementById('m-categoria').value = '';
+  document.getElementById('m-precio').value = '';
+  document.getElementById('m-disponible').value = 'Disponible';
+  document.getElementById('m-descripcion').value = '';
+  document.getElementById('form-title').textContent = 'Nuevo plato';
+}
+
+// ── SUBRECETAS ──────────────────────────────────────────────────────
+function abrirFormSub() {
+  document.getElementById('sub-vista-lista').style.display = 'none';
+  document.getElementById('sub-vista-form').style.display = 'block';
+}
+function cerrarFormSub() {
+  document.getElementById('sub-vista-form').style.display = 'none';
+  document.getElementById('sub-vista-lista').style.display = 'block';
+}
+
+function limpiarFormSub() {
+  document.getElementById('sub-edit-id').value = '';
+  document.getElementById('sub-nombre').value = '';
+  document.getElementById('sub-porciones').value = '1';
+  document.getElementById('sub-unidad').value = '';
+  document.getElementById('sub-form-title').textContent = 'Nueva subreceta';
+  document.getElementById('ing-lista-sub').innerHTML = '';
+  ingCounts['sub'] = 0;
+  agregarIngrediente('sub');
+  recalcular('sub');
+  cerrarFormSub();
+}
+
+async function guardarSubreceta() {
+  const nombre    = document.getElementById('sub-nombre').value.trim();
+  const porciones = parseFloat(document.getElementById('sub-porciones').value) || 1;
+  const unidad    = document.getElementById('sub-unidad').value.trim();
+  const editId    = document.getElementById('sub-edit-id').value;
+
+  if (!nombre) { showToast('Ingresá el nombre.', 'error'); return; }
+  if (!unidad) { showToast('Ingresá la unidad de producción.', 'error'); return; }
+
+  const ingredientes = leerIngredientesDeScope('sub');
+  if (!ingredientes.length) { showToast('Agregá al menos un ingrediente.', 'error'); return; }
+
+  const costoTotal = ingredientes.reduce((a, i) => a + i.costo_linea, 0);
+  const registro = {
+    id: editId || 'REC-' + Date.now(), nombre, tipo: 'subreceta', porciones, plato_id: '',
+    unidad, ingredientes, costo_total: costoTotal, costo_porcion: costoTotal / porciones,
+    actualizado: new Date().toISOString()
+  };
+
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'receta', ...registro }) }) });
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error || 'Error al guardar');
+  } catch(e) {
+    showToast('No se pudo guardar: ' + e.message, 'error');
+    return;
+  }
+
+  showToast(`${nombre} ${editId ? 'actualizada' : 'guardada'}`, 'success');
+  limpiarFormSub();
+  await cargarRecetasDesdeSheet();
+}
+
+function editarSubreceta(id) {
+  const r = getRecetas().find(r => r.id === id);
+  if (!r) return;
+  document.getElementById('sub-edit-id').value = r.id;
+  document.getElementById('sub-nombre').value = r.nombre;
+  document.getElementById('sub-porciones').value = r.porciones;
+  document.getElementById('sub-unidad').value = r.unidad || '';
+  document.getElementById('sub-form-title').textContent = 'Editar subreceta';
+  document.getElementById('ing-lista-sub').innerHTML = '';
+  ingCounts['sub'] = 0;
+  (r.ingredientes || []).forEach(ing => agregarIngrediente('sub', ing.nombre, ing.cantidad, ing.fuenteId));
+  recalcular('sub');
+  abrirFormSub();
+}
+
+async function eliminarSubreceta(id) {
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'eliminar', tipo:'recetas', id }) }) });
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error || 'Error al eliminar');
+  } catch(e) {
+    showToast('No se pudo eliminar: ' + e.message, 'error');
+    return;
+  }
+  showToast('Subreceta eliminada', 'success');
+  await cargarRecetasDesdeSheet();
+}
+
+function toggleDetSub(id) {
+  const el  = document.getElementById(id);
+  const ico = document.getElementById(id + '-ico');
+  const open = !el.classList.contains('open');
+  el.classList.toggle('open', open);
+  ico.classList.toggle('open', open);
+}
+
+function renderSubrecetas() {
+  const busq = document.getElementById('sub-search').value.toLowerCase();
+  const lista = getRecetas().filter(r => r.tipo === 'subreceta' && (!busq || r.nombre.toLowerCase().includes(busq)));
+
+  const cont = document.getElementById('lista-subrecetas');
+  if (!lista.length) {
+    cont.innerHTML = '<div class="empty">No hay subrecetas. Agregá la primera.</div>';
+    return;
+  }
+
+  const cards = lista.map(r => {
+    const filasDet = (r.ingredientes||[]).map(ing => `
+      <tr>
+        <td>${ing.nombre} ${ing.esSub?'<span class="badge-sub">sub</span>':''}</td>
+        <td class="det-num">${ing.cantidad} ${ing.unidad}</td>
+        <td class="det-num">${fmt(ing.costo_linea)}</td>
+      </tr>`).join('');
+
+    const rowId = 'subrec-' + r.id;
+    return `
+      <div class="receta-card">
+        <div class="receta-head" onclick="toggleDetSub('${rowId}')">
+          <div>
+            <div class="receta-nombre">${r.nombre}</div>
+            <div class="receta-meta">Rinde ${r.porciones} ${r.unidad} · Costo/u: ${fmt(r.costo_porcion)}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span class="receta-costo">${fmt(r.costo_total)}</span>
+            <svg class="arrow-ico" id="${rowId}-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+          </div>
+        </div>
+        <div class="receta-detail" id="${rowId}">
+          <table class="det-table">
+            <thead><tr><th>Ingrediente</th><th style="text-align:right;">Cantidad</th><th style="text-align:right;">Costo</th></tr></thead>
+            <tbody>${filasDet}</tbody>
+          </table>
+          <div style="display:flex;gap:6px;margin-top:10px;">
+            <button class="btn-primary" style="flex:none;padding:6px 14px;font-size:12px;" onclick="editarSubreceta('${r.id}')">Editar</button>
+            <button style="padding:6px 14px;font-size:12px;border-radius:7px;border:1px solid var(--red-lt);background:var(--red-bg);color:var(--red);cursor:pointer;" onclick="eliminarSubreceta('${r.id}')">Eliminar</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  cont.innerHTML = `<div class="recetas-lista">${cards}</div>`;
+}
+
+// ── CONFIGURACIÓN: categorías de menú ──────────────────────────────
+function renderCfgCategoriasMenu() {
+  const cont = document.getElementById('cfg-catmenu-lista');
+  cont.innerHTML = CATEGORIAS_MENU.map((item, i) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:7px;background:var(--surface);margin-bottom:4px;font-size:13px;">
+      <span>${item}</span>
+      <button onclick="eliminarCategoriaMenu(${i})" style="background:none;border:none;color:var(--subtle);cursor:pointer;font-size:16px;line-height:1;padding:0 4px;" title="Eliminar">×</button>
+    </div>`).join('');
+}
+
+async function agregarCategoriaMenu() {
+  const input = document.getElementById('cfg-catmenu-nueva');
+  const val = input.value.trim();
+  if (!val) return;
+  if (CATEGORIAS_MENU.includes(val)) { showToast('Ya existe en la lista.', 'error'); return; }
+
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'categoria_menu', valor: val }) }) });
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error || 'Error al guardar');
+  } catch(e) {
+    showToast('No se pudo guardar: ' + e.message, 'error');
+    return;
+  }
+
+  CATEGORIAS_MENU.push(val);
+  input.value = '';
+  renderCfgCategoriasMenu();
+  poblarSelectsCategoria();
+  renderMenu();
+  showToast(`"${val}" agregada`, 'success');
+}
+
+async function eliminarCategoriaMenu(idx) {
+  const val = CATEGORIAS_MENU[idx];
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'eliminar', tipo:'categoria_menu', valor: val }) }) });
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error || 'Error al eliminar');
+  } catch(e) {
+    showToast('No se pudo eliminar: ' + e.message, 'error');
+    return;
+  }
+  CATEGORIAS_MENU.splice(idx, 1);
+  renderCfgCategoriasMenu();
+  poblarSelectsCategoria();
+  renderMenu();
+  showToast('Categoría eliminada', 'success');
+}
+
+// ── TABS / TOAST ────────────────────────────────────────────────────
+function switchTab(tab, el) {
+  ['lista','nuevo','subrecetas','config'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = (t === tab) ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').innerHTML = type==='success'
+    ? '<polyline points="3 8 7 12 13 4"/>'
+    : '<line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = `toast ${type}`;
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// INIT
+agregarIngrediente('sub');
+renderMenu();
+renderSubrecetas();
+cargarProductosParaFuentes();
+cargarRecetasDesdeSheet();
+cargarMenuDesdeSheet();
+cargarCategoriasMenu();
+</script>
+</body>
+</html>

@@ -22,13 +22,22 @@ Sheet de compras + `Code-compras-backend.gs`, UI en `config-productos.html`)
   (`SOURCE_SPREADSHEET_ID`), pero nunca escribe ahí — todo lo nuevo
   (`Catalogo_Maestro`, `Alias_Proveedores`, `Historial_Precios`,
   `Compras_Pendientes`, `Categorias_Productos`, `Areas_Negocio`, `Recetas`,
-  `Receta_Ingredientes`, `Menu`) vive en el spreadsheet nuevo. Si se agregan
-  columnas o módulos, re-desplegar (Implementar → Gestionar implementaciones
-  → Editar → Nueva versión — la URL `/exec` no cambia).
-- `costos-productos.html`, `costos-recetas.html` y `costos-menu.html` ya
-  apuntan a esa URL real y tienen carga/guardado real contra este backend —
-  antes `costos-recetas.html`/`costos-menu.html` vivían
-  100% en `localStorage`, sin persistencia server-side.
+  `Receta_Ingredientes`, `Menu`, `Categorias_Menu`) vive en el spreadsheet
+  nuevo. Si se agregan columnas o módulos, re-desplegar (Implementar →
+  Gestionar implementaciones → Editar → Nueva versión — la URL `/exec` no
+  cambia).
+- `Categorias_Menu` es nueva y todavía no existe en el spreadsheet en
+  producción — hay que correr `migrarCrearCategoriasMenu()` una vez desde el
+  editor de Apps Script (mismo patrón que las demás `migrar*` de
+  `Code-costeo-recetas-v2.gs`) antes de que el tab "Configuración" de
+  `costos-menu-recetas.html` y el filtro de categoría del menú dejen de
+  degradar al default hardcodeado.
+- `costos-productos.html` y `costos-menu-recetas.html` ya apuntan a esa URL
+  real y tienen carga/guardado real contra este backend. `costos-recetas.html`
+  y `costos-menu.html` (que antes vivían 100% en `localStorage`, sin
+  persistencia server-side) quedaron **fusionados y retirados**: sus dos
+  módulos ahora son un solo módulo, `costos-menu-recetas.html` — crear un
+  plato y armar su receta ya no requiere saltar entre dos pantallas.
 - `config-productos.html` quedó **retirada** (borrada del repo y de
   `index.html`/`admin-accesos.html`): los "Pendientes de mapear" se resuelven
   ahora editando directo la columna `ID_Producto_Maestro` en la hoja
@@ -173,8 +182,10 @@ Pasos para activarla (todos manuales, vía script.google.com):
    (asignándolo a un producto ya existente en el Maestro o creando uno nuevo)
    y queda automático para siempre.
 
-Fuera de alcance por ahora: `costos-recetas.html` y
-`costos-menu.html` siguen en `localStorage` sin backend propio, y
+Nota: la mención de `costos-recetas.html`/`costos-menu.html` como "fuera de
+alcance, en localStorage sin backend propio" quedó obsoleta — ver la sección
+"Costeo y recetas — conectado" más arriba: ambos módulos ya tienen backend
+real y están fusionados en `costos-menu-recetas.html`.
 `factura-manual.html` sigue sin generar líneas de producto (solo cabecera
 para cuentas por pagar).
 
@@ -203,8 +214,10 @@ medida que se compran (vía `costos-productos.html` o carga masiva).
 `Code-costos-backend.gs` implementa el módulo `producto` (alta/edición por ID,
 borrado) y expone `?modulo=productos` de solo lectura — mismo patrón de
 `Code-rrhh-backend.gs` (fetch GET simple con querystring, no JSONP). Los
-módulos `receta` y `plato` (para `costos-recetas.html` / `costos-menu.html`)
-todavía no están implementados en este backend.
+módulos `receta` y `plato` (para `costos-menu-recetas.html`) nunca se
+implementaron en este backend legacy — quedaron resueltos en
+`Code-costeo-recetas-v2.gs`, ver la sección "Costeo y recetas — conectado"
+más arriba.
 
 Ya desplegado como Web App y `APPS_SCRIPT_COSTOS` en `costos-productos.html` ya
 apunta a ese `/exec` (verificado con `?modulo=productos` → responde

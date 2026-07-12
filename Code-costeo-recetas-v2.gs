@@ -22,6 +22,7 @@ const SHEET_CONFIG      = 'Configuracion';
 const SHEET_FAMILIAS    = 'Familias';
 const SHEET_SUBFAMILIAS = 'Subfamilias';
 const SHEET_UNIDADES_RECETA = 'Unidades_Receta';
+const SHEET_CATEGORIAS_MENU = 'Categorias_Menu';
 
 const CLAVE_TIPO_CAMBIO = 'TipoCambio_USD';
 
@@ -46,6 +47,13 @@ const CATEGORIAS_DEFAULT = [
   'Limpieza e Higiene', 'Empaques y Desechables', 'Servicios', 'Otros'
 ];
 const AREAS_DEFAULT = ['Cocina', 'Bar', 'Consumible', 'Otro'];
+
+// Mismo orden que mostraba el <select> hardcodeado de costos-menu.html antes
+// de que las categorías de menú se volvieran administrables — se preserva
+// para que el menú se siga viendo en el mismo orden de siempre.
+const CATEGORIAS_MENU_DEFAULT = [
+  'Entradas', 'Sopas', 'Ensaladas', 'Platos fuertes', 'Postres', 'Bebidas', 'Especiales'
+];
 
 function abrirSpreadsheetCompras() {
   return SpreadsheetApp.openById(SOURCE_SPREADSHEET_ID);
@@ -158,9 +166,12 @@ function crearHojasIniciales() {
   crearHojaConEncabezados(ss, SHEET_MENU,
     ['ID_Plato', 'Nombre', 'Categoria', 'Precio_Venta', 'Disponibilidad', 'Descripcion', 'ID_Receta', 'Costo_Receta', 'FC', 'Fecha_Actualizacion']);
 
+  crearHojaConEncabezados(ss, SHEET_CATEGORIAS_MENU, ['Categoria']);
+
   sembrarListaCompartida(ss, SHEET_CATEGORIAS, CATEGORIAS_DEFAULT);
   sembrarListaCompartida(ss, SHEET_AREAS, AREAS_DEFAULT);
   sembrarListaCompartida(ss, SHEET_UNIDADES_RECETA, UNIDADES_RECETA_DEFAULT);
+  sembrarListaCompartida(ss, SHEET_CATEGORIAS_MENU, CATEGORIAS_MENU_DEFAULT);
 
   Logger.log('Hojas creadas/verificadas.');
 }
@@ -284,6 +295,22 @@ function migrarAgregarColumnasConversionUSD() {
   let col = encabezados.length + 1;
   faltantes.forEach(function(h) { sh.getRange(1, col).setValue(h); col++; });
   Logger.log('Columnas agregadas a Historial_Precios: ' + faltantes.join(', ') + '.');
+}
+
+// Migración: crea Categorias_Menu (mismo motivo que las demás migrar* — este
+// spreadsheet ya está en producción, así que crearHojasIniciales() no alcanza
+// a los despliegues existentes). Antes de esto, la categoría de un plato era
+// texto libre validado solo por el <select> fijo de costos-menu.html; de acá
+// en adelante vive en un catálogo administrable como Categorias_Productos.
+// Sembrada con el mismo orden que tenía ese <select>. Segura de re-correr.
+function migrarCrearCategoriasMenu() {
+  const ss = SpreadsheetApp.getActive();
+  const yaExistia = !!ss.getSheetByName(SHEET_CATEGORIAS_MENU);
+  crearHojaConEncabezados(ss, SHEET_CATEGORIAS_MENU, ['Categoria']);
+  sembrarListaCompartida(ss, SHEET_CATEGORIAS_MENU, CATEGORIAS_MENU_DEFAULT);
+  Logger.log(yaExistia
+    ? 'Categorias_Menu ya existía, no hacía falta migrar.'
+    : 'Categorias_Menu creada y sembrada con ' + CATEGORIAS_MENU_DEFAULT.length + ' categorías por defecto.');
 }
 
 // ============================================
@@ -946,6 +973,7 @@ function doGet(e) {
       case 'familias':    return jsonOut({ ok: true, valores: moduloFamilias() });
       case 'subfamilias': return jsonOut({ ok: true, registros: moduloSubfamilias() });
       case 'unidades_receta': return jsonOut({ ok: true, valores: moduloUnidadesReceta() });
+      case 'categorias_menu': return jsonOut({ ok: true, valores: moduloCategoriasMenu() });
       case 'proveedores': return jsonOut({ ok: true, registros: moduloProveedores() });
       case 'recetas':     return jsonOut({ ok: true, registros: moduloRecetas() });
       case 'menu':        return jsonOut({ ok: true, registros: moduloMenu() });
@@ -978,6 +1006,7 @@ function doPost(e) {
       case 'familia':   result = guardarFamilia(payload); break;
       case 'subfamilia': result = guardarSubfamilia(payload); break;
       case 'unidad_receta': result = guardarUnidadReceta(payload); break;
+      case 'categoria_menu': result = guardarCategoriaMenu(payload); break;
       case 'receta':    result = guardarReceta(payload); break;
       case 'plato':     result = guardarPlato(payload); break;
       case 'config':    result = guardarTipoCambioUSD(payload.tipo_cambio_usd); break;
@@ -1067,6 +1096,11 @@ function moduloSubfamilias() {
 function moduloUnidadesReceta() {
   return filasComoObjetos(SpreadsheetApp.getActive().getSheetByName(SHEET_UNIDADES_RECETA))
     .map(function(r) { return r['Unidad']; }).filter(Boolean);
+}
+
+function moduloCategoriasMenu() {
+  return filasComoObjetos(SpreadsheetApp.getActive().getSheetByName(SHEET_CATEGORIAS_MENU))
+    .map(function(r) { return r['Categoria']; }).filter(Boolean);
 }
 
 function moduloProveedores() {
@@ -1300,6 +1334,7 @@ function guardarFamilia(p) {
     [{hoja: SHEET_CATALOGO, columna: 'Familia'}, {hoja: SHEET_SUBFAMILIAS, columna: 'Familia'}]);
 }
 function guardarUnidadReceta(p) { return guardarValorCompartido(SHEET_UNIDADES_RECETA, 'Unidad', p.valor, p.valor_anterior, [{hoja: SHEET_CATALOGO, columna: 'Unidad_Medida'}]); }
+function guardarCategoriaMenu(p) { return guardarValorCompartido(SHEET_CATEGORIAS_MENU, 'Categoria', p.valor, p.valor_anterior, [{hoja: SHEET_MENU, columna: 'Categoria'}]); }
 
 // Subfamilia no es una lista simple: cada fila es un par (Familia, Subfamilia).
 // Solo admite crear/eliminar (no renombrar) — para eso, borrar y volver a crear.
@@ -1329,11 +1364,18 @@ function eliminarSubfamilia(familia, subfamilia) {
   return { eliminado: subfamilia };
 }
 
-function eliminarValorCompartido(nombreHoja, nombreColumna, valor) {
+// nombreHojaUso/columnaUso/descripcionUso: dónde (y cómo describirlo en el
+// error) chequear que el valor no esté en uso antes de borrarlo — por
+// defecto Catalogo_Maestro (categoría/área/familia/unidad de producto), pero
+// categoria_menu necesita chequear contra Menu en su lugar.
+function eliminarValorCompartido(nombreHoja, nombreColumna, valor, nombreHojaUso, columnaUso, descripcionUso) {
   if (!valor) throw new Error('Falta el valor a eliminar.');
-  const catalogo = filasComoObjetos(SpreadsheetApp.getActive().getSheetByName(SHEET_CATALOGO));
-  const enUso = catalogo.some(function(prod) { return prod[nombreColumna] === valor; });
-  if (enUso) throw new Error('No se puede eliminar: hay productos del catálogo usando "' + valor + '".');
+  nombreHojaUso = nombreHojaUso || SHEET_CATALOGO;
+  columnaUso = columnaUso || nombreColumna;
+  descripcionUso = descripcionUso || 'productos del catálogo';
+  const usoHoja = filasComoObjetos(SpreadsheetApp.getActive().getSheetByName(nombreHojaUso));
+  const enUso = usoHoja.some(function(fila) { return fila[columnaUso] === valor; });
+  if (enUso) throw new Error('No se puede eliminar: hay ' + descripcionUso + ' usando "' + valor + '".');
 
   if (nombreHoja === SHEET_FAMILIAS) {
     const subEnUso = filasComoObjetos(SpreadsheetApp.getActive().getSheetByName(SHEET_SUBFAMILIAS)).some(function(s) { return s['Familia'] === valor; });
@@ -1449,12 +1491,21 @@ function guardarPlato(p) {
   return { id: id, fila: fila };
 }
 
+// Borra el plato y, si tenía una receta vinculada, también esa receta y sus
+// líneas de ingrediente — en el módulo fusionado la receta se crea y edita
+// desde la propia tarjeta del plato, así que no hay ninguna otra pantalla
+// donde notar (ni limpiar) una receta que quedara huérfana.
 function eliminarPlato(id) {
   if (!id) throw new Error('Falta el ID del plato.');
   const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_MENU);
   const fila = filaPorId(sh, 'ID_Plato', id);
   if (fila === -1) throw new Error('No se encontró el plato.');
+  const encabezados = encabezadosDe(sh);
+  const idReceta = sh.getRange(fila, encabezados.indexOf('ID_Receta') + 1).getValue();
   sh.deleteRow(fila);
+  if (idReceta && filaPorId(SpreadsheetApp.getActive().getSheetByName(SHEET_RECETAS), 'ID_Receta', idReceta) !== -1) {
+    eliminarReceta(idReceta);
+  }
   return { eliminado: id };
 }
 
@@ -1469,6 +1520,7 @@ function eliminarRegistro(p) {
     case 'familia':   return eliminarValorCompartido(SHEET_FAMILIAS, 'Familia', p.valor);
     case 'subfamilia':    return eliminarSubfamilia(p.familia, p.valor);
     case 'unidad_receta': return eliminarValorCompartido(SHEET_UNIDADES_RECETA, 'Unidad', p.valor);
+    case 'categoria_menu': return eliminarValorCompartido(SHEET_CATEGORIAS_MENU, 'Categoria', p.valor, SHEET_MENU, 'Categoria', 'platos del menú');
     default:
       throw new Error('Tipo no reconocido: ' + p.tipo);
   }
