@@ -26,22 +26,42 @@ Sheet de compras + `Code-compras-backend.gs`, UI en `config-productos.html`)
   en el spreadsheet nuevo. Si se agregan columnas o módulos, re-desplegar
   (Implementar → Gestionar implementaciones → Editar → Nueva versión — la URL
   `/exec` no cambia).
-- **Urgente:** `Catalogo_Maestro` en producción tiene encabezados de columna
-  desalineados de los nombres exactos que busca el código para
-  `Presentacion`, `Tamano`, `Precio_Sin_IVA`, `IVA`, `Proveedor_Habitual` y
-  `Stock_Minimo` (mismo problema que ya había pasado antes con
-  `Area_Negocio`) — confirmado con una prueba real: `guardarProducto()`
-  reporta éxito pero esos 6 campos se guardan vacíos siempre, en todos los
-  productos, sin ningún error visible. Como `Precio_Sin_IVA` es obligatorio
-  en el formulario, esto significa que ese campo (y los otros 5) nunca quedó
-  realmente persistido para ningún producto pese a que el usuario sí lo
-  cargó. Corré `migrarNormalizarEncabezadosCatalogo()` una vez desde el
-  editor de Apps Script — renombra en el lugar cualquier columna cuyo nombre
-  se parezca al esperado (sin tocar los datos), y en los logs de ejecución
-  reporta cualquiera que no haya podido matchear para revisar a mano. Además,
-  `escribirFilaPorEncabezado()` (usada por `guardarProducto`/`guardarReceta`/
-  `guardarPlato`) ahora tira un error explícito si esto vuelve a pasar, en
-  vez de guardar vacío en silencio.
+- **Resuelto** (`migrarNormalizarEncabezadosCatalogo()` +
+  `migrarAgregarColumnasFaltantesCatalogo()`, ya corridas): a `Catalogo_Maestro`
+  en producción le faltaban columnas que `CATALOGO_ENCABEZADOS` daba por
+  existentes — `guardarProducto()` reportaba éxito pero `Presentacion`,
+  `Tamano`, `Precio_Sin_IVA`, `IVA`, `Proveedor_Habitual`, `Stock_Minimo`,
+  `Cantidad_Presentacion`, `Rendimiento` y `En_Uso` se guardaban vacíos
+  siempre, en todos los productos, sin ningún error visible (mismo problema
+  que ya había pasado antes con `Area_Negocio`). Confirmado arreglado con una
+  prueba real (crear → verificar los 9 campos → borrar). Además,
+  `escribirFilaPorEncabezado()` (usada por
+  `guardarProducto`/`guardarReceta`/`guardarPlato`) ahora tira un error
+  explícito si esto vuelve a pasar, en vez de guardar vacío en silencio.
+- **Urgente, todavía pendiente:** `Costo_Actual` (el "Costo/u auto" de Base de
+  productos, que alimenta costeo de recetas y FC del menú) no convertía la
+  unidad de la factura a la unidad de receta del producto — si un producto se
+  factura en Kilo pero su receta usa Gramo, `Costo_Actual` quedaba ~1000
+  veces más caro de lo real (confirmado con Camarón 41/50: ~₡13.983 por
+  gramo). Arreglado en `Code-costeo-recetas-v2.gs` para compras **nuevas** de
+  acá en adelante (`convertirLineaAUnidadReceta()`, aplicada en
+  `registrarCompra()`, `backfillHistorialDesdeDesglose()` y
+  `reprocesarPendientesUSD()` — los tres puntos que escriben a
+  `Historial_Precios`). Los datos ya cargados en `Historial_Precios` **no se
+  tocaron** — reescribirlos a ciegas es más riesgoso que dejarlos, y como
+  `actualizarCostoProducto()` solo promedia las 5 compras más recientes
+  (`VENTANA_COMPRAS`), los productos con compras frecuentes se van a
+  autocorregir solos en las próximas semanas a medida que entren facturas
+  nuevas. Falta correr, una vez desde el editor de Apps Script:
+  `migrarAgregarUnidadFacturaPendientes()` (agrega la columna
+  `Unidad_Factura` a `Compras_Pendientes` — sin esto, las compras que quedan
+  pendientes de match y se liberan después no arrastran la unidad de la
+  factura y se guardan sin convertir). También conviene repasar
+  `ALIAS_UNIDAD` en el `.gs` (lista de variantes de texto de unidad que
+  reconoce, tipo "kg"/"KG"/"Kilogramo") contra los nombres reales que
+  aparecen en la columna J de `Desglose_IA` — se armó con una lista razonable
+  pero sin ver facturas reales para confirmarla. Mientras tanto, se puede
+  corregir `Costo_Actual` a mano para productos urgentes como Camarón.
 - `Categorias_Menu` y `Subcategorias_Menu` son nuevas y todavía no existen en
   el spreadsheet en producción — hay que correr `migrarCrearCategoriasMenu()`
   y `migrarAgregarSubcategoriaMenu()` una vez cada una desde el editor de

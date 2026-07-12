@@ -197,7 +197,7 @@
         </div>
         <div class="field">
           <label for="m-categoria">Categoría <span class="req">*</span></label>
-          <select id="m-categoria" onchange="poblarSelectSubcategoria()">
+          <select id="m-categoria" onchange="poblarSelectSubcategoria(); actualizarModoLicores();">
             <option value="" disabled selected>Seleccioná…</option>
           </select>
         </div>
@@ -206,11 +206,11 @@
       <div class="field-row-3">
         <div class="field">
           <label for="m-subcategoria">Subcategoría</label>
-          <select id="m-subcategoria">
+          <select id="m-subcategoria" onchange="actualizarModoLicores()">
             <option value="">Sin subcategoría</option>
           </select>
         </div>
-        <div class="field">
+        <div class="field" id="m-precio-wrap">
           <label for="m-precio">Precio de venta (₡) <span class="req">*</span></label>
           <input type="number" id="m-precio" min="0" step="100" placeholder="0">
         </div>
@@ -228,7 +228,22 @@
         <label for="m-descripcion">Descripción</label>
         <textarea id="m-descripcion" placeholder="Descripción del plato para el menú…"></textarea>
       </div>
-      <p style="font-size:12px;color:var(--muted);">Los ingredientes y el costo de receta se cargan después, desde la tarjeta del plato en la lista de Menú (clic en su nombre).</p>
+      <p id="m-nota-receta" style="font-size:12px;color:var(--muted);">Los ingredientes y el costo de receta se cargan después, desde la tarjeta del plato en la lista de Menú (clic en su nombre).</p>
+    </div>
+
+    <!-- LICORES: al elegir subcategoría "Licores" en un plato nuevo, se arman
+         3 presentaciones (Trago/Cuarta/Botella) del mismo licor de una sola
+         vez, cada una con su propio precio y su receta ya cargada. -->
+    <div class="card" id="licores-card" style="display:none;">
+      <p class="card-title">Presentaciones de licor</p>
+      <div class="field">
+        <label for="lic-ingrediente">Licor (ingrediente) <span class="req">*</span></label>
+        <select id="lic-ingrediente" onchange="renderPresentacionesLicor()">
+          <option value="">Seleccioná…</option>
+        </select>
+      </div>
+      <div id="lic-presentaciones"></div>
+      <p style="font-size:11px;color:var(--muted);margin-top:8px;">Se crea un plato por cada presentación con precio cargado — la cantidad de la receta se completa sola (Trago 45 ml, Cuarta 250 ml, Botella toda la presentación de compra). Dejá en blanco la que no vendas suelta.</p>
     </div>
 
     <div class="submit-area">
@@ -468,6 +483,134 @@ function poblarSelectSubcategoria(valorActual) {
   const subs = subcategoriasDe(categoria);
   sel.innerHTML = '<option value="">Sin subcategoría</option>' + subs.map(s => `<option>${s}</option>`).join('');
   if (subs.includes(valorActual)) sel.value = valorActual;
+}
+
+// ── LICORES: 3 presentaciones (Trago/Cuarta/Botella) de un plato nuevo ──
+// Cantidad fija para Trago/Cuarta; Botella usa toda la Cantidad_Presentacion
+// del producto elegido (así el costo de línea da directo el costo de comprar
+// la botella entera, sin necesidad de un caso especial en el cálculo).
+const PRESENTACIONES_LICOR = [
+  { clave: 'Trago', cantidadFija: 45 },
+  { clave: 'Cuarta', cantidadFija: 250 },
+  { clave: 'Botella', cantidadFija: null }
+];
+
+function esSubcategoriaLicores(valor) {
+  return String(valor || '').trim().toLowerCase() === 'licores';
+}
+
+// Se llama al cambiar categoría/subcategoría del plato. Solo aplica al crear
+// (no al editar un plato ya existente, que puede ser una de las 3
+// presentaciones ya creadas — ahí se edita como un plato normal).
+function actualizarModoLicores() {
+  const editId = document.getElementById('edit-id').value;
+  const esLicor = esSubcategoriaLicores(document.getElementById('m-subcategoria').value) && !editId;
+  document.getElementById('licores-card').style.display = esLicor ? 'block' : 'none';
+  document.getElementById('m-precio-wrap').style.display = esLicor ? 'none' : 'block';
+  document.getElementById('m-nota-receta').style.display = esLicor ? 'none' : 'block';
+  if (esLicor) poblarSelectLicorIngrediente();
+}
+
+function poblarSelectLicorIngrediente() {
+  const sel = document.getElementById('lic-ingrediente');
+  const valActual = sel.value;
+  const productos = getFuentes().filter(f => !f.esSub);
+  sel.innerHTML = '<option value="">Seleccioná…</option>' +
+    productos.map(f => `<option value="${f.id}">${f.nombre} (${f.unidad})</option>`).join('');
+  if (productos.some(f => f.id === valActual)) sel.value = valActual;
+  renderPresentacionesLicor();
+}
+
+function renderPresentacionesLicor() {
+  const cont = document.getElementById('lic-presentaciones');
+  const fuenteId = document.getElementById('lic-ingrediente').value;
+  const fuente = getFuentes().find(f => f.id === fuenteId);
+
+  // Trago (45) y Cuarta (250) asumen que el producto está medido en
+  // Mililitro — si no, esos dos números terminan multiplicando cantidades
+  // absurdas (ej. "45 piezas") y el costo/FC calculado no sirve. Botella no
+  // se ve afectada (usa toda la Cantidad_Presentacion, cualquiera sea su
+  // unidad), así que solo se avisa, no se bloquea el guardado.
+  const noEsMililitro = fuente && !/mililitro/i.test(fuente.unidad || '');
+  const aviso = noEsMililitro
+    ? `<div style="font-size:12px;color:var(--amber);background:var(--amber-bg);border-radius:8px;padding:8px 10px;margin-bottom:10px;">
+        ⚠ "${fuente.nombre}" está medido en <strong>${fuente.unidad}</strong>, no en Mililitro — Trago y Cuarta van a calcular mal el costo (asumen 45 ml / 250 ml). Corregí la unidad de medida de este producto en Base de productos, o dejá Trago/Cuarta en blanco y cargá solo Botella.
+      </div>`
+    : '';
+
+  const filas = PRESENTACIONES_LICOR.map(p => {
+    const cantidad = p.cantidadFija != null ? p.cantidadFija : (fuente ? Number(fuente.cantidad_presentacion) || 0 : 0);
+    const unidad = fuente ? fuente.unidad : '';
+    const detalle = fuente
+      ? (p.cantidadFija != null ? `${cantidad} ${unidad}` : `${cantidad} ${unidad} (toda la presentación)`)
+      : 'Elegí el licor primero';
+    return `<div class="field-row" style="align-items:end;">
+      <div class="field">
+        <label>${p.clave} <span style="color:var(--muted);font-weight:400;">— ${detalle}</span></label>
+        <input type="number" id="lic-precio-${p.clave}" min="0" step="100" placeholder="Precio de venta ₡ (dejar en blanco si no se vende)">
+      </div>
+    </div>`;
+  }).join('');
+
+  cont.innerHTML = aviso + filas;
+}
+
+async function guardarPlatosLicor(nombre, categoria, subcategoria, disponible, descripcion) {
+  const fuenteId = document.getElementById('lic-ingrediente').value;
+  const fuente = getFuentes().find(f => f.id === fuenteId);
+  if (!fuente) { showToast('Seleccioná el licor.', 'error'); return; }
+
+  const presentaciones = PRESENTACIONES_LICOR
+    .map(p => ({
+      clave: p.clave,
+      cantidad: p.cantidadFija != null ? p.cantidadFija : (Number(fuente.cantidad_presentacion) || 0),
+      precio: parseFloat(document.getElementById(`lic-precio-${p.clave}`).value) || 0
+    }))
+    .filter(p => p.precio > 0);
+
+  if (!presentaciones.length) { showToast('Ingresá al menos un precio.', 'error'); return; }
+  if (presentaciones.some(p => !p.cantidad)) {
+    showToast('No se pudo determinar la cantidad de "Botella" — revisá que el licor tenga "Cantidad en presentación" cargada en Base de productos.', 'error');
+    return;
+  }
+
+  let creados = 0, errores = 0;
+  for (const p of presentaciones) {
+    const nombrePlato = `${nombre} (${p.clave})`;
+    const idPlato = 'PLT-' + Date.now() + '-' + p.clave;
+    const costoLinea = calcularCostoIngrediente(fuente, p.cantidad);
+    const registroReceta = {
+      id: 'REC-' + Date.now() + '-' + p.clave, nombre: nombrePlato, tipo: 'receta', porciones: 1, plato_id: idPlato,
+      unidad: 'porciones',
+      ingredientes: [{ fuenteId: fuente.id, nombre: fuente.nombre, unidad: fuente.unidad, cantidad: p.cantidad, costo_linea: costoLinea, esSub: false }],
+      costo_total: costoLinea, costo_porcion: costoLinea, actualizado: new Date().toISOString()
+    };
+    const registroPlato = {
+      id: idPlato, nombre: nombrePlato, categoria, subcategoria, precio: p.precio,
+      disponible, descripcion, receta_id: registroReceta.id
+    };
+
+    try {
+      const r1 = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'receta', ...registroReceta }) }) });
+      const j1 = await r1.json();
+      if (!j1.ok) throw new Error(j1.error || 'Error al guardar la receta');
+      const r2 = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'plato', ...registroPlato }) }) });
+      const j2 = await r2.json();
+      if (!j2.ok) throw new Error(j2.error || 'Error al guardar el plato');
+      creados++;
+    } catch(e) {
+      errores++;
+      console.warn(`No se pudo crear "${nombrePlato}":`, e);
+    }
+  }
+
+  showToast(
+    errores ? `${creados} presentación(es) creadas, ${errores} con error (revisá la consola)` : `${creados} presentación(es) de "${nombre}" agregadas al menú`,
+    errores && !creados ? 'error' : 'success'
+  );
+  limpiarFormPlato();
+  await Promise.all([cargarMenuDesdeSheet(), cargarRecetasDesdeSheet()]);
+  switchTab('lista', document.querySelectorAll('.tab')[0]);
 }
 
 function ordenarPorCategoria(keys) {
@@ -904,14 +1047,20 @@ async function guardarPlato() {
   const nombre       = document.getElementById('m-nombre').value.trim();
   const categoria    = document.getElementById('m-categoria').value;
   const subcategoria = document.getElementById('m-subcategoria').value;
-  const precio       = parseFloat(document.getElementById('m-precio').value) || 0;
   const disponible   = document.getElementById('m-disponible').value;
   const descripcion  = document.getElementById('m-descripcion').value.trim();
   const editId       = document.getElementById('edit-id').value;
 
   if (!nombre)    { showToast('Ingresá el nombre.', 'error'); return; }
   if (!categoria) { showToast('Seleccioná una categoría.', 'error'); return; }
-  if (!precio)    { showToast('Ingresá el precio.', 'error'); return; }
+
+  if (esSubcategoriaLicores(subcategoria) && !editId) {
+    await guardarPlatosLicor(nombre, categoria, subcategoria, disponible, descripcion);
+    return;
+  }
+
+  const precio = parseFloat(document.getElementById('m-precio').value) || 0;
+  if (!precio) { showToast('Ingresá el precio.', 'error'); return; }
 
   const existente = editId ? getPlatos().find(p => p.id === editId) : null;
   const id = editId || 'PLT-' + Date.now();
@@ -945,6 +1094,7 @@ function editarPlato(id) {
   document.getElementById('m-nombre').value      = p.nombre;
   document.getElementById('m-categoria').value   = p.categoria;
   poblarSelectSubcategoria(p.subcategoria || '');
+  actualizarModoLicores(); // edit-id ya está seteado arriba, así que esto siempre muestra el form normal
   document.getElementById('m-precio').value      = p.precio;
   document.getElementById('m-disponible').value  = p.disponible;
   document.getElementById('m-descripcion').value = p.descripcion || '';
@@ -970,6 +1120,7 @@ function limpiarFormPlato() {
   document.getElementById('m-nombre').value = '';
   document.getElementById('m-categoria').value = '';
   poblarSelectSubcategoria('');
+  actualizarModoLicores();
   document.getElementById('m-precio').value = '';
   document.getElementById('m-disponible').value = 'Disponible';
   document.getElementById('m-descripcion').value = '';

@@ -162,7 +162,7 @@ function crearHojasIniciales() {
   crearHojaConEncabezados(ss, SHEET_CONFIG, ['Clave', 'Valor']);
 
   crearHojaConEncabezados(ss, SHEET_PENDIENTES,
-    ['Fecha_Registro', 'Fecha_Factura', 'Nombre_Producto', 'Proveedor', 'Moneda', 'Precio_Unitario', 'Cantidad', 'Ref_Factura', 'ID_Producto_Sugerido']);
+    ['Fecha_Registro', 'Fecha_Factura', 'Nombre_Producto', 'Proveedor', 'Moneda', 'Precio_Unitario', 'Cantidad', 'Unidad_Factura', 'Ref_Factura', 'ID_Producto_Sugerido']);
 
   crearHojaConEncabezados(ss, SHEET_CATEGORIAS, ['Categoria']);
   crearHojaConEncabezados(ss, SHEET_AREAS, ['Area_Negocio']);
@@ -342,6 +342,29 @@ function migrarNormalizarEncabezadosCatalogo() {
   }
 }
 
+// Complementa a migrarNormalizarEncabezadosCatalogo() — correr DESPUÉS de
+// esa. Lo que esa no pudo emparejar por nombre parecido en la mayoría de los
+// casos no es que esté mal escrito: directamente nunca se agregó la columna
+// a este spreadsheet (CATALOGO_ENCABEZADOS creció con el tiempo — Aplica_Receta,
+// Familia/Subfamilia y Cantidad_Compra/Unidad_Compra ya tenían su propia
+// migración para esto; esta generaliza el mismo mecanismo al resto). Agrega
+// al final cualquier columna de CATALOGO_ENCABEZADOS que siga faltando,
+// vacía para los productos existentes. Segura de re-correr — si ya se
+// corrió migrarNormalizarEncabezadosCatalogo() y rescató una columna
+// existente bajo otro nombre, esta no la duplica.
+function migrarAgregarColumnasFaltantesCatalogo() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_CATALOGO);
+  const encabezados = encabezadosDe(sh);
+  const faltantes = CATALOGO_ENCABEZADOS.filter(function(h) { return encabezados.indexOf(h) === -1; });
+  if (!faltantes.length) {
+    Logger.log('Catalogo_Maestro ya tiene todas las columnas de CATALOGO_ENCABEZADOS.');
+    return;
+  }
+  let col = encabezados.length + 1;
+  faltantes.forEach(function(h) { sh.getRange(1, col).setValue(h); col++; });
+  Logger.log('Columnas agregadas a Catalogo_Maestro: ' + faltantes.join(', ') + '.');
+}
+
 // Migración: agrega Moneda_Original/Tipo_Cambio_Usado a un Historial_Precios
 // que ya tiene datos (mismo motivo que migrarAgregarAplicaReceta — hojas ya
 // pobladas no reciben columnas nuevas solas). Las filas existentes son todas
@@ -357,6 +380,25 @@ function migrarAgregarColumnasConversionUSD() {
   let col = encabezados.length + 1;
   faltantes.forEach(function(h) { sh.getRange(1, col).setValue(h); col++; });
   Logger.log('Columnas agregadas a Historial_Precios: ' + faltantes.join(', ') + '.');
+}
+
+// Migración: agrega Unidad_Factura a Compras_Pendientes (mismo motivo que
+// las demás migrar* — hoja ya poblada no recibe columnas nuevas sola). Hace
+// falta para que la conversión de unidad de compra → unidad de receta
+// (convertirUnidad(), ver más abajo) también se aplique a compras que
+// quedaron pendientes de match y se liberan después (liberarPendientes) —
+// sin esta columna, la unidad de la factura se perdía en ese camino. Las
+// filas ya pendientes quedan con Unidad_Factura vacía (se liberan sin
+// conversión, igual que antes de este fix).
+function migrarAgregarUnidadFacturaPendientes() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_PENDIENTES);
+  const encabezados = encabezadosDe(sh);
+  if (encabezados.indexOf('Unidad_Factura') !== -1) {
+    Logger.log('La columna Unidad_Factura ya existe en Compras_Pendientes, no hace falta migrar.');
+    return;
+  }
+  sh.getRange(1, encabezados.length + 1).setValue('Unidad_Factura');
+  Logger.log('Columna Unidad_Factura agregada a Compras_Pendientes.');
 }
 
 // Migración: crea Categorias_Menu (mismo motivo que las demás migrar* — este
@@ -452,6 +494,7 @@ function reprocesarPendientesUSD(tipoCambioUSD) {
   const cFecha = pend.encabezados.indexOf('Fecha_Factura');
   const cPrecio = pend.encabezados.indexOf('Precio_Unitario');
   const cCantidad = pend.encabezados.indexOf('Cantidad');
+  const cUnidad = pend.encabezados.indexOf('Unidad_Factura');
   const cRef = pend.encabezados.indexOf('Ref_Factura');
 
   const productosAfectados = new Set();
@@ -464,9 +507,16 @@ function reprocesarPendientesUSD(tipoCambioUSD) {
     const resuelto = resolverIdProductoConDatos(fila[cNombre], fila[cProveedor], '', aliasData, catData, shAlias);
     if (!resuelto.aprobado) { filasRestantes.push(fila); return; } // sigue pendiente por producto, no por moneda
 
+    // Convierte cantidad/precio unitario de la unidad de la factura a la
+    // unidad de receta del producto antes de guardarlos — ver
+    // convertirLineaAUnidadReceta().
+    const unidadProducto = unidadMedidaDeCatData(catData, resuelto.id);
+    const lineaConvertida = convertirLineaAUnidadReceta(
+      Number(fila[cPrecio]) * tipoCambioUSD, fila[cCantidad], cUnidad !== -1 ? fila[cUnidad] : '', unidadProducto);
+
     SpreadsheetApp.getActive().getSheetByName(SHEET_HISTORIAL).appendRow([
       new Date(), fila[cFecha], resuelto.id, fila[cProveedor], MONEDA_COSTEO,
-      Number(fila[cPrecio]) * tipoCambioUSD, fila[cCantidad], fila[cRef], 'USD', tipoCambioUSD
+      lineaConvertida.precioUnitario, lineaConvertida.cantidad, fila[cRef], 'USD', tipoCambioUSD
     ]);
     productosAfectados.add(resuelto.id);
     resueltas++;
@@ -611,7 +661,7 @@ function backfillHistorialDesdeDesglose() {
   for (let i = 1; i < data.length; i++) {
     const v = data[i];
     const moneda = v[1], refFactura = v[2], fecha = v[3], proveedor = v[5],
-          categoria = v[6], nombreProducto = v[7], nombreNormalizado = v[8],
+          categoria = v[6], nombreProducto = v[7], nombreNormalizado = v[8], unidadFactura = v[9],
           cantidad = v[10], precioUnitario = v[11];
 
     if (!nombreProducto && !nombreNormalizado) continue;
@@ -622,7 +672,7 @@ function backfillHistorialDesdeDesglose() {
       const cp = clavePendiente(refFactura, llave, proveedor);
       if (yaPendientes.has(cp)) { omitidas++; continue; }
       yaPendientes.add(cp);
-      filasPendientes.push([new Date(), fecha, llave, proveedor, moneda, precioUnitario, cantidad, refFactura, '']);
+      filasPendientes.push([new Date(), fecha, llave, proveedor, moneda, precioUnitario, cantidad, unidadFactura, refFactura, '']);
       continue;
     }
 
@@ -633,15 +683,20 @@ function backfillHistorialDesdeDesglose() {
       yaPendientes.add(cp);
       // Guarda la línea original (no convertida) — Compras_Pendientes debe
       // seguir reflejando la moneda real de la factura.
-      filasPendientes.push([new Date(), fecha, llave, proveedor, moneda, precioUnitario, cantidad, refFactura, resuelto.id || '']);
+      filasPendientes.push([new Date(), fecha, llave, proveedor, moneda, precioUnitario, cantidad, unidadFactura, refFactura, resuelto.id || '']);
       continue;
     }
 
     const ch = claveHistorial(refFactura, resuelto.id, fecha);
     if (yaCargadas.has(ch)) { omitidas++; continue; }
     yaCargadas.add(ch);
-    filasHistorial.push([new Date(), fecha, resuelto.id, proveedor, convertida.moneda, convertida.precioUnitario,
-                          cantidad, refFactura, convertida.monedaOriginal || '', convertida.tipoCambioUsado || '']);
+    // Convierte cantidad/precio unitario de la unidad de la factura a la
+    // unidad de receta del producto antes de guardarlos — ver
+    // convertirLineaAUnidadReceta().
+    const unidadProducto = unidadMedidaDeCatData(catData, resuelto.id);
+    const lineaConvertida = convertirLineaAUnidadReceta(convertida.precioUnitario, cantidad, unidadFactura, unidadProducto);
+    filasHistorial.push([new Date(), fecha, resuelto.id, proveedor, convertida.moneda, lineaConvertida.precioUnitario,
+                          lineaConvertida.cantidad, refFactura, convertida.monedaOriginal || '', convertida.tipoCambioUsado || '']);
     productosAfectados.add(resuelto.id);
   }
 
@@ -649,7 +704,7 @@ function backfillHistorialDesdeDesglose() {
     shHistorial.getRange(shHistorial.getLastRow() + 1, 1, filasHistorial.length, 10).setValues(filasHistorial);
   }
   if (filasPendientes.length > 0) {
-    shPendientes.getRange(shPendientes.getLastRow() + 1, 1, filasPendientes.length, 9).setValues(filasPendientes);
+    shPendientes.getRange(shPendientes.getLastRow() + 1, 1, filasPendientes.length, 10).setValues(filasPendientes);
   }
   // Recién ahora, con Historial_Precios ya escrito: recalcula Costo_Actual
   // por producto (una vez por producto, no por línea) y dispara la cascada
@@ -659,6 +714,79 @@ function backfillHistorialDesdeDesglose() {
   Logger.log(filasHistorial.length + ' líneas cargadas a Historial_Precios, ' +
              filasPendientes.length + ' a Compras_Pendientes, ' + omitidas + ' ya existían, ' +
              productosAfectados.size + ' productos recosteados.');
+}
+
+// ============================================
+// 0.3 CONVERSIÓN DE UNIDADES (compra → receta)
+// ============================================
+// Misma tabla que CONVERSION_UNIDADES en costos-productos.html — factor para
+// convertir 1 unidad de origen en cuántas unidades de destino equivalen.
+const CONVERSION_UNIDADES = {
+  'Kilo':      { 'Kilo': 1, 'Gramo': 1000, 'Onza': 35.274 },
+  'Gramo':     { 'Gramo': 1, 'Kilo': 0.001, 'Onza': 0.035274 },
+  'Onza':      { 'Onza': 1, 'Gramo': 28.3495, 'Kilo': 0.0283495 },
+  'Litro':     { 'Litro': 1, 'Mililitro': 1000 },
+  'Mililitro': { 'Mililitro': 1, 'Litro': 0.001 },
+  'Unidad':    { 'Unidad': 1 }
+};
+
+// Alias de unidad tal como puede venir el OCR de una factura (texto libre,
+// mayúsculas/acentos variables — "kg", "KG", "Kilogramo", "gr", "UND"...) →
+// nombre canónico usado en CONVERSION_UNIDADES / Unidad_Medida del producto.
+// Lista de partida — revisar contra nombres reales de facturas y ampliar si
+// hace falta.
+const ALIAS_UNIDAD = {
+  'KG': 'Kilo', 'KGS': 'Kilo', 'KILO': 'Kilo', 'KILOS': 'Kilo', 'KILOGRAMO': 'Kilo', 'KILOGRAMOS': 'Kilo',
+  'G': 'Gramo', 'GR': 'Gramo', 'GRS': 'Gramo', 'GRAMO': 'Gramo', 'GRAMOS': 'Gramo',
+  'OZ': 'Onza', 'ONZA': 'Onza', 'ONZAS': 'Onza',
+  'L': 'Litro', 'LT': 'Litro', 'LTS': 'Litro', 'LITRO': 'Litro', 'LITROS': 'Litro',
+  'ML': 'Mililitro', 'MLS': 'Mililitro', 'MILILITRO': 'Mililitro', 'MILILITROS': 'Mililitro',
+  'U': 'Unidad', 'UN': 'Unidad', 'UND': 'Unidad', 'UNI': 'Unidad', 'UNIDAD': 'Unidad', 'UNIDADES': 'Unidad',
+  'PZA': 'Unidad', 'PZAS': 'Unidad', 'PIEZA': 'Unidad', 'PIEZAS': 'Unidad',
+  'PIZCA': 'Pizca', 'PIZCAS': 'Pizca'
+};
+
+function normalizarNombreUnidad(s) {
+  const limpio = String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Z]/g, '');
+  return ALIAS_UNIDAD[limpio] || null;
+}
+
+// Convierte una línea de compra (Precio_Unitario + Cantidad, ambos en la
+// unidad de la factura) a la unidad de receta del producto — preservando el
+// total gastado en esa línea (Precio_Unitario × Cantidad no cambia, solo
+// cómo se reparte entre las dos: la cantidad se multiplica por el factor y
+// el precio unitario se divide por el mismo factor). Es la línea completa
+// la que hay que convertir junta, no solo la cantidad — si solo se
+// convirtiera la cantidad y se dejara el precio unitario igual, el
+// promedio ponderado de actualizarCostoProducto() (suma de Precio×Cantidad
+// ÷ suma de Cantidad) daría exactamente el mismo resultado de siempre, sin
+// arreglar nada.
+// Si no reconoce alguna de las dos unidades, ya coinciden, o no hay factor
+// de conversión fijo entre ellas (ej. Pizca), devuelve la línea tal cual —
+// mismo comportamiento que había antes de este fix, para no romper casos
+// que ya eran correctos.
+function convertirLineaAUnidadReceta(precioUnitario, cantidad, unidadFactura, unidadReceta) {
+  const origen  = normalizarNombreUnidad(unidadFactura);
+  const destino = normalizarNombreUnidad(unidadReceta);
+  if (!origen || !destino || origen === destino) {
+    return { precioUnitario: precioUnitario, cantidad: cantidad, factorAplicado: false };
+  }
+  const factor = (CONVERSION_UNIDADES[origen] || {})[destino];
+  if (factor == null) return { precioUnitario: precioUnitario, cantidad: cantidad, factorAplicado: false };
+  return { precioUnitario: precioUnitario / factor, cantidad: cantidad * factor, factorAplicado: true };
+}
+
+// Busca la Unidad_Medida de un producto en un array crudo de Catalogo_Maestro
+// (mismo formato que catData en backfillHistorialDesdeDesglose/resolverIdProductoConDatos
+// — filas con el orden de columnas de CATALOGO_ENCABEZADOS). Evita releer la
+// hoja por cada línea cuando ya se cargó en memoria.
+function unidadMedidaDeCatData(catData, idProducto) {
+  const colId = CATALOGO_ENCABEZADOS.indexOf('ID_Producto');
+  const colUnidad = CATALOGO_ENCABEZADOS.indexOf('Unidad_Medida');
+  for (let i = 1; i < catData.length; i++) {
+    if (catData[i][colId] === idProducto) return catData[i][colUnidad];
+  }
+  return '';
 }
 
 // ============================================
@@ -770,7 +898,7 @@ function procesarLineaFactura(linea) {
 function guardarPendiente(linea, idSugerido) {
   SpreadsheetApp.getActive().getSheetByName(SHEET_PENDIENTES)
     .appendRow([new Date(), linea.fecha, linea.nombreNormalizado || linea.nombreProducto,
-                linea.proveedor, linea.moneda, linea.precioUnitario, linea.cantidad,
+                linea.proveedor, linea.moneda, linea.precioUnitario, linea.cantidad, linea.unidad || '',
                 linea.refFactura, idSugerido]);
 }
 
@@ -794,13 +922,13 @@ function liberarPendientes(nombreFactura, proveedor, idProducto) {
   const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_PENDIENTES);
   const data = sh.getDataRange().getValues();
   const tipoCambioUSD = obtenerTipoCambioUSD();
-  // [FechaRegistro, Fecha, Nombre, Proveedor, Moneda, Precio, Cantidad, Ref, IDSugerido]
+  // [FechaRegistro, Fecha, Nombre, Proveedor, Moneda, Precio, Cantidad, UnidadFactura, Ref, IDSugerido]
   for (let i = data.length - 1; i >= 1; i--) {
     if (normalizarTexto(data[i][2]) !== normalizarTexto(nombreFactura) || data[i][3] !== proveedor) continue;
 
     const linea = {
       fecha: data[i][1], proveedor: data[i][3], moneda: data[i][4],
-      precioUnitario: data[i][5], cantidad: data[i][6], refFactura: data[i][7]
+      precioUnitario: data[i][5], cantidad: data[i][6], unidad: data[i][7], refFactura: data[i][8]
     };
 
     // CRC directo, o USD con tipo de cambio ya configurado — cualquier otro
@@ -817,9 +945,21 @@ function liberarPendientes(nombreFactura, proveedor, idProducto) {
 // 4. HISTORIAL Y COSTO PROMEDIO PONDERADO (últimas 5)
 // ============================================
 function registrarCompra(idProducto, linea) {
+  // Convierte cantidad/precio unitario de la unidad de la factura a la
+  // unidad de receta del producto antes de guardarlos — ver
+  // convertirLineaAUnidadReceta(). Este es el único punto por el que pasan
+  // TODAS las compras (directas, y las que se liberan de Compras_Pendientes),
+  // salvo backfillHistorialDesdeDesglose() y reprocesarPendientesUSD(), que
+  // escriben en lote directo a Historial_Precios y hacen la misma conversión
+  // por su cuenta.
+  const productos = filasComoObjetos(SpreadsheetApp.getActive().getSheetByName(SHEET_CATALOGO));
+  const producto = productos.find(function(p) { return p['ID_Producto'] === idProducto; });
+  const unidadProducto = producto ? producto['Unidad_Medida'] : '';
+  const lineaConvertida = convertirLineaAUnidadReceta(linea.precioUnitario, linea.cantidad, linea.unidad, unidadProducto);
+
   SpreadsheetApp.getActive().getSheetByName(SHEET_HISTORIAL)
     .appendRow([new Date(), linea.fecha, idProducto, linea.proveedor, linea.moneda,
-                linea.precioUnitario, linea.cantidad, linea.refFactura,
+                lineaConvertida.precioUnitario, lineaConvertida.cantidad, linea.refFactura,
                 linea.monedaOriginal || '', linea.tipoCambioUsado || '']);
   actualizarCostoProducto(idProducto);
 }
@@ -1000,6 +1140,7 @@ function onNuevaLineaFactura(e) {
       categoria: v[6],
       nombreProducto: v[7],
       nombreNormalizado: v[8],
+      unidad: v[9], // unidad de medida tal como la puso la factura — ver convertirLineaAUnidadReceta()
       cantidad: v[10],
       precioUnitario: v[11], // tal cual en factura, sin ajustar descuento/impuesto
       archivo: v[16]
