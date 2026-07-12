@@ -77,6 +77,10 @@
     .categoria-header { display:flex; align-items:center; justify-content:space-between; padding-bottom:6px; border-bottom:1px solid var(--border); }
     .categoria-header span:first-child { font-family:var(--font-d); font-size:13px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--purple); }
     .categoria-header span:last-child { font-size:11px; color:var(--muted); }
+    .subcategoria-group { display:flex; flex-direction:column; gap:8px; margin-left:16px; }
+    .subcategoria-header { display:flex; align-items:center; justify-content:space-between; padding:4px 0; border-bottom:1px dashed var(--border); cursor:pointer; }
+    .subcategoria-header span:first-child { font-size:12px; font-weight:600; color:var(--muted); }
+    .subcategoria-header span:last-child { font-size:11px; color:var(--subtle); }
     .plato-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; transition:border-color .15s,box-shadow .15s; }
     .plato-card:hover { border-color:var(--purple-lt); box-shadow:0 2px 12px rgba(106,58,154,.08); }
     .plato-row-main { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
@@ -1134,10 +1138,18 @@ function renderPlatoCard(p) {
 // productos — persiste entre renders (búsqueda, filtros) para no perder qué
 // tenías abierto.
 let gruposExpandidosMenu = new Set();
+let subgruposExpandidosMenu = new Set();
 
 function toggleGrupoMenu(clave) {
   if (gruposExpandidosMenu.has(clave)) gruposExpandidosMenu.delete(clave);
   else gruposExpandidosMenu.add(clave);
+  renderMenu();
+}
+
+function toggleSubgrupoMenu(clave, event) {
+  if (event) event.stopPropagation();
+  if (subgruposExpandidosMenu.has(clave)) subgruposExpandidosMenu.delete(clave);
+  else subgruposExpandidosMenu.add(clave);
   renderMenu();
 }
 
@@ -1174,6 +1186,43 @@ function renderMenu() {
     const items = grupos[clave];
     const abierto = gruposExpandidosMenu.has(clave);
     const claveAttr = clave.replace(/'/g, "\\'");
+
+    // Solo se agrupa por subcategoría si la categoría realmente las usa (ej.
+    // Bebidas → Cervezas/Licores/...) — si todos los platos son "Sin
+    // subcategoría" se listan planos, como antes, sin un encabezado de más.
+    const subclaves = [...new Set(items.map(p => p.subcategoria || 'Sin subcategoría'))];
+    const haySubgrupos = subclaves.length > 1 || subclaves[0] !== 'Sin subcategoría';
+
+    let contenido = '';
+    if (abierto && !haySubgrupos) {
+      contenido = items.map(renderPlatoCard).join('');
+    } else if (abierto && haySubgrupos) {
+      const subgrupos = {};
+      items.forEach(p => {
+        const sc = p.subcategoria || 'Sin subcategoría';
+        (subgrupos[sc] = subgrupos[sc] || []).push(p);
+      });
+      const subclavesOrdenadas = Object.keys(subgrupos).sort((a, b) =>
+        a === 'Sin subcategoría' ? 1 : b === 'Sin subcategoría' ? -1 : a.localeCompare(b));
+
+      contenido = subclavesOrdenadas.map(sc => {
+        const subItems = subgrupos[sc];
+        const subClave = `${clave}||${sc}`;
+        const subAbierto = subgruposExpandidosMenu.has(subClave);
+        const subClaveAttr = subClave.replace(/'/g, "\\'");
+        return `<div class="subcategoria-group">
+          <div class="subcategoria-header" onclick="toggleSubgrupoMenu('${subClaveAttr}', event)">
+            <span style="display:flex;align-items:center;gap:6px;">
+              <svg class="arrow-ico${subAbierto?' open':''}" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;"><path d="M6 4l4 4-4 4"/></svg>
+              ${sc}
+            </span>
+            <span>${subItems.length} plato${subItems.length!==1?'s':''}</span>
+          </div>
+          ${subAbierto ? subItems.map(renderPlatoCard).join('') : ''}
+        </div>`;
+      }).join('');
+    }
+
     return `<div class="categoria-group">
       <div class="categoria-header" style="cursor:pointer;" onclick="toggleGrupoMenu('${claveAttr}')">
         <span style="display:flex;align-items:center;gap:6px;">
@@ -1182,7 +1231,7 @@ function renderMenu() {
         </span>
         <span>${items.length} plato${items.length!==1?'s':''}</span>
       </div>
-      ${abierto ? items.map(renderPlatoCard).join('') : ''}
+      ${contenido}
     </div>`;
   }).join('');
 
