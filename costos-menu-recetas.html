@@ -197,13 +197,19 @@
         </div>
         <div class="field">
           <label for="m-categoria">Categoría <span class="req">*</span></label>
-          <select id="m-categoria">
+          <select id="m-categoria" onchange="poblarSelectSubcategoria()">
             <option value="" disabled selected>Seleccioná…</option>
           </select>
         </div>
       </div>
 
-      <div class="field-row">
+      <div class="field-row-3">
+        <div class="field">
+          <label for="m-subcategoria">Subcategoría</label>
+          <select id="m-subcategoria">
+            <option value="">Sin subcategoría</option>
+          </select>
+        </div>
         <div class="field">
           <label for="m-precio">Precio de venta (₡) <span class="req">*</span></label>
           <input type="number" id="m-precio" min="0" step="100" placeholder="0">
@@ -307,6 +313,19 @@
         </div>
         <p style="font-size:11px;color:var(--muted);margin-top:8px;">Define el orden de agrupación del menú y las opciones del selector de categoría al crear un plato.</p>
       </div>
+
+      <div class="card">
+        <p class="card-title">Subcategorías</p>
+        <div class="field" style="margin-bottom:10px;">
+          <label for="cfg-subcatmenu-categoria" style="font-size:12px;">Categoría</label>
+          <select id="cfg-subcatmenu-categoria" onchange="renderCfgSubcategoriasMenu()"></select>
+        </div>
+        <div id="cfg-subcatmenu-lista" style="margin-bottom:10px;"></div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="cfg-subcatmenu-nueva" placeholder="Nueva subcategoría…" style="font-size:13px;padding:7px 10px;" onkeydown="if(event.key==='Enter')agregarSubcategoriaMenu()">
+          <button onclick="agregarSubcategoriaMenu()" style="padding:7px 12px;border-radius:8px;border:1px solid var(--purple-lt);background:var(--purple-bg);color:var(--purple);cursor:pointer;font-weight:600;white-space:nowrap;">+ Agregar</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -403,7 +422,31 @@ async function cargarCategoriasMenu() {
   }
   poblarSelectsCategoria();
   renderCfgCategoriasMenu();
+  renderCfgSubcategoriasMenu();
   renderMenu();
+}
+
+// Subcategorías de menú: par (categoria, subcategoria) — igual que
+// Familia/Subfamilia en Base de productos. Vacío hasta que el usuario cargue
+// alguna desde Configuración (no hay default razonable).
+let SUBCATEGORIAS_MENU = [];
+
+async function cargarSubcategoriasMenu() {
+  if (!APPS_SCRIPT_COSTOS) return;
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS + '?modulo=subcategorias_menu');
+    const data = await resp.json();
+    if (data && data.ok && Array.isArray(data.registros)) {
+      SUBCATEGORIAS_MENU = data.registros;
+    }
+  } catch (e) {
+    console.warn('No se pudo cargar subcategorías de menú:', e);
+  }
+  renderCfgSubcategoriasMenu();
+}
+
+function subcategoriasDe(categoria) {
+  return SUBCATEGORIAS_MENU.filter(s => s.categoria === categoria).map(s => s.subcategoria);
 }
 
 function poblarSelectsCategoria() {
@@ -412,6 +455,19 @@ function poblarSelectsCategoria() {
   const selActual = document.getElementById('m-categoria').value;
   document.getElementById('m-categoria').innerHTML = '<option value="" disabled selected>Seleccioná…</option>' + opts;
   if (selActual) document.getElementById('m-categoria').value = selActual;
+  poblarSelectSubcategoria();
+}
+
+// Repuebla el selector de subcategoría del formulario según la categoría
+// elegida — se llama al cambiar de categoría y al cargar el listado.
+function poblarSelectSubcategoria(valorActual) {
+  const sel = document.getElementById('m-subcategoria');
+  if (!sel) return;
+  valorActual = valorActual ?? sel.value;
+  const categoria = document.getElementById('m-categoria').value;
+  const subs = subcategoriasDe(categoria);
+  sel.innerHTML = '<option value="">Sin subcategoría</option>' + subs.map(s => `<option>${s}</option>`).join('');
+  if (subs.includes(valorActual)) sel.value = valorActual;
 }
 
 function ordenarPorCategoria(keys) {
@@ -731,6 +787,7 @@ function renderPlatoCard(p) {
   const disp = DISP_COLORS[p.disponible] || DISP_COLORS['Disponible'];
   const sombra = p.costo_receta > 0 ? colorFC(parseFloat(p.fc)) : null;
   const estiloCard = sombra ? `background:${sombra.bg};border-left:4px solid ${sombra.border};` : '';
+  const catLinea = [p.categoria, p.subcategoria].filter(Boolean).join(' · ');
   return `<div class="plato-card" style="${estiloCard}" data-plato-id="${p.id}">
     <div class="plato-row-main">
       <div>
@@ -738,20 +795,21 @@ function renderPlatoCard(p) {
           <svg class="arrow-ico" id="rc-${p.id}-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4"/></svg>
           ${p.nombre}
         </span>
+        ${catLinea ? `<div class="plato-cat">${catLinea}</div>` : ''}
         ${p.descripcion ? `<div class="plato-desc">${p.descripcion}</div>` : ''}
       </div>
       <div>
-        <div class="plato-precio">${fmt(p.precio)}</div>
+        <div style="display:flex;align-items:baseline;gap:8px;justify-content:flex-end;">
+          <div class="plato-precio">${fmt(p.precio)}</div>
+          ${p.costo_receta > 0 ? `<span style="font-family:var(--font-d);font-size:13px;font-weight:700;color:${sombra.text};">FC ${p.fc}%</span>` : ''}
+        </div>
         <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end;margin-top:4px;">
           <span style="font-size:11px;padding:3px 8px;border-radius:20px;background:${disp.bg};color:${disp.col};">${p.disponible}</span>
         </div>
       </div>
     </div>
     ${p.costo_receta > 0 ? `
-      <div style="display:flex;gap:10px;margin-top:6px;font-size:12px;">
-        <span style="color:var(--muted);">Costo: <strong>₡${Number(p.costo_receta).toLocaleString('es-CR',{minimumFractionDigits:2})}</strong></span>
-        <span style="font-weight:700;color:${sombra.text};">FC ${p.fc}%</span>
-      </div>` : ''}
+      <div style="margin-top:6px;font-size:12px;color:var(--muted);">Costo: <strong>₡${Number(p.costo_receta).toLocaleString('es-CR',{minimumFractionDigits:2})}</strong></div>` : ''}
     <div class="plato-actions">
       <button class="btn-edit" onclick="editarPlato('${p.id}')">Editar plato</button>
       <button class="btn-del" onclick="eliminarPlato('${p.id}')">✕</button>
@@ -779,6 +837,18 @@ function renderPlatoCard(p) {
       </div>
     </div>
   </div>`;
+}
+
+// Grupos de categoría en la lista de Menú: arrancan contraídos (solo
+// encabezado + conteo), igual que "Agrupar por categoría" en Base de
+// productos — persiste entre renders (búsqueda, filtros) para no perder qué
+// tenías abierto.
+let gruposExpandidosMenu = new Set();
+
+function toggleGrupoMenu(clave) {
+  if (gruposExpandidosMenu.has(clave)) gruposExpandidosMenu.delete(clave);
+  else gruposExpandidosMenu.add(clave);
+  renderMenu();
 }
 
 function renderMenu() {
@@ -812,12 +882,17 @@ function renderMenu() {
 
   const bloques = categoriasOrdenadas.map(clave => {
     const items = grupos[clave];
+    const abierto = gruposExpandidosMenu.has(clave);
+    const claveAttr = clave.replace(/'/g, "\\'");
     return `<div class="categoria-group">
-      <div class="categoria-header">
-        <span>${clave}</span>
+      <div class="categoria-header" style="cursor:pointer;" onclick="toggleGrupoMenu('${claveAttr}')">
+        <span style="display:flex;align-items:center;gap:6px;">
+          <svg class="arrow-ico${abierto?' open':''}" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px;"><path d="M6 4l4 4-4 4"/></svg>
+          ${clave}
+        </span>
         <span>${items.length} plato${items.length!==1?'s':''}</span>
       </div>
-      ${items.map(renderPlatoCard).join('')}
+      ${abierto ? items.map(renderPlatoCard).join('') : ''}
     </div>`;
   }).join('');
 
@@ -826,12 +901,13 @@ function renderMenu() {
 
 // ── NUEVO / EDITAR PLATO (datos básicos, sin receta) ───────────────
 async function guardarPlato() {
-  const nombre      = document.getElementById('m-nombre').value.trim();
-  const categoria   = document.getElementById('m-categoria').value;
-  const precio      = parseFloat(document.getElementById('m-precio').value) || 0;
-  const disponible  = document.getElementById('m-disponible').value;
-  const descripcion = document.getElementById('m-descripcion').value.trim();
-  const editId      = document.getElementById('edit-id').value;
+  const nombre       = document.getElementById('m-nombre').value.trim();
+  const categoria    = document.getElementById('m-categoria').value;
+  const subcategoria = document.getElementById('m-subcategoria').value;
+  const precio       = parseFloat(document.getElementById('m-precio').value) || 0;
+  const disponible   = document.getElementById('m-disponible').value;
+  const descripcion  = document.getElementById('m-descripcion').value.trim();
+  const editId       = document.getElementById('edit-id').value;
 
   if (!nombre)    { showToast('Ingresá el nombre.', 'error'); return; }
   if (!categoria) { showToast('Seleccioná una categoría.', 'error'); return; }
@@ -839,7 +915,7 @@ async function guardarPlato() {
 
   const existente = editId ? getPlatos().find(p => p.id === editId) : null;
   const id = editId || 'PLT-' + Date.now();
-  const registro = { id, nombre, categoria, precio, disponible, descripcion, receta_id: existente ? (existente.receta_id || '') : '' };
+  const registro = { id, nombre, categoria, subcategoria, precio, disponible, descripcion, receta_id: existente ? (existente.receta_id || '') : '' };
 
   try {
     const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'plato', ...registro }) }) });
@@ -868,6 +944,7 @@ function editarPlato(id) {
   document.getElementById('edit-id').value       = p.id;
   document.getElementById('m-nombre').value      = p.nombre;
   document.getElementById('m-categoria').value   = p.categoria;
+  poblarSelectSubcategoria(p.subcategoria || '');
   document.getElementById('m-precio').value      = p.precio;
   document.getElementById('m-disponible').value  = p.disponible;
   document.getElementById('m-descripcion').value = p.descripcion || '';
@@ -892,6 +969,7 @@ function limpiarFormPlato() {
   document.getElementById('edit-id').value = '';
   document.getElementById('m-nombre').value = '';
   document.getElementById('m-categoria').value = '';
+  poblarSelectSubcategoria('');
   document.getElementById('m-precio').value = '';
   document.getElementById('m-disponible').value = 'Disponible';
   document.getElementById('m-descripcion').value = '';
@@ -1065,6 +1143,7 @@ async function agregarCategoriaMenu() {
   CATEGORIAS_MENU.push(val);
   input.value = '';
   renderCfgCategoriasMenu();
+  renderCfgSubcategoriasMenu();
   poblarSelectsCategoria();
   renderMenu();
   showToast(`"${val}" agregada`, 'success');
@@ -1082,9 +1161,73 @@ async function eliminarCategoriaMenu(idx) {
   }
   CATEGORIAS_MENU.splice(idx, 1);
   renderCfgCategoriasMenu();
+  renderCfgSubcategoriasMenu();
   poblarSelectsCategoria();
   renderMenu();
   showToast('Categoría eliminada', 'success');
+}
+
+// ── SUBCATEGORÍAS DE MENÚ (dependen de la categoría elegida) ───────
+function renderCfgSubcategoriasMenu() {
+  const selCat = document.getElementById('cfg-subcatmenu-categoria');
+  if (!selCat) return;
+  const valActual = selCat.value;
+  selCat.innerHTML = CATEGORIAS_MENU.length
+    ? CATEGORIAS_MENU.map(c => `<option${c===valActual?' selected':''}>${c}</option>`).join('')
+    : '<option value="">Agregá una categoría primero</option>';
+
+  const categoriaElegida = selCat.value;
+  const lista = SUBCATEGORIAS_MENU.filter(s => s.categoria === categoriaElegida);
+  const cont = document.getElementById('cfg-subcatmenu-lista');
+  cont.innerHTML = lista.length
+    ? lista.map(s => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:7px;background:var(--surface);margin-bottom:4px;font-size:13px;">
+          <span>${s.subcategoria}</span>
+          <button onclick="eliminarSubcategoriaMenu('${categoriaElegida.replace(/'/g,"\\'")}','${s.subcategoria.replace(/'/g,"\\'")}')" style="background:none;border:none;color:var(--subtle);cursor:pointer;font-size:16px;line-height:1;padding:0 4px;" title="Eliminar">×</button>
+        </div>`).join('')
+    : '<div style="font-size:12px;color:var(--muted);padding:4px 0;">Sin subcategorías todavía.</div>';
+}
+
+async function agregarSubcategoriaMenu() {
+  const categoria = document.getElementById('cfg-subcatmenu-categoria').value;
+  const input = document.getElementById('cfg-subcatmenu-nueva');
+  const val = input.value.trim();
+  if (!categoria) { showToast('Agregá una categoría primero.', 'error'); return; }
+  if (!val) return;
+  if (SUBCATEGORIAS_MENU.some(s => s.categoria === categoria && s.subcategoria === val)) {
+    showToast('Ya existe en la lista.', 'error');
+    return;
+  }
+
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'subcategoria_menu', categoria, valor: val }) }) });
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error || 'Error al guardar');
+  } catch(e) {
+    showToast('No se pudo guardar: ' + e.message, 'error');
+    return;
+  }
+
+  SUBCATEGORIAS_MENU.push({ categoria, subcategoria: val });
+  input.value = '';
+  renderCfgSubcategoriasMenu();
+  poblarSelectSubcategoria();
+  showToast(`"${val}" agregada`, 'success');
+}
+
+async function eliminarSubcategoriaMenu(categoria, subcategoria) {
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'eliminar', tipo:'subcategoria_menu', categoria, valor: subcategoria }) }) });
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error || 'Error al eliminar');
+  } catch(e) {
+    showToast('No se pudo eliminar: ' + e.message, 'error');
+    return;
+  }
+  SUBCATEGORIAS_MENU = SUBCATEGORIAS_MENU.filter(s => !(s.categoria === categoria && s.subcategoria === subcategoria));
+  renderCfgSubcategoriasMenu();
+  poblarSelectSubcategoria();
+  showToast('Subcategoría eliminada', 'success');
 }
 
 // ── TABS / TOAST ────────────────────────────────────────────────────
@@ -1115,6 +1258,7 @@ cargarProductosParaFuentes();
 cargarRecetasDesdeSheet();
 cargarMenuDesdeSheet();
 cargarCategoriasMenu();
+cargarSubcategoriasMenu();
 </script>
 </body>
 </html>

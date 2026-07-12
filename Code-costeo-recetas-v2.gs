@@ -23,6 +23,7 @@ const SHEET_FAMILIAS    = 'Familias';
 const SHEET_SUBFAMILIAS = 'Subfamilias';
 const SHEET_UNIDADES_RECETA = 'Unidades_Receta';
 const SHEET_CATEGORIAS_MENU = 'Categorias_Menu';
+const SHEET_SUBCATEGORIAS_MENU = 'Subcategorias_Menu';
 
 const CLAVE_TIPO_CAMBIO = 'TipoCambio_USD';
 
@@ -164,9 +165,10 @@ function crearHojasIniciales() {
     ['ID_Receta', 'Fuente_Tipo', 'Fuente_ID', 'Cantidad', 'Unidad', 'Costo_Linea']);
 
   crearHojaConEncabezados(ss, SHEET_MENU,
-    ['ID_Plato', 'Nombre', 'Categoria', 'Precio_Venta', 'Disponibilidad', 'Descripcion', 'ID_Receta', 'Costo_Receta', 'FC', 'Fecha_Actualizacion']);
+    ['ID_Plato', 'Nombre', 'Categoria', 'Subcategoria', 'Precio_Venta', 'Disponibilidad', 'Descripcion', 'ID_Receta', 'Costo_Receta', 'FC', 'Fecha_Actualizacion']);
 
   crearHojaConEncabezados(ss, SHEET_CATEGORIAS_MENU, ['Categoria']);
+  crearHojaConEncabezados(ss, SHEET_SUBCATEGORIAS_MENU, ['Categoria', 'Subcategoria']);
 
   sembrarListaCompartida(ss, SHEET_CATEGORIAS, CATEGORIAS_DEFAULT);
   sembrarListaCompartida(ss, SHEET_AREAS, AREAS_DEFAULT);
@@ -311,6 +313,25 @@ function migrarCrearCategoriasMenu() {
   Logger.log(yaExistia
     ? 'Categorias_Menu ya existía, no hacía falta migrar.'
     : 'Categorias_Menu creada y sembrada con ' + CATEGORIAS_MENU_DEFAULT.length + ' categorías por defecto.');
+}
+
+// Migración: agrega subcategorías de menú — columna Subcategoria en Menu (por
+// si ya tenía filas, mismo motivo que migrarAgregarClasificacion) y la hoja
+// Subcategorias_Menu (pares Categoria/Subcategoria, arranca vacía — se llena
+// desde la pestaña Configuración, igual que Subfamilias). Segura de re-correr.
+function migrarAgregarSubcategoriaMenu() {
+  const ss = SpreadsheetApp.getActive();
+  const shMenu = ss.getSheetByName(SHEET_MENU);
+  const encabezados = encabezadosDe(shMenu);
+  let colAgregada = false;
+  if (encabezados.indexOf('Subcategoria') === -1) {
+    shMenu.getRange(1, encabezados.length + 1).setValue('Subcategoria');
+    colAgregada = true;
+  }
+  const hojaYaExistia = !!ss.getSheetByName(SHEET_SUBCATEGORIAS_MENU);
+  crearHojaConEncabezados(ss, SHEET_SUBCATEGORIAS_MENU, ['Categoria', 'Subcategoria']);
+  Logger.log('Columna Subcategoria en Menu: ' + (colAgregada ? 'agregada.' : 'ya existía.') +
+    ' Hoja Subcategorias_Menu: ' + (hojaYaExistia ? 'ya existía.' : 'creada.'));
 }
 
 // ============================================
@@ -974,6 +995,7 @@ function doGet(e) {
       case 'subfamilias': return jsonOut({ ok: true, registros: moduloSubfamilias() });
       case 'unidades_receta': return jsonOut({ ok: true, valores: moduloUnidadesReceta() });
       case 'categorias_menu': return jsonOut({ ok: true, valores: moduloCategoriasMenu() });
+      case 'subcategorias_menu': return jsonOut({ ok: true, registros: moduloSubcategoriasMenu() });
       case 'proveedores': return jsonOut({ ok: true, registros: moduloProveedores() });
       case 'recetas':     return jsonOut({ ok: true, registros: moduloRecetas() });
       case 'menu':        return jsonOut({ ok: true, registros: moduloMenu() });
@@ -1007,6 +1029,7 @@ function doPost(e) {
       case 'subfamilia': result = guardarSubfamilia(payload); break;
       case 'unidad_receta': result = guardarUnidadReceta(payload); break;
       case 'categoria_menu': result = guardarCategoriaMenu(payload); break;
+      case 'subcategoria_menu': result = guardarSubcategoriaMenu(payload); break;
       case 'receta':    result = guardarReceta(payload); break;
       case 'plato':     result = guardarPlato(payload); break;
       case 'config':    result = guardarTipoCambioUSD(payload.tipo_cambio_usd); break;
@@ -1103,6 +1126,12 @@ function moduloCategoriasMenu() {
     .map(function(r) { return r['Categoria']; }).filter(Boolean);
 }
 
+function moduloSubcategoriasMenu() {
+  return filasComoObjetos(SpreadsheetApp.getActive().getSheetByName(SHEET_SUBCATEGORIAS_MENU))
+    .map(function(r) { return { categoria: r['Categoria'] || '', subcategoria: r['Subcategoria'] || '' }; })
+    .filter(function(r) { return r.subcategoria; });
+}
+
 function moduloProveedores() {
   const sh = abrirHojaProveedoresCompras();
   return sh ? filasComoObjetos(sh) : [];
@@ -1151,6 +1180,7 @@ function moduloMenu() {
       id: r['ID_Plato'],
       nombre: r['Nombre'],
       categoria: r['Categoria'] || '',
+      subcategoria: r['Subcategoria'] || '',
       precio: Number(r['Precio_Venta']) || 0,
       disponible: r['Disponibilidad'] || 'Disponible',
       descripcion: r['Descripcion'] || '',
@@ -1334,7 +1364,10 @@ function guardarFamilia(p) {
     [{hoja: SHEET_CATALOGO, columna: 'Familia'}, {hoja: SHEET_SUBFAMILIAS, columna: 'Familia'}]);
 }
 function guardarUnidadReceta(p) { return guardarValorCompartido(SHEET_UNIDADES_RECETA, 'Unidad', p.valor, p.valor_anterior, [{hoja: SHEET_CATALOGO, columna: 'Unidad_Medida'}]); }
-function guardarCategoriaMenu(p) { return guardarValorCompartido(SHEET_CATEGORIAS_MENU, 'Categoria', p.valor, p.valor_anterior, [{hoja: SHEET_MENU, columna: 'Categoria'}]); }
+function guardarCategoriaMenu(p) {
+  return guardarValorCompartido(SHEET_CATEGORIAS_MENU, 'Categoria', p.valor, p.valor_anterior,
+    [{hoja: SHEET_MENU, columna: 'Categoria'}, {hoja: SHEET_SUBCATEGORIAS_MENU, columna: 'Categoria'}]);
+}
 
 // Subfamilia no es una lista simple: cada fila es un par (Familia, Subfamilia).
 // Solo admite crear/eliminar (no renombrar) — para eso, borrar y volver a crear.
@@ -1364,6 +1397,34 @@ function eliminarSubfamilia(familia, subfamilia) {
   return { eliminado: subfamilia };
 }
 
+// Subcategoria de menú: mismo patrón que Subfamilia — par (Categoria,
+// Subcategoria), solo admite crear/eliminar.
+function guardarSubcategoriaMenu(p) {
+  if (!p.valor) throw new Error('Falta la subcategoría.');
+  if (!p.categoria) throw new Error('Falta la categoría a la que pertenece.');
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_SUBCATEGORIAS_MENU);
+  const existe = filasComoObjetos(sh).some(function(r) { return r['Categoria'] === p.categoria && r['Subcategoria'] === p.valor; });
+  if (existe) return { ya_existia: p.valor };
+  sh.appendRow([p.categoria, p.valor]);
+  return { creado: p.valor };
+}
+
+function eliminarSubcategoriaMenu(categoria, subcategoria) {
+  if (!categoria || !subcategoria) throw new Error('Falta la categoría o subcategoría a eliminar.');
+  const menu = filasComoObjetos(SpreadsheetApp.getActive().getSheetByName(SHEET_MENU));
+  const enUso = menu.some(function(p) { return p['Categoria'] === categoria && p['Subcategoria'] === subcategoria; });
+  if (enUso) throw new Error('No se puede eliminar: hay platos del menú usando "' + subcategoria + '".');
+
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_SUBCATEGORIAS_MENU);
+  const filas = leerHojaConEncabezados(sh);
+  const cCat = filas.encabezados.indexOf('Categoria');
+  const cSub = filas.encabezados.indexOf('Subcategoria');
+  const idx = filas.datos.findIndex(function(f) { return f[cCat] === categoria && f[cSub] === subcategoria; });
+  if (idx === -1) throw new Error('No se encontró "' + subcategoria + '".');
+  sh.deleteRow(idx + 2);
+  return { eliminado: subcategoria };
+}
+
 // nombreHojaUso/columnaUso/descripcionUso: dónde (y cómo describirlo en el
 // error) chequear que el valor no esté en uso antes de borrarlo — por
 // defecto Catalogo_Maestro (categoría/área/familia/unidad de producto), pero
@@ -1380,6 +1441,10 @@ function eliminarValorCompartido(nombreHoja, nombreColumna, valor, nombreHojaUso
   if (nombreHoja === SHEET_FAMILIAS) {
     const subEnUso = filasComoObjetos(SpreadsheetApp.getActive().getSheetByName(SHEET_SUBFAMILIAS)).some(function(s) { return s['Familia'] === valor; });
     if (subEnUso) throw new Error('No se puede eliminar: hay subfamilias registradas bajo "' + valor + '". Borralas primero.');
+  }
+  if (nombreHoja === SHEET_CATEGORIAS_MENU) {
+    const subEnUso = filasComoObjetos(SpreadsheetApp.getActive().getSheetByName(SHEET_SUBCATEGORIAS_MENU)).some(function(s) { return s['Categoria'] === valor; });
+    if (subEnUso) throw new Error('No se puede eliminar: hay subcategorías registradas bajo "' + valor + '". Borralas primero.');
   }
 
   const sh = SpreadsheetApp.getActive().getSheetByName(nombreHoja);
@@ -1478,6 +1543,7 @@ function guardarPlato(p) {
     'ID_Plato': id,
     'Nombre': p.nombre,
     'Categoria': p.categoria || '',
+    'Subcategoria': p.subcategoria || '',
     'Precio_Venta': Number(p.precio) || 0,
     'Disponibilidad': disponibilidad,
     'Descripcion': p.descripcion || '',
@@ -1521,6 +1587,7 @@ function eliminarRegistro(p) {
     case 'subfamilia':    return eliminarSubfamilia(p.familia, p.valor);
     case 'unidad_receta': return eliminarValorCompartido(SHEET_UNIDADES_RECETA, 'Unidad', p.valor);
     case 'categoria_menu': return eliminarValorCompartido(SHEET_CATEGORIAS_MENU, 'Categoria', p.valor, SHEET_MENU, 'Categoria', 'platos del menú');
+    case 'subcategoria_menu': return eliminarSubcategoriaMenu(p.categoria, p.valor);
     default:
       throw new Error('Tipo no reconocido: ' + p.tipo);
   }

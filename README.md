@@ -22,16 +22,18 @@ Sheet de compras + `Code-compras-backend.gs`, UI en `config-productos.html`)
   (`SOURCE_SPREADSHEET_ID`), pero nunca escribe ahí — todo lo nuevo
   (`Catalogo_Maestro`, `Alias_Proveedores`, `Historial_Precios`,
   `Compras_Pendientes`, `Categorias_Productos`, `Areas_Negocio`, `Recetas`,
-  `Receta_Ingredientes`, `Menu`, `Categorias_Menu`) vive en el spreadsheet
-  nuevo. Si se agregan columnas o módulos, re-desplegar (Implementar →
-  Gestionar implementaciones → Editar → Nueva versión — la URL `/exec` no
-  cambia).
-- `Categorias_Menu` es nueva y todavía no existe en el spreadsheet en
-  producción — hay que correr `migrarCrearCategoriasMenu()` una vez desde el
-  editor de Apps Script (mismo patrón que las demás `migrar*` de
+  `Receta_Ingredientes`, `Menu`, `Categorias_Menu`, `Subcategorias_Menu`) vive
+  en el spreadsheet nuevo. Si se agregan columnas o módulos, re-desplegar
+  (Implementar → Gestionar implementaciones → Editar → Nueva versión — la URL
+  `/exec` no cambia).
+- `Categorias_Menu` y `Subcategorias_Menu` son nuevas y todavía no existen en
+  el spreadsheet en producción — hay que correr `migrarCrearCategoriasMenu()`
+  y `migrarAgregarSubcategoriaMenu()` una vez cada una desde el editor de
+  Apps Script (mismo patrón que las demás `migrar*` de
   `Code-costeo-recetas-v2.gs`) antes de que el tab "Configuración" de
-  `costos-menu-recetas.html` y el filtro de categoría del menú dejen de
-  degradar al default hardcodeado.
+  `costos-menu-recetas.html`, el filtro de categoría del menú y el selector
+  de subcategoría del formulario de plato dejen de degradar al default
+  hardcodeado (o, en el caso de subcategorías, a "sin subcategorías todavía").
 - `costos-productos.html` y `costos-menu-recetas.html` ya apuntan a esa URL
   real y tienen carga/guardado real contra este backend. `costos-recetas.html`
   y `costos-menu.html` (que antes vivían 100% en `localStorage`, sin
