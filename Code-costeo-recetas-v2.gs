@@ -111,7 +111,19 @@ function filaPorId(hoja, nombreColumnaId, id) {
 }
 
 // Escribe un objeto {NombreDeEncabezado: valor} en una fila, respetando el orden real de columnas.
+// Si algún encabezado esperado (una clave de `valores`) no existe tal cual en
+// la hoja real, antes esto guardaba '' ahí en silencio — sin ningún error —
+// y el dato se perdía para siempre en cada guardado (pasó con Area_Negocio,
+// y con Presentacion/Tamano/Precio_Sin_IVA/IVA/Proveedor_Habitual/
+// Stock_Minimo en Catalogo_Maestro). Ahora corta con un error claro para que
+// el guardado falle de forma visible (el front ya revisa `ok` de la
+// respuesta) en vez de fallar en silencio.
 function escribirFilaPorEncabezado(hoja, fila, encabezados, valores) {
+  const faltantes = Object.keys(valores).filter(function(k) { return encabezados.indexOf(k) === -1; });
+  if (faltantes.length) {
+    throw new Error('La hoja "' + hoja.getName() + '" no tiene columna para: ' + faltantes.join(', ') +
+      '. Revisá que el encabezado de esa(s) columna(s) coincida exactamente (sin tildes ni espacios de más) con ese nombre.');
+  }
   const datos = encabezados.map(function(h) { return (h in valores) ? valores[h] : ''; });
   hoja.getRange(fila, 1, 1, encabezados.length).setValues([datos]);
 }
@@ -280,6 +292,54 @@ function migrarNormalizarEncabezadoArea() {
   const nuevaCol = encabezados.length + 1;
   sh.getRange(1, nuevaCol).setValue('Area_Negocio');
   Logger.log('No encontré ninguna columna de área existente — se creó "Area_Negocio" nueva y vacía en la columna ' + nuevaCol + '.');
+}
+
+function normalizarEncabezado(s) {
+  return String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Z0-9]/g, '');
+}
+
+// Generaliza migrarNormalizarEncabezadoArea() a TODAS las columnas de
+// Catalogo_Maestro: detectado en producción que Presentacion, Tamano,
+// Precio_Sin_IVA, IVA, Proveedor_Habitual y Stock_Minimo tenían el mismo
+// problema (encabezado real desalineado del nombre exacto que busca el
+// código) — guardarProducto() escribía esos campos en silencio a la nada en
+// cada guardado, sin ningún error, así que ningún producto los tenía
+// persistidos de verdad pese a que Precio_Sin_IVA es obligatorio en el
+// formulario. Recorre CATALOGO_ENCABEZADOS; para cada uno que no calce
+// exacto, busca una columna existente cuyo nombre normalizado (sin
+// tildes/mayúsculas/espacios/guiones) sí calce y la renombra en el lugar —
+// nunca toca los datos ya guardados en esa columna, solo el texto del
+// encabezado. Si no encuentra ninguna columna parecida para alguno, lo deja
+// sin tocar y lo reporta para revisar a mano (no crea columnas nuevas solas,
+// para no arriesgar duplicar datos que en realidad ya existen bajo otro
+// nombre). Segura de re-correr.
+function migrarNormalizarEncabezadosCatalogo() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_CATALOGO);
+  const encabezados = encabezadosDe(sh);
+  const renombrados = [];
+  const noEncontrados = [];
+
+  CATALOGO_ENCABEZADOS.forEach(function(esperado) {
+    if (encabezados.indexOf(esperado) !== -1) return; // ya está exacto
+
+    const idx = encabezados.findIndex(function(h) {
+      return h && normalizarEncabezado(h) === normalizarEncabezado(esperado) && CATALOGO_ENCABEZADOS.indexOf(h) === -1;
+    });
+    if (idx === -1) { noEncontrados.push(esperado); return; }
+
+    const nombreViejo = encabezados[idx];
+    sh.getRange(1, idx + 1).setValue(esperado);
+    encabezados[idx] = esperado; // para no volver a matchear esta misma columna con otro esperado
+    renombrados.push(nombreViejo + ' → ' + esperado);
+  });
+
+  Logger.log(renombrados.length
+    ? 'Encabezados renombrados en Catalogo_Maestro: ' + renombrados.join(', ') + '.'
+    : 'Ningún encabezado de Catalogo_Maestro necesitaba renombrarse.');
+  if (noEncontrados.length) {
+    Logger.log('ATENCIÓN — no se encontró ninguna columna parecida para: ' + noEncontrados.join(', ') +
+      '. Buscalas a mano en el Sheet (puede que el nombre real no se parezca en nada al esperado) y renombralas vos, o avisame cuál es el nombre real de cada una.');
+  }
 }
 
 // Migración: agrega Moneda_Original/Tipo_Cambio_Usado a un Historial_Precios

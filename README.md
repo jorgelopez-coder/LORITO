@@ -26,6 +26,22 @@ Sheet de compras + `Code-compras-backend.gs`, UI en `config-productos.html`)
   en el spreadsheet nuevo. Si se agregan columnas o módulos, re-desplegar
   (Implementar → Gestionar implementaciones → Editar → Nueva versión — la URL
   `/exec` no cambia).
+- **Urgente:** `Catalogo_Maestro` en producción tiene encabezados de columna
+  desalineados de los nombres exactos que busca el código para
+  `Presentacion`, `Tamano`, `Precio_Sin_IVA`, `IVA`, `Proveedor_Habitual` y
+  `Stock_Minimo` (mismo problema que ya había pasado antes con
+  `Area_Negocio`) — confirmado con una prueba real: `guardarProducto()`
+  reporta éxito pero esos 6 campos se guardan vacíos siempre, en todos los
+  productos, sin ningún error visible. Como `Precio_Sin_IVA` es obligatorio
+  en el formulario, esto significa que ese campo (y los otros 5) nunca quedó
+  realmente persistido para ningún producto pese a que el usuario sí lo
+  cargó. Corré `migrarNormalizarEncabezadosCatalogo()` una vez desde el
+  editor de Apps Script — renombra en el lugar cualquier columna cuyo nombre
+  se parezca al esperado (sin tocar los datos), y en los logs de ejecución
+  reporta cualquiera que no haya podido matchear para revisar a mano. Además,
+  `escribirFilaPorEncabezado()` (usada por `guardarProducto`/`guardarReceta`/
+  `guardarPlato`) ahora tira un error explícito si esto vuelve a pasar, en
+  vez de guardar vacío en silencio.
 - `Categorias_Menu` y `Subcategorias_Menu` son nuevas y todavía no existen en
   el spreadsheet en producción — hay que correr `migrarCrearCategoriasMenu()`
   y `migrarAgregarSubcategoriaMenu()` una vez cada una desde el editor de
