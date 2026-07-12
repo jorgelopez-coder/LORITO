@@ -63,6 +63,15 @@
     .search-input { padding-left:32px; font-size:13px; }
     .filter-sel { font-size:13px; padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--text); outline:none; cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:30px; }
 
+    /* Filtros de selección múltiple (categoría / subcategoría) */
+    .filtro-multi { position:relative; }
+    .filtro-multi-btn { width:auto; font-family:var(--font-b); white-space:nowrap; }
+    .filtro-multi-panel { position:absolute; top:calc(100% + 4px); left:0; min-width:210px; max-height:260px; overflow-y:auto; background:var(--card); border:1px solid var(--border); border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,.1); padding:6px; z-index:20; }
+    .filtro-multi-item { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; font-size:13px; cursor:pointer; }
+    .filtro-multi-item:hover { background:var(--surface); }
+    .filtro-multi-item input { width:auto; padding:0; border:none; background:none; appearance:auto; cursor:pointer; }
+    .filtro-multi-empty { padding:6px 8px; font-size:12px; color:var(--subtle); }
+
     .menu-list { display:flex; flex-direction:column; gap:20px; }
     .categoria-group { display:flex; flex-direction:column; gap:8px; }
     .categoria-header { display:flex; align-items:center; justify-content:space-between; padding-bottom:6px; border-bottom:1px solid var(--border); }
@@ -75,10 +84,24 @@
     .plato-nombre:hover { color:var(--purple); }
     .plato-cat { font-size:12px; color:var(--muted); margin-bottom:8px; }
     .plato-precio { font-family:var(--font-d); font-size:18px; font-weight:700; color:var(--purple); text-align:right; }
+    .plato-precio-input { width:100px; text-align:right; font-family:var(--font-d); font-size:16px; font-weight:700; color:var(--purple); border:1px solid transparent; background:transparent; padding:4px 6px; }
+    .plato-precio-input:hover, .plato-precio-input:focus { border-color:var(--border); background:var(--card); }
+    .plato-sugerido { font-size:11px; color:var(--muted); text-align:right; margin-bottom:2px; }
+    .plato-disp-toggle { display:flex; gap:6px; align-items:center; justify-content:flex-end; margin-top:4px; cursor:pointer; font-size:11px; }
+    .plato-disp-toggle input[type=checkbox] { width:auto; padding:0; border:none; background:none; appearance:auto; cursor:pointer; }
     .plato-desc { font-size:12px; color:var(--muted); margin-top:6px; line-height:1.5; }
     .plato-actions { display:flex; gap:6px; margin-top:10px; }
     .arrow-ico { width:12px; height:12px; color:var(--subtle); transition:transform .15s; flex-shrink:0; }
     .arrow-ico.open { transform:rotate(90deg); }
+    .plato-foto { width:100%; height:100%; object-fit:cover; }
+
+    /* Foto del plato (subir/reemplazar) */
+    .foto-upload { border:2px dashed var(--border); border-radius:10px; padding:1.25rem; text-align:center; cursor:pointer; color:var(--muted); font-size:13px; transition:border-color .15s; position:relative; }
+    .foto-upload:hover { border-color:var(--green); color:var(--green); }
+    .foto-upload input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+    .foto-preview-wrap { position:relative; margin-top:10px; width:100%; }
+    .foto-preview-wrap img { width:100%; max-height:280px; object-fit:contain; border-radius:10px; border:1px solid var(--border); display:block; background:var(--surface); }
+    .foto-remove { position:absolute; top:8px; right:8px; background:var(--red); color:#fff; border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:18px; line-height:1; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,.2); }
 
     /* Ingredientes dinámicos (compartido: tarjetas de plato y subrecetas) */
     .ing-lista { display:flex; flex-direction:column; gap:8px; }
@@ -163,9 +186,18 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" class="search-input" id="search" placeholder="Buscar plato…" oninput="renderMenu()">
       </div>
-      <select class="filter-sel" id="f-cat" onchange="renderMenu()">
-        <option value="">Todas las categorías</option>
-      </select>
+      <div class="filtro-multi" id="f-cat-wrap">
+        <button type="button" class="filter-sel filtro-multi-btn" onclick="toggleFiltroPanel('cat', event)">
+          <span id="f-cat-label">Todas las categorías</span>
+        </button>
+        <div class="filtro-multi-panel" id="f-cat-panel" style="display:none;"></div>
+      </div>
+      <div class="filtro-multi" id="f-subcat-wrap">
+        <button type="button" class="filter-sel filtro-multi-btn" onclick="toggleFiltroPanel('subcat', event)">
+          <span id="f-subcat-label">Todas las subcategorías</span>
+        </button>
+        <div class="filtro-multi-panel" id="f-subcat-panel" style="display:none;"></div>
+      </div>
       <select class="filter-sel" id="f-disp" onchange="renderMenu()">
         <option value="">Todos los estados</option>
         <option value="Disponible">Disponible</option>
@@ -203,30 +235,51 @@
         </div>
       </div>
 
-      <div class="field-row-3">
-        <div class="field">
-          <label for="m-subcategoria">Subcategoría</label>
-          <select id="m-subcategoria" onchange="actualizarModoLicores()">
-            <option value="">Sin subcategoría</option>
-          </select>
-        </div>
-        <div class="field" id="m-precio-wrap">
-          <label for="m-precio">Precio de venta (₡) <span class="req">*</span></label>
-          <input type="number" id="m-precio" min="0" step="100" placeholder="0">
-        </div>
-        <div class="field">
-          <label for="m-disponible">Disponibilidad</label>
-          <select id="m-disponible">
-            <option value="Disponible">Disponible</option>
-            <option value="No disponible">No disponible</option>
-            <option value="De temporada">De temporada</option>
-          </select>
-        </div>
+      <div class="field">
+        <label for="m-subcategoria">Subcategoría</label>
+        <select id="m-subcategoria" onchange="actualizarModoLicores()">
+          <option value="">Sin subcategoría</option>
+        </select>
       </div>
 
+      <!-- Precio/Disponibilidad/Descripción solo aplican al editar un plato
+           ya existente — el precio final se fija después desde la lista de
+           Menú (precio sugerido + precio editable) y la disponibilidad con
+           el check de la tarjeta; un plato nuevo no los necesita todavía. -->
+      <div id="m-campos-edicion" style="display:none;">
+        <div class="field-row">
+          <div class="field" id="m-precio-wrap">
+            <label for="m-precio">Precio de venta (₡)</label>
+            <input type="number" id="m-precio" min="0" step="100" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="m-disponible">Disponibilidad</label>
+            <select id="m-disponible">
+              <option value="Disponible">Disponible</option>
+              <option value="No disponible">No disponible</option>
+              <option value="De temporada">De temporada</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="m-descripcion">Descripción</label>
+          <textarea id="m-descripcion" placeholder="Descripción del plato para el menú…"></textarea>
+        </div>
+      </div>
       <div class="field">
-        <label for="m-descripcion">Descripción</label>
-        <textarea id="m-descripcion" placeholder="Descripción del plato para el menú…"></textarea>
+        <label>Foto del plato</label>
+        <div class="foto-upload" id="m-foto-upload">
+          <input type="file" id="m-foto" accept="image/*" onchange="onFotoPlatoSelected(event)"/>
+          <div id="m-foto-placeholder">
+            <div style="font-size:28px;margin-bottom:6px">📷</div>
+            <div>Tocá para subir una foto</div>
+            <div style="font-size:11px;margin-top:4px;color:var(--subtle)">JPG, PNG · máx. 5 MB</div>
+          </div>
+        </div>
+        <div class="foto-preview-wrap" id="m-foto-preview-wrap" style="display:none">
+          <img id="m-foto-preview-img" src="" alt="Vista previa"/>
+          <button type="button" class="foto-remove" onclick="quitarFotoPlato(event)">×</button>
+        </div>
       </div>
       <p id="m-nota-receta" style="font-size:12px;color:var(--muted);">Los ingredientes y el costo de receta se cargan después, desde la tarjeta del plato en la lista de Menú (clic en su nombre).</p>
     </div>
@@ -458,6 +511,7 @@ async function cargarSubcategoriasMenu() {
     console.warn('No se pudo cargar subcategorías de menú:', e);
   }
   renderCfgSubcategoriasMenu();
+  renderFiltroSubcategoriasPanel();
 }
 
 function subcategoriasDe(categoria) {
@@ -466,11 +520,84 @@ function subcategoriasDe(categoria) {
 
 function poblarSelectsCategoria() {
   const opts = CATEGORIAS_MENU.map(c => `<option>${c}</option>`).join('');
-  document.getElementById('f-cat').innerHTML = '<option value="">Todas las categorías</option>' + opts;
+  renderFiltroCategoriasPanel();
   const selActual = document.getElementById('m-categoria').value;
   document.getElementById('m-categoria').innerHTML = '<option value="" disabled selected>Seleccioná…</option>' + opts;
   if (selActual) document.getElementById('m-categoria').value = selActual;
   poblarSelectSubcategoria();
+}
+
+// ── FILTROS DE MENÚ: categoría y subcategoría de selección múltiple ────
+// Antes eran <select> de una sola opción; ahora son un desplegable propio
+// con checkboxes (mismo <div class="filtro-multi">) para poder filtrar por
+// varias categorías/subcategorías a la vez.
+let filtroCategoriasSel = new Set();
+let filtroSubcategoriasSel = new Set();
+
+function toggleFiltroPanel(tipo, event) {
+  if (event) event.stopPropagation();
+  const panel = document.getElementById(`f-${tipo}-panel`);
+  const abrir = panel.style.display === 'none' || !panel.style.display;
+  document.querySelectorAll('.filtro-multi-panel').forEach(p => p.style.display = 'none');
+  panel.style.display = abrir ? 'block' : 'none';
+}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.filtro-multi')) {
+    document.querySelectorAll('.filtro-multi-panel').forEach(p => p.style.display = 'none');
+  }
+});
+
+function renderFiltroCategoriasPanel() {
+  const panel = document.getElementById('f-cat-panel');
+  panel.innerHTML = CATEGORIAS_MENU.map(c => `
+    <label class="filtro-multi-item">
+      <input type="checkbox" ${filtroCategoriasSel.has(c) ? 'checked' : ''} onchange="onFiltroCategoriaChange('${c.replace(/'/g,"\\'")}', this.checked)">
+      ${c}
+    </label>`).join('');
+  actualizarLabelFiltro('cat', filtroCategoriasSel, 'Todas las categorías', 'categorías');
+}
+
+function onFiltroCategoriaChange(cat, marcado) {
+  if (marcado) filtroCategoriasSel.add(cat); else filtroCategoriasSel.delete(cat);
+  actualizarLabelFiltro('cat', filtroCategoriasSel, 'Todas las categorías', 'categorías');
+  renderFiltroSubcategoriasPanel(); // las opciones de subcategoría dependen de las categorías elegidas
+  renderMenu();
+}
+
+// Opciones de subcategoría: todas las de SUBCATEGORIAS_MENU, acotadas a las
+// categorías elegidas en el filtro (si hay alguna elegida).
+function opcionesSubcategoriaFiltro() {
+  const cats = filtroCategoriasSel.size ? [...filtroCategoriasSel] : null;
+  const subs = SUBCATEGORIAS_MENU.filter(s => !cats || cats.includes(s.categoria)).map(s => s.subcategoria);
+  return [...new Set(subs)].sort((a, b) => a.localeCompare(b));
+}
+
+function renderFiltroSubcategoriasPanel() {
+  const panel = document.getElementById('f-subcat-panel');
+  const opciones = opcionesSubcategoriaFiltro();
+  [...filtroSubcategoriasSel].forEach(s => { if (!opciones.includes(s)) filtroSubcategoriasSel.delete(s); });
+  panel.innerHTML = opciones.length
+    ? opciones.map(s => `
+      <label class="filtro-multi-item">
+        <input type="checkbox" ${filtroSubcategoriasSel.has(s) ? 'checked' : ''} onchange="onFiltroSubcategoriaChange('${s.replace(/'/g,"\\'")}', this.checked)">
+        ${s}
+      </label>`).join('')
+    : '<div class="filtro-multi-empty">Sin subcategorías</div>';
+  actualizarLabelFiltro('subcat', filtroSubcategoriasSel, 'Todas las subcategorías', 'subcategorías');
+}
+
+function onFiltroSubcategoriaChange(sub, marcado) {
+  if (marcado) filtroSubcategoriasSel.add(sub); else filtroSubcategoriasSel.delete(sub);
+  actualizarLabelFiltro('subcat', filtroSubcategoriasSel, 'Todas las subcategorías', 'subcategorías');
+  renderMenu();
+}
+
+function actualizarLabelFiltro(tipo, seleccion, textoVacio, plural) {
+  const label = document.getElementById(`f-${tipo}-label`);
+  if (!label) return;
+  if (!seleccion.size) label.textContent = textoVacio;
+  else if (seleccion.size === 1) label.textContent = [...seleccion][0];
+  else label.textContent = `${seleccion.size} ${plural}`;
 }
 
 // Repuebla el selector de subcategoría del formulario según la categoría
@@ -947,22 +1074,28 @@ function renderPlatoCard(p) {
   const catLinea = [p.categoria, p.subcategoria].filter(Boolean).join(' · ');
   return `<div class="plato-card" style="${estiloCard}" data-plato-id="${p.id}">
     <div class="plato-row-main">
-      <div>
-        <span class="plato-nombre" onclick="toggleRecetaCapture('${p.id}')" title="Ver / editar receta">
-          <svg class="arrow-ico" id="rc-${p.id}-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4"/></svg>
-          ${p.nombre}
-        </span>
-        ${catLinea ? `<div class="plato-cat">${catLinea}</div>` : ''}
-        ${p.descripcion ? `<div class="plato-desc">${p.descripcion}</div>` : ''}
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        ${p.foto_url ? `<img src="${p.foto_url}" alt="${p.nombre}" class="plato-foto" style="width:56px;height:56px;border-radius:8px;border:1px solid var(--border);flex-shrink:0;">` : ''}
+        <div>
+          <span class="plato-nombre" onclick="toggleRecetaCapture('${p.id}')" title="Ver / editar receta">
+            <svg class="arrow-ico" id="rc-${p.id}-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4"/></svg>
+            ${p.nombre}
+          </span>
+          ${catLinea ? `<div class="plato-cat">${catLinea}</div>` : ''}
+          ${p.descripcion ? `<div class="plato-desc">${p.descripcion}</div>` : ''}
+        </div>
       </div>
-      <div>
+      <div onclick="event.stopPropagation()">
+        ${p.costo_receta > 0 ? `<div class="plato-sugerido">Sugerido: ${fmt(p.costo_receta / 0.30)}</div>` : ''}
         <div style="display:flex;align-items:baseline;gap:8px;justify-content:flex-end;">
-          <div class="plato-precio">${fmt(p.precio)}</div>
+          <input type="number" class="plato-precio-input" value="${p.precio || ''}" placeholder="0" min="0" step="100"
+            onchange="guardarPrecioPlato('${p.id}', this)">
           ${p.costo_receta > 0 ? `<span style="font-family:var(--font-d);font-size:13px;font-weight:700;color:${sombra.text};">FC ${p.fc}%</span>` : ''}
         </div>
-        <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end;margin-top:4px;">
-          <span style="font-size:11px;padding:3px 8px;border-radius:20px;background:${disp.bg};color:${disp.col};">${p.disponible}</span>
-        </div>
+        <label class="plato-disp-toggle" style="color:${disp.col};">
+          <input type="checkbox" ${p.disponible !== 'No disponible' ? 'checked' : ''} onchange="toggleDisponiblePlato('${p.id}', this)">
+          ${p.disponible === 'No disponible' ? 'No disponible' : 'Disponible'}
+        </label>
       </div>
     </div>
     ${p.costo_receta > 0 ? `
@@ -1010,11 +1143,11 @@ function toggleGrupoMenu(clave) {
 
 function renderMenu() {
   const busq = document.getElementById('search').value.toLowerCase();
-  const cat  = document.getElementById('f-cat').value;
   const disp = document.getElementById('f-disp').value;
   let lista  = getPlatos().filter(p =>
     (!busq || p.nombre.toLowerCase().includes(busq))
- && (!cat  || p.categoria === cat)
+ && (!filtroCategoriasSel.size    || filtroCategoriasSel.has(p.categoria))
+ && (!filtroSubcategoriasSel.size || filtroSubcategoriasSel.has(p.subcategoria))
  && (!disp || p.disponible === disp)
   );
 
@@ -1056,6 +1189,69 @@ function renderMenu() {
   document.getElementById('menu-container').innerHTML = `<div class="menu-list">${bloques}</div>`;
 }
 
+// ── FOTO DEL PLATO ──────────────────────────────────────────────────
+// Se redimensiona y recomprime client-side antes de convertir a base64 (una
+// foto de celular sin comprimir puede pesar varios MB y colgar el POST).
+let fotoPlatoBase64 = null;
+let fotoPlatoUrlExistente = '';
+
+function comprimirFotoPlato(file, maxDim = 1600, calidad = 0.75) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) { height = Math.round(height * maxDim / width); width = maxDim; }
+          else { width = Math.round(width * maxDim / height); height = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', calidad));
+      };
+      img.onerror = () => resolve(e.target.result);
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function onFotoPlatoSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { showToast('La foto supera 5 MB', 'error'); return; }
+  comprimirFotoPlato(file).then(dataUrl => {
+    fotoPlatoBase64 = dataUrl;
+    document.getElementById('m-foto-upload').style.display = 'none';
+    document.getElementById('m-foto-preview-wrap').style.display = 'block';
+    document.getElementById('m-foto-preview-img').src = fotoPlatoBase64;
+  }).catch(() => {
+    showToast('No se pudo procesar la foto', 'error');
+  });
+}
+function quitarFotoPlato(event) {
+  event.preventDefault(); event.stopPropagation();
+  fotoPlatoBase64 = null;
+  fotoPlatoUrlExistente = '';
+  document.getElementById('m-foto').value = '';
+  document.getElementById('m-foto-upload').style.display = 'block';
+  document.getElementById('m-foto-preview-wrap').style.display = 'none';
+}
+function mostrarFotoPlatoExistente(url) {
+  fotoPlatoUrlExistente = url || '';
+  if (fotoPlatoUrlExistente) {
+    document.getElementById('m-foto-upload').style.display = 'none';
+    document.getElementById('m-foto-preview-wrap').style.display = 'block';
+    document.getElementById('m-foto-preview-img').src = fotoPlatoUrlExistente;
+  } else {
+    document.getElementById('m-foto-upload').style.display = 'block';
+    document.getElementById('m-foto-preview-wrap').style.display = 'none';
+  }
+}
+
 // ── NUEVO / EDITAR PLATO (datos básicos, sin receta) ───────────────
 async function guardarPlato() {
   const nombre       = document.getElementById('m-nombre').value.trim();
@@ -1073,12 +1269,18 @@ async function guardarPlato() {
     return;
   }
 
+  // El precio final se termina de fijar después desde la lista de Menú
+  // (precio sugerido + precio editable) — al crear un plato nuevo puede
+  // quedar en 0 sin bloquear el guardado.
   const precio = parseFloat(document.getElementById('m-precio').value) || 0;
-  if (!precio) { showToast('Ingresá el precio.', 'error'); return; }
 
   const existente = editId ? getPlatos().find(p => p.id === editId) : null;
   const id = editId || 'PLT-' + Date.now();
-  const registro = { id, nombre, categoria, subcategoria, precio, disponible, descripcion, receta_id: existente ? (existente.receta_id || '') : '' };
+  const registro = {
+    id, nombre, categoria, subcategoria, precio, disponible, descripcion,
+    receta_id: existente ? (existente.receta_id || '') : '',
+    foto: fotoPlatoBase64, foto_url: fotoPlatoUrlExistente
+  };
 
   try {
     const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'plato', ...registro }) }) });
@@ -1112,6 +1314,10 @@ function editarPlato(id) {
   document.getElementById('m-precio').value      = p.precio;
   document.getElementById('m-disponible').value  = p.disponible;
   document.getElementById('m-descripcion').value = p.descripcion || '';
+  document.getElementById('m-campos-edicion').style.display = 'block';
+  fotoPlatoBase64 = null;
+  document.getElementById('m-foto').value = '';
+  mostrarFotoPlatoExistente(p.foto_url || '');
   document.getElementById('form-title').textContent = 'Editar plato';
   switchTab('nuevo', document.querySelectorAll('.tab')[1]);
 }
@@ -1129,6 +1335,40 @@ async function eliminarPlato(id) {
   await Promise.all([cargarMenuDesdeSheet(), cargarRecetasDesdeSheet()]);
 }
 
+// ── Edición rápida desde la tarjeta (sin abrir "Editar plato") ─────────
+async function toggleDisponiblePlato(id, checkboxEl) {
+  const disponible = checkboxEl.checked ? 'Disponible' : 'No disponible';
+  checkboxEl.disabled = true;
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'disponibilidad_plato', id, disponible }) }) });
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error || 'Error al actualizar disponibilidad');
+  } catch(e) {
+    showToast('No se pudo actualizar: ' + e.message, 'error');
+    checkboxEl.checked = !checkboxEl.checked;
+    checkboxEl.disabled = false;
+    return;
+  }
+  await cargarMenuDesdeSheet();
+}
+
+async function guardarPrecioPlato(id, inputEl) {
+  const precio = parseFloat(inputEl.value) || 0;
+  if (!precio) { showToast('Ingresá un precio válido.', 'error'); return; }
+  inputEl.disabled = true;
+  try {
+    const resp = await fetch(APPS_SCRIPT_COSTOS, { method:'POST', body: new URLSearchParams({ data: JSON.stringify({ modulo:'precio_plato', id, precio }) }) });
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error || 'Error al actualizar el precio');
+  } catch(e) {
+    showToast('No se pudo actualizar: ' + e.message, 'error');
+    inputEl.disabled = false;
+    return;
+  }
+  showToast('Precio actualizado', 'success');
+  await cargarMenuDesdeSheet();
+}
+
 function limpiarFormPlato() {
   document.getElementById('edit-id').value = '';
   document.getElementById('m-nombre').value = '';
@@ -1138,6 +1378,12 @@ function limpiarFormPlato() {
   document.getElementById('m-precio').value = '';
   document.getElementById('m-disponible').value = 'Disponible';
   document.getElementById('m-descripcion').value = '';
+  document.getElementById('m-campos-edicion').style.display = 'none';
+  fotoPlatoBase64 = null;
+  fotoPlatoUrlExistente = '';
+  document.getElementById('m-foto').value = '';
+  document.getElementById('m-foto-upload').style.display = 'block';
+  document.getElementById('m-foto-preview-wrap').style.display = 'none';
   document.getElementById('form-title').textContent = 'Nuevo plato';
 }
 

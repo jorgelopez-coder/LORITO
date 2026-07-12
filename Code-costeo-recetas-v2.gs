@@ -25,6 +25,10 @@ const SHEET_UNIDADES_RECETA = 'Unidades_Receta';
 const SHEET_CATEGORIAS_MENU = 'Categorias_Menu';
 const SHEET_SUBCATEGORIAS_MENU = 'Subcategorias_Menu';
 
+// Carpeta de Drive donde se guardan las fotos de los platos del menú.
+// https://drive.google.com/drive/u/0/folders/1MpmYbMfWjHlnO_I0vxLEVMDh9sVe7cw5
+const FOLDER_ID_MENU_FOTOS = '1MpmYbMfWjHlnO_I0vxLEVMDh9sVe7cw5';
+
 const CLAVE_TIPO_CAMBIO = 'TipoCambio_USD';
 
 const UMBRAL_AUTOMATCH = 0.82;
@@ -434,6 +438,19 @@ function migrarAgregarSubcategoriaMenu() {
   crearHojaConEncabezados(ss, SHEET_SUBCATEGORIAS_MENU, ['Categoria', 'Subcategoria']);
   Logger.log('Columna Subcategoria en Menu: ' + (colAgregada ? 'agregada.' : 'ya existía.') +
     ' Hoja Subcategorias_Menu: ' + (hojaYaExistia ? 'ya existía.' : 'creada.'));
+}
+
+// Migración: agrega la columna Foto_URL a Menu (foto del plato, subida desde
+// costos-menu-recetas.html y guardada en Drive). Segura de re-correr.
+function migrarAgregarFotoMenu() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_MENU);
+  const encabezados = encabezadosDe(sh);
+  if (encabezados.indexOf('Foto_URL') !== -1) {
+    Logger.log('La columna Foto_URL ya existe en Menu, no hace falta migrar.');
+    return;
+  }
+  sh.getRange(1, encabezados.length + 1).setValue('Foto_URL');
+  Logger.log('Columna Foto_URL agregada a Menu.');
 }
 
 // ============================================
@@ -1245,6 +1262,8 @@ function doPost(e) {
       case 'subcategoria_menu': result = guardarSubcategoriaMenu(payload); break;
       case 'receta':    result = guardarReceta(payload); break;
       case 'plato':     result = guardarPlato(payload); break;
+      case 'disponibilidad_plato': result = cambiarDisponibilidadPlato(payload); break;
+      case 'precio_plato': result = cambiarPrecioPlato(payload); break;
       case 'config':    result = guardarTipoCambioUSD(payload.tipo_cambio_usd); break;
       case 'fusionar':  result = fusionarProductos(payload.id_conservar, payload.id_descartar); break;
       case 'eliminar':  result = eliminarRegistro(payload); break;
@@ -1402,7 +1421,8 @@ function moduloMenu() {
       descripcion: r['Descripcion'] || '',
       receta_id: r['ID_Receta'] || '',
       costo_receta: Number(r['Costo_Receta']) || 0,
-      fc: r['FC'] !== '' && r['FC'] != null ? Number(r['FC']).toFixed(1) : null
+      fc: r['FC'] !== '' && r['FC'] != null ? Number(r['FC']).toFixed(1) : null,
+      foto_url: r['Foto_URL'] || ''
     };
   });
 }
@@ -1742,9 +1762,11 @@ function eliminarReceta(id) {
 }
 
 // ── Módulos POST: menú ─────────────────────────────────────────────────
+// El precio no es obligatorio acá: un plato nuevo se crea sin precio (queda
+// en 0) y se termina de fijar después desde la lista de Menú, con
+// cambiarPrecioPlato() (precio sugerido + precio final editable ahí).
 function guardarPlato(p) {
   if (!p.nombre) throw new Error('Falta el nombre del plato.');
-  if (p.precio == null || p.precio === '') throw new Error('Falta el precio de venta.');
 
   const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_MENU);
   const encabezados = encabezadosDe(sh);
@@ -1755,6 +1777,11 @@ function guardarPlato(p) {
   // El front manda value="Temporada" por un bug de origen en el <option> —
   // se normaliza acá para que siempre quede "De temporada" en la hoja.
   const disponibilidad = p.disponible === 'Temporada' ? 'De temporada' : (p.disponible || 'Disponible');
+
+  // p.foto (base64 nuevo) se sube a Drive y reemplaza la foto anterior; si no
+  // viene, se conserva p.foto_url (la que el front ya tenía cargada) para que
+  // guardar el resto del plato no borre la foto existente.
+  const fotoUrl = p.foto ? guardarFotoPlatoEnDrive(p, id) : (p.foto_url || '');
 
   escribirFilaPorEncabezado(sh, fila, encabezados, {
     'ID_Plato': id,
@@ -1767,11 +1794,64 @@ function guardarPlato(p) {
     'ID_Receta': p.receta_id || '',
     'Costo_Receta': 0,
     'FC': '',
+    'Foto_URL': fotoUrl,
     'Fecha_Actualizacion': new Date()
   });
 
   if (p.receta_id) recalcularMenuPorReceta(p.receta_id);
-  return { id: id, fila: fila };
+  return { id: id, fila: fila, foto_url: fotoUrl };
+}
+
+// Separa una data URL ("data:image/jpeg;base64,/9j/4AAQ...") en mime + base64.
+function extraerBase64(dataUrl) {
+  const match = /^data:([^;]+);base64,(.+)$/.exec(String(dataUrl || ''));
+  if (!match) return null;
+  return { mime: match[1], base64: match[2] };
+}
+
+// Guarda la foto del plato (base64, ya redimensionada en el front) en la
+// carpeta fija de Drive de fotos de menú. Reemplaza cualquier foto anterior
+// de ese plato (no la borra de Drive, pero deja de referenciarse).
+function guardarFotoPlatoEnDrive(p, id) {
+  const datos = extraerBase64(p.foto);
+  if (!datos) return p.foto_url || '';
+  const carpeta = DriveApp.getFolderById(FOLDER_ID_MENU_FOTOS);
+  const nombreArchivo = (p.nombre || 'plato').toString().replace(/[^\w\-]+/g, '_') + '_' + id + '.jpg';
+  const bytes = Utilities.base64Decode(datos.base64);
+  const blob = Utilities.newBlob(bytes, datos.mime, nombreArchivo);
+  const file = carpeta.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  // Formato "thumbnail" (no file.getUrl(), que abre el visor de Drive) para
+  // que se pueda usar directo como src de <img> en el menú.
+  return 'https://drive.google.com/thumbnail?id=' + file.getId() + '&sz=w1000';
+}
+
+// ── Edición rápida desde la lista de Menú (disponibilidad y precio) ────
+// Tocan una sola celda en vez de reusar guardarPlato() (que reescribe la fila
+// entera) para no tener que mandar la foto en cada toggle/cambio de precio.
+function cambiarDisponibilidadPlato(p) {
+  if (!p.id) throw new Error('Falta el ID del plato.');
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_MENU);
+  const fila = filaPorId(sh, 'ID_Plato', p.id);
+  if (fila === -1) throw new Error('No se encontró el plato.');
+  const col = encabezadosDe(sh).indexOf('Disponibilidad') + 1;
+  const disponibilidad = p.disponible === 'Temporada' ? 'De temporada' : (p.disponible || 'Disponible');
+  sh.getRange(fila, col).setValue(disponibilidad);
+  return { id: p.id, disponible: disponibilidad };
+}
+
+function cambiarPrecioPlato(p) {
+  if (!p.id) throw new Error('Falta el ID del plato.');
+  if (p.precio == null || p.precio === '' || isNaN(Number(p.precio))) throw new Error('Precio inválido.');
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_MENU);
+  const fila = filaPorId(sh, 'ID_Plato', p.id);
+  if (fila === -1) throw new Error('No se encontró el plato.');
+  const encabezados = encabezadosDe(sh);
+  const precio = Number(p.precio) || 0;
+  sh.getRange(fila, encabezados.indexOf('Precio_Venta') + 1).setValue(precio);
+  const idReceta = sh.getRange(fila, encabezados.indexOf('ID_Receta') + 1).getValue();
+  if (idReceta) recalcularMenuPorReceta(idReceta); // el FC depende del precio
+  return { id: p.id, precio: precio };
 }
 
 // Borra el plato y, si tenía una receta vinculada, también esa receta y sus
