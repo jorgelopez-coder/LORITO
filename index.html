@@ -6,26 +6,30 @@
   <title>Portal · Lorito</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
     :root {
-      --bg:#faf7f0; --surface:#f2ede2; --card:#fff;
-      --border:#c8ddd0; --border-h:#8ab89e;
-      --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
-      --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
-      --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
-      --amber:#c87820; --amber-bg:#fdf6e3; --amber-lt:#f0d890;
-      --blue:#185fa5; --blue-bg:#eef4fb; --blue-lt:#b8d0f0;
-      --teal:#0e7a7a; --teal-bg:#eaf6f6; --teal-lt:#a8d8d8;
-      --purple:#6a3a9a; --purple-bg:#f3eefb; --purple-lt:#d4b8f0;
-      --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif;
+      --bg:#EFE9DA; --surface:#E7E0CC; --card:#FBF8F0;
+      --border:#DAD0B8; --border-h:#B8A67E;
+      --text:#262019; --muted:#6B6153; --subtle:#A79A85;
+      --green:#435E33; --green-bg:#E6EEDC; --green-lt:#c9dbb8;
+      --red:#A8371E; --red-bg:#F7E3DC; --red-lt:#eec4b3;
+      --amber:#9C6E1E; --amber-bg:#F2E6C8; --amber-lt:#e6cf95;
+      --blue:#2C4B6E; --blue-bg:#E1E8F0; --blue-lt:#b9c9dc;
+      --teal:#1F5C63; --teal-bg:#DBEAEA; --teal-lt:#a9cbcd;
+      --purple:#5B3B66; --purple-bg:#EAE0ED; --purple-lt:#cdb3d6;
+      --radius:6px; --font-d:'Space Grotesk',sans-serif; --font-b:'Inter',sans-serif; --font-m:'IBM Plex Mono',monospace;
     }
     body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+    :focus-visible { outline:2px solid var(--teal); outline-offset:2px; }
+
+    /* clip icon usado en encabezados de sección (motivo firma) */
+    .clip { display:inline-block; width:8px; height:8px; border-radius:50%; border:1.6px solid var(--border-h); margin-right:7px; flex-shrink:0; }
 
     /* ── HEADER ─────────────────────────────────────────────── */
     header {
-      height:60px; border-bottom:1px solid var(--border);
+      min-height:60px; border-bottom:1px solid var(--border);
       padding:0 2rem; display:flex; align-items:center;
       justify-content:space-between; background:var(--bg);
       position:sticky; top:0; z-index:20;
@@ -40,26 +44,56 @@
     .logo-name { font-family:var(--font-d); font-size:15px; font-weight:700; }
     .logo-sub  { font-size:11px; color:var(--muted); margin-left:4px; }
     .header-right { display:flex; align-items:center; gap:8px; }
-    .date-chip { font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:4px 12px; }
-    .sync-btn { font-size:12px; color:var(--muted); background:transparent; border:1px solid var(--border); border-radius:8px; padding:5px 10px; cursor:pointer; display:flex; align-items:center; gap:5px; }
+    .date-chip { font-family:var(--font-m); font-size:11px; color:var(--muted); background:var(--card); border:1px solid var(--border); border-radius:20px; padding:5px 12px; }
+    .user-chip { display:flex; align-items:center; gap:6px; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:5px 10px; }
+    .user-chip svg { width:13px; height:13px; color:var(--muted); }
+    .user-chip span { font-size:12px; font-weight:500; color:var(--muted); }
+    .user-chip button { background:none; border:none; font-size:11px; color:var(--subtle); cursor:pointer; padding:0 2px; }
+    .admin-chip { font-size:12px; color:var(--muted); padding:5px 10px; border-radius:8px; border:1px solid var(--border); background:var(--card); text-decoration:none; }
+    .admin-chip:hover { border-color:var(--border-h); color:var(--text); }
+    .sync-btn { font-family:var(--font-m); font-size:11px; color:var(--muted); background:transparent; border:1px solid var(--border); border-radius:8px; padding:6px 11px; cursor:pointer; display:flex; align-items:center; gap:6px; }
     .sync-btn:hover { border-color:var(--border-h); color:var(--text); }
     .sync-btn svg { width:12px; height:12px; }
+
+    /* ── MENÚ HORIZONTAL DE MÓDULOS ── */
+    .topnav { height:46px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:stretch; gap:2px; background:var(--card); position:sticky; top:60px; z-index:19; }
+    .nav-item { position:relative; display:flex; }
+    .nav-btn { display:flex; align-items:center; gap:7px; padding:0 14px; border:none; background:none; cursor:pointer; font-family:var(--font-m); font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); border-bottom:2px solid transparent; white-space:nowrap; }
+    .nav-btn svg { width:11px; height:11px; stroke:currentColor; fill:none; stroke-width:2; transition:transform .15s; flex-shrink:0; }
+    .nav-item:hover .nav-btn, .nav-item.open .nav-btn { color:var(--text); border-bottom-color:var(--border-h); }
+    .nav-item.open .nav-btn svg { transform:rotate(180deg); }
+    .nav-panel {
+      display:none; position:absolute; top:100%; left:0; background:var(--card);
+      border:1px solid var(--border); border-radius:0 0 var(--radius) var(--radius);
+      box-shadow:0 10px 28px rgba(38,32,25,.14); padding:12px; z-index:30; min-width:420px;
+    }
+    .nav-item.open .nav-panel { display:grid; grid-template-columns:repeat(2,1fr); gap:7px; }
+    .nav-panel.single-col { min-width:230px; }
+    .nav-item.open .nav-panel.single-col { grid-template-columns:1fr; }
 
     /* ── MAIN ───────────────────────────────────────────────── */
     main { max-width:1080px; margin:0 auto; padding:2rem 2rem 4rem; }
 
-    /* ── SALUDO ─────────────────────────────────────────────── */
-    .greeting { margin-bottom:1.75rem; }
-    .greeting h1 { font-family:var(--font-d); font-size:26px; font-weight:700; letter-spacing:-.02em; margin-bottom:3px; }
-    .greeting p  { font-size:13px; color:var(--muted); }
+    /* ── SALUDO / HERO ──────────────────────────────────────── */
+    .hero { display:flex; align-items:flex-end; justify-content:space-between; gap:1.5rem; margin-bottom:1.75rem; flex-wrap:wrap; }
+    .hero h1 { font-family:var(--font-d); font-size:28px; font-weight:700; letter-spacing:-.01em; margin-bottom:5px; }
+    .hero p  { font-size:13px; color:var(--muted); }
+    .board { background:var(--text); color:var(--bg); border-radius:var(--radius); padding:10px 18px; text-align:right; flex-shrink:0; }
+    .board-date { font-family:var(--font-m); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#B8AE96; }
+    .board-time { font-family:var(--font-m); font-size:22px; font-weight:600; color:#E8A93C; letter-spacing:.02em; }
 
-    /* ── KPI STRIP ──────────────────────────────────────────── */
-    .kpi-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:1.5rem; }
-    .kpi { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; position:relative; overflow:hidden; }
-    .kpi-accent { position:absolute; top:0; left:0; width:3px; height:100%; border-radius:3px 0 0 3px; }
-    .kpi-val { font-family:var(--font-d); font-size:22px; font-weight:700; letter-spacing:-.02em; margin-bottom:3px; }
-    .kpi-lbl { font-size:11px; color:var(--muted); }
-    .kpi-sub { font-size:11px; margin-top:4px; font-weight:500; }
+    /* ── KPI STRIP (tickets) ────────────────────────────────── */
+    .ticket-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:1.5rem; }
+    .ticket { position:relative; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:22px 18px 16px; }
+    .ticket::before {
+      content:''; position:absolute; top:-1px; left:0; right:0; height:9px;
+      background-image:radial-gradient(circle at 7px 5px, var(--bg) 3px, transparent 3.3px);
+      background-size:15px 9px; background-repeat:repeat-x;
+    }
+    .ticket-punch { position:absolute; top:9px; left:12px; width:9px; height:9px; border-radius:50%; background:var(--bg); border:1.5px solid var(--border-h); }
+    .ticket-val { font-family:var(--font-m); font-size:21px; font-weight:600; letter-spacing:-.01em; margin-bottom:3px; }
+    .ticket-lbl { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+    .ticket-sub { font-size:11px; margin-top:5px; color:var(--subtle); }
 
     /* ── GRID PRINCIPAL ─────────────────────────────────────── */
     .main-grid { display:grid; grid-template-columns:1fr 240px 220px; gap:14px; margin-bottom:1.5rem; }
@@ -82,7 +116,7 @@
     .qa-sub  { font-size:11px; color:var(--muted); }
     .qa-arrow { color:var(--subtle); }
     .qa-arrow svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
-    .qa-badge { font-size:10px; font-weight:600; padding:2px 7px; border-radius:20px; }
+    .qa-badge { font-family:var(--font-m); font-size:10px; font-weight:600; padding:2px 7px; border-radius:20px; }
 
     .no-alerts { padding:1.5rem 1.25rem; text-align:center; font-size:12px; color:var(--subtle); }
 
@@ -96,15 +130,15 @@
     .horario-resumen tbody td.td-dep { color:var(--muted); font-size:11px; text-align:left; }
     .horario-resumen tbody tr:last-child td { border-bottom:none; }
     .horario-resumen tbody tr:hover td { background:var(--surface); }
-    .hor-dot { display:inline-flex; align-items:center; justify-content:center; width:28px; height:22px; border-radius:5px; font-size:10px; font-weight:600; }
+    .hor-dot { display:inline-flex; align-items:center; justify-content:center; width:28px; height:22px; border-radius:5px; font-family:var(--font-m); font-size:10px; font-weight:600; }
     .hor-trabajo  { background:var(--green-bg); color:var(--green); }
     .hor-libre    { background:var(--surface); color:var(--muted); border:1px solid var(--border); }
-    .hor-vac      { background:#dbeafe; color:#1e3a5f; }
-    .hor-inc      { background:#fef3c7; color:#78350f; }
-    .hor-perm     { background:#f3e8ff; color:#4c1d95; }
+    .hor-vac      { background:var(--blue-bg); color:var(--blue); }
+    .hor-inc      { background:var(--red-bg); color:var(--red); }
+    .hor-perm     { background:var(--purple-bg); color:var(--purple); }
     .hor-otro     { background:var(--surface); color:var(--muted); border:1px solid var(--border); }
     .hor-vacio    { color:var(--subtle); font-size:14px; }
-    .hor-tot      { font-weight:600; color:var(--green); font-size:12px; }
+    .hor-tot      { font-family:var(--font-m); font-weight:600; color:var(--green); font-size:12px; }
     .hor-overflow { overflow-x:auto; }
 
     /* ── FACTURAS CON FECHA DE HOY ──────────────────────────── */
@@ -116,18 +150,15 @@
     .fh-detalle div { padding:2px 0; }
     .fh-detalle strong { color:var(--text); font-weight:600; }
 
-    /* ── MÓDULOS GRID ───────────────────────────────────────── */
-    .modules-section { margin-bottom:1.5rem; }
-    .modules-section-title { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; padding:0 2px; }
-    .modules-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(155px,1fr)); gap:8px; }
-    .mod-tile { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1rem; text-decoration:none; color:var(--text); display:flex; flex-direction:column; gap:8px; transition:border-color .12s, background .12s; }
-    .mod-tile:hover { border-color:var(--border-h); background:var(--surface); }
+    /* ── MÓDULOS (tiles dentro del menú desplegable) ────────── */
+    .mod-tile { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:5px; text-decoration:none; color:var(--text); transition:background .12s; }
+    .mod-tile:hover { background:var(--surface); }
     .mod-tile.disabled { opacity:.45; pointer-events:none; }
-    .mod-tile-icon { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; }
-    .mod-tile-icon svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
-    .mod-tile-name { font-size:13px; font-weight:500; }
-    .mod-tile-area { font-size:11px; color:var(--muted); }
-    .mod-tile-badge { font-size:10px; font-weight:600; padding:2px 6px; border-radius:20px; width:fit-content; }
+    .mod-tile-icon { width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .mod-tile-icon svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+    .mod-tile-txt { min-width:0; }
+    .mod-tile-name { font-size:12.5px; font-weight:500; white-space:nowrap; }
+    .mod-tile-area { font-size:10px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
     /* colores de iconos */
     .ic-green  { background:var(--green-bg); color:var(--green); }
@@ -146,13 +177,13 @@
     .mant-info { flex:1; min-width:0; }
     .mant-tipo { font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .mant-meta { font-size:11px; color:var(--muted); margin-top:1px; }
-    .mant-badge { font-size:10px; font-weight:600; padding:2px 8px; border-radius:20px; white-space:nowrap; flex-shrink:0; }
+    .mant-badge { font-family:var(--font-m); font-size:9.5px; font-weight:600; padding:2px 8px; border-radius:20px; white-space:nowrap; flex-shrink:0; }
     .mb-pendiente { background:var(--amber-bg); color:var(--amber); }
     .mb-proceso   { background:var(--blue-bg);  color:var(--blue);  }
     .mant-vencido { color:var(--red); font-weight:600; font-size:10px; }
 
     /* ── STATUS ─────────────────────────────────────────────── */
-    .status-bar { display:flex; align-items:center; gap:12px; font-size:11px; color:var(--muted); border-top:1px solid var(--border); padding-top:1rem; margin-top:.5rem; }
+    .status-bar { display:flex; align-items:center; gap:12px; font-family:var(--font-m); font-size:10.5px; color:var(--muted); border-top:1px solid var(--border); padding-top:1rem; margin-top:.5rem; }
     .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
     .sdot.off { background:var(--subtle); }
     .spinner { display:inline-block; width:10px; height:10px; border:1.5px solid var(--border); border-top-color:var(--teal); border-radius:50%; animation:spin .7s linear infinite; }
@@ -160,10 +191,13 @@
 
     @media (max-width:720px) {
       main { padding:1.25rem 1rem 3rem; }
-      .kpi-strip { grid-template-columns:1fr 1fr; }
+      .ticket-strip { grid-template-columns:1fr 1fr; }
       .main-grid { grid-template-columns:1fr; }
       #lista-pedidos-hoy { max-height:none; }
-      .modules-grid { grid-template-columns:repeat(2,1fr); }
+      .hero { align-items:flex-start; }
+      .date-chip, .admin-chip, .logo-sub, .sync-label { display:none; }
+      .topnav { padding:0 1rem; top:56px; overflow-x:auto; }
+      .nav-panel { position:fixed; left:1rem; right:1rem; top:102px; min-width:0 !important; grid-template-columns:1fr !important; max-height:70vh; overflow-y:auto; }
     }
   </style>
 </head>
@@ -183,53 +217,185 @@
   </div>
   <div class="header-right">
     <span class="date-chip" id="fecha-hoy"></span>
-    <div style="display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px 10px;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;color:var(--muted);"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      <span style="font-size:12px;font-weight:500;color:var(--muted);" id="user-nombre">—</span>
-      <button onclick="cerrarSesion()" style="background:none;border:none;font-size:11px;color:var(--subtle);cursor:pointer;padding:0 2px;" title="Cerrar sesión">Salir</button>
+    <div class="user-chip">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span id="user-nombre">—</span>
+      <button onclick="cerrarSesion()" title="Cerrar sesión">Salir</button>
     </div>
-    <a href="admin-accesos.html" style="font-size:12px;color:var(--muted);padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);text-decoration:none;" id="btn-admin">⚙ Accesos</a>
+    <a href="admin-accesos.html" class="admin-chip" id="btn-admin">⚙ Accesos</a>
     <button class="sync-btn" onclick="cargarKPIs()" title="Actualizar datos">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-      Actualizar
+      <span class="sync-label">Actualizar</span>
     </button>
   </div>
 </header>
 
+<nav class="topnav" id="topnav">
+  <div class="nav-item" data-nav="operaciones">
+    <button class="nav-btn" onclick="toggleNav('operaciones')">
+      <span class="clip"></span>Operaciones
+      <svg viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg>
+    </button>
+    <div class="nav-panel">
+      <a href="inventario.html" class="mod-tile" data-mod="inventario">
+        <div class="mod-tile-icon ic-teal"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><rect x="2" y="10" width="20" height="5" rx="1"/><rect x="2" y="17" width="20" height="5" rx="1"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Inventario</div><div class="mod-tile-area">Toma de stock · valorización</div></div>
+      </a>
+      <a href="ordenes-compra.html" class="mod-tile" data-mod="ordenes-compra">
+        <div class="mod-tile-icon ic-blue"><svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Órdenes de compra</div><div class="mod-tile-area">Pedidos · análisis stock</div></div>
+      </a>
+      <a href="proveedores.html" class="mod-tile" data-mod="proveedores">
+        <div class="mod-tile-icon ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Proveedores</div><div class="mod-tile-area">Base de datos · contactos</div></div>
+      </a>
+      <a href="compras.html" class="mod-tile" data-mod="compras">
+        <div class="mod-tile-icon ic-green"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Datos de compras</div><div class="mod-tile-area">Facturas · proveedores</div></div>
+      </a>
+      <a href="cuentas-por-pagar.html" class="mod-tile" data-mod="cuentas-por-pagar">
+        <div class="mod-tile-icon ic-green"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Cuentas por pagar</div><div class="mod-tile-area">Vencimientos · pagos · abonos</div></div>
+      </a>
+      <a href="factura-manual.html" class="mod-tile" data-mod="factura-manual">
+        <div class="mod-tile-icon ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Factura manual</div><div class="mod-tile-area">Ingreso manual de facturas</div></div>
+      </a>
+      <a href="caja-chica.html" class="mod-tile" data-mod="caja-chica">
+        <div class="mod-tile-icon ic-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Caja Chica</div><div class="mod-tile-area">Balance · gastos · arqueos</div></div>
+      </a>
+      <a href="cierres.html" class="mod-tile" data-mod="cierres">
+        <div class="mod-tile-icon ic-green"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Cierres de caja</div><div class="mod-tile-area">Registros diarios</div></div>
+      </a>
+      <a href="reportes.html" class="mod-tile" data-mod="reportes">
+        <div class="mod-tile-icon ic-blue"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Reportes de ventas</div><div class="mod-tile-area">Tendencias · forma de pago</div></div>
+      </a>
+      <a href="mantenimiento.html" class="mod-tile" data-mod="mantenimiento">
+        <div class="mod-tile-icon ic-amber"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Mantenimiento</div><div class="mod-tile-area">Reportes · seguimiento</div></div>
+      </a>
+      <a href="mermas.html" class="mod-tile" data-mod="mermas">
+        <div class="mod-tile-icon ic-amber"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Mermas</div><div class="mod-tile-area">Control de pérdidas</div></div>
+      </a>
+      <a href="depositos.html" class="mod-tile" data-mod="depositos">
+        <div class="mod-tile-icon ic-teal"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Depósitos</div><div class="mod-tile-area">Depósitos bancarios</div></div>
+      </a>
+    </div>
+  </div>
+
+  <div class="nav-item" data-nav="costos">
+    <button class="nav-btn" onclick="toggleNav('costos')">
+      <span class="clip"></span>Costos y recetas
+      <svg viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg>
+    </button>
+    <div class="nav-panel" style="min-width:340px;">
+      <a href="historial-precios.html" class="mod-tile" data-mod="historial-precios">
+        <div class="mod-tile-icon ic-purple"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Historial de precios</div><div class="mod-tile-area">Evolución de precios · alzas y bajas</div></div>
+      </a>
+      <a href="costos-productos.html" class="mod-tile" data-mod="costos-productos">
+        <div class="mod-tile-icon ic-purple"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Base de productos</div><div class="mod-tile-area">Costos · presentaciones</div></div>
+      </a>
+      <a href="costos-menu-recetas.html" class="mod-tile" data-mod="costos-menu-recetas">
+        <div class="mod-tile-icon ic-purple"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Menú y Recetas</div><div class="mod-tile-area">Platos · recetas · subrecetas · FC</div></div>
+      </a>
+    </div>
+  </div>
+
+  <div class="nav-item" data-nav="rrhh">
+    <button class="nav-btn" onclick="toggleNav('rrhh')">
+      <span class="clip"></span>Recursos Humanos
+      <svg viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg>
+    </button>
+    <div class="nav-panel">
+      <a href="rrhh-personal.html" class="mod-tile" data-mod="rrhh-personal">
+        <div class="mod-tile-icon ic-red"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Personal</div><div class="mod-tile-area">Expedientes · estado</div></div>
+      </a>
+      <a href="rrhh-acciones.html" class="mod-tile" data-mod="rrhh-acciones">
+        <div class="mod-tile-icon ic-red"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Acciones RRHH</div><div class="mod-tile-area">Ingresos · vacaciones</div></div>
+      </a>
+      <a href="rrhh-control-vacaciones.html" class="mod-tile" data-mod="rrhh-vacaciones">
+        <div class="mod-tile-icon ic-red"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Vacaciones</div><div class="mod-tile-area">Saldos · solicitudes</div></div>
+      </a>
+      <a href="horarios.html" class="mod-tile" data-mod="horarios">
+        <div class="mod-tile-icon ic-red"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Horarios</div><div class="mod-tile-area">Turnos · vacaciones automáticas</div></div>
+      </a>
+      <a href="rrhh-liquidaciones.html" class="mod-tile" data-mod="rrhh-liquidaciones">
+        <div class="mod-tile-icon ic-amber"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Liquidaciones</div><div class="mod-tile-area">Cálculo y pago de CT</div></div>
+      </a>
+      <a href="rrhh-amonestaciones.html" class="mod-tile" data-mod="rrhh-amonestaciones">
+        <div class="mod-tile-icon ic-amber"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Amonestaciones</div><div class="mod-tile-area">Historial disciplinario</div></div>
+      </a>
+    </div>
+  </div>
+
+  <div class="nav-item" data-nav="admin">
+    <button class="nav-btn" onclick="toggleNav('admin')">
+      <span class="clip"></span>Administración
+      <svg viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg>
+    </button>
+    <div class="nav-panel single-col">
+      <a href="admin-accesos.html" class="mod-tile" data-mod="admin-accesos">
+        <div class="mod-tile-icon ic-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Gestión de accesos</div><div class="mod-tile-area">Roles · PINs · módulos</div></div>
+      </a>
+    </div>
+  </div>
+</nav>
+
 <main>
 
   <!-- Saludo -->
-  <div class="greeting">
-    <h1 id="saludo">Buen día</h1>
-    <p id="status-general">Cargando datos del sistema…</p>
+  <div class="hero">
+    <div>
+      <h1 id="saludo">Buen día</h1>
+      <p id="status-general">Cargando datos del sistema…</p>
+    </div>
+    <div class="board">
+      <div class="board-date" id="board-date"></div>
+      <div class="board-time" id="board-time"></div>
+    </div>
   </div>
 
   <!-- KPIs -->
-  <div class="kpi-strip">
-    <div class="kpi">
-      <div class="kpi-accent" style="background:var(--teal);"></div>
-      <div class="kpi-val" id="kpi-inv" style="color:var(--teal);">—</div>
-      <div class="kpi-lbl">Último inventario</div>
-      <div class="kpi-sub" id="kpi-inv-sub" style="color:var(--muted);"></div>
+  <div class="ticket-strip">
+    <div class="ticket">
+      <span class="ticket-punch"></span>
+      <div class="ticket-val" id="kpi-inv" style="color:var(--teal);">—</div>
+      <div class="ticket-lbl">Último inventario</div>
+      <div class="ticket-sub" id="kpi-inv-sub" style="color:var(--muted);"></div>
     </div>
-    <div class="kpi">
-      <div class="kpi-accent" style="background:var(--amber);"></div>
-      <div class="kpi-val" id="kpi-oc" style="color:var(--text);">—</div>
-      <div class="kpi-lbl">Órdenes de compra</div>
-      <div class="kpi-sub" id="kpi-oc-sub" style="color:var(--muted);"></div>
+    <div class="ticket">
+      <span class="ticket-punch"></span>
+      <div class="ticket-val" id="kpi-oc" style="color:var(--text);">—</div>
+      <div class="ticket-lbl">Órdenes de compra</div>
+      <div class="ticket-sub" id="kpi-oc-sub" style="color:var(--muted);"></div>
     </div>
-    <div class="kpi">
-      <div class="kpi-accent" style="background:var(--green);"></div>
-      <div class="kpi-val" id="kpi-prod" style="color:var(--text);">—</div>
-      <div class="kpi-lbl">Productos en base</div>
-      <div class="kpi-sub" id="kpi-prod-sub" style="color:var(--muted);"></div>
+    <div class="ticket">
+      <span class="ticket-punch"></span>
+      <div class="ticket-val" id="kpi-prod" style="color:var(--text);">—</div>
+      <div class="ticket-lbl">Productos en base</div>
+      <div class="ticket-sub" id="kpi-prod-sub" style="color:var(--muted);"></div>
     </div>
   </div>
 
   <!-- Facturas con fecha de hoy -->
   <div class="section-card" id="card-facturas-hoy" style="display:none;margin-bottom:1.5rem;">
     <div class="section-head">
-      <span class="section-title">Facturas con fecha de hoy <span id="facturas-hoy-count" style="color:var(--text);"></span></span>
+      <span class="section-title"><span class="clip"></span>Facturas con fecha de hoy <span id="facturas-hoy-count" style="color:var(--text);"></span></span>
       <a href="cuentas-por-pagar.html" class="section-link">Ver cuentas por pagar →</a>
     </div>
     <div id="lista-facturas-hoy"></div>
@@ -241,7 +407,7 @@
     <!-- Acciones rápidas -->
     <div class="section-card">
       <div class="section-head">
-        <span class="section-title">Acciones rápidas</span>
+        <span class="section-title"><span class="clip"></span>Acciones rápidas</span>
       </div>
 
       <a href="inventario.html" class="quick-action" data-mod="inventario">
@@ -305,7 +471,7 @@
     <div>
       <div class="section-card">
         <div class="section-head">
-          <span class="section-title">🔧 Mantenimiento</span>
+          <span class="section-title"><span class="clip"></span>Mantenimiento</span>
           <a href="mantenimiento.html" class="section-link">Ver todos →</a>
         </div>
         <div id="mant-grid-body">
@@ -321,7 +487,7 @@
     <div>
       <div class="section-card" style="margin-top:0;">
         <div class="section-head">
-          <span class="section-title">Pedidos de hoy</span>
+          <span class="section-title"><span class="clip"></span>Pedidos de hoy</span>
           <span id="dia-hoy-label" style="font-size:11px;color:var(--muted);"></span>
         </div>
         <div id="lista-pedidos-hoy">
@@ -339,7 +505,7 @@
   <!-- ── RESUMEN HORARIO SEMANA ── -->
   <div class="horario-resumen" id="horario-resumen-panel">
     <div class="section-head">
-      <span class="section-title">Horario — semana en curso</span>
+      <span class="section-title"><span class="clip"></span>Horario — semana en curso</span>
       <div style="display:flex;align-items:center;gap:10px;">
         <span id="horario-semana-lbl" style="font-size:11px;color:var(--muted);"></span>
         <a href="horarios.html" class="section-link">Ver horario completo →</a>
@@ -349,187 +515,6 @@
       <div id="horario-resumen-body" style="padding:1.25rem;text-align:center;font-size:12px;color:var(--subtle);">
         <span class="spinner"></span>
       </div>
-    </div>
-  </div>
-
-  <!-- ── TODOS LOS MÓDULOS ── -->
-  <div class="modules-section">
-    <div class="modules-section-title">Operaciones</div>
-    <div class="modules-grid">
-      <a href="inventario.html" class="mod-tile" data-mod="inventario">
-        <div class="mod-tile-icon ic-teal"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><rect x="2" y="10" width="20" height="5" rx="1"/><rect x="2" y="17" width="20" height="5" rx="1"/></svg></div>
-        <div>
-          <div class="mod-tile-name">Inventario</div>
-          <div class="mod-tile-area">Toma de stock · valorización</div>
-        </div>
-      </a>
-      <a href="ordenes-compra.html" class="mod-tile" data-mod="ordenes-compra">
-        <div class="mod-tile-icon ic-blue"><svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg></div>
-        <div>
-          <div class="mod-tile-name">Órdenes de compra</div>
-          <div class="mod-tile-area">Pedidos · análisis stock</div>
-        </div>
-      </a>
-      <a href="proveedores.html" class="mod-tile" data-mod="proveedores">
-        <div class="mod-tile-icon ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
-        <div>
-          <div class="mod-tile-name">Proveedores</div>
-          <div class="mod-tile-area">Base de datos · contactos</div>
-        </div>
-      </a>
-      <a href="compras.html" class="mod-tile" data-mod="compras">
-        <div class="mod-tile-icon ic-green"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-        <div>
-          <div class="mod-tile-name">Datos de compras</div>
-          <div class="mod-tile-area">Facturas · proveedores</div>
-        </div>
-      </a>
-      <a href="cuentas-por-pagar.html" class="mod-tile" data-mod="cuentas-por-pagar">
-        <div class="mod-tile-icon ic-green"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg></div>
-        <div>
-          <div class="mod-tile-name">Cuentas por pagar</div>
-          <div class="mod-tile-area">Vencimientos · pagos · abonos</div>
-        </div>
-      </a>
-      <a href="factura-manual.html" class="mod-tile" data-mod="factura-manual">
-        <div class="mod-tile-icon ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg></div>
-        <div>
-          <div class="mod-tile-name">Factura manual</div>
-          <div class="mod-tile-area">Ingreso manual de facturas</div>
-        </div>
-      </a>
-      <a href="caja-chica.html" class="mod-tile" data-mod="caja-chica">
-        <div class="mod-tile-icon ic-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><line x1="6" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="18" y2="12"/></svg></div>
-        <div>
-          <div class="mod-tile-name">Caja Chica</div>
-          <div class="mod-tile-area">Balance · gastos · arqueos</div>
-        </div>
-      </a>
-      <a href="cierres.html" class="mod-tile" data-mod="cierres">
-        <div class="mod-tile-icon ic-green"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
-        <div>
-          <div class="mod-tile-name">Cierres de caja</div>
-          <div class="mod-tile-area">Registros diarios</div>
-        </div>
-      </a>
-      <a href="reportes.html" class="mod-tile" data-mod="reportes">
-        <div class="mod-tile-icon ic-blue"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-        <div>
-          <div class="mod-tile-name">Reportes de ventas</div>
-          <div class="mod-tile-area">Tendencias · forma de pago</div>
-        </div>
-      </a>
-      <a href="mantenimiento.html" class="mod-tile" data-mod="mantenimiento">
-        <div class="mod-tile-icon ic-amber"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></div>
-        <div>
-          <div class="mod-tile-name">Mantenimiento</div>
-          <div class="mod-tile-area">Reportes · seguimiento</div>
-        </div>
-      </a>
-      <a href="mermas.html" class="mod-tile" data-mod="mermas">
-        <div class="mod-tile-icon ic-amber"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-        <div>
-          <div class="mod-tile-name">Mermas</div>
-          <div class="mod-tile-area">Control de pérdidas</div>
-        </div>
-      </a>
-      <a href="depositos.html" class="mod-tile" data-mod="depositos">
-        <div class="mod-tile-icon ic-teal"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg></div>
-        <div>
-          <div class="mod-tile-name">Depósitos</div>
-          <div class="mod-tile-area">Depósitos bancarios</div>
-        </div>
-      </a>
-    </div>
-  </div>
-
-  <div class="modules-section">
-    <div class="modules-section-title">Costos y recetas</div>
-    <div class="modules-grid">
-      <a href="historial-precios.html" class="mod-tile" data-mod="historial-precios">
-        <div class="mod-tile-icon ic-purple"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-        <div>
-          <div class="mod-tile-name">Historial de precios</div>
-          <div class="mod-tile-area">Evolución de precios · alzas y bajas</div>
-        </div>
-      </a>
-      <a href="costos-productos.html" class="mod-tile" data-mod="costos-productos">
-        <div class="mod-tile-icon ic-purple"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg></div>
-        <div>
-          <div class="mod-tile-name">Base de productos</div>
-          <div class="mod-tile-area">Costos · presentaciones</div>
-        </div>
-      </a>
-      <a href="costos-menu-recetas.html" class="mod-tile" data-mod="costos-menu-recetas">
-        <div class="mod-tile-icon ic-purple"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
-        <div>
-          <div class="mod-tile-name">Menú y Recetas</div>
-          <div class="mod-tile-area">Platos · recetas · subrecetas · FC</div>
-        </div>
-      </a>
-    </div>
-  </div>
-
-  <div class="modules-section">
-    <div class="modules-section-title">Recursos Humanos</div>
-    <div class="modules-grid">
-      <a href="rrhh-personal.html" class="mod-tile" data-mod="rrhh-personal">
-        <div class="mod-tile-icon ic-red"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-        <div>
-          <div class="mod-tile-name">Personal</div>
-          <div class="mod-tile-area">Expedientes · estado</div>
-        </div>
-      </a>
-      <a href="rrhh-acciones.html" class="mod-tile" data-mod="rrhh-acciones">
-        <div class="mod-tile-icon ic-red"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
-        <div>
-          <div class="mod-tile-name">Acciones RRHH</div>
-          <div class="mod-tile-area">Ingresos · vacaciones</div>
-        </div>
-      </a>
-      <a href="rrhh-control-vacaciones.html" class="mod-tile" data-mod="rrhh-vacaciones">
-        <div class="mod-tile-icon ic-red"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-        <div>
-          <div class="mod-tile-name">Vacaciones</div>
-          <div class="mod-tile-area">Saldos · solicitudes</div>
-        </div>
-      </a>
-      <a href="horarios.html" class="mod-tile" data-mod="horarios">
-        <div class="mod-tile-icon ic-red"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-        <div>
-          <div class="mod-tile-name">Horarios</div>
-          <div class="mod-tile-area">Turnos · vacaciones automáticas</div>
-        </div>
-      </a>
-      <a href="rrhh-liquidaciones.html" class="mod-tile" data-mod="rrhh-liquidaciones">
-        <div class="mod-tile-icon ic-amber"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-        <div>
-          <div class="mod-tile-name">Liquidaciones</div>
-          <div class="mod-tile-area">Cálculo y pago de CT</div>
-        </div>
-      </a>
-      <a href="rrhh-amonestaciones.html" class="mod-tile" data-mod="rrhh-amonestaciones">
-        <div class="mod-tile-icon ic-amber"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-        <div>
-          <div class="mod-tile-name">Amonestaciones</div>
-          <div class="mod-tile-area">Historial disciplinario</div>
-        </div>
-      </a>
-    </div>
-  </div>
-
-  <div class="modules-section">
-    <div class="modules-section-title">Administración</div>
-    <div class="modules-grid">
-      <a href="admin-accesos.html" class="mod-tile" data-mod="admin-accesos">
-        <div class="mod-tile-icon" style="background:#f3eefb;color:#6a3a9a;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-        </div>
-        <div>
-          <div class="mod-tile-name">Gestión de accesos</div>
-          <div class="mod-tile-area">Roles · PINs · módulos</div>
-        </div>
-      </a>
     </div>
   </div>
 
@@ -555,6 +540,35 @@ const saludo = hora < 12 ? 'Buenos días' : hora < 18 ? 'Buenas tardes' : 'Buena
 document.getElementById('saludo').textContent = saludo;
 document.getElementById('fecha-hoy').textContent =
   hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+// ── RELOJ DEL ENCABEZADO ────────────────────────────────────────
+const DIAS_CORTOS = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+const MESES_CORTOS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+function tickReloj() {
+  const n = new Date();
+  document.getElementById('board-date').textContent = DIAS_CORTOS[n.getDay()] + ' ' + n.getDate() + ' ' + MESES_CORTOS[n.getMonth()];
+  document.getElementById('board-time').textContent = pad(n.getHours()) + ':' + pad(n.getMinutes());
+}
+tickReloj();
+setInterval(tickReloj, 15000);
+
+// ── MENÚ DESPLEGABLE DE MÓDULOS ─────────────────────────────────
+function toggleNav(key) {
+  document.querySelectorAll('.nav-item').forEach(item => {
+    if (item.dataset.nav === key) item.classList.toggle('open');
+    else item.classList.remove('open');
+  });
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.nav-item')) {
+    document.querySelectorAll('.nav-item.open').forEach(i => i.classList.remove('open'));
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.nav-item.open').forEach(i => i.classList.remove('open'));
+  }
+});
 
 // ── GVIZ helper ───────────────────────────────────────────────
 function gvizLoad(sheetId, hoja) {
@@ -692,10 +706,10 @@ function aplicarRol(sesion) {
     }
   });
 
-  // Ocultar secciones vacías
-  document.querySelectorAll('.modules-section').forEach(sec => {
-    const visibles = sec.querySelectorAll('.mod-tile:not([style*="none"])');
-    if (!visibles.length) sec.style.display = 'none';
+  // Ocultar ítems del menú superior que quedaron sin tiles visibles
+  document.querySelectorAll('.nav-item').forEach(item => {
+    const visibles = item.querySelectorAll('.mod-tile:not([style*="none"])');
+    if (!visibles.length) item.style.display = 'none';
   });
 
   // Ocultar acciones rápidas no permitidas
