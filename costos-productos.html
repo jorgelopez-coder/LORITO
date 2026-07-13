@@ -346,48 +346,50 @@
         <input type="hidden" id="p-aplica-receta" value="true">
       </div>
 
-      <div class="field-row" style="margin-bottom:1rem;">
-        <div class="field">
-          <label for="p-unidad">Unidad de medida para receta <span class="req">*</span></label>
-          <select id="p-unidad" onchange="actualizarConversionUnidades()">
-            <option value="" disabled selected>Seleccioná…</option>
-          </select>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px;">La unidad con la que medís el ingrediente en tus recetas</div>
-        </div>
-        <div class="field">
-          <label for="p-cantidad-presentacion">Cantidad en presentación</label>
-          <input type="number" id="p-cantidad-presentacion" min="0" step="0.001" placeholder="0" value="1" oninput="calcularCostos()">
-          <div id="conversion-nota" style="font-size:11px;color:var(--purple);margin-top:4px;display:none;"></div>
-        </div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-        <div class="field">
-          <label>Costo por unidad de medida</label>
-          <div id="p-costo-display" style="background:var(--purple-bg);border:1px solid var(--purple-lt);border-radius:8px;padding:9px 12px;font-family:var(--font-d);font-size:16px;font-weight:700;color:var(--purple);">₡0.00</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Precio sin IVA ÷ cantidad</div>
-          <input type="hidden" id="p-costo">
-        </div>
-        <div class="field">
-          <label for="p-rendimiento">Rendimiento (%)</label>
-          <input type="number" id="p-rendimiento" min="1" max="100" step="1" placeholder="100" value="100" oninput="calcularCostos()">
-          <div style="font-size:11px;color:var(--muted);margin-top:4px;">% utilizable tras limpieza/merma</div>
-        </div>
-        <div class="field">
-          <label>Costo real por unidad</label>
-          <div id="p-costo-real-display" style="background:var(--green-bg);border:1px solid var(--green-lt);border-radius:8px;padding:9px 12px;font-family:var(--font-d);font-size:16px;font-weight:700;color:var(--green);">₡0.00</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Costo/u ÷ rendimiento</div>
-        </div>
-      </div>
-
-      <div style="display:flex;align-items:flex-start;gap:8px;margin-top:1rem;padding:10px 12px;background:var(--surface);border-radius:8px;">
-        <input type="checkbox" id="p-usar-precio-manual" style="width:auto;margin-top:3px;" onchange="calcularCostos()">
-        <label for="p-usar-precio-manual" style="margin-bottom:0;">
-          Usar este precio manual en las recetas
-          <div style="font-size:11px;color:var(--muted);font-weight:400;margin-top:2px;">
-            Por defecto las recetas usan el costo automático de compras (arriba en "Costo/u", con la etiqueta "auto") cuando existe, aunque acá arriba veas otro número. Activá esto para que las recetas usen el "Costo real por unidad" de esta sección en su lugar — útil para corregir un producto puntual sin esperar a que entren compras nuevas.
+      <div id="seccion-datos-receta">
+        <div class="field-row" style="margin-bottom:1rem;">
+          <div class="field">
+            <label for="p-unidad">Unidad de medida para receta <span class="req">*</span></label>
+            <select id="p-unidad" onchange="actualizarConversionUnidades()">
+              <option value="" disabled selected>Seleccioná…</option>
+            </select>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px;">La unidad con la que medís el ingrediente en tus recetas</div>
           </div>
-        </label>
+          <div class="field">
+            <label for="p-cantidad-presentacion">Cantidad en presentación</label>
+            <input type="number" id="p-cantidad-presentacion" min="0" step="0.001" placeholder="0" value="1" oninput="calcularCostos()">
+            <div id="conversion-nota" style="font-size:11px;color:var(--purple);margin-top:4px;display:none;"></div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+          <div class="field">
+            <label>Costo por unidad de medida</label>
+            <div id="p-costo-display" style="background:var(--purple-bg);border:1px solid var(--purple-lt);border-radius:8px;padding:9px 12px;font-family:var(--font-d);font-size:16px;font-weight:700;color:var(--purple);">₡0.00</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px;">Precio sin IVA ÷ cantidad</div>
+            <input type="hidden" id="p-costo">
+          </div>
+          <div class="field">
+            <label for="p-rendimiento">Rendimiento (%)</label>
+            <input type="number" id="p-rendimiento" min="1" max="100" step="1" placeholder="100" value="100" oninput="calcularCostos()">
+            <div style="font-size:11px;color:var(--muted);margin-top:4px;">% utilizable tras limpieza/merma</div>
+          </div>
+          <div class="field">
+            <label>Costo real por unidad</label>
+            <div id="p-costo-real-display" style="background:var(--green-bg);border:1px solid var(--green-lt);border-radius:8px;padding:9px 12px;font-family:var(--font-d);font-size:16px;font-weight:700;color:var(--green);">₡0.00</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px;">Costo/u ÷ rendimiento</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:flex-start;gap:8px;margin-top:1rem;padding:10px 12px;background:var(--surface);border-radius:8px;">
+          <input type="checkbox" id="p-usar-precio-manual" style="width:auto;margin-top:3px;" onchange="calcularCostos()">
+          <label for="p-usar-precio-manual" style="margin-bottom:0;">
+            Usar este precio manual en las recetas
+            <div style="font-size:11px;color:var(--muted);font-weight:400;margin-top:2px;">
+              Por defecto las recetas usan el costo automático de compras (arriba en "Costo/u", con la etiqueta "auto") cuando existe, aunque acá arriba veas otro número. Activá esto para que las recetas usen el "Costo real por unidad" de esta sección en su lugar — útil para corregir un producto puntual sin esperar a que entren compras nuevas.
+            </div>
+          </label>
+        </div>
       </div>
     </div>
 
@@ -565,6 +567,17 @@ function setAplicaReceta(activo) {
     btnSi.style.cssText = 'padding:8px 20px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;';
     btnNo.style.cssText = 'padding:8px 20px;border-radius:8px;border:2px solid var(--red);background:var(--red);color:#fff;font-size:13px;font-weight:600;cursor:pointer;';
   }
+  actualizarSeccionDatosReceta(activo);
+}
+
+// Si el producto no aplica para recetas (ej. limpieza, empaques, servicios),
+// no tiene sentido pedirle unidad/rendimiento/precio manual de receta — se
+// deshabilita toda esa sección para que no confunda ni bloquee el guardado.
+function actualizarSeccionDatosReceta(activo) {
+  const seccion = document.getElementById('seccion-datos-receta');
+  seccion.style.opacity = activo ? '1' : '.45';
+  seccion.style.pointerEvents = activo ? '' : 'none';
+  seccion.querySelectorAll('input, select').forEach(el => { el.disabled = !activo; });
 }
 
 // ── HINT STOCK MÍNIMO ─────────────────────────────────────────────
@@ -1688,10 +1701,11 @@ async function guardar() {
   const subfamilia           = document.getElementById('p-subfamilia').value;
   const editId               = document.getElementById('edit-id').value;
   const idNormalizado        = document.getElementById('p-id-normalizado').value;
+  const aplicaReceta         = document.getElementById('p-aplica-receta').value === 'true';
 
   if (!nombre)      { showToast('Ingresá el nombre.', 'error'); return; }
   if (!categoria)   { showToast('Seleccioná una categoría.', 'error'); return; }
-  if (!unidad)      { showToast('Seleccioná la unidad.', 'error'); return; }
+  if (aplicaReceta && !unidad) { showToast('Seleccioná la unidad.', 'error'); return; }
   if (monedaPrecio === 'USD' && !tipoCambio) { showToast('Ingresá el tipo de cambio.', 'error'); return; }
   if (!precioSinIva){ showToast('Ingresá el precio de compra.', 'error'); return; }
   if (!area)        { showToast('Seleccioná el área de negocio.', 'error'); return; }
