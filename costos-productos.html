@@ -123,6 +123,7 @@
   <div class="tabs">
     <button class="tab active" onclick="switchTab('lista',this)">Productos</button>
     <button class="tab" onclick="switchTab('nuevo',this)">Nuevo producto</button>
+    <button class="tab" onclick="switchTab('fusion',this)">Sugerencias de fusión</button>
     <button class="tab" onclick="switchTab('config',this)">⚙ Configuración</button>
   </div>
 
@@ -488,6 +489,15 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- SUGERENCIAS DE FUSIÓN -->
+  <div id="tab-fusion" style="display:none;">
+    <div class="card" style="margin-bottom:12px;">
+      <p class="card-title" style="margin-bottom:.5rem;">Sugerencias de fusión</p>
+      <p style="font-size:13px;color:var(--muted);">Grupos de productos con nombres muy parecidos (typos, mayúsculas, singular/plural, orden de palabras) que podrían ser el mismo producto cargado más de una vez.</p>
+    </div>
+    <div id="lista-fusion-sugerida"></div>
   </div>
 
   <!-- MODAL CARGA MASIVA -->
@@ -1882,6 +1892,227 @@ async function confirmarFusion() {
   }
 }
 
+// ── SUGERENCIAS DE FUSIÓN (análisis de nombres) ──────────────────────
+// Agrupa productos cuyo nombre es tan parecido que probablemente sea el
+// mismo ingrediente cargado dos veces (typo, mayúsculas/guiones distintos,
+// singular/plural, orden de palabras). Todo corre en el navegador sobre
+// getProductos() — no hay endpoint nuevo en el Sheet.
+const UMBRAL_SIMILITUD_FUSION = 0.72;
+const UMBRAL_PALABRA_FUSION = 0.8;
+const STOPWORDS_FUSION = new Set(['de', 'del', 'la', 'las', 'el', 'los', 'y', 'con', 'sin']);
+// Palabras de envase/presentación: si dos productos las mencionan y no
+// coinciden (vidrio vs pet vs lata), son presentaciones distintas, no un
+// duplicado — igual que un tamaño (350ml vs 355ml vs 3L) distinto.
+const MATERIALES_ENVASE_FUSION = new Set(['vidrio', 'pet', 'lata', 'tetra', 'plastico', 'carton', 'bolsa', 'caja', 'botella', 'frasco', 'balde', 'saco', 'rollo', 'granel']);
+
+function normalizarNombreFusion(str) {
+  let s = (str || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  // "350 ml" y "1 L" deben quedar como un solo token de tamaño, igual que
+  // "350ml"/"1L" sin espacio, para que ambos formatos se comparen igual.
+  s = s.replace(/(\d+(?:\.\d+)?)\s+(litros?|lt?|ml|kg|kilos?|gr|gramos?|oz|onzas?|gal|galones?)\b/g, '$1$2');
+  return s;
+}
+
+function singularizarTokenFusion(t) {
+  if (t.length > 4 && t.endsWith('es')) return t.slice(0, -2);
+  if (t.length > 3 && t.endsWith('s')) return t.slice(0, -1);
+  return t;
+}
+
+function tokenizarNombreFusion(str) {
+  return normalizarNombreFusion(str).split(' ').filter(t => t && !STOPWORDS_FUSION.has(t)).map(singularizarTokenFusion);
+}
+
+function levenshteinFusion(a, b) {
+  const m = a.length, n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const fila = new Array(n + 1);
+  for (let j = 0; j <= n; j++) fila[j] = j;
+  for (let i = 1; i <= m; i++) {
+    let anterior = fila[0];
+    fila[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const temp = fila[j];
+      fila[j] = a[i - 1] === b[j - 1] ? anterior : 1 + Math.min(anterior, fila[j], fila[j - 1]);
+      anterior = temp;
+    }
+  }
+  return fila[n];
+}
+
+// Similitud palabra a palabra (no de la frase completa) — comparar por
+// caracteres la frase entera hace que dos nombres con un tramo largo en común
+// ("Canada Dry Ginger Ale ...") salgan "muy parecidos" aunque difieran en la
+// palabra clave del medio (Soda vs Ginger Ale) o en el tamaño (350ml vs 355ml).
+// Nota: NO se acepta como match automático una distancia de edición de 1 sin
+// mirar el ratio — con palabras cortas de 4-5 letras (frecuentes en una
+// despensa: "Papa"/"Piña"/"Pipa") esa regla los declaraba "typo" entre sí
+// siendo productos distintos. El ratio por longitud ya castiga suficiente
+// a las palabras cortas.
+function similitudPalabraFusion(a, b) {
+  if (a === b) return 1;
+  const maxLen = Math.max(a.length, b.length);
+  return maxLen === 0 ? 1 : 1 - levenshteinFusion(a, b) / maxLen;
+}
+
+// Jaccard "difuso" a nivel de palabra: empareja cada token de A con su mejor
+// match disponible en B (typo, acento) en vez de exigir igualdad exacta o
+// comparar la cadena completa — así el orden de las palabras no importa y una
+// palabra distinta en medio de un nombre largo no infla la similitud.
+function similitudTokensFusion(tokensA, tokensB) {
+  const pool = tokensB.slice();
+  let coincidencias = 0;
+  let huboFuzzy = false;
+  tokensA.forEach(a => {
+    let mejorIdx = -1, mejorSim = 0;
+    pool.forEach((b, idx) => {
+      const sim = similitudPalabraFusion(a, b);
+      if (sim > mejorSim) { mejorSim = sim; mejorIdx = idx; }
+    });
+    if (mejorIdx >= 0 && mejorSim >= UMBRAL_PALABRA_FUSION) {
+      if (mejorSim < 1) huboFuzzy = true;
+      coincidencias++;
+      pool.splice(mejorIdx, 1);
+    }
+  });
+  const union = tokensA.length + tokensB.length - coincidencias;
+  const score = union === 0 ? 1 : coincidencias / union;
+  const motivo = huboFuzzy
+    ? 'Palabras muy parecidas (posible typo, acento o singular/plural)'
+    : 'Mismas palabras (posible orden distinto)';
+  return { score, motivo };
+}
+
+function compararNombresFusion(nombreA, nombreB) {
+  const normA = normalizarNombreFusion(nombreA);
+  const normB = normalizarNombreFusion(nombreB);
+  if (normA === normB) return { score: 1, motivo: 'Nombres idénticos tras normalizar' };
+
+  const tokensA = tokenizarNombreFusion(nombreA);
+  const tokensB = tokenizarNombreFusion(nombreB);
+
+  // Si ambos mencionan un tamaño o un tipo de envase y no coinciden, son
+  // presentaciones distintas del mismo producto (con costo distinto) — nunca
+  // se sugiere fusionarlas, aunque el resto del nombre sea idéntico.
+  const tamA = tokensA.filter(t => /^\d/.test(t));
+  const tamB = tokensB.filter(t => /^\d/.test(t));
+  if (tamA.length && tamB.length && !tamA.some(t => tamB.includes(t))) {
+    return { score: 0, motivo: 'Tamaños distintos' };
+  }
+  const matA = tokensA.filter(t => MATERIALES_ENVASE_FUSION.has(t));
+  const matB = tokensB.filter(t => MATERIALES_ENVASE_FUSION.has(t));
+  if (matA.length && matB.length && !matA.some(t => matB.includes(t))) {
+    return { score: 0, motivo: 'Presentaciones/envases distintos' };
+  }
+
+  return similitudTokensFusion(tokensA, tokensB);
+}
+
+// Entre los productos de un grupo, el más "consolidado" para conservar:
+// en uso, con más compras registradas en el historial, y de nombre más largo.
+function elegirCanonicoFusion(items) {
+  return [...items].sort((x, y) => {
+    const enUsoX = x.en_uso !== false && x.en_uso !== 'false' ? 1 : 0;
+    const enUsoY = y.en_uso !== false && y.en_uso !== 'false' ? 1 : 0;
+    if (enUsoY !== enUsoX) return enUsoY - enUsoX;
+    const comprasX = HISTORIAL_COMPRAS.filter(h => h.id_producto === x.id).length;
+    const comprasY = HISTORIAL_COMPRAS.filter(h => h.id_producto === y.id).length;
+    if (comprasY !== comprasX) return comprasY - comprasX;
+    return (y.nombre || '').length - (x.nombre || '').length;
+  })[0];
+}
+
+// Ojo: acá NO se agrupan transitivamente (A~B y B~C ⇒ mismo grupo con C).
+// La similitud difusa de palabras no es transitiva — en datos reales,
+// "Coca-Cola Vidrio" (sin sabor/tamaño) resultaba "parecido" tanto a
+// "Coca-Cola Original 350ml" como a "Coca-Cola Sin Azúcar 350ml", y
+// agruparlos habría fusionado dos sabores distintos. Por eso cada
+// coincidencia difusa se reporta como su propio par independiente. La única
+// excepción segura es el nombre idéntico tras normalizar: la igualdad de
+// cadenas sí es transitiva, así que esos sí se agrupan en un solo bloque.
+function calcularSugerenciasFusion() {
+  const productos = getProductos();
+  const sugerencias = [];
+  const enGrupoExacto = new Set();
+
+  const porNombreNormalizado = new Map();
+  productos.forEach(p => {
+    const key = normalizarNombreFusion(p.nombre);
+    if (!porNombreNormalizado.has(key)) porNombreNormalizado.set(key, []);
+    porNombreNormalizado.get(key).push(p);
+  });
+  porNombreNormalizado.forEach(items => {
+    if (items.length < 2) return;
+    items.forEach(p => enGrupoExacto.add(p.id));
+    sugerencias.push({ productos: items, canonico: elegirCanonicoFusion(items), similitud: 1, motivo: 'Nombres idénticos tras normalizar' });
+  });
+
+  for (let i = 0; i < productos.length; i++) {
+    if (enGrupoExacto.has(productos[i].id)) continue;
+    for (let j = i + 1; j < productos.length; j++) {
+      if (enGrupoExacto.has(productos[j].id)) continue;
+      const { score, motivo } = compararNombresFusion(productos[i].nombre, productos[j].nombre);
+      if (score >= UMBRAL_SIMILITUD_FUSION) {
+        const items = [productos[i], productos[j]];
+        sugerencias.push({ productos: items, canonico: elegirCanonicoFusion(items), similitud: Math.round(score * 100) / 100, motivo });
+      }
+    }
+  }
+
+  sugerencias.sort((a, b) => b.similitud - a.similitud);
+  return sugerencias;
+}
+
+// Abre el modal de fusión ya existente, con el destino sugerido preseleccionado.
+function abrirModalFusionSugerida(idOrigen, idDestino) {
+  abrirModalFusion(idOrigen);
+  const sel = document.getElementById('fusion-destino');
+  if (sel) sel.value = idDestino;
+}
+
+function renderSugerenciasFusion() {
+  const cont = document.getElementById('lista-fusion-sugerida');
+  if (!cont) return;
+  const sugerencias = calcularSugerenciasFusion();
+
+  if (!sugerencias.length) {
+    cont.innerHTML = '<div class="card"><p class="empty">No se encontraron posibles duplicados por nombre.</p></div>';
+    return;
+  }
+
+  cont.innerHTML = sugerencias.map(grupo => {
+    const claseSimilitud = grupo.similitud >= 0.9 ? 'color:var(--green);' : 'color:var(--amber);';
+    const filas = grupo.productos.map(p => {
+      const esCanonico = p.id === grupo.canonico.id;
+      return `<tr>
+        <td style="font-weight:${esCanonico ? '700' : '500'};">${p.nombre}${esCanonico ? ' <span style="font-size:10px;padding:2px 7px;border-radius:20px;background:var(--green-bg);color:var(--green);font-weight:600;">Sugerido a conservar</span>' : ''}</td>
+        <td>${p.categoria || '—'}</td>
+        <td>${p.unidad || '—'}</td>
+        <td>${esCanonico ? '' : `<button class="btn-edit" style="border-color:var(--amber);background:var(--amber-bg);color:var(--amber);" onclick="abrirModalFusionSugerida('${p.id}','${grupo.canonico.id}')">Revisar fusión</button>`}</td>
+      </tr>`;
+    }).join('');
+
+    return `<div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.75rem;">
+        <span style="font-family:var(--font-d);font-size:14px;font-weight:700;">Posible duplicado: "${grupo.canonico.nombre}"</span>
+        <span style="font-size:12px;${claseSimilitud}font-weight:600;">${Math.round(grupo.similitud * 100)}% similitud · ${grupo.motivo}</span>
+      </div>
+      <div class="tabla-wrap">
+        <table>
+          <thead><tr><th>Nombre</th><th>Categoría</th><th>Unidad</th><th></th></tr></thead>
+          <tbody>${filas}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function limpiarForm() {
   document.getElementById('edit-id').value                  = '';
   document.getElementById('p-id-normalizado').value         = '';
@@ -1920,11 +2151,13 @@ function limpiarForm() {
 function switchTab(tab, el) {
   document.getElementById('tab-lista').style.display  = tab==='lista'  ? 'block':'none';
   document.getElementById('tab-nuevo').style.display  = tab==='nuevo'  ? 'block':'none';
+  document.getElementById('tab-fusion').style.display = tab==='fusion' ? 'block':'none';
   document.getElementById('tab-config').style.display = tab==='config' ? 'block':'none';
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   if (tab==='config') { renderCfgLista('cat'); renderCfgLista('uni'); renderCfgLista('pre'); renderCfgLista('area'); renderCfgLista('familia'); renderCfgSubfamilias(); }
   if (tab==='nuevo')  { aplicarConfiguracion(); }
+  if (tab==='fusion') { renderSugerenciasFusion(); }
 }
 
 function showToast(msg, type='success') {
