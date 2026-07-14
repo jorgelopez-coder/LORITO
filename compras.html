@@ -113,6 +113,17 @@
     .spinner { display:inline-block; width:18px; height:18px; border:2px solid var(--border); border-top-color:var(--green); border-radius:50%; animation:spin .7s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg); } }
 
+    /* Botón descargar */
+    .btn-download { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:500; padding:7px 14px; border-radius:8px; border:1px solid var(--green); background:var(--green); color:#fff; cursor:pointer; transition:opacity .15s; white-space:nowrap; }
+    .btn-download:hover { opacity:.88; }
+    .btn-download svg { width:14px; height:14px; }
+
+    /* Chips filtro categoría (multi-select) */
+    .cat-filter-chip { font-size:12px; font-weight:500; padding:5px 12px; border-radius:20px; border:1px solid var(--border); background:var(--card); color:var(--muted); cursor:pointer; transition:background .15s,color .15s,border-color .15s; }
+    .cat-filter-chip:hover { border-color:var(--border-h); }
+    .cat-filter-chip.active { background:var(--green); color:#fff; border-color:var(--green); }
+    .cat-filter-chip.todas.active { background:var(--text); border-color:var(--text); }
+
     /* Status */
     .status-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:.7rem 1.25rem; font-size:12px; color:var(--muted); margin-top:1.5rem; }
     .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
@@ -145,8 +156,14 @@
       <h1>Compras</h1>
       <p>Facturas electrónicas · Lorito</p>
     </div>
-    <div id="status-carga" style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;">
-      <span class="spinner"></span> Cargando…
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div id="status-carga" style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;">
+        <span class="spinner"></span> Cargando…
+      </div>
+      <button class="btn-download" onclick="descargarReporte()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/></svg>
+        Descargar reporte
+      </button>
     </div>
   </div>
 
@@ -276,6 +293,13 @@
         </div>
 
       </div>
+
+      <!-- Filtro de categorías (multi-selección) -->
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Categorías</div>
+        <div id="cat-filtros" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+      </div>
+
       <div id="rango-info" style="font-size:12px;color:var(--muted);margin-top:10px;"></div>
     </div>
 
@@ -338,7 +362,9 @@ let dataFacturas = [];
 let dataControl  = [];
 let pagFacturas  = 1;
 let pagProductos = 1;
-const POR_PAGINA = 15;
+const POR_PAGINA = 100;
+let tabActivo    = 'analisis';
+let categoriasSeleccionadas = new Set();
 
 // ── CATEGORÍA → CSS ───────────────────────────────────────────────
 function catClass(cat) {
@@ -549,6 +575,11 @@ function inicializar() {
   const selCat = document.getElementById('f-cat');
   cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; selCat.appendChild(o); });
 
+  // Chips de categoría (análisis, multi-selección)
+  const catFiltros = document.getElementById('cat-filtros');
+  catFiltros.innerHTML = `<button class="cat-filter-chip todas active" id="cat-todas-btn" onclick="limpiarCategoriasAnalisis()">Todas</button>` +
+    cats.map(c => `<button class="cat-filter-chip" data-cat="${c}" onclick="toggleCategoriaAnalisis(this)">${c}</button>`).join('');
+
   renderFacturas();
   renderProductos();
   renderProveedores();
@@ -604,6 +635,7 @@ function _renderFacturas() {
     const ctrl  = dataControl.find(c => c['Número de factura'] === num);
     const est   = ctrl ? (ctrl['Estado'] || '') : '';
     const ok    = !est.toLowerCase().includes('no');
+    const dif   = ctrl ? (parseFloat(String(ctrl['Diferencia']||'0').replace(/[,₡\s]/g,'')) || 0) : 0;
     const rowId = 'frow-' + (inicio + idx);
 
     // Detalle de líneas
@@ -632,7 +664,10 @@ function _renderFacturas() {
         <td style="font-weight:500;">${prov}</td>
         <td style="font-size:12px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${num}</td>
         <td class="num" style="font-weight:600;">${fmt(total)}</td>
-        <td><span class="badge" style="background:${ok?'var(--green-bg)':'var(--red-bg)'};color:${ok?'var(--green)':'var(--red)'};">${est || '—'}</span></td>
+        <td>
+          <span class="badge" style="background:${ok?'var(--green-bg)':'var(--red-bg)'};color:${ok?'var(--green)':'var(--red)'};">${est || '—'}</span>
+          ${!ok && dif ? `<div style="font-size:11px;color:var(--red);margin-top:3px;">Dif: ${fmt(Math.abs(dif))}</div>` : ''}
+        </td>
       </tr>
       <tr class="tr-detail" id="${rowId}">
         <td class="detail-cell" colspan="6">
@@ -904,9 +939,10 @@ function renderPaginacion(id, total, pag, cb) {
 
 // ── TABS ──────────────────────────────────────────────────────────
 function switchTab(tab, el) {
+  tabActivo = tab;
   ['analisis','facturas','productos','proveedores','categorias'].forEach(t =>
     document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none');
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tabs > .tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   if (tab === 'analisis') renderAnalisis();
 }
@@ -980,6 +1016,27 @@ function limpiarFiltroFecha() {
   renderAnalisis();
 }
 
+function toggleCategoriaAnalisis(el) {
+  const cat = el.dataset.cat;
+  if (categoriasSeleccionadas.has(cat)) categoriasSeleccionadas.delete(cat);
+  else categoriasSeleccionadas.add(cat);
+  el.classList.toggle('active');
+  document.getElementById('cat-todas-btn').classList.toggle('active', categoriasSeleccionadas.size === 0);
+  renderAnalisis();
+}
+
+function limpiarCategoriasAnalisis() {
+  categoriasSeleccionadas.clear();
+  document.querySelectorAll('#cat-filtros .cat-filter-chip').forEach(b => b.classList.remove('active'));
+  document.getElementById('cat-todas-btn').classList.add('active');
+  renderAnalisis();
+}
+
+function filtrarPorCategorias(lista) {
+  if (!categoriasSeleccionadas.size) return lista;
+  return lista.filter(r => categoriasSeleccionadas.has(r['Categoría']));
+}
+
 function filtrarPorPeriodo(lista, campoFecha) {
   const desde = document.getElementById('filtro-desde').value;
   const hasta = document.getElementById('filtro-hasta').value;
@@ -998,16 +1055,22 @@ function renderAnalisis() {
 
   // Aplicar filtro de período si está activo
   const resumenFiltrado  = filtrarPorPeriodo(dataResumen,  'Fecha de factura');
-  const facturasFiltradas = filtrarPorPeriodo(dataFacturas, 'Fecha de factura');
+  let facturasFiltradas = filtrarPorPeriodo(dataFacturas, 'Fecha de factura');
+  facturasFiltradas = filtrarPorCategorias(facturasFiltradas);
 
   const desde = document.getElementById('filtro-desde').value;
   const hasta = document.getElementById('filtro-hasta').value;
+  // Con categorías seleccionadas, el Resumen (por factura completa) ya no aplica:
+  // se agrega desde las líneas filtradas por categoría.
+  const usarLineas = categoriasSeleccionadas.size > 0;
 
-  // ─ Agrupar totales por período (desde Resumen filtrado) ─
+  // ─ Agrupar totales por período ─
   const periodoMap = {};
-  resumenFiltrado.forEach(r => {
+  (usarLineas ? facturasFiltradas : resumenFiltrado).forEach(r => {
     const k = claveAgrupacion(r['Fecha de factura']);
-    const v = parseFloat(String(r['Total']||'0').replace(/[,₡\s]/g,'')) || 0;
+    const v = usarLineas
+      ? (parseFloat(String(r['Total línea']||'0').replace(/[,]/g,'')) || 0)
+      : (parseFloat(String(r['Total']||'0').replace(/[,₡\s]/g,'')) || 0);
     periodoMap[k] = (periodoMap[k] || 0) + v;
   });
 
@@ -1016,9 +1079,12 @@ function renderAnalisis() {
   const valores = claves.map(k => periodoMap[k]);
 
   const filtroActivo = desde || hasta;
-  const totalFiltrado = resumenFiltrado.reduce((a,r) => a + (parseFloat(String(r['Total']||'0').replace(/[,₡\s]/g,''))||0), 0);
+  const totalFiltrado = claves.reduce((a,k) => a + periodoMap[k], 0);
+  const catInfo = categoriasSeleccionadas.size
+    ? ` &nbsp;<span style="background:var(--green-bg);color:var(--green);font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid var(--green-lt);">${categoriasSeleccionadas.size} categoría${categoriasSeleccionadas.size!==1?'s':''}</span>`
+    : '';
   document.getElementById('rango-info').innerHTML =
-    `<strong>${claves.length}</strong> período${claves.length!==1?'s':''} &nbsp;·&nbsp; <strong>${claves[0]||'—'}</strong> → <strong>${claves[claves.length-1]||'—'}</strong> &nbsp;·&nbsp; Total: <strong style="color:var(--green)">₡${Number(totalFiltrado).toLocaleString('es-CR',{minimumFractionDigits:2})}</strong>${filtroActivo?' &nbsp;<span style="background:var(--amber-bg);color:var(--amber);font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid var(--amber-lt);">Filtro activo</span>':''}`;
+    `<strong>${claves.length}</strong> período${claves.length!==1?'s':''} &nbsp;·&nbsp; <strong>${claves[0]||'—'}</strong> → <strong>${claves[claves.length-1]||'—'}</strong> &nbsp;·&nbsp; Total: <strong style="color:var(--green)">₡${Number(totalFiltrado).toLocaleString('es-CR',{minimumFractionDigits:2})}</strong>${filtroActivo?' &nbsp;<span style="background:var(--amber-bg);color:var(--amber);font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid var(--amber-lt);">Filtro activo</span>':''}${catInfo}`;
 
   // Chart barras — períodos
   const ctxP = document.getElementById('chart-periodos').getContext('2d');
@@ -1100,11 +1166,13 @@ function renderAnalisis() {
     }
   });
 
-  // ─ Top 6 proveedores (desde Resumen filtrado) ─
+  // ─ Top 6 proveedores ─
   const provMap = {};
-  resumenFiltrado.forEach(r => {
+  (usarLineas ? facturasFiltradas : resumenFiltrado).forEach(r => {
     const prov = r['Proveedor'] || 'Sin proveedor';
-    const v    = parseFloat(String(r['Total']||'0').replace(/[,₡\s]/g,'')) || 0;
+    const v    = usarLineas
+      ? (parseFloat(String(r['Total línea']||'0').replace(/[,]/g,'')) || 0)
+      : (parseFloat(String(r['Total']||'0').replace(/[,₡\s]/g,'')) || 0);
     provMap[prov] = (provMap[prov] || 0) + v;
   });
 
@@ -1153,10 +1221,10 @@ function renderAnalisis() {
   // ─ Tabla de detalle por período ─
   const fmt2 = n => '₡' + Number(n).toLocaleString('es-CR',{minimumFractionDigits:2});
   const filas = claves.map(k => {
-    const facturasDePeriodo = resumenFiltrado.filter(r => claveAgrupacion(r['Fecha de factura']) === k);
-    const nFact  = facturasDePeriodo.length;
+    const lineasDePeriodo = (usarLineas ? facturasFiltradas : resumenFiltrado).filter(r => claveAgrupacion(r['Fecha de factura']) === k);
+    const nFact  = usarLineas ? new Set(lineasDePeriodo.map(r => r['Número de factura']||'')).size : lineasDePeriodo.length;
     const total  = periodoMap[k];
-    const provs  = [...new Set(facturasDePeriodo.map(r => r['Proveedor']||''))].join(', ');
+    const provs  = [...new Set(lineasDePeriodo.map(r => r['Proveedor']||''))].join(', ');
     return `<tr>
       <td style="font-weight:500;">${labelPeriodo(k)}</td>
       <td style="color:var(--muted);">${k}</td>
@@ -1174,6 +1242,131 @@ function renderAnalisis() {
       </tr></thead>
       <tbody>${filas}</tbody>
     </table>`;
+}
+
+// ── DESCARGAR REPORTE (CSV) ────────────────────────────────────────
+function csvEscape(v) {
+  const s = String(v==null ? '' : v);
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+}
+
+function descargarCSV(filename, headers, rows) {
+  const csv = '﻿' + [headers, ...rows].map(row => row.map(csvEscape).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function descargarReporte() {
+  if (!dataResumen.length) return;
+  const map = {
+    facturas:    descargarReporteFacturas,
+    productos:   descargarReporteProductos,
+    proveedores: descargarReporteProveedores,
+    categorias:  descargarReporteCategorias,
+    analisis:    descargarReporteAnalisis,
+  };
+  (map[tabActivo] || descargarReporteAnalisis)();
+}
+
+function descargarReporteFacturas() {
+  const busq = document.getElementById('s-fact').value.toLowerCase();
+  const mes  = document.getElementById('f-mes').value;
+  const lista = dataResumen.filter(r => {
+    const prov = (r['Proveedor']||'').toLowerCase();
+    const fact = (r['Número de factura']||'').toLowerCase();
+    const fech = (r['Fecha de factura']||'').substring(0,7);
+    return (!busq || prov.includes(busq) || fact.includes(busq)) && (!mes || fech === mes);
+  });
+  const rows = lista.map(r => {
+    const num   = r['Número de factura'] || '';
+    const total = parseFloat(String(r['Total']||'0').replace(/[,₡\s]/g,'')) || 0;
+    const ctrl  = dataControl.find(c => c['Número de factura'] === num);
+    const est   = ctrl ? (ctrl['Estado']||'') : '';
+    const dif   = ctrl ? (parseFloat(String(ctrl['Diferencia']||'0').replace(/[,₡\s]/g,'')) || 0) : 0;
+    return [r['Fecha de factura']||'', r['Proveedor']||'', num, total.toFixed(2), est||'—', dif ? dif.toFixed(2) : ''];
+  });
+  descargarCSV('facturas_compras.csv', ['Fecha','Proveedor','Factura','Total','Estado','Diferencia'], rows);
+}
+
+function descargarReporteProductos() {
+  const busq = document.getElementById('s-prod').value.toLowerCase();
+  const cat  = document.getElementById('f-cat').value;
+  const lista = dataFacturas.filter(r => {
+    const prod = (r['Nombre normalizado']||r['Producto']||'').toLowerCase();
+    const prov = (r['Proveedor']||'').toLowerCase();
+    return (!busq || prod.includes(busq) || prov.includes(busq)) && (!cat || r['Categoría'] === cat);
+  });
+  const grupos = {};
+  lista.forEach(r => {
+    const nombre = r['Nombre normalizado'] || r['Producto'] || 'Sin nombre';
+    if (!grupos[nombre]) grupos[nombre] = { cat: r['Categoría']||'—', unidad: r['Unidad de medida']||'—', lineas: [] };
+    grupos[nombre].lineas.push(r);
+  });
+  const rows = Object.keys(grupos).sort((a,b) => a.localeCompare(b,'es')).map(nombre => {
+    const g = grupos[nombre];
+    const totalCant  = g.lineas.reduce((a,r) => a + (parseFloat(r['Cantidad'])||0), 0);
+    const totalLinea = g.lineas.reduce((a,r) => a + (parseFloat(String(r['Total línea']||0).replace(/,/g,''))||0), 0);
+    const precioProm = totalCant ? totalLinea / totalCant : 0;
+    return [nombre, g.cat, g.lineas.length, totalCant.toFixed(2), g.unidad, precioProm.toFixed(2), totalLinea.toFixed(2)];
+  });
+  descargarCSV('productos_compras.csv', ['Producto','Categoría','Compras','Total cantidad','Unidad','Precio promedio','Total'], rows);
+}
+
+function descargarReporteProveedores() {
+  const provMap = {};
+  dataResumen.forEach(r => {
+    const prov  = r['Proveedor'] || 'Sin nombre';
+    const total = parseFloat(String(r['Total']||'0').replace(/[,₡\s]/g,'')) || 0;
+    if (!provMap[prov]) provMap[prov] = { total:0, n:0 };
+    provMap[prov].total += total; provMap[prov].n++;
+  });
+  const rows = Object.entries(provMap).sort((a,b) => b[1].total-a[1].total)
+    .map(([prov,d]) => [prov, d.n, d.total.toFixed(2)]);
+  descargarCSV('proveedores_compras.csv', ['Proveedor','Facturas','Total comprado'], rows);
+}
+
+function descargarReporteCategorias() {
+  const catMap = {};
+  dataFacturas.forEach(r => {
+    const cat   = r['Categoría'] || 'Sin categoría';
+    const total = parseFloat(String(r['Total línea']||0).replace(/[,]/g,'')) || 0;
+    if (!catMap[cat]) catMap[cat] = { items:0, total:0 };
+    catMap[cat].items++; catMap[cat].total += total;
+  });
+  const totalGral = Object.values(catMap).reduce((a,d) => a + d.total, 0);
+  const rows = Object.entries(catMap).sort((a,b) => b[1].total-a[1].total)
+    .map(([cat,d]) => [cat, d.items, d.total.toFixed(2), totalGral ? (d.total/totalGral*100).toFixed(1) : '0']);
+  descargarCSV('categorias_compras.csv', ['Categoría','Líneas','Total','% del total'], rows);
+}
+
+function descargarReporteAnalisis() {
+  const resumenFiltrado = filtrarPorPeriodo(dataResumen, 'Fecha de factura');
+  let facturasFiltradas = filtrarPorPeriodo(dataFacturas, 'Fecha de factura');
+  facturasFiltradas = filtrarPorCategorias(facturasFiltradas);
+  const usarLineas = categoriasSeleccionadas.size > 0;
+
+  const periodoMap = {};
+  (usarLineas ? facturasFiltradas : resumenFiltrado).forEach(r => {
+    const k = claveAgrupacion(r['Fecha de factura']);
+    const v = usarLineas
+      ? (parseFloat(String(r['Total línea']||'0').replace(/[,]/g,'')) || 0)
+      : (parseFloat(String(r['Total']||'0').replace(/[,₡\s]/g,'')) || 0);
+    periodoMap[k] = (periodoMap[k] || 0) + v;
+  });
+  const claves = Object.keys(periodoMap).sort();
+
+  const rows = claves.map(k => {
+    const lineasDePeriodo = (usarLineas ? facturasFiltradas : resumenFiltrado).filter(r => claveAgrupacion(r['Fecha de factura']) === k);
+    const nFact = usarLineas ? new Set(lineasDePeriodo.map(r => r['Número de factura']||'')).size : lineasDePeriodo.length;
+    const provs = [...new Set(lineasDePeriodo.map(r => r['Proveedor']||''))].join(' / ');
+    return [labelPeriodo(k), k, nFact, provs, periodoMap[k].toFixed(2)];
+  }).reverse();
+
+  descargarCSV('analisis_compras.csv', ['Período','Fecha','Facturas','Proveedores','Total'], rows);
 }
 
 cargarDatos();
