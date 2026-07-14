@@ -235,6 +235,8 @@
 const EMAIL_GERENCIA        = 'jorge.lopez@casaaguizotes.com';
 const APPS_SCRIPT_RRHH      = 'TODO_APPS_SCRIPT_RRHH_LORITO';
 const APPS_SCRIPT_INVENTARIO= 'https://script.google.com/macros/s/AKfycbzFhuID6l5-FM9ib_kB1_QlvqOL04RT0JXf_15PGMZY9UxvPRiH_4u2I3rDeaHp1-JVjQ/exec';
+// Mismo backend que usa costos-productos.html — así el catálogo de inventario nunca se desincroniza del de costos.
+const APPS_SCRIPT_COSTOS    = 'https://script.google.com/macros/s/AKfycbz1B6crIkwwWLGx-xkZdXRmySsmlLfE1aQtF9_BP-H2C4TPyeiuURl-YhxoX9fbVUivaQ/exec';
 // ─────────────────────────────────────────────────────────────────
 
 const hoy = new Date();
@@ -255,61 +257,47 @@ function getTomas()   { try { return JSON.parse(localStorage.getItem('inv_tomas'
 function saveTomas(t) { localStorage.setItem('inv_tomas', JSON.stringify(t)); }
 function genId()      { return 'INV-' + hoy.getFullYear() + pad(hoy.getMonth()+1) + pad(hoy.getDate()) + '-' + Math.floor(Math.random()*9000+1000); }
 
-// Mapear encabezados del Sheet a campos internos
+// Mapear el registro que devuelve APPS_SCRIPT_COSTOS a los campos que usa esta página
 function normalizarProducto(r) {
   return {
-    id:                   r['ID']                   || '',
-    nombre:               r['Nombre']               || '',
-    en_uso:               (r['En uso']||'Sí') !== 'No',
-    categoria:            r['Categoría']            || '',
-    area:                 r['Área de negocio']      || '',
-    unidad:               r['Unidad']               || '',
-    presentacion:         r['Presentación']         || '',
-    tamano:               r['Tamaño']               || '',
-    precio_sin_iva:       parseFloat(r['Precio sin IVA'])          || 0,
-    iva:                  parseFloat(r['IVA (%)'])                  || 0,
-    cantidad_presentacion:parseFloat(r['Cantidad presentación'])   || 1,
-    costo:                parseFloat(r['Costo/u'])                  || 0,
-    rendimiento:          parseFloat(r['Rendimiento (%)'])          || 100,
-    costo_real:           parseFloat(r['Costo real/u'])             || 0,
-    proveedor:            r['Proveedor']            || '',
-    stock_minimo:         parseFloat(r['Stock mínimo (presentaciones)']) || 0,
+    id:                   r.id             || '',
+    nombre:               r.nombre         || '',
+    en_uso:               r.en_uso !== false,
+    categoria:            r.categoria      || '',
+    area:                 r.area           || '',
+    familia:              r.familia        || '',
+    subfamilia:           r.subfamilia     || '',
+    unidad:               r.unidad         || '',
+    presentacion:         r.presentacion   || '',
+    tamano:               r.tamano         || '',
+    precio_sin_iva:       parseFloat(r.precio_sin_iva)       || 0,
+    iva:                  parseFloat(r.iva)                    || 0,
+    cantidad_presentacion:parseFloat(r.cantidad_presentacion) || 1,
+    costo:                parseFloat(r.costo)                  || 0,
+    rendimiento:          parseFloat(r.rendimiento)            || 100,
+    proveedor:            r.proveedor      || '',
+    stock_minimo:         parseFloat(r.stock_minimo)           || 0,
   };
 }
-
-// ID del Sheet de costos (catálogo de productos) y nombre exacto de la hoja
-const COSTOS_SHEET_ID  = '1PtT9AHv2drY7oLygHKWMhHQgeOuT20_cD_igqu6ijyA';
-const COSTOS_HOJA_PROD = 'Productos';
 
 // ID del Sheet dedicado "Inventarios - Lorito IA" donde se guarda el historial de tomas
 const INVENTARIO_SHEET_ID = '14kRIMIe0BKX6ElMnx4NuLdO5mM3TeNpQaYuTFf13el0';
 
-// Leer via API pública de Google Sheets (gviz) — no requiere auth ni Apps Script
+// Leer el catálogo de productos desde el mismo backend que usa el módulo de costos
 async function cargarProductosSheet() {
   try {
-    const url  = `https://docs.google.com/spreadsheets/d/${COSTOS_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(COSTOS_HOJA_PROD)}`;
-    const resp = await fetch(url);
-    const text = await resp.text();
-    // gviz devuelve un JSON envuelto: /*O_o*/\ngoogle.visualization.Query.setResponse({...})
-    const json = JSON.parse(text.replace(/^[^{]*/, '').replace(/[^}]*$/, ''));
-    const cols = json.table.cols.map(c => c.label);
-    const rows = (json.table.rows || []).map(row => {
-      const obj = {};
-      cols.forEach((col, i) => {
-        const cell = row.c ? row.c[i] : null;
-        obj[col] = cell ? (cell.f ?? cell.v ?? '') : '';
-      });
-      return obj;
-    });
+    const resp = await fetch(APPS_SCRIPT_COSTOS + '?modulo=productos');
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error || 'Error desconocido del backend de costos');
 
-    const normalizados = rows.map(normalizarProducto).filter(p => p.en_uso && p.nombre);
+    const normalizados = json.registros.map(normalizarProducto).filter(p => p.en_uso && p.nombre);
     localStorage.setItem('costos_productos', JSON.stringify(normalizados));
     document.getElementById('status-msg').textContent =
-      `${normalizados.length} productos cargados desde Google Sheets · ${tomas.length} toma${tomas.length!==1?'s':''}`;
+      `${normalizados.length} productos cargados desde Costos · ${tomas.length} toma${tomas.length!==1?'s':''}`;
     return normalizados;
 
   } catch(e) {
-    console.warn('gviz falló, usando caché local:', e);
+    console.warn('No se pudo leer el catálogo de costos, usando caché local:', e);
     document.getElementById('status-msg').textContent =
       'Sin conexión — usando datos en caché local';
   }
@@ -343,7 +331,7 @@ async function init() {
 
   renderListaTomas();
   renderHistorial();
-  const fuente = navigator.onLine ? 'Google Sheets' : 'caché local';
+  const fuente = navigator.onLine ? 'Costos' : 'caché local';
   document.getElementById('status-msg').textContent =
     `${productos.length} productos cargados desde ${fuente} · ${tomas.length} toma${tomas.length!==1?'s':''}`;
 }
