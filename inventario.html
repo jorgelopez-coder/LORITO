@@ -164,6 +164,7 @@
         <select class="filter-sel" id="f-actual-grupo" onchange="renderActual()">
           <option value="area">Agrupar por área</option>
           <option value="categoria">Agrupar por categoría</option>
+          <option value="familia">Agrupar por familia</option>
           <option value="area_categoria">Área → Categoría</option>
         </select>
       </div>
@@ -252,6 +253,7 @@ document.getElementById('date-chip').textContent =
 let tomas    = [];  // todas las tomas
 let tomaActual = null;
 let productos  = [];
+let gruposColapsados = new Set(); // ids de grupos (área/categoría/familia) colapsados en la toma actual
 
 function getTomas()   { try { return JSON.parse(localStorage.getItem('inv_tomas')||'[]'); } catch { return []; } }
 function saveTomas(t) { localStorage.setItem('inv_tomas', JSON.stringify(t)); }
@@ -413,37 +415,52 @@ function renderActual() {
   if (grupo === 'area') {
     const grupos = agruparLista(lista, p => p.area || 'Sin área');
     Object.keys(grupos).sort().forEach(k => {
+      const groupId = 'area:' + k;
       const sub = calcSubtotal(grupos[k]);
-      content += headerGrupo(k, grupos[k].length, sub, 6);
-      grupos[k].forEach(p => { content += buildFilaToma(p); });
-      content += footerSubtotal(sub, 6);
+      content += headerGrupo(k, grupos[k].length, sub, 6, groupId);
+      grupos[k].forEach(p => { content += buildFilaToma(p, groupId); });
+      content += footerSubtotal(sub, 6, 'Subtotal', groupId);
     });
 
   } else if (grupo === 'categoria') {
     const grupos = agruparLista(lista, p => p.categoria || 'Sin categoría');
     Object.keys(grupos).sort().forEach(k => {
+      const groupId = 'categoria:' + k;
       const sub = calcSubtotal(grupos[k]);
-      content += headerGrupo(k, grupos[k].length, sub, 6);
-      grupos[k].forEach(p => { content += buildFilaToma(p); });
-      content += footerSubtotal(sub, 6);
+      content += headerGrupo(k, grupos[k].length, sub, 6, groupId);
+      grupos[k].forEach(p => { content += buildFilaToma(p, groupId); });
+      content += footerSubtotal(sub, 6, 'Subtotal', groupId);
+    });
+
+  } else if (grupo === 'familia') {
+    const grupos = agruparLista(lista, p => p.familia || 'Sin familia');
+    Object.keys(grupos).sort().forEach(k => {
+      const groupId = 'familia:' + k;
+      const sub = calcSubtotal(grupos[k]);
+      content += headerGrupo(k, grupos[k].length, sub, 6, groupId);
+      grupos[k].forEach(p => { content += buildFilaToma(p, groupId); });
+      content += footerSubtotal(sub, 6, 'Subtotal', groupId);
     });
 
   } else { // area_categoria
     const porArea = agruparLista(lista, p => p.area || 'Sin área');
     Object.keys(porArea).sort().forEach(areaKey => {
+      const groupId = 'area:' + areaKey;
+      const colapsado = gruposColapsados.has(groupId);
       const subArea = calcSubtotal(porArea[areaKey]);
-      content += `<tr style="background:var(--teal-bg);"><td colspan="6" style="padding:9px 12px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);border-top:1px solid var(--teal-lt);border-bottom:1px solid var(--teal-lt);">
+      content += `<tr class="grupo-header" data-grupo-header="${groupId}" onclick="toggleGrupo('${escJs(groupId)}')" style="background:var(--teal-bg);cursor:pointer;"><td colspan="6" style="padding:9px 12px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);border-top:1px solid var(--teal-lt);border-bottom:1px solid var(--teal-lt);">
+        <span class="grupo-chevron" style="display:inline-block;transition:transform .15s;transform:rotate(${colapsado?'-90deg':'0deg'});margin-right:6px;">▾</span>
         ${areaKey} · ${porArea[areaKey].length} productos &nbsp;·&nbsp; <span style="font-weight:400;">${fmt(subArea)}</span>
       </td></tr>`;
       const porCat = agruparLista(porArea[areaKey], p => p.categoria || 'Sin categoría');
       Object.keys(porCat).sort().forEach(catKey => {
         const subCat = calcSubtotal(porCat[catKey]);
-        content += `<tr style="background:#f7f2fd;"><td colspan="6" style="padding:6px 20px;font-size:11px;font-weight:600;color:var(--purple);border-bottom:1px solid var(--purple-lt);">
+        content += `<tr data-grupo="${groupId}" style="background:#f7f2fd;${colapsado?'display:none;':''}"><td colspan="6" style="padding:6px 20px;font-size:11px;font-weight:600;color:var(--purple);border-bottom:1px solid var(--purple-lt);">
           ${catKey} · ${porCat[catKey].length} productos &nbsp;·&nbsp; ${fmt(subCat)}
         </td></tr>`;
-        porCat[catKey].forEach(p => { content += buildFilaToma(p); });
+        porCat[catKey].forEach(p => { content += buildFilaToma(p, groupId); });
       });
-      content += footerSubtotal(subArea, 6, 'Subtotal ' + areaKey);
+      content += footerSubtotal(subArea, 6, 'Subtotal ' + areaKey, groupId);
     });
   }
 
@@ -466,17 +483,40 @@ function calcSubtotal(lista) {
   }, 0);
 }
 
-function headerGrupo(titulo, n, subtotal, cols) {
-  return `<tr class="grupo-header"><td colspan="${cols}">${titulo} · ${n} producto${n!==1?'s':''} <span style="font-weight:400;font-size:11px;margin-left:8px;opacity:.8;">${fmt(subtotal)}</span></td></tr>`;
+function escJs(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+
+// Colapsa/expande un grupo (área, categoría o familia) de la tabla de conteo.
+function toggleGrupo(groupId) {
+  if (gruposColapsados.has(groupId)) gruposColapsados.delete(groupId);
+  else gruposColapsados.add(groupId);
+  const colapsado = gruposColapsados.has(groupId);
+
+  document.querySelectorAll('[data-grupo]').forEach(tr => {
+    if (tr.dataset.grupo === groupId) tr.style.display = colapsado ? 'none' : '';
+  });
+  document.querySelectorAll('[data-grupo-header]').forEach(tr => {
+    if (tr.dataset.grupoHeader === groupId) {
+      const chevron = tr.querySelector('.grupo-chevron');
+      if (chevron) chevron.style.transform = colapsado ? 'rotate(-90deg)' : 'rotate(0deg)';
+    }
+  });
 }
 
-function footerSubtotal(val, cols, label='Subtotal') {
-  return `<tr style="background:var(--surface);">
+function headerGrupo(titulo, n, subtotal, cols, groupId) {
+  const colapsado = gruposColapsados.has(groupId);
+  return `<tr class="grupo-header" data-grupo-header="${groupId}" onclick="toggleGrupo('${escJs(groupId)}')" style="cursor:pointer;"><td colspan="${cols}">
+    <span class="grupo-chevron" style="display:inline-block;transition:transform .15s;transform:rotate(${colapsado?'-90deg':'0deg'});margin-right:6px;">▾</span>
+    ${titulo} · ${n} producto${n!==1?'s':''} <span style="font-weight:400;font-size:11px;margin-left:8px;opacity:.8;">${fmt(subtotal)}</span></td></tr>`;
+}
+
+function footerSubtotal(val, cols, label='Subtotal', groupId) {
+  const colapsado = gruposColapsados.has(groupId);
+  return `<tr data-grupo="${groupId}" style="background:var(--surface);${colapsado?'display:none;':''}">
     <td colspan="${cols-1}" style="padding:7px 12px;font-size:12px;font-weight:600;color:var(--muted);text-align:right;">${label}</td>
     <td style="padding:7px 12px;text-align:right;font-family:var(--font-d);font-size:14px;font-weight:700;color:var(--teal);">${fmt(val)}</td>
   </tr>`;
 }
-function buildFilaToma(p) {
+function buildFilaToma(p, groupId) {
   const linea   = (tomaActual.lineas || {})[p.id] || {};
   const cerrado = linea.cerrado !== undefined ? linea.cerrado : '';
   const abierto = linea.abierto !== undefined ? linea.abierto : '';
@@ -491,8 +531,9 @@ function buildFilaToma(p) {
   const tieneData   = cerrado !== '' || abierto !== '';
 
   const presentacion = [p.presentacion, p.tamano].filter(Boolean).join(' ') || '—';
+  const colapsado = gruposColapsados.has(groupId);
 
-  return `<tr>
+  return `<tr data-grupo="${groupId}" style="${colapsado?'display:none;':''}">
     <td>
       <div style="font-weight:500;">${p.nombre}</div>
       <div style="font-size:11px;color:var(--muted);">${p.categoria||''}</div>
@@ -558,28 +599,35 @@ function actualizarValorLive() {
   const porArea = {};
 
   productos.forEach(p => {
+    const area = p.area || 'Sin área';
+    if (!porArea[area]) porArea[area] = { valor: 0, contados: 0, total: 0 };
+    porArea[area].total++;
+
     const linea   = (tomaActual.lineas||{})[p.id] || {};
     const precioC = parseFloat(p.precio_sin_iva)||0;
     const precioU = parseFloat(p.costo)||0;
     const valor   = (parseFloat(linea.cerrado)||0)*precioC + (parseFloat(linea.abierto)||0)*precioU;
     total += valor;
-    if (valor > 0) {
-      const area = p.area || 'Sin área';
-      porArea[area] = (porArea[area]||0) + valor;
-    }
+    porArea[area].valor += valor;
+    if (linea.cerrado !== undefined || linea.abierto !== undefined) porArea[area].contados++;
   });
 
   tomaActual.valor_total = total;
   document.getElementById('valor-live').textContent = fmt(total);
 
-  // Totales por área
+  // Indicador por área: cuántos productos faltan por contar y su valorización
   const totalesEl = document.getElementById('totales-area');
   if (totalesEl && Object.keys(porArea).length) {
-    totalesEl.innerHTML = Object.keys(porArea).sort().map(area => `
-      <div style="flex:1;min-width:140px;padding:8px 14px;border-right:1px solid var(--teal-lt);">
+    totalesEl.innerHTML = Object.keys(porArea).sort().map(area => {
+      const a = porArea[area];
+      const completo = a.contados === a.total;
+      return `
+      <div style="flex:1;min-width:160px;padding:8px 14px;border-right:1px solid var(--teal-lt);">
         <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--teal);font-weight:600;">${area}</div>
-        <div style="font-family:var(--font-d);font-size:15px;font-weight:700;color:var(--teal);">${fmt(porArea[area])}</div>
-      </div>`).join('');
+        <div style="font-family:var(--font-d);font-size:15px;font-weight:700;color:var(--teal);">${fmt(a.valor)}</div>
+        <div style="font-size:11px;color:${completo?'var(--green)':'var(--muted)'};margin-top:2px;">${a.contados}/${a.total} producto${a.total!==1?'s':''} contados</div>
+      </div>`;
+    }).join('');
   } else if (totalesEl) {
     totalesEl.innerHTML = '';
   }
