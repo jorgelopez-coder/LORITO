@@ -220,7 +220,7 @@
       <div class="field-row" style="margin-top:1rem;">
         <div class="field">
           <label for="p-familia">Familia</label>
-          <select id="p-familia" onchange="actualizarSubfamiliasForm()">
+          <select id="p-familia" onchange="actualizarSubfamiliasForm(); actualizarCamposPorFamilia();">
             <option value="">Sin definir</option>
           </select>
         </div>
@@ -229,6 +229,13 @@
           <select id="p-subfamilia">
             <option value="">Sin definir</option>
           </select>
+        </div>
+      </div>
+      <div class="field-row" style="margin-top:1rem;display:none;" id="wrap-peso-botella">
+        <div class="field">
+          <label for="p-peso-botella-vacia">Peso de botella vacía (g)</label>
+          <input type="number" id="p-peso-botella-vacia" min="0" step="0.1" placeholder="Ej. 450">
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Para calcular el inventario por peso (peso total menos este valor = licor restante)</div>
         </div>
       </div>
       <div style="margin-top:1rem;">
@@ -1320,6 +1327,13 @@ function actualizarSubfamiliasForm() {
     opciones.map(s => `<option${s===valActual?' selected':''}>${s}</option>`).join('');
 }
 
+// Muestra "Peso de botella vacía" solo para la familia "Licores" — se usa
+// para calcular el inventario por peso (peso total − peso vacío = licor restante).
+function actualizarCamposPorFamilia() {
+  const familia = document.getElementById('p-familia').value;
+  document.getElementById('wrap-peso-botella').style.display = familia === 'Licores' ? 'grid' : 'none';
+}
+
 function initConfig() {
   renderCfgLista('cat');
   renderCfgLista('uni');
@@ -1730,7 +1744,8 @@ async function guardar() {
     en_uso: document.getElementById('p-en-uso').value === 'true',
     aplica_receta: document.getElementById('p-aplica-receta').value === 'true',
     usar_precio_manual: document.getElementById('p-usar-precio-manual').checked,
-    stock_minimo: parseFloat(document.getElementById('p-stock-minimo').value) || 0
+    stock_minimo: parseFloat(document.getElementById('p-stock-minimo').value) || 0,
+    peso_botella_vacia: familia === 'Licores' ? (parseFloat(document.getElementById('p-peso-botella-vacia').value) || 0) : 0
   };
 
   const lista = getProductos();
@@ -1792,7 +1807,9 @@ function editar(id) {
   document.getElementById('p-area').value = p.area || '';
   document.getElementById('p-familia').value = p.familia || '';
   actualizarSubfamiliasForm();
+  actualizarCamposPorFamilia();
   document.getElementById('p-subfamilia').value = p.subfamilia || '';
+  document.getElementById('p-peso-botella-vacia').value = p.peso_botella_vacia || '';
   setEnUso(p.en_uso === false || p.en_uso === 'false' ? false : true);
   setAplicaReceta(p.aplica_receta === false || p.aplica_receta === 'false' ? false : true);
   document.getElementById('p-stock-minimo').value = p.stock_minimo || '';
@@ -1883,7 +1900,9 @@ function limpiarForm() {
   document.getElementById('p-area').value = '';
   document.getElementById('p-familia').value = '';
   actualizarSubfamiliasForm();
+  actualizarCamposPorFamilia();
   document.getElementById('p-subfamilia').value = '';
+  document.getElementById('p-peso-botella-vacia').value = '';
   setEnUso(true);
   setAplicaReceta(true);
   document.getElementById('p-stock-minimo').value = '';

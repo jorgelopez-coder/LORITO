@@ -39,7 +39,7 @@ const CATALOGO_ENCABEZADOS = [
   'ID_Producto', 'Nombre_Estandar', 'Categoria', 'Area_Negocio', 'Familia', 'Subfamilia', 'Unidad_Medida',
   'Presentacion', 'Tamano', 'Cantidad_Compra', 'Unidad_Compra', 'Cantidad_Presentacion', 'Precio_Sin_IVA', 'IVA',
   'Costo_Actual', 'Rendimiento', 'Proveedor_Habitual', 'Stock_Minimo', 'En_Uso',
-  'Fecha_Ultima_Actualizacion', 'Aplica_Receta', 'Usar_Precio_Manual'
+  'Fecha_Ultima_Actualizacion', 'Aplica_Receta', 'Usar_Precio_Manual', 'Peso_Botella_Vacia'
 ];
 
 const UNIDADES_RECETA_DEFAULT = ['Unidad', 'Litro', 'Mililitro', 'Onza', 'Kilo', 'Gramo', 'Pizca'];
@@ -1308,6 +1308,7 @@ function moduloProductos() {
       stock_minimo: Number(r['Stock_Minimo']) || 0,
       en_uso: r['En_Uso'] !== false && r['En_Uso'] !== 'FALSE',
       aplica_receta: r['Aplica_Receta'] !== false && r['Aplica_Receta'] !== 'FALSE',
+      peso_botella_vacia: Number(r['Peso_Botella_Vacia']) || 0,
       actualizado: r['Fecha_Ultima_Actualizacion'] || ''
     };
   });
@@ -1479,6 +1480,7 @@ function guardarProducto(p) {
     'En_Uso': p.en_uso === false || p.en_uso === 'false' ? false : true,
     'Aplica_Receta': p.aplica_receta === false || p.aplica_receta === 'false' ? false : true,
     'Usar_Precio_Manual': p.usar_precio_manual === true || p.usar_precio_manual === 'true' ? true : false,
+    'Peso_Botella_Vacia': Number(p.peso_botella_vacia) || 0,
     'Fecha_Ultima_Actualizacion': new Date()
   });
 

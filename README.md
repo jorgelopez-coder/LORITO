@@ -73,6 +73,18 @@ Sheet de compras + `Code-compras-backend.gs`, UI en `config-productos.html`)
   recetas" producto por producto. Afecta `costoRealProducto()` (recetas/menú)
   y `moduloProductos()` (columna "Costo/u" de la lista, ahora con badge
   "manual" cuando aplica).
+- **Nuevo, pendiente de desplegar:** `Peso_Botella_Vacia` — columna nueva en
+  `Catalogo_Maestro` (agregada a `CATALOGO_ENCABEZADOS`, `moduloProductos()` y
+  `guardarProducto()`) para la familia "Licores", pensada para el inventario
+  por peso (peso total de la botella menos este valor = licor restante).
+  `costos-productos.html` ya muestra el campo "Peso de botella vacía (g)"
+  solo cuando Familia = "Licores" (`actualizarCamposPorFamilia()`). Falta: (1)
+  volver a pegar `Code-costeo-recetas-v2.gs` y Nueva versión, (2) correr una
+  vez `migrarAgregarColumnasFaltantesCatalogo()` para que la columna aparezca
+  en los productos ya existentes (mismo patrón que las demás columnas nuevas
+  de esta sección). El cálculo de inventario por peso en sí (restar este
+  valor a una pesada real) no está implementado todavía — esto solo agrega la
+  captura del dato.
 - `Categorias_Menu` y `Subcategorias_Menu` son nuevas y todavía no existen en
   el spreadsheet en producción — hay que correr `migrarCrearCategoriasMenu()`
   y `migrarAgregarSubcategoriaMenu()` una vez cada una desde el editor de
