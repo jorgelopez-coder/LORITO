@@ -84,6 +84,7 @@
 
     /* ── KPI STRIP (tickets) ────────────────────────────────── */
     .ticket-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:1.5rem; }
+    .fecha-chip-idx { display:inline-block; font-size:11px; font-family:var(--font-m); background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:4px 9px; margin:2px 4px 2px 0; }
     .ticket { position:relative; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:22px 18px 16px; }
     .ticket::before {
       content:''; position:absolute; top:-1px; left:0; right:0; height:9px;
@@ -378,18 +379,27 @@
       <div class="ticket-lbl">Último inventario</div>
       <div class="ticket-sub" id="kpi-inv-sub" style="color:var(--muted);"></div>
     </div>
-    <div class="ticket">
+    <div class="ticket" id="kpi-cierres-ticket" onclick="toggleFechasFaltantes()" style="cursor:pointer;">
       <span class="ticket-punch"></span>
-      <div class="ticket-val" id="kpi-oc" style="color:var(--text);">—</div>
-      <div class="ticket-lbl">Órdenes de compra</div>
-      <div class="ticket-sub" id="kpi-oc-sub" style="color:var(--muted);"></div>
+      <div class="ticket-val" id="kpi-cierres" style="color:var(--text);">—</div>
+      <div class="ticket-lbl">Días sin cierre de caja</div>
+      <div class="ticket-sub" id="kpi-cierres-sub" style="color:var(--muted);"></div>
     </div>
-    <div class="ticket">
+    <a href="depositos.html" class="ticket" data-mod="depositos" style="text-decoration:none;color:inherit;display:block;">
       <span class="ticket-punch"></span>
-      <div class="ticket-val" id="kpi-prod" style="color:var(--text);">—</div>
-      <div class="ticket-lbl">Productos en base</div>
-      <div class="ticket-sub" id="kpi-prod-sub" style="color:var(--muted);"></div>
+      <div class="ticket-val" id="kpi-cash" style="color:var(--text);">—</div>
+      <div class="ticket-lbl">Cash en caja</div>
+      <div class="ticket-sub" id="kpi-cash-sub" style="color:var(--muted);"></div>
+    </a>
+  </div>
+
+  <!-- Panel expandible: fechas sin cierre -->
+  <div class="section-card" id="panel-fechas-faltantes" style="display:none;margin-bottom:1.5rem;">
+    <div class="section-head">
+      <span class="section-title"><span class="clip"></span>Fechas sin cierre de caja</span>
+      <a href="cierres.html" class="section-link">Ir a Cierres →</a>
     </div>
+    <div id="lista-fechas-faltantes" style="padding:1rem 1.25rem;"></div>
   </div>
 
   <!-- Facturas con fecha de hoy -->
@@ -533,6 +543,8 @@ const pad   = n => String(n).padStart(2,'0');
 const fmt   = n => '₡' + Number(n||0).toLocaleString('es-CR',{minimumFractionDigits:0,maximumFractionDigits:0});
 const SHEET_COSTOS = '1PtT9AHv2drY7oLygHKWMhHQgeOuT20_cD_igqu6ijyA';
 const REGISTRO_SHEET_ID = '1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw';
+const SHEETS_URL_CIERRES = 'https://script.google.com/macros/s/AKfycbwp-pTaJAeZ2PPl6Xig4e8JH8tw1o6AHun4yiDxDLFFZs1tVUXlhEwNVPlQ9kDl04kh/exec';
+const CIERRES_CONTROL_DESDE = '2026-06-01';
 
 // Saludo según hora
 const hora = hoy.getHours();
@@ -601,10 +613,6 @@ async function cargarKPIs() {
   // 1. PRODUCTOS (localStorage)
   const productos = JSON.parse(localStorage.getItem('costos_productos')||'[]');
   const enUso     = productos.filter(p => p.en_uso !== false && p.en_uso !== 'false');
-  document.getElementById('kpi-prod').textContent = enUso.length || '—';
-  document.getElementById('kpi-prod-sub').textContent = enUso.length
-    ? `${enUso.length} habilitados en base`
-    : 'Sin productos en base local';
 
   // 2. ÓRDENES DE COMPRA (localStorage)
   const ordenes     = JSON.parse(localStorage.getItem('ordenes_compra')||'[]');
@@ -613,14 +621,7 @@ async function cargarKPIs() {
   const totalOC     = ordenes.filter(o => o.estado !== 'cancelada').length;
 
   if (enProceso.length) {
-    document.getElementById('kpi-oc').textContent       = enProceso.length + ' en proceso';
-    document.getElementById('kpi-oc').style.color       = 'var(--amber)';
-    document.getElementById('kpi-oc-sub').textContent   = `${aprobadas.length} aprobada${aprobadas.length!==1?'s':''} · ${totalOC} total`;
-    document.getElementById('oc-badge-qa').innerHTML    = `<span class="qa-badge" style="background:var(--amber-bg);color:var(--amber);">${enProceso.length} activa${enProceso.length!==1?'s':''}</span>`;
-  } else {
-    document.getElementById('kpi-oc').textContent     = totalOC + ' orden' + (totalOC!==1?'es':'');
-    document.getElementById('kpi-oc').style.color     = 'var(--text)';
-    document.getElementById('kpi-oc-sub').textContent = `${aprobadas.length} aprobada${aprobadas.length!==1?'s':''}`;
+    document.getElementById('oc-badge-qa').innerHTML = `<span class="qa-badge" style="background:var(--amber-bg);color:var(--amber);">${enProceso.length} activa${enProceso.length!==1?'s':''}</span>`;
   }
 
   // 3. INVENTARIO (Sheet via gviz)
@@ -1032,12 +1033,133 @@ async function cargarResumenMantenimiento() {
   }
 }
 
+/* ── KPI: CONTROL DE CIERRES DE CAJA ──────────────────────────── */
+// Todos los días desde CIERRES_CONTROL_DESDE (hasta ayer) deben tener al
+// menos un cierre de caja registrado. Esta KPI cuenta cuántos NO lo tienen.
+function soloFechaIdx(fecha) { return fecha ? String(fecha).slice(0, 10) : ''; }
+
+let fechasFaltantesGlobal = [];
+
+async function cargarKPICierres() {
+  const valEl = document.getElementById('kpi-cierres');
+  const subEl = document.getElementById('kpi-cierres-sub');
+  if (!valEl) return;
+  try {
+    const resp = await fetch(SHEETS_URL_CIERRES + '?action=read');
+    const data = await resp.json();
+    const fechasConCierre = new Set(
+      (data.records || []).map(r => soloFechaIdx(r[1])).filter(Boolean)
+    );
+
+    const ayer = new Date();
+    ayer.setDate(ayer.getDate() - 1);
+    const ayerISO = ayer.toISOString().slice(0,10);
+
+    const faltantes = [];
+    const cursor = new Date(CIERRES_CONTROL_DESDE + 'T00:00:00');
+    const fin = new Date(ayerISO + 'T00:00:00');
+    while (cursor <= fin) {
+      const iso = cursor.toISOString().slice(0,10);
+      if (!fechasConCierre.has(iso)) faltantes.push(iso);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    fechasFaltantesGlobal = faltantes;
+
+    if (!faltantes.length) {
+      valEl.textContent = '0';
+      valEl.style.color = 'var(--green)';
+      const [y,m,d] = CIERRES_CONTROL_DESDE.split('-');
+      subEl.textContent = `Al día desde ${d}/${m}/${y}`;
+    } else {
+      valEl.textContent = String(faltantes.length);
+      valEl.style.color = 'var(--red)';
+      const recientes = faltantes.slice(-3)
+        .map(f => new Date(f+'T12:00:00').toLocaleDateString('es-CR',{day:'2-digit',month:'short'}))
+        .join(', ');
+      subEl.textContent = `Últimas: ${recientes}`;
+    }
+  } catch(e) {
+    valEl.textContent = 'Sin conexión';
+    valEl.style.color = 'var(--muted)';
+    subEl.textContent = 'No se pudo verificar';
+  }
+}
+
+function toggleFechasFaltantes() {
+  const panel = document.getElementById('panel-fechas-faltantes');
+  if (!panel) return;
+  const abrir = panel.style.display === 'none';
+  panel.style.display = abrir ? 'block' : 'none';
+  if (!abrir) return;
+
+  const lista = document.getElementById('lista-fechas-faltantes');
+  if (!fechasFaltantesGlobal.length) {
+    lista.innerHTML = '<div class="no-alerts">Sin fechas pendientes — todo al día.</div>';
+    return;
+  }
+  lista.innerHTML = fechasFaltantesGlobal
+    .slice().reverse()
+    .map(f => `<span class="fecha-chip-idx">${new Date(f+'T12:00:00').toLocaleDateString('es-CR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'})}</span>`)
+    .join('');
+}
+
+/* ── KPI: CASH EN CAJA SIN DEPÓSITO ASIGNADO ─────────────────────── */
+const COL_FECHA_CAJA = 1, COL_FONDO_CAJA = 15, COL_CAJA_CAJA = 16, COL_USD_TOTAL_CAJA = 41;
+
+async function cargarKPICash() {
+  const valEl = document.getElementById('kpi-cash');
+  const subEl = document.getElementById('kpi-cash-sub');
+  if (!valEl) return;
+  try {
+    const [rCierres, rDepositos] = await Promise.all([
+      fetch(SHEETS_URL_CIERRES + '?action=read').then(r => r.json()),
+      fetch(SHEETS_URL_CIERRES + '?action=depositos').then(r => r.json())
+    ]);
+
+    const porFecha = {};
+    (rCierres.records || []).forEach(r => {
+      const fecha = soloFechaIdx(r[COL_FECHA_CAJA]);
+      if (!fecha) return;
+      if (!porFecha[fecha]) porFecha[fecha] = { crc: 0, usd: 0 };
+      const caja = +r[COL_CAJA_CAJA]||0, fondo = +r[COL_FONDO_CAJA]||0, usd = +r[COL_USD_TOTAL_CAJA]||0;
+      porFecha[fecha].crc += (caja - fondo);
+      porFecha[fecha].usd += usd;
+    });
+
+    const fechasAsignadas = new Set();
+    (rDepositos.records || []).filter(r => r[0]).forEach(r => {
+      let fechas = [];
+      try { fechas = JSON.parse(r[6] || '[]'); } catch(e) { fechas = []; }
+      if (Array.isArray(fechas)) fechas.forEach(f => fechasAsignadas.add(f));
+    });
+
+    let totalCrc = 0, totalUsd = 0, fechasPendientes = 0;
+    Object.keys(porFecha).forEach(f => {
+      if (fechasAsignadas.has(f)) return;
+      totalCrc += porFecha[f].crc;
+      totalUsd += porFecha[f].usd;
+      fechasPendientes++;
+    });
+
+    valEl.textContent = '₡' + Math.round(totalCrc).toLocaleString('es-CR');
+    subEl.textContent = fechasPendientes
+      ? `${totalUsd ? '$'+totalUsd.toLocaleString('es-CR',{minimumFractionDigits:2,maximumFractionDigits:2})+' · ' : ''}${fechasPendientes} fecha${fechasPendientes!==1?'s':''} sin depósito`
+      : 'Todo depositado';
+  } catch(e) {
+    valEl.textContent = 'Sin conexión';
+    subEl.textContent = 'No se pudo verificar';
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   const sesion = verificarAcceso();
   if (!sesion) return;
   aplicarRol(sesion);
   cargarPedidosHoy();
   cargarKPIs();
+  cargarKPICierres();
+  cargarKPICash();
   cargarResumenHorario();
   cargarResumenMantenimiento();
   cargarFacturasHoy();
