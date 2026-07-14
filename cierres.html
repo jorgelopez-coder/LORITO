@@ -158,9 +158,6 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 .hist-detail-fotos{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
 .hist-detail-fotos a{font-size:11px;color:var(--blue);text-decoration:none;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px}
 
-/* USD section */
-.usd-section{border-top:1px solid var(--border);padding-top:1.25rem;margin-top:1.25rem}
-
 /* Resumen ventas antes de submit */
 .resumen-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;margin-top:1rem}
 .resumen-title{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem}
@@ -305,6 +302,19 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
           <label for="f-otras">Otras Ventas (₡)</label>
           <input type="number" id="f-otras" placeholder="0" min="0" oninput="actualizarResumen()"/>
         </div>
+        <div class="field">
+          <label for="f-usd-ventas">Ventas en Dólares ($)</label>
+          <input type="number" id="f-usd-ventas" placeholder="0.00" min="0" step="0.01" oninput="calcDolares();actualizarResumen()"/>
+        </div>
+        <div class="field">
+          <label>Total $ en colones</label>
+          <input type="text" id="f-usd-total-crc" placeholder="₡0" readonly/>
+        </div>
+      </div>
+
+      <div class="field" style="max-width:260px">
+        <label>Total Ventas del Día (₡)</label>
+        <input type="text" id="f-total-ventas-dia" placeholder="₡0" readonly/>
       </div>
 
       <div class="denom-section">
@@ -331,20 +341,9 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
             <input type="number" id="f-propina-dolares" placeholder="0.00" min="0" step="0.01" oninput="calcDolares();actualizarResumen()"/>
           </div>
         </div>
-      </div>
-
-      <!-- USD -->
-      <div class="usd-section">
-        <p class="denom-group-title">💵 Ventas en Dólares</p>
-        <div class="field-row-3">
-          <div class="field">
-            <label for="f-usd-ventas">Ventas en Dólares ($)</label>
-            <input type="number" id="f-usd-ventas" placeholder="0.00" min="0" step="0.01" oninput="calcDolares();actualizarResumen()"/>
-          </div>
-          <div class="field">
-            <label>Total $ en colones</label>
-            <input type="text" id="f-usd-total-crc" placeholder="₡0" readonly/>
-          </div>
+        <div class="field" style="max-width:260px">
+          <label>Total 10% Servicio (₡)</label>
+          <input type="text" id="f-total-servicio" placeholder="₡0" readonly/>
         </div>
       </div>
 
@@ -777,10 +776,11 @@ function getTotales() {
   const propinaDolaresCrc = Math.round(propinaDolares * tc);
   const servicio    = propinaEfectivo + propinaTarjeta + propinaCredito + propinaOtro + propinaDolaresCrc;
   const datafonoTotal = v('f-datafono-total');
-  const totalVentas = efectivo + tarjeta + sinpe + otras + credito + plataformas + servicio + usdTotalCrc;
+  const ventasDia = efectivo + tarjeta + sinpe + otras + credito + plataformas + usdTotalCrc;
+  const totalVentas = ventasDia + servicio;
   return {efectivo,tarjeta,sinpe,otras,credito,plataformas,servicio,
     propinaEfectivo,propinaTarjeta,propinaCredito,propinaOtro,propinaDolares,datafonoTotal,
-    usdVentas,tc,usdTotalCrc,totalVentas};
+    usdVentas,tc,usdTotalCrc,ventasDia,totalVentas};
 }
 
 function actualizarResumen() {
@@ -797,6 +797,10 @@ function actualizarResumen() {
     `<div class="resumen-item"><span>${lbl}</span><span class="v">${fmtCRC(val)}</span></div>`
   ).join('');
   document.getElementById('resumen-total').textContent = fmtCRC(t.totalVentas);
+  const totalVentasDiaEl = document.getElementById('f-total-ventas-dia');
+  if (totalVentasDiaEl) totalVentasDiaEl.value = fmtCRC(t.ventasDia);
+  const totalServicioEl = document.getElementById('f-total-servicio');
+  if (totalServicioEl) totalServicioEl.value = fmtCRC(t.servicio);
   actualizarWhatsAppBtn();
 }
 
