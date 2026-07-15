@@ -371,7 +371,7 @@ const EXTRACTOR_URL = 'https://script.google.com/a/macros/casaaguizotes.com/s/AK
 const WA_NUMERO_DEFAULT = '50688301564';
 
 // Índices de columnas en el array `records` que devuelve SHEETS_URL?action=read (hoja Cierres)
-const COL_FECHA = 1, COL_FONDO = 15, COL_CAJA = 16, COL_USD_TOTAL = 41;
+const COL_FECHA = 1, COL_FONDO = 15, COL_CAJA = 16, COL_TC = 33, COL_USD_TOTAL = 41;
 const COL_BILLETES_CRC = [19,20,21,22,23,24]; // ₡50.000 … ₡1.000
 const COL_MONEDAS_CRC  = [25,26,27,28,29,30]; // ₡500 … ₡5
 const COL_BILLETES_USD = [35,36,37,38,39,40]; // $100 … $1
@@ -456,7 +456,11 @@ function agregarPorFecha(records) {
       billetesUsd: DENOMS_BILLETES_USD.map(()=>0)
     };
     const d = out[fecha];
-    const caja = +r[COL_CAJA]||0, fondo = +r[COL_FONDO]||0, usd = +r[COL_USD_TOTAL]||0;
+    const fondo = +r[COL_FONDO]||0, usd = +r[COL_USD_TOTAL]||0, tc = +r[COL_TC]||0;
+    // "Total Caja Contada ₡" en el sheet incluye el equivalente en colones de los dólares
+    // contados (caja.html los suma al TC del día) — hay que restarlo para quedarnos con
+    // el monto puro en colones.
+    const caja = (+r[COL_CAJA]||0) - Math.round(usd * tc);
     d.caja += caja; d.fondo += fondo; d.crc += (caja - fondo); d.usd += usd; d.cierres += 1;
     COL_BILLETES_CRC.forEach((c,i) => d.billetesCrc[i] += (+r[c]||0));
     COL_MONEDAS_CRC.forEach((c,i)  => d.monedasCrc[i]  += (+r[c]||0));
