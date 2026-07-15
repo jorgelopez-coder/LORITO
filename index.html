@@ -85,6 +85,12 @@
     /* ── KPI STRIP (tickets) ────────────────────────────────── */
     .ticket-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:1.5rem; }
     .fecha-chip-idx { display:inline-block; font-size:11px; font-family:var(--font-m); background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:4px 9px; margin:2px 4px 2px 0; }
+    .cash-val-row { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+    .cash-val-row .ticket-val { margin-bottom:3px; }
+    .cash-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); }
+    .cash-row:last-child { border-bottom:none; }
+    .cash-row .cash-fecha { font-size:12.5px; color:var(--text); }
+    .cash-row .cash-montos { display:flex; gap:16px; font-family:var(--font-m); font-size:12.5px; font-weight:600; color:var(--text); white-space:nowrap; }
     .ticket { position:relative; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:22px 18px 16px; }
     .ticket::before {
       content:''; position:absolute; top:-1px; left:0; right:0; height:9px;
@@ -385,12 +391,15 @@
       <div class="ticket-lbl">Días sin cierre de caja</div>
       <div class="ticket-sub" id="kpi-cierres-sub" style="color:var(--muted);"></div>
     </div>
-    <a href="depositos.html" class="ticket" data-mod="depositos" style="text-decoration:none;color:inherit;display:block;">
+    <div class="ticket" id="kpi-cash-ticket" onclick="toggleCashDetalle()" style="cursor:pointer;">
       <span class="ticket-punch"></span>
-      <div class="ticket-val" id="kpi-cash" style="color:var(--text);">—</div>
+      <div class="cash-val-row">
+        <div class="ticket-val" id="kpi-cash-crc" style="color:var(--text);">—</div>
+        <div class="ticket-val" id="kpi-cash-usd" style="color:var(--text);">—</div>
+      </div>
       <div class="ticket-lbl">Cash en caja</div>
       <div class="ticket-sub" id="kpi-cash-sub" style="color:var(--muted);"></div>
-    </a>
+    </div>
   </div>
 
   <!-- Panel expandible: fechas sin cierre -->
@@ -400,6 +409,15 @@
       <a href="cierres.html" class="section-link">Ir a Cierres →</a>
     </div>
     <div id="lista-fechas-faltantes" style="padding:1rem 1.25rem;"></div>
+  </div>
+
+  <!-- Panel expandible: composición de cash en caja -->
+  <div class="section-card" id="panel-cash-detalle" style="display:none;margin-bottom:1.5rem;">
+    <div class="section-head">
+      <span class="section-title"><span class="clip"></span>Fechas que componen el cash en caja</span>
+      <a href="depositos.html" class="section-link">Ir a Depósitos →</a>
+    </div>
+    <div id="lista-cash-detalle" style="padding:.25rem 1.25rem;"></div>
   </div>
 
   <!-- Facturas con fecha de hoy -->
@@ -1107,10 +1125,13 @@ function toggleFechasFaltantes() {
 /* ── KPI: CASH EN CAJA SIN DEPÓSITO ASIGNADO ─────────────────────── */
 const COL_FECHA_CAJA = 1, COL_FONDO_CAJA = 15, COL_CAJA_CAJA = 16, COL_USD_TOTAL_CAJA = 41;
 
+let cashPendientesGlobal = [];
+
 async function cargarKPICash() {
-  const valEl = document.getElementById('kpi-cash');
+  const crcEl = document.getElementById('kpi-cash-crc');
+  const usdEl = document.getElementById('kpi-cash-usd');
   const subEl = document.getElementById('kpi-cash-sub');
-  if (!valEl) return;
+  if (!crcEl) return;
   try {
     const [rCierres, rDepositos] = await Promise.all([
       fetch(SHEETS_URL_CIERRES + '?action=read').then(r => r.json()),
@@ -1134,22 +1155,50 @@ async function cargarKPICash() {
       if (Array.isArray(fechas)) fechas.forEach(f => fechasAsignadas.add(f));
     });
 
-    let totalCrc = 0, totalUsd = 0, fechasPendientes = 0;
+    let totalCrc = 0, totalUsd = 0;
+    const pendientes = [];
     Object.keys(porFecha).forEach(f => {
       if (fechasAsignadas.has(f)) return;
       totalCrc += porFecha[f].crc;
       totalUsd += porFecha[f].usd;
-      fechasPendientes++;
+      pendientes.push({ fecha: f, crc: porFecha[f].crc, usd: porFecha[f].usd });
     });
+    pendientes.sort((a,b) => b.fecha.localeCompare(a.fecha));
+    cashPendientesGlobal = pendientes;
 
-    valEl.textContent = '₡' + Math.round(totalCrc).toLocaleString('es-CR');
-    subEl.textContent = fechasPendientes
-      ? `${totalUsd ? '$'+totalUsd.toLocaleString('es-CR',{minimumFractionDigits:2,maximumFractionDigits:2})+' · ' : ''}${fechasPendientes} fecha${fechasPendientes!==1?'s':''} sin depósito`
+    crcEl.textContent = '₡' + Math.round(totalCrc).toLocaleString('es-CR');
+    usdEl.textContent = '$' + totalUsd.toLocaleString('es-CR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    subEl.textContent = pendientes.length
+      ? `${pendientes.length} fecha${pendientes.length!==1?'s':''} sin depósito`
       : 'Todo depositado';
   } catch(e) {
-    valEl.textContent = 'Sin conexión';
+    crcEl.textContent = 'Sin conexión';
+    usdEl.textContent = '';
     subEl.textContent = 'No se pudo verificar';
   }
+}
+
+function toggleCashDetalle() {
+  const panel = document.getElementById('panel-cash-detalle');
+  if (!panel) return;
+  const abrir = panel.style.display === 'none';
+  panel.style.display = abrir ? 'block' : 'none';
+  if (!abrir) return;
+
+  const lista = document.getElementById('lista-cash-detalle');
+  if (!cashPendientesGlobal.length) {
+    lista.innerHTML = '<div class="no-alerts">Sin fechas pendientes de depósito.</div>';
+    return;
+  }
+  lista.innerHTML = cashPendientesGlobal.map(d => `
+    <div class="cash-row">
+      <span class="cash-fecha">${new Date(d.fecha+'T12:00:00').toLocaleDateString('es-CR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'})}</span>
+      <span class="cash-montos">
+        <span>₡${Math.round(d.crc).toLocaleString('es-CR')}</span>
+        <span>$${d.usd.toLocaleString('es-CR',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
+      </span>
+    </div>
+  `).join('');
 }
 
 document.addEventListener('DOMContentLoaded', function() {
