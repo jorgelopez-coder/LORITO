@@ -61,6 +61,8 @@ input[type=number]{font-family:var(--font-m)}
 .btn-mini{font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer}
 .btn-mini:hover{border-color:var(--border-h);color:var(--text)}
 .submit-area{display:flex;gap:10px;margin-top:1.25rem;flex-wrap:wrap}
+.btn-wa{width:100%;background:#25D366;color:#fff;border:none;border-radius:9px;font-family:var(--font-d);font-size:15px;font-weight:700;padding:12px 24px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:opacity .15s}
+.btn-wa:hover{opacity:.9}
 
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:9px 10px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surface)}
@@ -298,6 +300,8 @@ tr:last-child td{border-bottom:none}
     <button class="btn-secondary" onclick="limpiarFormDeposito()">Limpiar</button>
     <button class="btn-primary" id="btn-asignar" onclick="asignarDeposito()" disabled>Asignar depósito ✓</button>
   </div>
+
+  <div id="wa-buttons-dep" style="margin-top:12px"></div>
 </div>
 
 <!-- ── TAB HISTORIAL ── -->
@@ -338,6 +342,7 @@ tr:last-child td{border-bottom:none}
 // ── CONFIG ────────────────────────────────────────────────────────
 const SHEETS_URL    = 'https://script.google.com/macros/s/AKfycbwp-pTaJAeZ2PPl6Xig4e8JH8tw1o6AHun4yiDxDLFFZs1tVUXlhEwNVPlQ9kDl04kh/exec';
 const EXTRACTOR_URL = 'https://script.google.com/a/macros/casaaguizotes.com/s/AKfycbz9ZitIaHQJ6U5wPBGH8NsHyvgugCr_2IyAjdwJv6PmxAbmvFtAxewCWWOFyXN65nzV/exec';
+const WA_NUMERO_DEFAULT = '50688301564';
 
 // Índices de columnas en el array `records` que devuelve SHEETS_URL?action=read (hoja Cierres)
 const COL_FECHA = 1, COL_FONDO = 15, COL_CAJA = 16, COL_USD_TOTAL = 41;
@@ -752,6 +757,8 @@ async function asignarDeposito() {
     showToast('Depósito asignado ✓', 'success');
     limpiarFormDeposito();
     await cargarDatos();
+    const guardado = depositosData.find(d => String(d.id) === String(payload.id)) || payload;
+    mostrarBotonWA(guardado);
   } catch(e) {
     showToast('No se pudo asignar: ' + e.message, 'error');
   } finally {
@@ -771,6 +778,43 @@ function limpiarFormDeposito() {
   limpiarSeleccion('asignar');
   actualizarComparacion();
   actualizarBotonAsignar();
+  ocultarBotonWA();
+}
+
+// ── WHATSAPP: RESUMEN DEL DEPÓSITO ASIGNADO ───────────────────────
+const WA_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.057 23.428a.75.75 0 0 0 .916.916l5.569-1.475A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.694 9.694 0 0 1-4.953-1.356l-.355-.211-3.706.981.993-3.614-.23-.372A9.699 9.699 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg>`;
+
+function buildWAMessageDeposito(dep) {
+  const fechas = (dep.fechasCubiertas || []).slice().sort();
+  const fechasFmt = fechas.map(f => '   • ' + fechaLbl(f)).join('\n');
+  const cuadra = Math.abs(dep.diferenciaCrc||0) <= 500 && Math.abs(dep.diferenciaUsd||0) <= 1;
+
+  return `🏦 *Depósito Bancario*
+📅 Fecha de depósito: ${fechaLbl(dep.fechaDeposito)}
+🔖 Referencia: ${dep.referencia}
+
+💰 *Monto del comprobante:* ${fmtCRC(dep.montoCrcComprobante)}${dep.montoUsdComprobante ? ' · ' + fmtUSD(dep.montoUsdComprobante) : ''}
+📊 Calculado del sistema: ${fmtCRC(dep.montoCrcCalculado)}${dep.montoUsdCalculado ? ' · ' + fmtUSD(dep.montoUsdCalculado) : ''}
+${cuadra ? '✅ Cuadra' : '⚠️ Diferencia: ' + fmtCRC(dep.diferenciaCrc) + (dep.diferenciaUsd ? ' · ' + fmtUSD(dep.diferenciaUsd) : '')}
+
+📆 *Fechas cubiertas (${fechas.length}):*
+${fechasFmt}
+${dep.notas ? `\n📝 ${dep.notas}` : ''}${dep.fotoUrl ? `\n📷 Comprobante: ${dep.fotoUrl}` : ''}`;
+}
+
+function mostrarBotonWA(dep) {
+  const cont = document.getElementById('wa-buttons-dep');
+  if (!cont) return;
+  const msg = buildWAMessageDeposito(dep);
+  cont.innerHTML = `<button type="button" class="btn-wa" id="btn-wa-dep">${WA_SVG} Enviar resumen por WhatsApp</button>`;
+  document.getElementById('btn-wa-dep').addEventListener('click', () => {
+    window.open('https://wa.me/' + WA_NUMERO_DEFAULT + '?text=' + encodeURIComponent(msg), '_blank');
+  });
+}
+
+function ocultarBotonWA() {
+  const cont = document.getElementById('wa-buttons-dep');
+  if (cont) cont.innerHTML = '';
 }
 
 // ── TAB 3: HISTORIAL DE DEPÓSITOS ─────────────────────────────────
