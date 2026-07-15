@@ -832,15 +832,23 @@ function actualizarBalanceFinal() {
 
   let totalCaja = 0;
   DENOMS_CRC.forEach(d => { totalCaja += (parseInt(document.getElementById('d-'+d)?.value)||0) * d; });
+  let totalUsd = 0;
+  DENOMS_USD.forEach(({id,val}) => { totalUsd += (parseInt(document.getElementById('d-'+id)?.value)||0) * val; });
+  const tc = getTC();
+  const totalUsdEnColones = Math.round(totalUsd * tc);
   const efectivo = parseFloat(document.getElementById('f-efectivo')?.value) || 0;
   const propinaEfectivo = parseFloat(document.getElementById('f-propina-efectivo')?.value) || 0;
   const fondo = parseFloat(document.getElementById('f-fondo')?.value) || 0;
-  const diffEfectivo = totalCaja - (efectivo + propinaEfectivo + fondo);
+  // Misma fórmula que calcCuadre(): el efectivo contado incluye los billetes en
+  // dólares convertidos a colones con el tipo de cambio ingresado.
+  const diffEfectivo = (totalCaja + totalUsdEnColones) - (efectivo + propinaEfectivo + fondo);
 
   const balance = diffTarjeta + diffEfectivo;
 
   bfTarjeta.textContent = (diffTarjeta >= 0 ? '+' : '') + fmtCRC(diffTarjeta);
-  document.getElementById('bf-efectivo').textContent = (diffEfectivo >= 0 ? '+' : '') + fmtCRC(diffEfectivo);
+  const bfEfectivoEl = document.getElementById('bf-efectivo');
+  bfEfectivoEl.textContent = (diffEfectivo >= 0 ? '+' : '') + fmtCRC(diffEfectivo);
+  bfEfectivoEl.className = 'val ' + (diffEfectivo >= 0 ? 'diff-ok' : 'diff-warn');
   const totalEl = document.getElementById('bf-total');
   totalEl.textContent = (balance >= 0 ? '+' : '') + fmtCRC(balance);
   totalEl.className = 'val ' + (balance >= 0 ? 'diff-ok' : 'diff-warn');
