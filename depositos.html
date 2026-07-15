@@ -741,9 +741,14 @@ async function asignarDeposito() {
   const btn = document.getElementById('btn-asignar');
   btn.disabled = true; const textoOriginal = btn.textContent; btn.textContent = 'Asignando…';
   try {
-    const resp = await fetch(SHEETS_URL, { method: 'POST', body: new URLSearchParams({ payload: JSON.stringify(payload) }) });
-    const json = await resp.json();
-    if (json.result !== 'ok') throw new Error(json.message || 'Error al guardar');
+    // mode:'no-cors' porque Apps Script no manda headers CORS — igual que cierres.html,
+    // la respuesta queda opaca (no se puede leer), así que si el fetch no lanza excepción
+    // asumimos que se guardó y confirmamos recargando los datos.
+    await fetch(SHEETS_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
     showToast('Depósito asignado ✓', 'success');
     limpiarFormDeposito();
     await cargarDatos();
