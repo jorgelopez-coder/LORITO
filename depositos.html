@@ -80,6 +80,13 @@ tr:last-child td{border-bottom:none}
 .fila-detalle.open{display:table-row}
 .fila-detalle td{background:var(--surface);padding:1rem 1.25rem}
 .denom-detalle-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:2px 24px;margin-bottom:.75rem}
+
+.kpi-pendiente-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:.5rem}
+.kpi-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem}
+.kpi-val{font-family:var(--font-m);font-size:24px;font-weight:700;color:var(--text)}
+.kpi-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+.kpi-detalle-body{display:none;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)}
+.kpi-detalle-body.open{display:block}
 .empty{text-align:center;padding:2.5rem;color:var(--subtle);font-size:13px}
 .table-wrap{overflow-x:auto}
 
@@ -196,8 +203,28 @@ tr:last-child td{border-bottom:none}
 <!-- ── TAB RESUMEN DIARIO ── -->
 <div class="page active" id="tab-resumen">
   <div class="card">
+    <p class="card-title">Efectivo sin depósito asignado</p>
+    <div class="kpi-pendiente-grid">
+      <div class="kpi-box">
+        <div class="kpi-val" id="kpi-pend-crc">₡0</div>
+        <div class="kpi-lbl">Colones pendientes de depositar</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-val" id="kpi-pend-usd">$0.00</div>
+        <div class="kpi-lbl">Dólares pendientes de depositar</div>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:.5rem" id="kpi-pend-count">0 fechas pendientes</p>
+    <button type="button" class="fecha-toggle" id="btn-kpi-detalle" onclick="toggleKpiDetalle()">
+      <svg class="chevron" viewBox="0 0 16 16" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 4 10 8 6 12"/></svg>
+      <span id="kpi-toggle-lbl">Ver detalle por denominación</span>
+    </button>
+    <div class="kpi-detalle-body" id="kpi-detalle-body"></div>
+  </div>
+
+  <div class="card">
     <p class="card-title">Efectivo ingresado por día</p>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:1rem">Marcá varias fechas para sumar su total. Hacé click sobre una fecha para desplegar el detalle por denominación.</p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:1rem">Solo se listan las fechas sin depósito asignado — las ya depositadas están en "Historial de depósitos". Marcá varias fechas para sumar su total. Hacé click sobre una fecha para desplegar el detalle por denominación.</p>
     <div class="toolbar">
       <button class="btn-mini" onclick="seleccionarTodo('resumen')">Seleccionar todo</button>
       <button class="btn-mini" onclick="limpiarSeleccion('resumen')">Limpiar selección</button>
@@ -208,9 +235,8 @@ tr:last-child td{border-bottom:none}
           <th class="th-chk"></th><th>Fecha</th>
           <th style="text-align:right">Total ₡ a depositar</th>
           <th style="text-align:right">Total $ a depositar</th>
-          <th>Estado</th>
         </tr></thead>
-        <tbody id="tabla-resumen-body"><tr><td colspan="5" class="empty"><span class="spinner"></span></td></tr></tbody>
+        <tbody id="tabla-resumen-body"><tr><td colspan="4" class="empty"><span class="spinner"></span></td></tr></tbody>
       </table>
     </div>
   </div>
@@ -407,13 +433,14 @@ async function cargarDatos() {
     document.getElementById('conn-dot').classList.add('on');
     document.getElementById('conn-label').textContent = 'Conectado · Google Sheets';
 
+    renderKpiPendiente();
     renderResumen();
     renderPendientes();
     renderHistorial();
   } catch(e) {
     document.getElementById('conn-dot').classList.remove('on');
     document.getElementById('conn-label').textContent = 'Error de conexión: ' + e.message;
-    document.getElementById('tabla-resumen-body').innerHTML = '<tr><td colspan="5" class="empty">No se pudo cargar. Revisá la conexión.</td></tr>';
+    document.getElementById('tabla-resumen-body').innerHTML = '<tr><td colspan="4" class="empty">No se pudo cargar. Revisá la conexión.</td></tr>';
   }
 }
 
@@ -441,16 +468,61 @@ function agregarPorFecha(records) {
 // ── TAB 1: RESUMEN DIARIO ─────────────────────────────────────────
 function idDetalle(fecha) { return 'det-' + fecha; }
 
+// ── KPI: EFECTIVO SIN DEPÓSITO ASIGNADO ───────────────────────────
+function agregarTotalesPendientes(pendientes) {
+  const agg = {
+    crc: 0, usd: 0, caja: 0, fondo: 0,
+    billetesCrc: DENOMS_BILLETES_CRC.map(()=>0),
+    monedasCrc: DENOMS_MONEDAS_CRC.map(()=>0),
+    billetesUsd: DENOMS_BILLETES_USD.map(()=>0)
+  };
+  pendientes.forEach(fecha => {
+    const d = porFecha[fecha];
+    if (!d) return;
+    agg.crc += d.crc; agg.usd += d.usd; agg.caja += d.caja; agg.fondo += d.fondo;
+    d.billetesCrc.forEach((q,i) => agg.billetesCrc[i] += q);
+    d.monedasCrc.forEach((q,i) => agg.monedasCrc[i] += q);
+    d.billetesUsd.forEach((q,i) => agg.billetesUsd[i] += q);
+  });
+  return agg;
+}
+
+function renderKpiPendiente() {
+  const pendientes = fechasOrdenadas.filter(f => !fechasAsignadas[f]);
+  const agg = agregarTotalesPendientes(pendientes);
+  document.getElementById('kpi-pend-crc').textContent = fmtCRC(agg.crc);
+  document.getElementById('kpi-pend-usd').textContent = fmtUSD(agg.usd);
+  document.getElementById('kpi-pend-count').textContent =
+    pendientes.length + ' fecha' + (pendientes.length===1?'':'s') + ' pendiente' + (pendientes.length===1?'':'s') + ' de depósito';
+  document.getElementById('kpi-detalle-body').innerHTML = renderDenomDetalleHTMLFromAgg(agg);
+}
+
+function toggleKpiDetalle() {
+  const body = document.getElementById('kpi-detalle-body');
+  const btn = document.getElementById('btn-kpi-detalle');
+  const lbl = document.getElementById('kpi-toggle-lbl');
+  const abrir = !body.classList.contains('open');
+  body.classList.toggle('open', abrir);
+  btn.classList.toggle('open', abrir);
+  lbl.textContent = abrir ? 'Ocultar detalle por denominación' : 'Ver detalle por denominación';
+}
+
 function renderResumen() {
   const body = document.getElementById('tabla-resumen-body');
   if (!fechasOrdenadas.length) {
-    body.innerHTML = '<tr><td colspan="5" class="empty">Todavía no hay cierres de caja registrados.</td></tr>';
+    body.innerHTML = '<tr><td colspan="4" class="empty">Todavía no hay cierres de caja registrados.</td></tr>';
     actualizarSeleccion('resumen');
     return;
   }
-  body.innerHTML = fechasOrdenadas.map(fecha => {
+  // Solo se listan fechas sin depósito asignado — las ya asignadas se ven en "Historial de depósitos".
+  const pendientes = fechasOrdenadas.filter(f => !fechasAsignadas[f]);
+  if (!pendientes.length) {
+    body.innerHTML = '<tr><td colspan="4" class="empty">Todo el efectivo registrado ya tiene depósito asignado ✓</td></tr>';
+    actualizarSeleccion('resumen');
+    return;
+  }
+  body.innerHTML = pendientes.map(fecha => {
     const d = porFecha[fecha];
-    const asignado = !!fechasAsignadas[fecha];
     const id = idDetalle(fecha);
     return `<tr>
       <td class="td-chk"><input type="checkbox" class="chk-resumen" value="${fecha}" ${seleccion.resumen.has(fecha)?'checked':''} onchange="actualizarSeleccion('resumen')"></td>
@@ -462,11 +534,10 @@ function renderResumen() {
       </td>
       <td class="num">${fmtCRC(d.crc)}</td>
       <td class="num">${d.usd ? fmtUSD(d.usd) : '—'}</td>
-      <td>${asignado ? '<span class="badge b-ok">✅ Asignado</span>' : '<span class="badge b-pend">⏳ Pendiente</span>'}</td>
     </tr>
     <tr class="fila-detalle" id="${id}">
       <td></td>
-      <td colspan="4">${renderDenomDetalleHTML(fecha)}</td>
+      <td colspan="3">${renderDenomDetalleHTML(fecha)}</td>
     </tr>`;
   }).join('');
   actualizarSeleccion('resumen');
@@ -532,11 +603,14 @@ function limpiarSeleccion(grupo) {
   actualizarSeleccion(grupo);
 }
 
-// ── DETALLE POR DENOMINACIÓN (compartido: fila desplegable + modal) ──
+// ── DETALLE POR DENOMINACIÓN (compartido: fila desplegable, modal y KPI) ──
 function renderDenomDetalleHTML(fecha) {
   const d = porFecha[fecha];
   if (!d) return '';
+  return renderDenomDetalleHTMLFromAgg(d);
+}
 
+function renderDenomDetalleHTMLFromAgg(d) {
   const filaDenom = (label, qty, val) => qty > 0
     ? `<div class="denom-detail-row"><span>${label} <span class="q">× ${qty}</span></span><span class="v">${val}</span></div>` : '';
 
