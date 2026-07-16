@@ -859,6 +859,68 @@ function filaFacturaPorOrdinal(hoja, numeroFactura, ordinal) {
   return -1;
 }
 
+// Compara solo la parte de fecha (año-mes-día) de dos valores que pueden venir
+// como objeto Date o como texto, ignorando hora/zona horaria.
+function mismaFechaGS(a, b) {
+  const da = a instanceof Date ? a : new Date(a);
+  const db = b instanceof Date ? b : new Date(b);
+  if (isNaN(da.getTime()) || isNaN(db.getTime())) return String(a || '') === String(b || '');
+  return da.getFullYear() === db.getFullYear() &&
+         da.getMonth() === db.getMonth() &&
+         da.getDate() === db.getDate();
+}
+
+// Normaliza texto para comparar nombres de proveedor sin depender de
+// mayúsculas, tildes o espacios extra.
+function normalizarTextoGS(s) {
+  return String(s || '').trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+function mismoMontoGS(a, b) {
+  return Math.abs((Number(a) || 0) - (Number(b) || 0)) < 0.01;
+}
+
+// Dentro de Desglose_IA, cada carga de OCR escribe de forma seguida todas las
+// líneas de producto de una factura, así que las líneas de una misma copia
+// forman un bloque contiguo de filas. Esta función agrupa esos bloques exigiendo
+// que coincidan exactamente número de factura + fecha + proveedor + total —no
+// solo el número— para no arrastrar las líneas de otra factura de otro
+// proveedor que coincida en número por casualidad, y les asigna una posición
+// (1ra, 2da... contada de arriba hacia abajo) para poder borrar las líneas de
+// la copia correcta cuando se elimina un duplicado.
+// Devuelve { filaInicio, cantidadFilas } del bloque pedido, o null si no existe
+// (p.ej. una factura cargada a mano, sin líneas de OCR).
+function bloqueDesglosePorFirma(hoja, firma, posicion) {
+  const nFilas = hoja.getLastRow() - 1;
+  if (nFilas <= 0) return null;
+  const datos = hoja.getRange(2, 1, nFilas, DESGLOSE_COL.FECHA_CARGA).getValues();
+
+  const coincide = function(fila) {
+    return String(fila[DESGLOSE_COL.NUMERO_FACTURA - 1]) === String(firma.numero) &&
+      mismaFechaGS(fila[DESGLOSE_COL.FECHA_FACTURA - 1], firma.fecha) &&
+      normalizarTextoGS(fila[DESGLOSE_COL.PROVEEDOR - 1]) === normalizarTextoGS(firma.proveedor) &&
+      mismoMontoGS(fila[DESGLOSE_COL.TOTAL_FACTURA - 1], firma.total);
+  };
+
+  let posicionActual = 0;
+  let i = 0;
+  while (i < datos.length) {
+    if (coincide(datos[i])) {
+      const inicio = i;
+      while (i < datos.length && coincide(datos[i])) i++;
+      posicionActual++;
+      if (posicionActual === posicion) {
+        return { filaInicio: inicio + 2, cantidadFilas: i - inicio };
+      }
+    } else {
+      i++;
+    }
+  }
+  return null;
+}
+
 function guardarProyeccion(p) {
   if (!p.numero_factura) throw new Error('Falta número de factura.');
   if (!p.ordinal) throw new Error('Falta indicar a cuál copia de la factura aplica.');
@@ -982,8 +1044,53 @@ function eliminarFactura(p) {
   const hoja = getHoja();
   const fila = filaFacturaPorOrdinal(hoja, p.numero_factura, p.ordinal);
   if (fila === -1) throw new Error('No se encontró esa copia (puede que ya se haya eliminado).');
+
+  // Antes de borrar, tomamos la "firma" completa de esta copia (número + fecha +
+  // proveedor + total) y calculamos su posición entre las filas de Registro
+  // Facturas que comparten exactamente esa misma firma —no solo el número—.
+  // Así, al buscar sus líneas en Desglose_IA, no nos desalineamos si hay una
+  // factura manual sin líneas de OCR mezclada en el medio, ni arrastramos las
+  // líneas de otra factura de otro proveedor que por casualidad tenga el mismo
+  // número.
+  const nFilasFacturas = hoja.getLastRow() - 1;
+  const datosFacturas = hoja.getRange(2, 1, nFilasFacturas, COL.TOTAL).getValues();
+  const filaObjetivo = datosFacturas[fila - 2];
+  const firma = {
+    numero: filaObjetivo[COL.FACTURA - 1],
+    fecha: filaObjetivo[COL.FECHA - 1],
+    proveedor: filaObjetivo[COL.PROVEEDOR - 1],
+    total: filaObjetivo[COL.TOTAL - 1]
+  };
+  let posicion = 0;
+  for (let i = 0; i <= fila - 2; i++) {
+    const f = datosFacturas[i];
+    if (String(f[COL.FACTURA - 1]) === String(firma.numero) &&
+        mismaFechaGS(f[COL.FECHA - 1], firma.fecha) &&
+        normalizarTextoGS(f[COL.PROVEEDOR - 1]) === normalizarTextoGS(firma.proveedor) &&
+        mismoMontoGS(f[COL.TOTAL - 1], firma.total)) {
+      posicion++;
+    }
+  }
+
   hoja.deleteRow(fila);
-  return { eliminado: true, fila: fila };
+
+  // Borra también, si existen, las líneas de producto de Desglose_IA que
+  // corresponden a esta misma copia (mismo bloque por firma, ver
+  // bloqueDesglosePorFirma). No bloquea el borrado de la factura si Desglose_IA
+  // no tiene un bloque en esa posición o algo falla acá.
+  let lineasDesgloseEliminadas = 0;
+  try {
+    const hojaDesglose = getHojaDesglose();
+    const bloque = bloqueDesglosePorFirma(hojaDesglose, firma, posicion);
+    if (bloque) {
+      hojaDesglose.deleteRows(bloque.filaInicio, bloque.cantidadFilas);
+      lineasDesgloseEliminadas = bloque.cantidadFilas;
+    }
+  } catch (e) {
+    // Sin Desglose_IA o con otro error acá, la factura ya se borró igual.
+  }
+
+  return { eliminado: true, fila: fila, lineas_desglose_eliminadas: lineasDesgloseEliminadas };
 }
 
 // Marca una o varias copias de una factura como "duplicado aceptado": queda
