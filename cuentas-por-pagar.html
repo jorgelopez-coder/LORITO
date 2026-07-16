@@ -43,6 +43,14 @@
     .kpi-val.verde { color:var(--green); }
     .kpi-val.rojo  { color:var(--red); }
     .kpi-val.ambar { color:var(--amber); }
+    .kpi-box.kpi-clickable { cursor:pointer; user-select:none; }
+    .kpi-box-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+    .kpi-detalle { margin-top:.75rem; padding-top:.65rem; border-top:1px solid var(--border); font-size:12px; }
+    .kpi-detalle-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:.35rem 0; }
+    .kpi-detalle-row + .kpi-detalle-row { border-top:1px solid var(--border); }
+    .kpi-detalle-empty { color:var(--muted); padding:.25rem 0; }
+    .kpi-detalle-link { display:inline-block; margin-top:.5rem; font-size:11px; color:var(--green); cursor:pointer; }
+    .kpi-detalle-link:hover { text-decoration:underline; }
 
     /* Banner de alerta (duplicados / sin conexión) */
     .banner { display:flex; align-items:flex-start; gap:10px; padding:.85rem 1.1rem; border-radius:var(--radius); font-size:12.5px; margin-bottom:1rem; border:1px solid; }
@@ -236,21 +244,45 @@
 
   <!-- KPIs -->
   <div class="kpi-strip">
-    <div class="kpi-box">
-      <div class="kpi-val verde" id="kpi-total">₡—</div>
-      <div class="kpi-lbl">Total por pagar</div>
+    <div class="kpi-box kpi-clickable" onclick="toggleKpiDetalle('total')">
+      <div class="kpi-box-head">
+        <div>
+          <div class="kpi-val verde" id="kpi-total">₡—</div>
+          <div class="kpi-lbl">Total por pagar</div>
+        </div>
+        <svg class="toggle-arrow" id="kpi-ico-total" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;flex-shrink:0;"><path d="M4 6l4 4 4-4"/></svg>
+      </div>
+      <div class="kpi-detalle" id="kpi-detalle-total" style="display:none;"></div>
     </div>
-    <div class="kpi-box">
-      <div class="kpi-val rojo" id="kpi-vencidas">—</div>
-      <div class="kpi-lbl">Facturas vencidas</div>
+    <div class="kpi-box kpi-clickable" onclick="toggleKpiDetalle('vencidas')">
+      <div class="kpi-box-head">
+        <div>
+          <div class="kpi-val rojo" id="kpi-vencidas">—</div>
+          <div class="kpi-lbl">Facturas vencidas</div>
+        </div>
+        <svg class="toggle-arrow" id="kpi-ico-vencidas" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;flex-shrink:0;"><path d="M4 6l4 4 4-4"/></svg>
+      </div>
+      <div class="kpi-detalle" id="kpi-detalle-vencidas" style="display:none;"></div>
     </div>
-    <div class="kpi-box">
-      <div class="kpi-val ambar" id="kpi-porvencer">—</div>
-      <div class="kpi-lbl">Vencen en 7 días</div>
+    <div class="kpi-box kpi-clickable" onclick="toggleKpiDetalle('porvencer')">
+      <div class="kpi-box-head">
+        <div>
+          <div class="kpi-val ambar" id="kpi-porvencer">—</div>
+          <div class="kpi-lbl">Vencen en 7 días</div>
+        </div>
+        <svg class="toggle-arrow" id="kpi-ico-porvencer" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;flex-shrink:0;"><path d="M4 6l4 4 4-4"/></svg>
+      </div>
+      <div class="kpi-detalle" id="kpi-detalle-porvencer" style="display:none;"></div>
     </div>
-    <div class="kpi-box">
-      <div class="kpi-val" id="kpi-pagado-mes">₡—</div>
-      <div class="kpi-lbl">Pagado este mes</div>
+    <div class="kpi-box kpi-clickable" onclick="toggleKpiDetalle('pagado-mes')">
+      <div class="kpi-box-head">
+        <div>
+          <div class="kpi-val" id="kpi-pagado-mes">₡—</div>
+          <div class="kpi-lbl">Pagado este mes</div>
+        </div>
+        <svg class="toggle-arrow" id="kpi-ico-pagado-mes" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;flex-shrink:0;"><path d="M4 6l4 4 4-4"/></svg>
+      </div>
+      <div class="kpi-detalle" id="kpi-detalle-pagado-mes" style="display:none;"></div>
     </div>
   </div>
 
@@ -529,7 +561,7 @@ let dataAbonos   = [];   // hoja "Abonos" (pagos parciales)
 let dataDesglose = [];   // hoja "Desglose_IA" (líneas de producto por factura)
 let facturasAP   = [];   // dataset ya calculado (estado, saldo, etc.)
 let pagFacturas  = 1;
-const POR_PAGINA = 15;
+const POR_PAGINA = 100;
 const seleccionadas = new Set(); // números de factura marcados con check
 
 // ── GVIZ: leer hoja pública del Sheet de compras ──────────────────
@@ -806,21 +838,21 @@ function productosDeFactura(numero) {
 function inicializar() {
   const pendientes = facturasAP.filter(f => f.estado !== 'Cancelada');
   const totalPorPagar = pendientes.reduce((a,f) => a + f.saldoPendiente, 0);
-  const vencidas = facturasAP.filter(f => f.estado === 'Vencida').length;
+  const facturasVencidas = facturasAP.filter(f => f.estado === 'Vencida');
+  const vencidas = facturasVencidas.length;
 
-  const en7dias = facturasAP.filter(f => {
+  const facturasPorVencer = facturasAP.filter(f => {
     if (f.estado !== 'A tiempo' || !f.fechaVencimiento) return false;
     const dias = (new Date(f.fechaVencimiento) - new Date(hoyISO)) / 86400000;
     return dias >= 0 && dias <= 7;
-  }).length;
+  });
+  const en7dias = facturasPorVencer.length;
 
   const mesActual = hoyISO.substring(0,7);
-  const pagosCompletosMes = facturasAP
-    .filter(f => f.fechaRealPago && f.fechaRealPago.substring(0,7) === mesActual)
-    .reduce((a,f) => a + (f.montoColones - (f.totalAbonado||0)), 0);
-  const abonosDelMes = dataAbonos
-    .filter(a => isoDate(a['Fecha de abono']).substring(0,7) === mesActual)
-    .reduce((a,r) => a + (parseFloat(r['Monto abonado'])||0), 0);
+  const facturasPagadasMes = facturasAP.filter(f => f.fechaRealPago && f.fechaRealPago.substring(0,7) === mesActual);
+  const pagosCompletosMes = facturasPagadasMes.reduce((a,f) => a + (f.montoColones - (f.totalAbonado||0)), 0);
+  const abonosMes = dataAbonos.filter(a => isoDate(a['Fecha de abono']).substring(0,7) === mesActual);
+  const abonosDelMes = abonosMes.reduce((a,r) => a + (parseFloat(r['Monto abonado'])||0), 0);
   const pagadoMes = pagosCompletosMes + abonosDelMes;
 
   document.getElementById('kpi-total').textContent     = fmt(totalPorPagar);
@@ -828,6 +860,8 @@ function inicializar() {
   document.getElementById('kpi-porvencer').textContent = en7dias;
   document.getElementById('kpi-pagado-mes').textContent = fmt(pagadoMes);
   document.getElementById('status-msg').textContent    = `${facturasAP.length} facturas · Por pagar: ${fmt(totalPorPagar)}`;
+
+  renderKpiDetalles({ pendientes, facturasVencidas, facturasPorVencer, facturasPagadasMes, pagosCompletosMes, abonosMes, abonosDelMes });
 
   // Filtro de proveedores
   const provsUnicos = [...new Set(facturasAP.map(f => f.proveedor).filter(Boolean))].sort();
@@ -849,6 +883,87 @@ function inicializar() {
   renderDuplicados();
   renderSemana();
   actualizarBarraSeleccion();
+}
+
+// ── KPIs: paneles de detalle desplegables ──────────────────────────
+function toggleKpiDetalle(key) {
+  const panel = document.getElementById('kpi-detalle-' + key);
+  const ico   = document.getElementById('kpi-ico-' + key);
+  const abierto = panel.style.display !== 'none';
+  panel.style.display = abierto ? 'none' : 'block';
+  ico.classList.toggle('open', !abierto);
+}
+
+// Salta a la pestaña Facturas con el filtro de estado ya aplicado.
+// `estados` puede ser un string o un arreglo de strings (para seleccionar varios chips a la vez).
+function verEstadoEnTabla(estados) {
+  limpiarEstadoFiltro();
+  [].concat(estados).forEach(estado => {
+    const input = document.querySelector(`#f-estado input[value="${estado}"]`);
+    if (input) { input.checked = true; input.closest('.estado-chip').classList.add('activo'); }
+  });
+  toggleFiltros(true);
+  actualizarContadorFiltros();
+  renderFacturas();
+  switchTab('facturas', document.querySelector('.tabs .tab'));
+}
+
+function filaKpiDetalle(izqTop, izqBot, derTop, derColor) {
+  return `
+    <div class="kpi-detalle-row">
+      <div style="min-width:0;">
+        <div style="font-weight:500;">${izqTop}</div>
+        <div style="font-size:11px;color:var(--muted);">${izqBot}</div>
+      </div>
+      <span class="num" style="font-weight:600;white-space:nowrap;${derColor?`color:${derColor};`:''}">${derTop}</span>
+    </div>`;
+}
+
+function renderKpiDetalles({ pendientes, facturasVencidas, facturasPorVencer, facturasPagadasMes, pagosCompletosMes, abonosMes, abonosDelMes }) {
+  // Total por pagar → desglose por estado
+  const grupos = [
+    { estado: 'A tiempo', color: 'var(--green)' },
+    { estado: 'Vencida',  color: 'var(--red)' },
+    { estado: 'Abono',    color: 'var(--amber)' }
+  ].map(g => {
+    const facs = pendientes.filter(f => f.estado === g.estado);
+    return { ...g, count: facs.length, total: facs.reduce((a,f) => a + f.saldoPendiente, 0) };
+  }).filter(g => g.count > 0);
+
+  document.getElementById('kpi-detalle-total').innerHTML = grupos.length
+    ? grupos.map(g => filaKpiDetalle(g.estado, `${g.count} factura(s)`, fmt(g.total), g.color)).join('')
+      + `<span class="kpi-detalle-link" onclick="event.stopPropagation();verEstadoEnTabla(['A tiempo','Vencida','Abono'])">Ver todas en la tabla →</span>`
+    : `<div class="kpi-detalle-empty">No hay facturas pendientes.</div>`;
+
+  // Facturas vencidas → lista ordenada por más días vencida
+  const vencidasOrdenadas = [...facturasVencidas].sort((a,b) => new Date(a.fechaVencimiento) - new Date(b.fechaVencimiento));
+  document.getElementById('kpi-detalle-vencidas').innerHTML = vencidasOrdenadas.length
+    ? vencidasOrdenadas.slice(0,8).map(f => {
+        const dias = Math.round((new Date(hoyISO) - new Date(f.fechaVencimiento)) / 86400000);
+        return filaKpiDetalle(f.proveedor, `${f.numero} · ${dias}d vencida`, fmt(f.saldoPendiente), 'var(--red)');
+      }).join('')
+      + (vencidasOrdenadas.length > 8 ? `<div class="kpi-detalle-empty">y ${vencidasOrdenadas.length - 8} más…</div>` : '')
+      + `<span class="kpi-detalle-link" onclick="event.stopPropagation();verEstadoEnTabla('Vencida')">Ver todas en la tabla →</span>`
+    : `<div class="kpi-detalle-empty">No hay facturas vencidas.</div>`;
+
+  // Vencen en 7 días → lista ordenada por fecha de vencimiento más próxima
+  const porVencerOrdenadas = [...facturasPorVencer].sort((a,b) => new Date(a.fechaVencimiento) - new Date(b.fechaVencimiento));
+  document.getElementById('kpi-detalle-porvencer').innerHTML = porVencerOrdenadas.length
+    ? porVencerOrdenadas.slice(0,8).map(f => {
+        const dias = Math.round((new Date(f.fechaVencimiento) - new Date(hoyISO)) / 86400000);
+        return filaKpiDetalle(f.proveedor, `${f.numero} · vence en ${dias}d`, fmt(f.saldoPendiente), 'var(--amber)');
+      }).join('')
+      + (porVencerOrdenadas.length > 8 ? `<div class="kpi-detalle-empty">y ${porVencerOrdenadas.length - 8} más…</div>` : '')
+      + `<span class="kpi-detalle-link" onclick="event.stopPropagation();verEstadoEnTabla('A tiempo')">Ver facturas "A tiempo" en la tabla →</span>`
+    : `<div class="kpi-detalle-empty">No hay facturas por vencer en los próximos 7 días.</div>`;
+
+  // Pagado este mes → pagos completos vs. abonos parciales
+  const filasPagadoMes = [];
+  if (facturasPagadasMes.length) filasPagadoMes.push(filaKpiDetalle('Pagos completos', `${facturasPagadasMes.length} factura(s)`, fmt(pagosCompletosMes)));
+  if (abonosMes.length) filasPagadoMes.push(filaKpiDetalle('Abonos parciales', `${abonosMes.length} abono(s)`, fmt(abonosDelMes)));
+  document.getElementById('kpi-detalle-pagado-mes').innerHTML = filasPagadoMes.length
+    ? filasPagadoMes.join('')
+    : `<div class="kpi-detalle-empty">No hay pagos registrados este mes.</div>`;
 }
 
 // Lunes a domingo de la semana que contiene la fecha de hoy.
