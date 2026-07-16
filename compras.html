@@ -133,6 +133,7 @@
     @media (max-width:700px) {
       header { padding:0 1rem; } main { padding:1.5rem 1rem 3rem; }
       .kpi-strip { grid-template-columns:1fr 1fr; }
+      #top10-categorias-grid { grid-template-columns:1fr; }
     }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -226,6 +227,28 @@
       <select class="filter-sel" id="f-cat" onchange="renderProductos()">
         <option value="">Todas las categorías</option>
       </select>
+      <select class="filter-sel" id="f-prod-anio" onchange="renderProductos()">
+        <option value="">Todos los años</option>
+      </select>
+      <select class="filter-sel" id="f-prod-mes" onchange="renderProductos()">
+        <option value="">Todos los meses</option>
+      </select>
+    </div>
+    <div class="toolbar" style="margin-top:-4px;">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <label style="font-size:12px;color:var(--muted);">Período · Desde</label>
+        <input type="date" id="f-prod-desde" onchange="renderProductos()"
+          style="font-size:13px;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);outline:none;">
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <label style="font-size:12px;color:var(--muted);">Hasta</label>
+        <input type="date" id="f-prod-hasta" onchange="renderProductos()"
+          style="font-size:13px;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);outline:none;">
+      </div>
+      <button onclick="limpiarFiltroFechaProductos()"
+        style="font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">
+        Limpiar período
+      </button>
     </div>
     <div class="card">
       <div class="tabla-wrap" id="tabla-productos">
@@ -326,6 +349,16 @@
         </div>
       </div>
     </div>
+
+    <!-- Top 10 productos por monto -->
+    <div class="card" style="padding:1.25rem 1.5rem;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;">Top 10 productos por monto</div>
+      <div class="tabla-wrap" id="top10-general"></div>
+    </div>
+
+    <!-- Top 10 productos por categoría (una tarjeta por categoría) -->
+    <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0 0 .75rem;">Top 10 por categoría</div>
+    <div id="top10-categorias-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;"></div>
 
     <!-- Tabla resumen agrupada -->
     <div class="card">
@@ -575,6 +608,20 @@ function inicializar() {
   const selCat = document.getElementById('f-cat');
   cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; selCat.appendChild(o); });
 
+  // Años y meses disponibles para filtro de Productos
+  const anios = [...new Set(dataFacturas.map(r => (r['Fecha de factura']||'').substring(0,4)).filter(Boolean))].sort().reverse();
+  const selAnio = document.getElementById('f-prod-anio');
+  anios.forEach(a => { const o = document.createElement('option'); o.value = a; o.textContent = a; selAnio.appendChild(o); });
+
+  const NOMBRES_MES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const selMesProd = document.getElementById('f-prod-mes');
+  NOMBRES_MES.forEach((nombre, i) => {
+    const o = document.createElement('option');
+    o.value = String(i+1).padStart(2,'0');
+    o.textContent = nombre;
+    selMesProd.appendChild(o);
+  });
+
   // Chips de categoría (análisis, multi-selección)
   const catFiltros = document.getElementById('cat-filtros');
   catFiltros.innerHTML = `<button class="cat-filter-chip todas active" id="cat-todas-btn" onclick="limpiarCategoriasAnalisis()">Todas</button>` +
@@ -700,14 +747,30 @@ function renderProductos() {
 }
 
 function _renderProductos() {
-  const busq = document.getElementById('s-prod').value.toLowerCase();
-  const cat  = document.getElementById('f-cat').value;
+  const busq  = document.getElementById('s-prod').value.toLowerCase();
+  const cat   = document.getElementById('f-cat').value;
+  const anio  = document.getElementById('f-prod-anio').value;
+  const mes   = document.getElementById('f-prod-mes').value;
+  const desde = document.getElementById('f-prod-desde').value;
+  const hasta = document.getElementById('f-prod-hasta').value;
 
   let lista = dataFacturas.filter(r => {
-    const prod = (r['Nombre normalizado']||r['Producto']||'').toLowerCase();
-    const prov = (r['Proveedor']||'').toLowerCase();
-    return (!busq || prod.includes(busq) || prov.includes(busq))
-        && (!cat  || r['Categoría'] === cat);
+    const prod  = (r['Nombre normalizado']||r['Producto']||'').toLowerCase();
+    const prov  = (r['Proveedor']||'').toLowerCase();
+    const fecha = r['Fecha de factura'] || '';
+
+    if (!(!busq || prod.includes(busq) || prov.includes(busq))) return false;
+    if (cat && r['Categoría'] !== cat) return false;
+
+    if (desde || hasta) {
+      if (!fecha) return false;
+      if (desde && fecha < desde) return false;
+      if (hasta && fecha > hasta) return false;
+    } else {
+      if (anio && fecha.substring(0,4) !== anio) return false;
+      if (mes  && fecha.substring(5,7) !== mes)  return false;
+    }
+    return true;
   });
 
   if (!lista.length) {
@@ -878,33 +941,58 @@ function renderCategorias() {
   dataFacturas.forEach(r => {
     const cat   = r['Categoría'] || 'Sin categoría';
     const total = parseFloat(String(r['Total línea']||0).replace(/[,]/g,'')) || 0;
-    if (!catMap[cat]) catMap[cat] = { items:0, total:0 };
+    if (!catMap[cat]) catMap[cat] = { items:0, total:0, lineas:[] };
     catMap[cat].items++;
     catMap[cat].total += total;
+    catMap[cat].lineas.push(r);
   });
 
   const lista = Object.entries(catMap).sort((a,b) => b[1].total - a[1].total);
   const totalGral = lista.reduce((a,b) => a + b[1].total, 0);
 
-  const filas = lista.map(([cat, d]) => {
-    const pct  = totalGral ? (d.total / totalGral * 100).toFixed(1) : 0;
-    const pBar = Math.min(100, d.total / (lista[0][1].total||1) * 100);
-    return `<tr>
-      <td><span class="cat-chip ${catClass(cat)}">${cat}</span></td>
-      <td class="num">${d.items} líneas</td>
-      <td class="num" style="font-weight:600;">${fmt(d.total)}</td>
-      <td class="num" style="color:var(--muted);">${pct}%</td>
-      <td style="min-width:140px;">
-        <div style="height:6px;background:var(--surface);border-radius:3px;overflow:hidden;">
-          <div style="height:100%;width:${pBar}%;background:var(--green);border-radius:3px;"></div>
-        </div>
-      </td>
-    </tr>`;
+  const filas = lista.map(([cat, d], idx) => {
+    const pct   = totalGral ? (d.total / totalGral * 100).toFixed(1) : 0;
+    const pBar  = Math.min(100, d.total / (lista[0][1].total||1) * 100);
+    const rowId = 'cat-' + idx;
+
+    const productos = agruparProductos(d.lineas);
+    const detalleHtml = productos.length ? `
+      <table class="detail-table">
+        <thead><tr><th>Producto</th><th style="text-align:right;">Cantidad</th><th style="text-align:right;">Total</th></tr></thead>
+        <tbody>
+          ${productos.map(p => `<tr>
+            <td>${p.nombre}</td>
+            <td class="num">${p.cantidad.toFixed(2)} ${p.unidad}</td>
+            <td class="num" style="font-weight:600;">${fmt(p.total)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>` : '<div style="font-size:12px;color:var(--subtle);padding:8px 0;">Sin detalle de productos.</div>';
+
+    return `
+      <tr class="tr-main" onclick="toggleDetalle('${rowId}')">
+        <td>
+          <svg class="toggle-arrow" id="${rowId}-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+        </td>
+        <td><span class="cat-chip ${catClass(cat)}">${cat}</span></td>
+        <td class="num">${d.items} líneas</td>
+        <td class="num" style="font-weight:600;">${fmt(d.total)}</td>
+        <td class="num" style="color:var(--muted);">${pct}%</td>
+        <td style="min-width:140px;">
+          <div style="height:6px;background:var(--surface);border-radius:3px;overflow:hidden;">
+            <div style="height:100%;width:${pBar}%;background:var(--green);border-radius:3px;"></div>
+          </div>
+        </td>
+      </tr>
+      <tr class="tr-detail" id="${rowId}">
+        <td class="detail-cell" colspan="6">
+          <div class="detail-inner">${detalleHtml}</div>
+        </td>
+      </tr>`;
   }).join('');
 
   document.getElementById('tabla-categorias').innerHTML = `
     <table>
-      <thead><tr><th>Categoría</th><th style="text-align:right;">Líneas</th><th style="text-align:right;">Total</th><th style="text-align:right;">% del total</th><th>Proporción</th></tr></thead>
+      <thead><tr><th></th><th>Categoría</th><th style="text-align:right;">Líneas</th><th style="text-align:right;">Total</th><th style="text-align:right;">% del total</th><th>Proporción</th></tr></thead>
       <tbody>${filas}</tbody>
     </table>`;
 }
@@ -1016,6 +1104,14 @@ function limpiarFiltroFecha() {
   renderAnalisis();
 }
 
+function limpiarFiltroFechaProductos() {
+  document.getElementById('f-prod-anio').value  = '';
+  document.getElementById('f-prod-mes').value   = '';
+  document.getElementById('f-prod-desde').value = '';
+  document.getElementById('f-prod-hasta').value = '';
+  renderProductos();
+}
+
 function toggleCategoriaAnalisis(el) {
   const cat = el.dataset.cat;
   if (categoriasSeleccionadas.has(cat)) categoriasSeleccionadas.delete(cat);
@@ -1035,6 +1131,56 @@ function limpiarCategoriasAnalisis() {
 function filtrarPorCategorias(lista) {
   if (!categoriasSeleccionadas.size) return lista;
   return lista.filter(r => categoriasSeleccionadas.has(r['Categoría']));
+}
+
+// ── TOP 10 PRODUCTOS ──────────────────────────────────────────────
+function agruparProductos(lineas) {
+  const map = {};
+  lineas.forEach(r => {
+    const nombre = r['Nombre normalizado'] || r['Producto'] || 'Sin nombre';
+    const total  = parseFloat(String(r['Total línea']||0).replace(/[,]/g,'')) || 0;
+    const cant   = parseFloat(r['Cantidad']) || 0;
+    if (!map[nombre]) map[nombre] = { nombre, unidad: r['Unidad de medida']||'—', cat: r['Categoría']||'—', total:0, cantidad:0 };
+    map[nombre].total    += total;
+    map[nombre].cantidad += cant;
+  });
+  return Object.values(map).sort((a,b) => b.total - a.total);
+}
+
+function tablaTop10(lista) {
+  if (!lista.length) return '<div class="empty">Sin datos.</div>';
+  const filas = lista.map((p, i) => `<tr>
+    <td style="color:var(--muted);width:24px;">${i+1}</td>
+    <td style="font-weight:500;">${p.nombre}</td>
+    <td class="num">${p.cantidad.toFixed(2)} ${p.unidad}</td>
+    <td class="num" style="font-weight:600;">${fmt(p.total)}</td>
+  </tr>`).join('');
+  return `<table>
+    <thead><tr><th></th><th>Producto</th><th style="text-align:right;">Cantidad</th><th style="text-align:right;">Total</th></tr></thead>
+    <tbody>${filas}</tbody>
+  </table>`;
+}
+
+function renderTop10(facturasFiltradas) {
+  const general = agruparProductos(facturasFiltradas).slice(0, 10);
+  document.getElementById('top10-general').innerHTML = tablaTop10(general);
+
+  const cats = [...new Set(facturasFiltradas.map(r => r['Categoría']).filter(Boolean))].sort();
+  const grid = document.getElementById('top10-categorias-grid');
+  if (!cats.length) { grid.innerHTML = '<div class="empty">Sin datos.</div>'; return; }
+
+  grid.innerHTML = cats.map(cat => {
+    const lineasCat = facturasFiltradas.filter(r => r['Categoría'] === cat);
+    const top10Cat  = agruparProductos(lineasCat).slice(0, 10);
+    return `
+      <div class="card" style="padding:1.25rem 1.5rem;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;">
+          <span class="cat-chip ${catClass(cat)}">${cat}</span>
+          <span style="font-size:11px;color:var(--muted);">Top 10 productos</span>
+        </div>
+        <div class="tabla-wrap">${tablaTop10(top10Cat)}</div>
+      </div>`;
+  }).join('');
 }
 
 function filtrarPorPeriodo(lista, campoFecha) {
@@ -1242,6 +1388,8 @@ function renderAnalisis() {
       </tr></thead>
       <tbody>${filas}</tbody>
     </table>`;
+
+  renderTop10(facturasFiltradas);
 }
 
 // ── DESCARGAR REPORTE (CSV) ────────────────────────────────────────
@@ -1293,12 +1441,29 @@ function descargarReporteFacturas() {
 }
 
 function descargarReporteProductos() {
-  const busq = document.getElementById('s-prod').value.toLowerCase();
-  const cat  = document.getElementById('f-cat').value;
+  const busq  = document.getElementById('s-prod').value.toLowerCase();
+  const cat   = document.getElementById('f-cat').value;
+  const anio  = document.getElementById('f-prod-anio').value;
+  const mes   = document.getElementById('f-prod-mes').value;
+  const desde = document.getElementById('f-prod-desde').value;
+  const hasta = document.getElementById('f-prod-hasta').value;
   const lista = dataFacturas.filter(r => {
-    const prod = (r['Nombre normalizado']||r['Producto']||'').toLowerCase();
-    const prov = (r['Proveedor']||'').toLowerCase();
-    return (!busq || prod.includes(busq) || prov.includes(busq)) && (!cat || r['Categoría'] === cat);
+    const prod  = (r['Nombre normalizado']||r['Producto']||'').toLowerCase();
+    const prov  = (r['Proveedor']||'').toLowerCase();
+    const fecha = r['Fecha de factura'] || '';
+
+    if (!(!busq || prod.includes(busq) || prov.includes(busq))) return false;
+    if (cat && r['Categoría'] !== cat) return false;
+
+    if (desde || hasta) {
+      if (!fecha) return false;
+      if (desde && fecha < desde) return false;
+      if (hasta && fecha > hasta) return false;
+    } else {
+      if (anio && fecha.substring(0,4) !== anio) return false;
+      if (mes  && fecha.substring(5,7) !== mes)  return false;
+    }
+    return true;
   });
   const grupos = {};
   lista.forEach(r => {
