@@ -1,342 +1,279 @@
-# Ecosistema Lorito
-Sistema de operaciones para Restaurante Lorito (Grupo del Sol), adaptado del ecosistema de Casa Aguizotes/Batanga.
+# Ecosistema Kioskos — Playa Grande Brew House
 
-## Pendientes de conexión
-Los siguientes backends de Apps Script aún no existen (sheets nuevas y vacías) y deben desplegarse y pegarse en el código donde aparece cada placeholder:
-- `TODO_APPS_SCRIPT_COMPRAS_LORITO` → hoja "Operaciones - Lorito IA"
-- `TODO_GERENCIA_LORITO@pendiente.com` → correo real de gerencia
+Sistema de operaciones para los kioskos de cerveza y cocteles (Playa Grande,
+Liberia, Nosara, Playa Hermosa, con planes de abrir más), adaptado del
+Ecosistema Lorito (Grupo del Sol / Casa Aguizotes). Misma arquitectura:
+Google Apps Script + Google Sheets como backend, HTML/JS plano de frontend
+(sin framework), un `.gs` por módulo desplegado como Web App.
 
-mermas.html conserva `APPS_SCRIPT_URL = ''` (nunca estuvo conectado en el original).
+## Estado actual
 
-## Costeo y recetas — conectado (reemplaza al módulo viejo)
+Primer módulo: **Cierre de Caja**, con selector de kiosko (en vez de un punto
+de venta fijo como en Lorito) y categorías de venta simplificadas — sin
+crédito, plataformas de delivery ni 10% de servicio, porque no aplican a un
+kiosko de playa.
 
-El módulo de "Maestro de productos · historial de precios" descrito más abajo
-(`Maestro_Productos`/`Alias_Productos`/`Costo_Promedio`/`Pendientes_Mapeo`,
-Sheet de compras + `Code-compras-backend.gs`, UI en `config-productos.html`)
-**queda reemplazado** por un sistema nuevo, en un spreadsheet separado:
+Segundo módulo: **Depósitos**, adaptado de `depositos.html`/`Code-cierres-backend.gs`
+(hoja "Depositos") de Ecosistema Lorito, con selector de **Kiosko** (Lorito es
+un solo punto de venta y agrupa directo por fecha; acá primero se filtra por
+el kiosko elegido arriba de las 3 pestañas y recién ahí se agrupa por fecha):
 
-- Backend: `Code-costeo-recetas-v2.gs`, desplegado como Web App en el Sheet
-  nuevo "COSTEO Y RECETAS - LORITO IA" —
-  `https://script.google.com/macros/s/AKfycbz1B6crIkwwWLGx-xkZdXRmySsmlLfE1aQtF9_BP-H2C4TPyeiuURl-YhxoX9fbVUivaQ/exec`.
-  Sigue leyendo `Desglose_IA` y `proveedores` del Sheet de compras por ID
-  (`SOURCE_SPREADSHEET_ID`), pero nunca escribe ahí — todo lo nuevo
-  (`Catalogo_Maestro`, `Alias_Proveedores`, `Historial_Precios`,
-  `Compras_Pendientes`, `Categorias_Productos`, `Areas_Negocio`, `Recetas`,
-  `Receta_Ingredientes`, `Menu`, `Categorias_Menu`, `Subcategorias_Menu`) vive
-  en el spreadsheet nuevo. Si se agregan columnas o módulos, re-desplegar
-  (Implementar → Gestionar implementaciones → Editar → Nueva versión — la URL
-  `/exec` no cambia).
-- **Resuelto** (`migrarNormalizarEncabezadosCatalogo()` +
-  `migrarAgregarColumnasFaltantesCatalogo()`, ya corridas): a `Catalogo_Maestro`
-  en producción le faltaban columnas que `CATALOGO_ENCABEZADOS` daba por
-  existentes — `guardarProducto()` reportaba éxito pero `Presentacion`,
-  `Tamano`, `Precio_Sin_IVA`, `IVA`, `Proveedor_Habitual`, `Stock_Minimo`,
-  `Cantidad_Presentacion`, `Rendimiento` y `En_Uso` se guardaban vacíos
-  siempre, en todos los productos, sin ningún error visible (mismo problema
-  que ya había pasado antes con `Area_Negocio`). Confirmado arreglado con una
-  prueba real (crear → verificar los 9 campos → borrar). Además,
-  `escribirFilaPorEncabezado()` (usada por
-  `guardarProducto`/`guardarReceta`/`guardarPlato`) ahora tira un error
-  explícito si esto vuelve a pasar, en vez de guardar vacío en silencio.
-- **Urgente, todavía pendiente:** `Costo_Actual` (el "Costo/u auto" de Base de
-  productos, que alimenta costeo de recetas y FC del menú) no convertía la
-  unidad de la factura a la unidad de receta del producto — si un producto se
-  factura en Kilo pero su receta usa Gramo, `Costo_Actual` quedaba ~1000
-  veces más caro de lo real (confirmado con Camarón 41/50: ~₡13.983 por
-  gramo). Arreglado en `Code-costeo-recetas-v2.gs` para compras **nuevas** de
-  acá en adelante (`convertirLineaAUnidadReceta()`, aplicada en
-  `registrarCompra()`, `backfillHistorialDesdeDesglose()` y
-  `reprocesarPendientesUSD()` — los tres puntos que escriben a
-  `Historial_Precios`). Los datos ya cargados en `Historial_Precios` **no se
-  tocaron** — reescribirlos a ciegas es más riesgoso que dejarlos, y como
-  `actualizarCostoProducto()` solo promedia las 5 compras más recientes
-  (`VENTANA_COMPRAS`), los productos con compras frecuentes se van a
-  autocorregir solos en las próximas semanas a medida que entren facturas
-  nuevas. Falta correr, una vez desde el editor de Apps Script:
-  `migrarAgregarUnidadFacturaPendientes()` (agrega la columna
-  `Unidad_Factura` a `Compras_Pendientes` — sin esto, las compras que quedan
-  pendientes de match y se liberan después no arrastran la unidad de la
-  factura y se guardan sin convertir). También conviene repasar
-  `ALIAS_UNIDAD` en el `.gs` (lista de variantes de texto de unidad que
-  reconoce, tipo "kg"/"KG"/"Kilogramo") contra los nombres reales que
-  aparecen en la columna J de `Desglose_IA` — se armó con una lista razonable
-  pero sin ver facturas reales para confirmarla.
-- Mientras `Costo_Actual` se autocorrige solo (punto anterior), se agregó un
-  interruptor por producto — `Usar_Precio_Manual` (nueva columna en
-  `Catalogo_Maestro`, ya cubierta por `migrarAgregarColumnasFaltantesCatalogo()`,
-  no hace falta correr nada nuevo para esta) — para que el costeo de recetas
-  use `Precio_Sin_IVA ÷ Cantidad_Presentacion` (el "Costo real por unidad" de
-  la sección "Información para recetas" en `costos-productos.html`) en vez
-  del promedio automático de compras, mientras ese esté corregido a mano y el
-  automático todavía no. Por defecto sigue ganando el automático, igual que
-  siempre — hay que activar el check "Usar este precio manual en las
-  recetas" producto por producto. Afecta `costoRealProducto()` (recetas/menú)
-  y `moduloProductos()` (columna "Costo/u" de la lista, ahora con badge
-  "manual" cuando aplica).
-- **Nuevo, pendiente de desplegar:** `Peso_Botella_Vacia` — columna nueva en
-  `Catalogo_Maestro` (agregada a `CATALOGO_ENCABEZADOS`, `moduloProductos()` y
-  `guardarProducto()`) para la familia "Licores", pensada para el inventario
-  por peso (peso total de la botella menos este valor = licor restante).
-  `costos-productos.html` ya muestra el campo "Peso de botella vacía (g)"
-  solo cuando Familia = "Licores" (`actualizarCamposPorFamilia()`). Falta: (1)
-  volver a pegar `Code-costeo-recetas-v2.gs` y Nueva versión, (2) correr una
-  vez `migrarAgregarColumnasFaltantesCatalogo()` para que la columna aparezca
-  en los productos ya existentes (mismo patrón que las demás columnas nuevas
-  de esta sección). El cálculo de inventario por peso en sí (restar este
-  valor a una pesada real) no está implementado todavía — esto solo agrega la
-  captura del dato.
-- `Categorias_Menu` y `Subcategorias_Menu` son nuevas y todavía no existen en
-  el spreadsheet en producción — hay que correr `migrarCrearCategoriasMenu()`
-  y `migrarAgregarSubcategoriaMenu()` una vez cada una desde el editor de
-  Apps Script (mismo patrón que las demás `migrar*` de
-  `Code-costeo-recetas-v2.gs`) antes de que el tab "Configuración" de
-  `costos-menu-recetas.html`, el filtro de categoría del menú y el selector
-  de subcategoría del formulario de plato dejen de degradar al default
-  hardcodeado (o, en el caso de subcategorías, a "sin subcategorías todavía").
-- `costos-productos.html` y `costos-menu-recetas.html` ya apuntan a esa URL
-  real y tienen carga/guardado real contra este backend. `costos-recetas.html`
-  y `costos-menu.html` (que antes vivían 100% en `localStorage`, sin
-  persistencia server-side) quedaron **fusionados y retirados**: sus dos
-  módulos ahora son un solo módulo, `costos-menu-recetas.html` — crear un
-  plato y armar su receta ya no requiere saltar entre dos pantallas.
-- `config-productos.html` quedó **retirada** (borrada del repo y de
-  `index.html`/`admin-accesos.html`): los "Pendientes de mapear" se resuelven
-  ahora editando directo la columna `ID_Producto_Maestro` en la hoja
-  `Alias_Proveedores` del Sheet nuevo — al guardar esa celda,
-  `onEditAlias()` libera sola la(s) compra(s) en espera. Categorías/áreas se
-  administran desde la pestaña "Configuración" de `costos-productos.html`.
-- `historial-precios.html` **no se migró** (fuera de alcance) — sigue
-  leyendo `Maestro_Productos`/`Costo_Promedio` del Sheet de compras, que ya
-  no reciben altas nuevas. Va a mostrar datos congelados a la fecha de este
-  cambio. Los dos links que tenía hacia `config-productos.html` se quitaron
-  para que no queden rotos.
-- `inventario.html` y `proveedores.html` (en `Operaciones/`) y el resto de
-  `Code-compras-backend.gs` (facturas, proveedores, caja chica, fondo de
-  caja, abonos) **no se tocaron** — siguen funcionando igual que antes.
+- `depositos.html` — 3 pestañas: **Resumen diario** (efectivo sin depósito
+  asignado, por fecha, con detalle desplegable por denominación), **Asignar
+  depósito** (foto del comprobante, fecha/referencia/monto, selección de una
+  o varias fechas pendientes a cubrir, comparación comprobante vs. calculado
+  con tolerancia ±₡500/±$1, botón de WhatsApp con el resumen) e **Historial
+  de depósitos** (depósitos ya asignados, con las fechas que cubre cada uno).
+  El backend (`guardarDeposito`/`agregarEncabezadosDepositos` en
+  `Code-cierres-kioskos-backend.gs`) ya venía armado con el campo Kiosko —
+  solo faltaba esta pantalla para poder usarlo.
 
-## Cierre de Caja — despliegue pendiente
+Tercer módulo: **RRHH completo**, adaptado 1:1 de la lógica de
+`Code-rrhh-backend.gs`/las 8 pantallas `rrhh-*.html` + `horarios.html` de
+Ecosistema Lorito, con el campo **Kiosko** agregado en Personal y Horarios
+(Lorito es un solo punto de venta y no lo necesita):
 
-Destinos ya creados en Drive (dueño: jorge.lopez@casaaguizotes.com):
-- Sheet de datos: "Registro ventas - LORITO IA" — `1wCiE4zH9ha1eie8T1JuOBU-YRL8qhGlMXhOriSAmgAo`
-- Carpeta de fotos: "Cierres de caja" — `1s0hjm5NmtgSgkZhmThpogZRhFZcr527j`
+- `rrhh-acciones.html` — hub con las 9 pantallas del módulo (link principal
+  desde `index.html`).
+- `rrhh-personal.html` — expedientes digitales del equipo (datos personales,
+  laborales, bancarios, documentos, amonestaciones), con búsqueda y filtro
+  por kiosko/departamento/estado. Botón **"✎ Editar"** en cada expediente:
+  abre un modal para corregir cualquier dato editable (nombre, cédula,
+  contacto, kiosko/departamento/puesto, banco, documentos, observaciones) y
+  para subir o reemplazar la foto de cédula. A propósito no permite tocar
+  **salario** ni **estado** — esos cambios siguen pasando por
+  `rrhh-cambio-salario.html`, `rrhh-terminacion.html` y
+  `rrhh-liquidaciones.html` para no perder el historial que esas pantallas
+  registran aparte.
+- `rrhh-nuevo-ingreso.html` — alta completa de colaborador (ficha larga:
+  cédula, nacionalidad, kiosko, departamento, puesto, salario, datos
+  bancarios, checklist de documentos entregados).
+- `rrhh-vacaciones.html` / `rrhh-control-vacaciones.html` — solicitud de
+  vacaciones y panel de control (saldos por colaborador, pendientes de
+  aprobar, historial). Saldo calculado automáticamente por antigüedad (1 día
+  por mes trabajado) si no hay un saldo manual cargado en el Sheet.
+- `rrhh-amonestaciones.html` — llamadas de atención, amonestaciones verbales/
+  escritas y suspensiones sin goce de salario, con historial por
+  colaborador.
+- `rrhh-terminacion.html` — registra la salida de un colaborador (cambia su
+  Estado a LIQUIDACIÓN).
+- `rrhh-cambio-salario.html` — actualiza el salario de un colaborador y
+  guarda el historial de cambios.
+- `rrhh-liquidaciones.html` — cálculo preliminar de liquidación (preaviso,
+  cesantía, vacaciones, aguinaldo) según el Código de Trabajo de Costa Rica,
+  para colaboradores en estado LIQUIDACIÓN, y confirmación de pago (pasa el
+  Estado a INACTIVO).
+- `horarios.html` / `horarios-historial.html` — turnos semanales **por
+  kiosko** (pestañas Playa Grande/Liberia/Nosara/Playa Hermosa — un
+  colaborador sin Kiosko asignado aparece como "rotativo" en las 4), con
+  vacaciones aplicadas automáticamente desde las solicitudes aprobadas,
+  cierre de semana en PDF (guardado en Drive) e historial de semanas
+  guardadas. **Importante:** el cierre de semana ("Cerrar horario") es
+  global para esa semana en las 4 pestañas — no hay un cierre independiente
+  por kiosko; el PDF que se genera/descarga sí es el de la pestaña activa en
+  ese momento.
+- `rrhh.html` — la pantalla simple original (alta rápida + listado con
+  activar/desactivar) queda intacta y sigue funcionando contra el mismo
+  backend, pero ya no es el punto de entrada del módulo — usá
+  `rrhh-acciones.html`.
 
-Pasos para conectar (manuales, requieren script.google.com — no hay API de Apps Script disponible para automatizarlo):
+El resto de módulos (inventario/compras, reportes) quedan como
+"Próximamente" en `index.html`, a construir después.
 
-1. ✅ Abrí el Sheet "Registro ventas - LORITO IA" → Extensiones → Apps Script, pegaste `Code-cierres-backend.gs` y lo desplegaste como Web App.
-2. ✅ `SHEETS_URL` en `cierres.html` ya apunta a ese `/exec`.
-3. Pendiente: en el editor de Apps Script del backend de cierres, correr UNA VEZ la función `agregarEncabezados()` para escribir los encabezados (incluye las columnas nuevas de propinas por forma de pago y revisión de tarjeta) si aún no se hizo.
-4. ✅ Desplegaste `cierre-extractor/Code.gs` como su propio proyecto (con `ANTHROPIC_API_KEY` en Propiedades del script) y `EXTRACTOR_URL` en `cierres.html` ya apunta a ese `/exec`.
+Archivos:
+- `index.html` — home con navegación entre módulos.
+- `login.html` — acceso por PIN (mismo patrón simple que Lorito, sin backend
+  propio — roles guardados en `localStorage`; ver "Pendiente" más abajo).
+- `configuracion.html` — sección de configuración inicial: alta/edición/
+  activación de kioskos (nombre, ubicación, encargado, contacto, WhatsApp,
+  horario de atención desplegado por día con hora de apertura y cierre).
+  Única fuente de la lista de kioskos que consume el resto del sistema (ver
+  "Kioskos activos" más abajo). Incluye un mapa (Leaflet + OpenStreetMap,
+  sin API key) con un marcador por kiosko: el campo "Ubicación" acepta
+  coordenadas `lat,lng`, un link de Google Maps, o una dirección/nombre de
+  lugar (en ese caso se geocodifica con Nominatim y se cachea en
+  `localStorage` para no repetir la consulta). El popup de cada marcador y
+  la tarjeta de la lista muestran el horario de hoy; cada tarjeta tiene un
+  desplegable "Ver horario semanal" con los 7 días.
+- `cierres.html` — módulo de cierre de caja (formulario + historial).
+- `depositos.html` — módulo de depósitos bancarios (resumen diario, asignar
+  depósito, historial — ver detalle arriba).
+- `rrhh.html`, `rrhh-acciones.html`, `rrhh-personal.html`,
+  `rrhh-nuevo-ingreso.html`, `rrhh-vacaciones.html`,
+  `rrhh-control-vacaciones.html`, `rrhh-amonestaciones.html`,
+  `rrhh-terminacion.html`, `rrhh-cambio-salario.html`,
+  `rrhh-liquidaciones.html`, `horarios.html`, `horarios-historial.html` —
+  módulo de RRHH completo (ver detalle arriba).
+- `Code-cierres-kioskos-backend.gs` — backend del Sheet de ventas (hoja
+  "Cierres") y de depósitos bancarios (hoja "Depositos", que alimenta
+  `depositos.html`).
+- `Code-rrhh-kioskos-backend.gs` — backend completo de RRHH (Personal,
+  Vacaciones, Amonestaciones, Terminaciones, CambiosSalario, Liquidaciones,
+  Horarios, HorariosEstado, Configuracion) — alimenta las 12 pantallas de
+  arriba, el dropdown de "Encargado" en cierres.html y la lista de kioskos
+  de `configuracion.html` + selects del resto del sistema.
 
-Las fotos de cada cierre se guardan automáticamente en la carpeta fija de Drive de arriba, en una subcarpeta por fecha (`YYYY-MM-DD`) — no requiere configuración adicional.
+## Pendiente de conexión (todo manual, vía script.google.com)
 
-## Depósitos — despliegue pendiente
+Apps Script no tiene API para automatizar el despliegue — estos pasos hay
+que hacerlos una vez a mano.
 
-`depositos.html` reutiliza los mismos backends que `cierres.html` (mismo `SHEETS_URL` y `EXTRACTOR_URL`, sin proyectos nuevos ni API keys nuevas), pero ambos necesitan un redespliegue manual para activar las funciones agregadas:
+### 1. Sheet de ventas (Cierres de Caja y Depósitos)
 
-1. Pendiente: abrí el proyecto de Apps Script pegado en el Sheet "Registro ventas - LORITO IA" (el mismo de `Code-cierres-backend.gs`), reemplazá el código por la versión actualizada de este repo, y Implementar → Gestionar implementaciones → Editar → Nueva versión (la URL `/exec` no cambia).
-2. Pendiente: en ese mismo editor, corré UNA VEZ la función `agregarEncabezadosDepositos()` para crear la hoja "Depositos" con sus encabezados.
-3. Pendiente: abrí el proyecto standalone de `cierre-extractor/Code.gs` (el que ya tiene `ANTHROPIC_API_KEY` configurada), reemplazá el código por la versión actualizada, y Nueva versión (la URL `/exec` tampoco cambia).
-4. Hasta que se hagan los pasos 1-3, en `depositos.html` la pestaña "Historial de depósitos" va a mostrar datos incorrectos (porque `?action=depositos` todavía no existe en el backend viejo y cae al mismo endpoint que devuelve los cierres) y el botón "Asignar depósito" va a fallar al guardar — la pestaña "Resumen diario" sí funciona ya, porque solo lee `Cierres` con el endpoint que ya existe.
+1. Creá un Google Sheet nuevo, ej. **"Registro Ventas - Kioskos"**.
+2. Extensiones → Apps Script, pegá **todo** el contenido de
+   `Code-cierres-kioskos-backend.gs`.
+3. Corré **una vez** `agregarEncabezados()` desde el editor (▶ con esa
+   función seleccionada) para crear la pestaña "Cierres" con encabezados, y
+   **una vez más** `agregarEncabezadosDepositos()` para crear la pestaña
+   "Depositos" con los suyos.
+4. Implementar → Nueva implementación → Tipo: **Aplicación web**.
+   - Ejecutar como: **Yo**
+   - Quién tiene acceso: **Cualquiera**
+5. Copiá la URL `/exec` resultante y pegala en `cierres.html` **y en
+   `depositos.html`**, constante `SHEETS_URL` (arriba del todo en el
+   `<script>` de cada uno) — es el mismo Sheet para los dos módulos.
+6. Creá una carpeta en Drive para las fotos de respaldo de los cierres (ej.
+   **"Cierres de caja - Kioskos"**), copiá su ID (de la URL de la carpeta) y
+   pegalo en `Code-cierres-kioskos-backend.gs`, constante
+   `FOLDER_ID_CIERRES` — después de pegarlo, volvé a Implementar → Gestionar
+   implementaciones → Editar → Nueva versión (la URL `/exec` no cambia). Esta
+   misma carpeta se usa también para los comprobantes de depósito (subcarpeta
+   "Depósitos - Comprobantes", se crea sola).
 
-Las fotos de los comprobantes se guardan automáticamente en una carpeta "Depósitos - Comprobantes" en el mismo Drive donde vive "Cierres de caja" — no requiere configuración adicional.
+Sin el paso 6, guardar un cierre con foto va a fallar (`DriveApp.getFolderById`
+con un ID inválido) — si por ahora no vas a usar fotos, no pasa nada, se puede
+guardar el cierre sin adjuntar ninguna.
 
-## Mantenimiento — conectado
+### 2. Sheet de personal (RRHH completo)
 
-Destinos en Drive (dueño: jorge.lopez@casaaguizotes.com):
-- Sheet de datos: `1Hd1CuITuquWIhSmT5CHIDliymUN0GwKhI8hvRc5ZAIQ` (https://docs.google.com/spreadsheets/d/1Hd1CuITuquWIhSmT5CHIDliymUN0GwKhI8hvRc5ZAIQ/edit), pestaña "Reportes".
-- Carpeta de fotos: `1S6jva3a7ghN3rXmtrNzDHZHHs3O3JybL` (https://drive.google.com/drive/u/0/folders/1S6jva3a7ghN3rXmtrNzDHZHHs3O3JybL) — sin subcarpetas, un archivo por reporte.
+1. Si ya tenías el Sheet **"RRHH - Kioskos"** con la versión mínima
+   desplegada, seguí usando ese mismo Sheet — no hace falta crear uno
+   nuevo. Si es la primera vez, creá un Google Sheet nuevo con ese nombre.
+2. Extensiones → Apps Script, reemplazá **todo** el contenido por
+   `Code-rrhh-kioskos-backend.gs` (la versión completa).
+3. Corré **una vez** `configurarHojas()` desde el editor. Si el Sheet ya
+   tenía datos en "Personal", esto **no los borra**: agrega al final las
+   columnas nuevas (Departamento, Fecha nacimiento, Edad, Nacionalidad,
+   Antigüedad, Banco, Cuenta, Tipo cuenta, Contrato, CCSS, INS RT, Carnet
+   alimentos, Vence carnet, Saldo vacaciones, Observaciones, **Foto Cédula
+   (URL)**) y crea las pestañas nuevas: Vacaciones, Amonestaciones,
+   Terminaciones, CambiosSalario, Liquidaciones, Horarios, HorariosEstado,
+   Configuracion (esta última sembrada automáticamente con los 4 kioskos
+   originales, ver "Kioskos activos" más abajo). Si ya habías corrido
+   `configurarHojas()` antes de sumar la foto de cédula, volvé a correrla
+   una vez más: solo agrega la columna que falte, sin tocar las que ya
+   tenías.
+4. Implementar → Gestionar implementaciones → Editar → **Nueva versión**
+   (si ya tenías el Web App desplegado, la URL `/exec` no cambia — no hace
+   falta tocar ningún `.html`). Si es la primera vez: Implementar → Nueva
+   implementación → Tipo: Aplicación web, Ejecutar como Yo, Acceso:
+   Cualquiera, y pegá la URL resultante en `APPS_SCRIPT_RRHH`/
+   `APPS_SCRIPT_URL` de `cierres.html` y las 12 pantallas de RRHH.
+5. Para que **Horarios** pueda cerrar la semana en PDF, creá una carpeta en
+   Drive (ej. **"Horarios - Kioskos"**), copiá su ID (de la URL de la
+   carpeta) y pegalo en `Code-rrhh-kioskos-backend.gs`, constante
+   `FOLDER_ID_HORARIOS` — después volvé a Implementar → Gestionar
+   implementaciones → Editar → Nueva versión. Sin este paso, "Cerrar
+   horario" en `horarios.html` va a fallar al generar el PDF (podés seguir
+   usando Horarios sin cerrar semanas mientras tanto).
+6. `rrhh-nuevo-ingreso.html` incluye un espacio para tomar/subir la foto de
+   la cédula del colaborador (opcional) y se guarda en la carpeta de Drive
+   fija `FOLDER_ID_CEDULAS` (ya viene con un ID real cargado en
+   `Code-rrhh-kioskos-backend.gs`, no hace falta configurarlo — si en algún
+   momento querés usar otra carpeta, reemplazá ese ID por el de tu carpeta y
+   volvé a Implementar → Gestionar implementaciones → Editar → Nueva
+   versión). La URL del archivo queda guardada en la columna nueva
+   **"Foto Cédula (URL)"** de "Personal", visible desde el expediente en
+   `rrhh-personal.html` ("Ver foto ↗"). `rrhh.html` (alta rápida) no tiene
+   este campo todavía.
+7. Cargá el personal desde `rrhh-nuevo-ingreso.html` (ficha completa, con
+   foto de cédula) o `rrhh.html` (alta rápida, campos básicos) — ambos
+   escriben en la misma pestaña "Personal". El campo `Kiosko` es opcional:
+   si un colaborador trabaja fijo en un solo kiosko, completalo para que
+   solo aparezca ahí; dejándolo vacío, aparece como "rotativo" — disponible
+   en cualquier kiosko (dropdown de Encargado en cierres.html, y en las 4
+   pestañas de Horarios).
 
-`Code-mantenimiento-backend.gs` está desplegado como Web App y `MANT_URL` en `mantenimiento.html` ya apunta a ese `/exec`. `mantenimiento.html` también lee los encargados desde el backend de RRHH (`APPS_SCRIPT_RRHH` apunta al mismo `/exec` que usan las 8 páginas `rrhh-*.html`).
+Sin el paso 4, `cierres.html` y todas las pantallas de RRHH muestran
+"Configurá APPS_SCRIPT_RRHH primero" (o el error de conexión equivalente).
 
-`index.html` también apunta su propio `MANT_URL` (widget "🔧 Mantenimiento" del home) a ese mismo `/exec` — muestra los reportes activos (no resueltos) con su badge de estado, igual que `mantenimiento.html`.
+**Nota:** `rrhh-personal.html` ya permite editar un expediente completo
+(botón "✎ Editar" en cada colaborador) incluyendo la foto de cédula.
+`rrhh.html` (alta rápida) sigue sin edición, solo activar/desactivar — para
+corregir esos registros básicos, hacelo directamente en la pestaña
+"Personal" del Sheet. En ambos casos, salario y estado siguen reservados a
+sus propias pantallas (`rrhh-cambio-salario.html`, `rrhh-terminacion.html`,
+`rrhh-liquidaciones.html`) para dejar historial.
 
-Verificado end-to-end (crear reporte → cambiar estado → agregar nota → subida de foto a Drive, todo reflejado en el Sheet y en el widget del home). Hay filas de prueba en la pestaña "Reportes" (encargado "PRUEBA BORRAR TEST") — se pueden borrar manualmente desde el Sheet sin afectar nada.
+## Kioskos activos — sección de Configuración
 
-**Fix — "Guardando…" se quedaba trabado en celular:** las fotos de cámara pesan varios MB, y al convertirlas a base64 (+33%) el POST a `MANT_URL` se volvía gigante; en una red móvil lenta/inestable ese `fetch` podía quedar esperando para siempre sin resolver ni fallar, así que el `try/catch/finally` nunca llegaba a correr y el botón se quedaba en "Guardando…". Dos cambios en `mantenimiento.html`:
-- `comprimirFoto()` redimensiona (máx. 1600px) y recomprime la foto a JPEG (calidad 0.75) client-side antes de convertirla a base64 — un ejemplo de prueba de 3000×2000 quedó en 18 KB de base64 en vez de varios MB.
-- `fetchConTimeout()` envuelve todos los `fetch` a `MANT_URL`/`APPS_SCRIPT_RRHH` con un `AbortController` (30s general, 45s para el guardado con foto); si la conexión se cuelga, aborta y muestra el error en vez de trabarse — el reporte ya quedó guardado en `localStorage` como respaldo, así que no se pierde nada.
+La lista de kioskos ya **no** está duplicada en cada `.html`. Vive en la
+pestaña **"Configuracion"** del Sheet de RRHH, y se administra desde
+`configuracion.html` (tile "Configuración" en `index.html`): nombre,
+ubicación (link o ID de Google Maps), encargado, contacto, WhatsApp,
+horario y estado activo/inactivo.
 
-Si se agregan columnas, actualizar `ENCABEZADOS_REPORTES` en `Code-mantenimiento-backend.gs`, re-desplegar (Implementar → Gestionar implementaciones → Editar → Nueva versión — la URL `/exec` no cambia) y correr `configurarHoja()` de nuevo si hace falta.
+Para abrir un kiosko nuevo (o desactivar uno), entrá a `configuracion.html`
+y usá "+ Agregar kiosko" — no hace falta tocar ningún archivo `.html` ni el
+backend. Los siguientes archivos leen la lista de kioskos activos al cargar
+(`fetch(APPS_SCRIPT_URL + '?modulo=kioskos')`, con un arreglo `KIOSKOS`
+hardcodeado como respaldo si no hay conexión):
 
-## RRHH — conectado
+- `cierres.html`
+- `depositos.html`
+- `rrhh.html`
+- `rrhh-nuevo-ingreso.html`
+- `rrhh-personal.html`
+- `horarios.html`
 
-Sheet de datos: "RRHH - LORITO IA" — `1m8RLK3GPB8rpJjA92D2_gGfIaU-7CIo_Bz9xKB1TbpA` (dueño: jorge.lopez@casaaguizotes.com), pestañas Personal / Vacaciones / Amonestaciones / Terminaciones / CambiosSalario / Liquidaciones.
+Backend (`Code-rrhh-kioskos-backend.gs`): `configurarHojas()` crea la
+pestaña "Configuracion" y, si está vacía, la siembra con los 4 kioskos
+originales (`sembrarConfiguracion()`). `doGet` con `?modulo=kioskos`
+devuelve tanto los registros completos (para `configuracion.html`, que
+también necesita ver los inactivos) como el array `kioskos` con solo los
+nombres activos, en orden — eso es lo que consumen los selects del resto de
+pantallas. `doPost` con `modulo: 'kiosko_guardar'` crea o edita un kiosko
+(incluye renombrar, vía `kiosko_original`) y `modulo: 'kiosko_estado'`
+activa/desactiva uno sin abrir el formulario completo.
 
-`Code-rrhh-backend.gs` está desplegado como Web App y las 8 páginas (`rrhh-personal.html`, `rrhh-vacaciones.html`, `rrhh-control-vacaciones.html`, `rrhh-amonestaciones.html`, `rrhh-liquidaciones.html`, `rrhh-terminacion.html`, `rrhh-cambio-salario.html`, `rrhh-nuevo-ingreso.html`) ya apuntan a ese `/exec`. `rrhh-vacaciones.html` y `rrhh-amonestaciones.html` leen su historial del Sheet (antes solo vivía en localStorage).
+El Sheet no necesita ningún cambio manual más allá de correr
+`configurarHojas()` una vez — el nombre del kiosko se guarda tal cual en la
+columna "Kiosko" de Personal/Horarios/Cierres, y en `horarios.html` aparece
+automáticamente como una pestaña más.
 
-`horarios.html` y `horarios-historial.html` comparten el mismo backend/Sheet (pestañas `Horarios` y `HorariosEstado`) — "Guardar semana" reemplaza las filas de esa semana en vez de acumular duplicados. Requiere la versión de `Code-rrhh-backend.gs` con los módulos `horario_semana`, `cerrar_horario` y `reabrir_horario` (pendiente de pegar la versión actualizada y volver a desplegar, ver más abajo).
+## Extracción con IA (opcional, no incluida todavía)
 
-Si se agregan columnas o módulos nuevos, actualizar los encabezados (`ENCABEZADOS_*`) en `Code-rrhh-backend.gs`, re-desplegar (Implementar → Gestionar implementaciones → Editar → Nueva versión — la URL `/exec` no cambia) y correr `configurarHojas()` de nuevo si se agregó una pestaña.
+En Lorito, `cierres.html` y `depositos.html` tienen un botón "Extraer datos
+con IA" que lee la foto (del cierre o del comprobante de depósito) con un
+extractor separado (Apps Script + `ANTHROPIC_API_KEY`, ver `EXTRACTOR_URL` en
+el código de Lorito). Acá quedó **desconectado a propósito** en los dos
+(`EXTRACTOR_URL = ''`) — el botón queda oculto y ambos formularios funcionan
+100% manual. Si más adelante lo querés activar, hay que:
 
-## Maestro de productos · historial de precios — despliegue pendiente
+1. Copiar el proyecto `cierre-extractor/Code.gs` de Ecosistema-Lorito a un
+   Sheet nuevo, desplegarlo como Web App con su propia `ANTHROPIC_API_KEY` en
+   Propiedades del script.
+2. Pegar esa URL `/exec` en `EXTRACTOR_URL` dentro de `cierres.html` y/o
+   `depositos.html`, según cuál de los dos querás activar (son independientes
+   — `depositos.html` manda `tipo:'deposito'` en el payload para que el
+   extractor sepa qué formato de respuesta devolver).
 
-Arquitectura de 3 capas (Maestro de productos → Alias → Costo promedio) para
-poder unificar productos comprados con nombres distintos entre proveedores
-(ej. "Filete de Res" vs. "Lomo Res Premium") y calcular un costo promedio
-ponderado (30 y 90 días) por producto real, en vez de por texto crudo de
-factura. Vive toda en el Sheet "Registro compras LORITO_Brewhouse - IA"
-(`1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw`), junto a `Desglose_IA`.
+## Login / control de accesos
 
-`config-productos.html` fusiona en un solo archivo (con 3 pestañas) lo que
-antes eran tres páginas separadas: "Pendientes de mapear" (resolver facturas
-sin alias), "Catálogo (Maestro)" (editar/fusionar/eliminar productos del
-Maestro — antes `maestro-productos.html`) y "Categorías y áreas" (administrar
-las listas compartidas — antes `config-catalogos.html`); las tres quedaron
-eliminadas como páginas propias. `Maestro_Productos` ya no tiene "Unidad
-base" / "Unidad de compra default" — tiene "Categoría" y "Área de negocio".
-El módulo entero (`config-productos.html` + `historial-precios.html`) se
-movió del menú "Operaciones" a "Costos y recetas" en `index.html`, junto al
-resto de `costos-*.html`.
+`login.html` usa el mismo patrón simple que Lorito: PIN guardado en
+`localStorage` (`portal_roles`), sin backend propio. Por ahora solo existe el
+PIN de administrador por defecto (`admin`/`admin`) — para producción, sumale
+un rol por persona/kiosko editando el arreglo `ADMIN_DEFAULT` en
+`login.html`, o construí más adelante una pantalla de "Administrar accesos"
+como `admin-accesos.html` en Lorito.
 
-Pasos para activarla (todos manuales, vía script.google.com):
+## Próximos módulos (sugeridos, sin construir todavía)
 
-1. Abrí el proyecto de Apps Script pegado en ese Sheet (el mismo de
-   `Code-compras-backend.gs`), reemplazá el código por la versión actualizada
-   de este repo, e Implementar → Gestionar implementaciones → Editar → Nueva
-   versión (la URL `/exec` no cambia).
-2. En ese mismo editor, corré **UNA VEZ**, en este orden:
-   - `migrarNormalizacionAMaestro()` — migra el catálogo viejo
-     `Normalizacion_Productos` hacia `Maestro_Productos` y `Alias_Productos`.
-   - `poblarPendientesDesdeDesglose()` — carga a `Pendientes_Mapeo` el backlog
-     de compras viejas que `config-productos.html` no puede ver solo (esa
-     pantalla lee `Pendientes_Mapeo`, no escanea `Desglose_IA` directo).
-   - `migrarEsquemaSinUnidades()` — quita "Unidad base"/"Unidad de compra
-     default" de `Maestro_Productos` y `Costo_Promedio`, agrega "Área de
-     negocio" a `Maestro_Productos`. **Importante:** mientras esta función no
-     se corría, el código ya escribía por posición de columna asumiendo el
-     esquema nuevo sobre hojas que todavía tenían el esquema viejo — eso hizo
-     que "Área de negocio" quedara guardándose de verdad, pero bajo la
-     columna todavía rotulada "Unidad base" (por eso no se veía reflejada en
-     ninguna pantalla), y en `Costo_Promedio` llegó a correr números a
-     celdas con formato de fecha y viceversa para los productos tocados
-     recientemente. Esta versión de la función rescata esos datos corridos
-     antes de reacomodar columnas, y al final llama a
-     `recalcularTodosLosCostos()` para recalcular `Costo_Promedio` desde cero
-     y dejarlo consistente — no hace falta correr nada más aparte.
-   - `inicializarListasCompartidas()` — crea y siembra `Categorias_Productos`
-     y `Areas_Negocio` con los valores por defecto (sin esto, esas hojas
-     recién se crean solas con la primera edición desde la pestaña
-     "Categorías y áreas" de `config-productos.html`, y hasta entonces todas
-     las páginas que las leen por `gviz` las ven vacías — no es un error,
-     solo falta este paso).
-3. El script de OCR de facturas (vive en su propio Sheet,
-   `11dfpbu92aGq-Moadys1BbltxA9iRJORYHPZDMKFw3P4`, código fuente en
-   `facturas-extractor/Code.gs` de este repo) escribe cada línea de producto
-   en su propia hoja "Facturas" — **no** directo en `Desglose_IA`; esa pestaña
-   se sincroniza hacia el Sheet de compras por fuera de este script (fórmula
-   o proceso aparte), así que puede tardar un poco en reflejar lo último.
-   Por eso `facturas-extractor/Code.gs` ya incluye `notificarLineaCompra()`,
-   que le avisa a `Code-compras-backend.gs` (vía `procesar_linea_compra`)
-   mandándole cantidad/precio/fecha directamente, y `recalcularCostoPromedio()`
-   los suma al toque sin esperar a que `Desglose_IA` se ponga al día (evita
-   contarlos dos veces una vez que sí se sincronice). Solo falta pegar la
-   versión actualizada de `facturas-extractor/Code.gs` en el editor de Apps
-   Script de ese Sheet (Extensiones → Apps Script) y guardar — no hace falta
-   redesplegar como Web App porque este script no lo es, corre desde el menú
-   "Facturas" del propio Sheet.
-4. `costos-productos.html` ahora también lee `Categorias_Productos` /
-   `Areas_Negocio` (cruzando al Sheet de compras por `gviz`, de solo lectura)
-   en vez de sus listas locales — no necesita ningún despliegue nuevo, solo
-   que existan esas hojas (paso 2).
-5. Una vez desplegado, cada factura nueva con un producto no reconocido cae en
-   `Pendientes_Mapeo` — resolvelo una vez desde `config-productos.html`
-   (asignándolo a un producto ya existente en el Maestro o creando uno nuevo)
-   y queda automático para siempre.
-
-Nota: la mención de `costos-recetas.html`/`costos-menu.html` como "fuera de
-alcance, en localStorage sin backend propio" quedó obsoleta — ver la sección
-"Costeo y recetas — conectado" más arriba: ambos módulos ya tienen backend
-real y están fusionados en `costos-menu-recetas.html`.
-`factura-manual.html` sigue sin generar líneas de producto (solo cabecera
-para cuentas por pagar).
-
-## Base de productos (Code-costos-backend.gs) — fix de esquema pendiente
-
-`Code-costos-backend.gs` (Sheet "COSTOS Y RECETAS - LORITO IA") lee
-`Maestro_Productos` del Sheet de compras para armar `Faltantes_Costeo`. Antes
-usaba columnas "Unidad base"/"Unidad de compra default" que ya no existen
-ahí (ver migración de arriba) — actualicé `ENCABEZADOS_FALTANTES` y
-`calcularFaltantes()` para usar "Área de negocio" en su lugar. Falta pegar
-esta versión en el editor de Apps Script de ese Sheet (Implementar →
-Gestionar implementaciones → Editar → Nueva versión) y correr
-`actualizarControlFaltantes()` una vez para refrescar `Faltantes_Costeo` con
-el esquema nuevo.
-
-## Base de productos (costos-productos.html) — conectado
-
-Sheet de datos: "COSTOS Y RECETAS - LORITO IA" — `1PtT9AHv2drY7oLygHKWMhHQgeOuT20_cD_igqu6ijyA`
-(dueño: jorge.lopez@casaaguizotes.com). La pestaña "Productos" se puebla con
-los productos que ya tienen costo real en `Costo_Promedio` del Sheet de
-compras (`1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw`; había 16 al momento de
-escribir esto, todavía sin cargar en el Sheet nuevo); los demás productos de
-`Maestro_Productos` todavía no tienen compras registradas y se agregan solos a
-medida que se compran (vía `costos-productos.html` o carga masiva).
-
-`Code-costos-backend.gs` implementa el módulo `producto` (alta/edición por ID,
-borrado) y expone `?modulo=productos` de solo lectura — mismo patrón de
-`Code-rrhh-backend.gs` (fetch GET simple con querystring, no JSONP). Los
-módulos `receta` y `plato` (para `costos-menu-recetas.html`) nunca se
-implementaron en este backend legacy — quedaron resueltos en
-`Code-costeo-recetas-v2.gs`, ver la sección "Costeo y recetas — conectado"
-más arriba.
-
-Ya desplegado como Web App y `APPS_SCRIPT_COSTOS` en `costos-productos.html` ya
-apunta a ese `/exec` (verificado con `?modulo=productos` → responde
-`{"ok":true,"registros":[]}`, vacío porque la pestaña "Productos" del Sheet
-todavía no tiene filas). Si se agregan columnas, actualizar
-`ENCABEZADOS_PRODUCTOS` en `Code-costos-backend.gs`, re-desplegar (Implementar
-→ Gestionar implementaciones → Editar → Nueva versión — la URL `/exec` no
-cambia) y correr `configurarHojas()` de nuevo si hace falta.
-
-`Code-costos-backend.gs` también expone `?modulo=nombres_normalizados`, que
-abre el Sheet de compras por ID (`SHEET_COMPRAS_ID`) y lee el catálogo
-completo de `Maestro_Productos` (ID, "Nombre normalizado", "Categoría", "Área
-de negocio"), sumándole el "Costo promedio 30 días" de `Costo_Promedio` cuando
-el producto ya tiene alguna compra registrada
-(`{ ok:true, productos:[{id, nombre, categoria, area, costo}] }`). Es la
-fuente del datalist de "Nuevo producto" en `costos-productos.html` (antes era
-una lista fija en el código, y antes de eso leía solo de `Costo_Promedio` —
-cambié la fuente a `Maestro_Productos` porque es el catálogo completo, 108
-productos vs. los que ya tienen costo) y también autocompleta, al elegir un
-nombre, categoría, área de negocio y precio de compra (costo promedio, si
-existe; todo queda igual de editable que siempre) y el ID del producto (se
-reutiliza en vez de generar uno nuevo, para quedar trazable al catálogo).
-
-**Pendiente:** este módulo (con su nueva forma, que ahora incluye `categoria`
-y `area`) se agregó/cambió después del último despliegue — hay que volver a
-pegar `Code-costos-backend.gs` en el editor y hacer Implementar → Gestionar
-implementaciones → Editar → Nueva versión (verificado con `curl`, hoy todavía
-responde sin `categoria`/`area` porque el código desplegado es el viejo). La
-primera vez que corra puede pedir reautorizar el script (accede a un Sheet
-externo por primera vez).
-
-`Code-costos-backend.gs` también expone `?modulo=proveedores`, que abre el
-Sheet de compras por ID y lee su pestaña `proveedores` — es la fuente real de
-`cargarProveedoresDesdeSheet()` en `costos-productos.html` (antes llamaba a un
-endpoint JSONP que ningún backend implementaba; el dropdown solo funcionaba si
-`proveedores.html` ya había poblado `localStorage` en el mismo navegador).
-Elegí leer `proveedores` desde acá (con `SHEET_COMPRAS_ID`, mismo patrón que
-`Costo_Promedio`/`Maestro_Productos`) en vez de agregarle un `doGet` a
-`Code-compras-backend.gs`, para no tocar ese script ya desplegado y usado en
-vivo por cuentas-por-pagar/factura-manual/maestro-productos/caja-chica/
-config-productos.
-
-**Control de faltantes:** la comparación vive en `calcularFaltantes()`
-(`Code-costos-backend.gs`) — Maestro_Productos (Sheet de compras) contra la
-pestaña "Productos" de este Sheet, por ID. Se usa en dos lugares:
-- Menú "Costos" del Sheet (función `onOpen()`) → "Actualizar control de
-  faltantes" corre `actualizarControlFaltantes()`, que deja el resultado en la
-  pestaña `Faltantes_Costeo`. Manual porque Apps Script no detecta cambios en
-  un Sheet externo solo.
-- `?modulo=faltantes` (doGet) → devuelve el mismo resultado como JSON; es lo
-  que lee `costos-productos.html` para mostrar el aviso "N producto(s) de
-  compras sin registrar acá" arriba de la lista (colapsable, con botón
-  "+ Agregar" por producto que precarga nombre/categoría/ID en "Nuevo
-  producto" — el precio queda vacío porque todavía no tiene ninguna compra).
-
-**Pendiente (de nuevo):** `?modulo=proveedores`, `?modulo=faltantes`,
-`calcularFaltantes()`/`actualizarControlFaltantes()` y el menú "Costos" se
-agregaron después del último despliegue — hay que volver a pegar
-`Code-costos-backend.gs` y hacer Nueva versión, y correr `configurarHojas()`
-una vez más para crear la pestaña `Faltantes_Costeo` (verificado con `curl`,
-hoy `?modulo=faltantes` todavía responde "Módulo no reconocido").
+- **Inventario y compras** por kiosko (stock de cerveza/licores/insumos).
+- **Reportes consolidados** — comparativo de ventas/balance entre los 4
+  kioskos y los que se vayan sumando.
+- **Cierre de semana de Horarios por kiosko** — hoy "Cerrar horario" bloquea
+  la semana completa en las 4 pestañas a la vez (ver nota en la sección de
+  RRHH); si hace falta cerrar cada kiosko por separado, requeriría cambiar
+  la clave de `HorariosEstado` de "Semana inicio" a "Semana inicio + Kiosko".

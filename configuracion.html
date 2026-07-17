@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Configuración · Ecosistema Kioskos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#faf7f0;--surface:#f2ede2;--card:#ffffff;
+  --border:#c8ddd0;--border-h:#8ab89e;
+  --text:#1c3a28;--muted:#5a8a6a;--subtle:#a0c8b0;
+  --green:#1a7a4a;--green-bg:#eef8f2;--green-lt:#d0eedd;
+  --red:#c84a20;--red-bg:#fdf0eb;--red-lt:#f0c0a8;
+  --blue:#185fa5;--blue-bg:#eef4fb;
+  --radius:12px;--font-d:'Inter Tight',sans-serif;--font-b:'Inter',sans-serif;--font-m:'JetBrains Mono',monospace;
+}
+body{font-family:var(--font-b);background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+header{height:56px;border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;background:var(--bg);position:sticky;top:0;z-index:20}
+.nav-left{display:flex;align-items:center;gap:10px}
+.back-btn{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--muted);text-decoration:none;padding:5px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface);transition:color .15s,border-color .15s}
+.back-btn:hover{color:var(--text);border-color:var(--border-h)}
+.back-btn svg{width:13px;height:13px}
+.page-title{font-family:var(--font-d);font-size:14px;font-weight:700}
+
+main{max-width:760px;margin:0 auto;padding:2rem 2rem 5rem}
+
+.intro{margin-bottom:1.5rem}
+.intro h1{font-family:var(--font-d);font-size:20px;font-weight:800}
+.intro p{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5}
+
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+.section-title{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+
+.btn-primary{background:var(--green);color:#fff;border:none;border-radius:9px;font-family:var(--font-d);font-size:13px;font-weight:700;padding:9px 16px;cursor:pointer;transition:opacity .15s}
+.btn-primary:hover{opacity:.9}
+.btn-secondary{padding:9px 14px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;transition:color .15s,border-color .15s;font-family:var(--font-b)}
+.btn-secondary:hover{color:var(--text);border-color:var(--border-h)}
+.btn-text{background:none;border:none;color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;padding:4px 6px}
+.btn-text:hover{color:var(--text)}
+.btn-danger-text{background:none;border:none;color:var(--red);font-size:12px;font-weight:500;cursor:pointer;padding:4px 6px}
+.btn-danger-text:hover{opacity:.75}
+
+.kiosko-list{display:flex;flex-direction:column;gap:10px;margin-bottom:1.5rem}
+.kiosko-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem}
+.kiosko-card.inactive{opacity:.55}
+.kc-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.kc-name{font-family:var(--font-d);font-size:15px;font-weight:700}
+.kc-badges{display:flex;gap:6px;align-items:center}
+.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:2px 9px;border-radius:20px}
+.badge-ok{background:var(--green-bg);color:var(--green)}
+.badge-off{background:var(--red-bg);color:var(--red)}
+.kc-actions{display:flex;gap:4px;margin-left:auto}
+.kc-detail{display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;margin-top:.75rem;font-size:12px}
+.kc-detail-item{display:flex;justify-content:space-between;gap:8px;padding:2px 0;color:var(--muted)}
+.kc-detail-item .v{color:var(--text);font-weight:500;text-align:right}
+.kc-detail-item a{color:var(--blue);text-decoration:none;font-weight:500}
+.kc-empty{font-size:12px;color:var(--subtle);margin-top:.5rem}
+
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--subtle);font-size:13px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius)}
+
+.map-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:1.5rem}
+.map-card .card-title{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem}
+#mapa-kioskos{height:320px;border-radius:8px;overflow:hidden;background:var(--surface)}
+#mapa-status{font-size:11px;color:var(--muted);margin-top:8px}
+.leaflet-popup-content{font-family:var(--font-b);font-size:12px;line-height:1.5}
+.leaflet-popup-content b{font-family:var(--font-d);font-size:13px}
+.leaflet-popup-content a{color:var(--blue)}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;display:none}
+.card.open{display:block}
+.card-title{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:1.25rem}
+.field{margin-bottom:1rem}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:13px;font-weight:500;color:var(--text);margin-bottom:5px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field-hint{font-size:11px;color:var(--muted);margin-top:4px}
+.req{color:var(--red);margin-left:2px}
+input[type=text],select{
+  width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-family:var(--font-b);font-size:14px;padding:9px 12px;
+  outline:none;appearance:none;transition:border-color .15s
+}
+input:focus,select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(26,122,74,.08)}
+input::placeholder{color:var(--subtle)}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;cursor:pointer}
+
+.submit-area{display:flex;gap:10px;margin-top:1.5rem;flex-wrap:wrap}
+
+.horario-dias{display:flex;flex-direction:column;gap:6px}
+.horario-dia{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px;flex-wrap:wrap}
+.horario-dia.cerrado{opacity:.65}
+.horario-dia-check{display:flex;align-items:center;gap:6px;width:100px;flex-shrink:0;font-size:13px;font-weight:500;cursor:pointer}
+.horario-dia-check input{width:auto;cursor:pointer}
+.horario-dia-horas{display:flex;align-items:center;gap:6px;flex:1;min-width:180px}
+.horario-dia-horas input[type=time]{width:auto;flex:1;min-width:0;padding:6px 8px;font-size:13px}
+.horario-dia-sep{color:var(--muted);font-size:12px}
+.horario-dia-copiar{background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;text-decoration:underline;flex-shrink:0;padding:2px}
+.horario-dia-copiar:hover{color:var(--text)}
+
+.horario-semanal-toggle{background:none;border:none;color:var(--blue);font-size:12px;font-weight:500;cursor:pointer;padding:4px 0;margin-top:6px}
+.horario-semanal-toggle:hover{opacity:.8}
+.horario-semanal{display:none;margin-top:8px;border-top:1px solid var(--border);padding-top:8px}
+.horario-semanal.open{display:block}
+.horario-semanal-row{display:flex;justify-content:space-between;padding:2px 0;font-size:12px;color:var(--muted)}
+.horario-semanal-row.hoy{color:var(--text);font-weight:600}
+.horario-semanal-row .v{color:var(--text);font-weight:500}
+.horario-semanal-row.hoy .v{color:var(--green)}
+
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(80px);background:var(--card);border:1px solid var(--border-h);border-radius:10px;padding:11px 18px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;z-index:100;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.08)}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.success{border-color:var(--green);color:var(--green)}
+.toast.error{border-color:var(--red);color:var(--red)}
+
+.status-bar{position:fixed;bottom:0;left:0;right:0;height:34px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 2rem;font-size:11px;color:var(--muted)}
+
+@media(max-width:600px){
+  header{padding:0 1rem}main{padding:1.5rem 1rem 5rem}
+  .field-row,.kc-detail{grid-template-columns:1fr}
+  .status-bar{padding:0 1rem}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+      Inicio
+    </a>
+    <span class="page-title">Configuración</span>
+  </div>
+</header>
+
+<main>
+
+  <div class="intro">
+    <h1>Kioskos</h1>
+    <p>Acá vive la lista de kioskos del sistema — nombre, ubicación, encargado y contacto. Lo que agregués o desactivés acá se refleja automáticamente en Cierre de Caja, RRHH y Horarios: no hace falta tocar ningún otro archivo.</p>
+  </div>
+
+  <div class="map-card">
+    <p class="card-title">Mapa de ubicaciones</p>
+    <div id="mapa-kioskos"></div>
+    <p id="mapa-status"></p>
+  </div>
+
+  <div class="section-head">
+    <span class="section-title" id="kiosko-count">Cargando…</span>
+    <button class="btn-primary" onclick="abrirForm()">+ Agregar kiosko</button>
+  </div>
+
+  <div class="kiosko-list" id="kiosko-list">
+    <div class="empty-state">Cargando kioskos…</div>
+  </div>
+
+  <div class="card" id="form-card">
+    <p class="card-title" id="form-title">Nuevo kiosko</p>
+    <div class="field">
+      <label for="f-nombre">Nombre <span class="req">*</span></label>
+      <input type="text" id="f-nombre" placeholder="Ej: Sámara"/>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="f-ubicacion">Ubicación</label>
+        <input type="text" id="f-ubicacion" placeholder="Ej: 9.9767,-85.6428 o Playa Grande, Guanacaste"/>
+        <p class="field-hint">Coordenadas (lat,lng), un link de Google Maps o una dirección. Para máxima precisión: en Google Maps, clic derecho sobre el punto exacto y copiá el primer número que aparece (las coordenadas).</p>
+      </div>
+      <div class="field">
+        <label for="f-encargado">Nombre del encargado</label>
+        <select id="f-encargado">
+          <option value="">Sin encargado asignado</option>
+        </select>
+        <p class="field-hint">Se carga desde Personal (RRHH) — solo colaboradores activos.</p>
+      </div>
+      <div class="field">
+        <label for="f-contacto">Contacto (teléfono)</label>
+        <input type="text" id="f-contacto" placeholder="Ej: 8888-8888"/>
+      </div>
+      <div class="field">
+        <label for="f-whatsapp">WhatsApp</label>
+        <input type="text" id="f-whatsapp" placeholder="Ej: 8888-8888"/>
+      </div>
+      <div class="field">
+        <label for="f-activo">Estado</label>
+        <select id="f-activo">
+          <option value="Sí">Activo</option>
+          <option value="No">Inactivo</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Horario de atención</label>
+      <div class="horario-dias" id="horario-dias"></div>
+      <p class="field-hint">Marcá los días que abre el kiosko y definí su hora de apertura y cierre. Un día sin marcar queda como "Cerrado".</p>
+    </div>
+
+    <div class="submit-area">
+      <button class="btn-secondary" onclick="cerrarForm()">Cancelar</button>
+      <button class="btn-primary" id="btn-guardar" onclick="guardarKiosko()">Guardar kiosko ✓</button>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast">
+  <svg id="toast-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<div class="status-bar">
+  <span id="status-msg">v1.0 · Configuración · Ecosistema Kioskos</span>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────
+// Misma URL /exec del backend de RRHH que usan cierres.html, rrhh.html,
+// rrhh-nuevo-ingreso.html, rrhh-personal.html y horarios.html — acá vive
+// la pestaña "Configuracion" del Sheet.
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwF97oX3BogjtjGjd5ZL9OfWsdU7MDGc12CuD-TGTQUdRe6I9OR6oamsiWJD_T-xNjaWQ/exec';
+
+let kioskos = []; // filas completas (activos e inactivos), tal cual vienen del Sheet
+let editando = null; // nombre original del kiosko en edición, o null si es nuevo
+
+// ── ENCARGADO (desde Personal / RRHH) ────────────────────────────
+let personalData = [];
+
+async function cargarPersonal() {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.startsWith('TODO_')) return;
+  try {
+    const resp = await fetch(APPS_SCRIPT_URL + '?modulo=personal');
+    const data = await resp.json();
+    if (data.ok) personalData = data.registros || [];
+  } catch (e) { /* el select queda solo con "Sin encargado asignado" */ }
+  poblarEncargados(document.getElementById('f-encargado').value);
+}
+
+// Arma el <select> de encargado con los colaboradores activos de Personal.
+// Si el kiosko ya tenía guardado un nombre que ya no está activo (o se borró
+// de Personal), lo deja como opción aparte para no perder el dato al editar.
+function poblarEncargados(valorActual) {
+  const sel = document.getElementById('f-encargado');
+  const activos = personalData
+    .filter(p => (p['Estado'] || '').toString().toUpperCase() === 'ACTIVO')
+    .map(p => p['Nombre completo'])
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b));
+
+  let opciones = '<option value="">Sin encargado asignado</option>' + activos.map(n => `<option>${n}</option>`).join('');
+  if (valorActual && !activos.includes(valorActual)) {
+    opciones += `<option value="${valorActual}">${valorActual} (no encontrado en Personal)</option>`;
+  }
+  sel.innerHTML = opciones;
+  sel.value = valorActual || '';
+}
+
+// ── HORARIO POR DÍA ───────────────────────────────────────────────
+// Mismas abreviaturas que usa el backend (Configuracion) y horarios.html.
+const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+const DIAS_NOMBRE = { Lun: 'Lunes', Mar: 'Martes', Mié: 'Miércoles', Jue: 'Jueves', Vie: 'Viernes', Sáb: 'Sábado', Dom: 'Domingo' };
+// Índice de DIAS_SEMANA que corresponde a "hoy", usado en el mapa y en la lista.
+function diaDeHoyIdx() { return (new Date().getDay() + 6) % 7; } // getDay(): 0=Dom..6=Sáb → 0=Lun..6=Dom
+
+function construirFilasHorario() {
+  const cont = document.getElementById('horario-dias');
+  cont.innerHTML = DIAS_SEMANA.map(d => `
+    <div class="horario-dia cerrado" id="hd-${d}">
+      <label class="horario-dia-check">
+        <input type="checkbox" id="hd-check-${d}" onchange="toggleDiaHorario('${d}')"/> ${DIAS_NOMBRE[d]}
+      </label>
+      <div class="horario-dia-horas">
+        <input type="time" id="hd-abre-${d}" disabled/>
+        <span class="horario-dia-sep">–</span>
+        <input type="time" id="hd-cierra-${d}" disabled/>
+      </div>
+      <button type="button" class="horario-dia-copiar" onclick="copiarHorarioATodos('${d}')">Copiar a todos</button>
+    </div>`).join('');
+}
+
+function toggleDiaHorario(d) {
+  const abierto = document.getElementById('hd-check-' + d).checked;
+  document.getElementById('hd-abre-' + d).disabled = !abierto;
+  document.getElementById('hd-cierra-' + d).disabled = !abierto;
+  document.getElementById('hd-' + d).classList.toggle('cerrado', !abierto);
+}
+
+function copiarHorarioATodos(dOrigen) {
+  const abierto = document.getElementById('hd-check-' + dOrigen).checked;
+  const abre = document.getElementById('hd-abre-' + dOrigen).value;
+  const cierra = document.getElementById('hd-cierra-' + dOrigen).value;
+  if (!abierto || !abre || !cierra) { showToast('Definí la hora de este día antes de copiarla', 'error'); return; }
+  DIAS_SEMANA.forEach(d => {
+    document.getElementById('hd-check-' + d).checked = true;
+    document.getElementById('hd-abre-' + d).value = abre;
+    document.getElementById('hd-cierra-' + d).value = cierra;
+    document.getElementById('hd-abre-' + d).disabled = false;
+    document.getElementById('hd-cierra-' + d).disabled = false;
+    document.getElementById('hd-' + d).classList.remove('cerrado');
+  });
+  showToast('Horario copiado a todos los días ✓');
+}
+
+// Carga el formulario con un objeto {Lun:'HH:MM-HH:MM'|'', ...}. Vacío = cerrado.
+function setHorarioForm(horarios) {
+  DIAS_SEMANA.forEach(d => {
+    const val = (horarios && horarios[d]) || '';
+    const [abre, cierra] = val.split('-');
+    const abierto = !!(abre && cierra);
+    document.getElementById('hd-check-' + d).checked = abierto;
+    document.getElementById('hd-abre-' + d).value = abre || '';
+    document.getElementById('hd-cierra-' + d).value = cierra || '';
+    document.getElementById('hd-abre-' + d).disabled = !abierto;
+    document.getElementById('hd-cierra-' + d).disabled = !abierto;
+    document.getElementById('hd-' + d).classList.toggle('cerrado', !abierto);
+  });
+}
+
+// Devuelve el formulario como {Lun:'HH:MM-HH:MM'|'', ...} para mandar al backend.
+function leerHorarioForm() {
+  const horarios = {};
+  DIAS_SEMANA.forEach(d => {
+    const abierto = document.getElementById('hd-check-' + d).checked;
+    const abre = document.getElementById('hd-abre-' + d).value;
+    const cierra = document.getElementById('hd-cierra-' + d).value;
+    horarios[d] = (abierto && abre && cierra) ? (abre + '-' + cierra) : '';
+  });
+  return horarios;
+}
+
+// Extrae {Lun:'HH:MM-HH:MM', ...} de un registro tal cual viene del Sheet.
+function horariosDeRegistro(k) {
+  const h = {};
+  DIAS_SEMANA.forEach(d => { h[d] = (k['Horario ' + d] || '').toString().trim(); });
+  return h;
+}
+
+// "16:00" → "4:00 pm"
+function fmtHora(hhmm) {
+  if (!hhmm) return '';
+  const [h, m] = hhmm.split(':').map(Number);
+  const ampm = h >= 12 ? 'pm' : 'am';
+  const h12 = ((h + 11) % 12) + 1;
+  return h12 + ':' + String(m).padStart(2, '0') + ' ' + ampm;
+}
+// "16:00-23:00" → "4:00 pm – 11:00 pm"; vacío → "Cerrado"
+function fmtRangoHorario(val) {
+  if (!val) return 'Cerrado';
+  const [abre, cierra] = val.split('-');
+  if (!abre || !cierra) return 'Cerrado';
+  return fmtHora(abre) + ' – ' + fmtHora(cierra);
+}
+
+// ── MAPA ──────────────────────────────────────────────────────────
+// Guanacaste (donde están los 4 kioskos originales) como vista inicial.
+let mapa = null;
+let marcadoresLayer = null;
+
+// Interpreta "Ubicación" como coordenadas directas si el texto ya viene en
+// formato "lat,lng" o si es un link de Google Maps que trae "@lat,lng" en
+// la URL (los links normales de compartir ubicación lo incluyen). Si no,
+// devuelve null y hay que geocodificarlo como dirección/nombre de lugar.
+function extraerCoordenadas(ubicacion) {
+  if (!ubicacion) return null;
+  const directo = ubicacion.match(/^\s*(-?\d{1,3}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)\s*$/);
+  if (directo) return { lat: parseFloat(directo[1]), lng: parseFloat(directo[2]) };
+  const enLink = ubicacion.match(/@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
+  if (enLink) return { lat: parseFloat(enLink[1]), lng: parseFloat(enLink[2]) };
+  return null;
+}
+
+// Geocodifica una dirección/nombre de lugar con Nominatim (OpenStreetMap,
+// gratis, sin API key). Cachea en localStorage para no repetir la consulta
+// en cada carga de la página (y no pegarle al límite de 1 request/seg).
+async function geocodificar(direccion) {
+  const cache = JSON.parse(localStorage.getItem('geocode_cache') || '{}');
+  if (direccion in cache) return cache[direccion];
+  try {
+    const q = direccion + (/costa rica/i.test(direccion) ? '' : ', Costa Rica');
+    const resp = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=cr&q=' + encodeURIComponent(q));
+    const data = await resp.json();
+    const resultado = (data && data[0]) ? { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) } : null;
+    cache[direccion] = resultado;
+    localStorage.setItem('geocode_cache', JSON.stringify(cache));
+    return resultado;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Devuelve un link de Google Maps que funciona con cualquier formato de
+// "Ubicación" (coordenadas, link ya armado, o dirección/nombre de lugar).
+function linkGoogleMaps(ubicacion) {
+  if (!ubicacion) return '';
+  if (/^https?:\/\//i.test(ubicacion)) return ubicacion;
+  return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ubicacion);
+}
+
+async function renderMapa() {
+  const cont = document.getElementById('mapa-kioskos');
+  const status = document.getElementById('mapa-status');
+  if (!cont || typeof L === 'undefined') return;
+
+  if (!mapa) {
+    mapa = L.map('mapa-kioskos').setView([9.9, -85.4], 9);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(mapa);
+    marcadoresLayer = L.layerGroup().addTo(mapa);
+  }
+  marcadoresLayer.clearLayers();
+
+  const conUbicacion = kioskos.filter(k => (k['Ubicación'] || '').toString().trim());
+  const puntos = [];
+
+  for (const k of conUbicacion) {
+    const ubicacion = k['Ubicación'].toString().trim();
+    const coords = extraerCoordenadas(ubicacion) || await geocodificar(ubicacion);
+    if (!coords) continue;
+
+    const nombre = k['Kiosko'] || '';
+    const activo = String(k['Activo'] || 'Sí').trim().toLowerCase() !== 'no';
+    const horarios = horariosDeRegistro(k);
+    const tieneHorario = DIAS_SEMANA.some(d => horarios[d]);
+    const horarioHoy = tieneHorario ? fmtRangoHorario(horarios[DIAS_SEMANA[diaDeHoyIdx()]]) : '';
+    const popup = `<b>${nombre}</b>${activo ? '' : ' <span style="color:#c84a20">(inactivo)</span>'}<br>`
+      + (k['Encargado'] ? `Encargado: ${k['Encargado']}<br>` : '')
+      + (k['Contacto'] ? `${k['Contacto']}<br>` : '')
+      + (tieneHorario ? `Hoy: ${horarioHoy}<br>` : '')
+      + `<a href="${linkGoogleMaps(ubicacion)}" target="_blank" rel="noopener">Abrir en Google Maps ↗</a>`;
+
+    L.marker([coords.lat, coords.lng]).addTo(marcadoresLayer).bindPopup(popup);
+    puntos.push([coords.lat, coords.lng]);
+  }
+
+  if (puntos.length) {
+    mapa.fitBounds(puntos, { padding: [30, 30], maxZoom: 13 });
+  }
+  setTimeout(() => mapa.invalidateSize(), 150);
+
+  const sinUbicar = conUbicacion.length - puntos.length;
+  status.textContent = puntos.length
+    ? `${puntos.length} de ${kioskos.length} kiosko${kioskos.length === 1 ? '' : 's'} ubicado${puntos.length === 1 ? '' : 's'} en el mapa`
+      + (sinUbicar ? ` · ${sinUbicar} con ubicación cargada pero no se pudo ubicar` : '')
+    : 'Ningún kiosko tiene ubicación cargada todavía — agregala editando el kiosko.';
+}
+
+// ── CARGA ─────────────────────────────────────────────────────────
+async function cargarKioskos() {
+  const lista = document.getElementById('kiosko-list');
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.startsWith('TODO_')) {
+    lista.innerHTML = '<div class="empty-state">Configurá APPS_SCRIPT_URL primero</div>';
+    return;
+  }
+  try {
+    const resp = await fetch(APPS_SCRIPT_URL + '?modulo=kioskos');
+    if (!resp.ok) throw new Error('Error ' + resp.status);
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Sin datos');
+    kioskos = data.registros || [];
+    renderLista();
+    renderMapa();
+  } catch (e) {
+    lista.innerHTML = '<div class="empty-state">No se pudo conectar (' + e.message + '). '
+      + '<a href="javascript:void(0)" onclick="cargarKioskos()" style="color:var(--green);font-weight:600;">Reintentar</a></div>';
+    document.getElementById('kiosko-count').textContent = 'Sin conexión';
+  }
+}
+
+function renderLista() {
+  const lista = document.getElementById('kiosko-list');
+  document.getElementById('kiosko-count').textContent =
+    kioskos.length + ' kiosko' + (kioskos.length === 1 ? '' : 's') + ' registrado' + (kioskos.length === 1 ? '' : 's');
+
+  if (!kioskos.length) {
+    lista.innerHTML = '<div class="empty-state">Todavía no hay kioskos — agregá el primero con el botón de arriba.</div>';
+    return;
+  }
+
+  const hoyIdx = diaDeHoyIdx();
+
+  lista.innerHTML = kioskos.map((k, i) => {
+    const nombre = k['Kiosko'] || '';
+    const activo = String(k['Activo'] || 'Sí').trim().toLowerCase() !== 'no';
+    const ubicacion = k['Ubicación'] || '';
+    const encargado = k['Encargado'] || '';
+    const contacto = k['Contacto'] || '';
+    const whatsapp = k['WhatsApp'] || '';
+    const horarios = horariosDeRegistro(k);
+    const tieneHorario = DIAS_SEMANA.some(d => horarios[d]);
+    const tieneDetalle = ubicacion || encargado || contacto || whatsapp || tieneHorario;
+
+    const linkMaps = linkGoogleMaps(ubicacion);
+    const horarioHoy = tieneHorario ? fmtRangoHorario(horarios[DIAS_SEMANA[hoyIdx]]) : '';
+
+    return `
+    <div class="kiosko-card ${activo ? '' : 'inactive'}">
+      <div class="kc-head">
+        <div class="kc-name">${nombre}</div>
+        <div class="kc-badges">
+          <span class="badge ${activo ? 'badge-ok' : 'badge-off'}">${activo ? 'Activo' : 'Inactivo'}</span>
+        </div>
+        <div class="kc-actions">
+          <button class="btn-text" onclick='editarKiosko(${JSON.stringify(nombre)})'>Editar</button>
+          <button class="${activo ? 'btn-danger-text' : 'btn-text'}" onclick='toggleActivo(${JSON.stringify(nombre)}, ${activo})'>${activo ? 'Desactivar' : 'Activar'}</button>
+        </div>
+      </div>
+      ${tieneDetalle ? `
+      <div class="kc-detail">
+        ${ubicacion ? `<div class="kc-detail-item"><span>Ubicación</span><span class="v">${linkMaps ? `<a href="${linkMaps}" target="_blank" rel="noopener">Ver en Maps ↗</a>` : ubicacion}</span></div>` : ''}
+        ${encargado ? `<div class="kc-detail-item"><span>Encargado</span><span class="v">${encargado}</span></div>` : ''}
+        ${contacto ? `<div class="kc-detail-item"><span>Contacto</span><span class="v">${contacto}</span></div>` : ''}
+        ${whatsapp ? `<div class="kc-detail-item"><span>WhatsApp</span><span class="v">${whatsapp}</span></div>` : ''}
+        ${tieneHorario ? `<div class="kc-detail-item"><span>Hoy</span><span class="v">${horarioHoy}</span></div>` : ''}
+      </div>` : '<div class="kc-empty">Sin información general cargada todavía.</div>'}
+      ${tieneHorario ? `
+      <button type="button" class="horario-semanal-toggle" onclick="toggleHorarioSemanal(${i})">▾ Ver horario semanal</button>
+      <div class="horario-semanal" id="hs-${i}">
+        ${DIAS_SEMANA.map((d, di) => `
+          <div class="horario-semanal-row ${di === hoyIdx ? 'hoy' : ''}">
+            <span>${DIAS_NOMBRE[d]}</span>
+            <span class="v">${fmtRangoHorario(horarios[d])}</span>
+          </div>`).join('')}
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function toggleHorarioSemanal(i) {
+  const el = document.getElementById('hs-' + i);
+  const btn = el.previousElementSibling;
+  const open = el.classList.toggle('open');
+  btn.textContent = (open ? '▴ Ocultar' : '▾ Ver') + ' horario semanal';
+}
+
+// ── FORMULARIO (agregar / editar) ────────────────────────────────
+function abrirForm() {
+  editando = null;
+  document.getElementById('form-title').textContent = 'Nuevo kiosko';
+  document.getElementById('f-nombre').value = '';
+  document.getElementById('f-ubicacion').value = '';
+  poblarEncargados('');
+  document.getElementById('f-contacto').value = '';
+  document.getElementById('f-whatsapp').value = '';
+  document.getElementById('f-activo').value = 'Sí';
+  setHorarioForm({});
+  document.getElementById('form-card').classList.add('open');
+  document.getElementById('f-nombre').focus();
+  window.scrollTo({ top: document.getElementById('form-card').offsetTop - 80, behavior: 'smooth' });
+}
+
+function editarKiosko(nombre) {
+  const k = kioskos.find(x => x['Kiosko'] === nombre);
+  if (!k) return;
+  editando = nombre;
+  document.getElementById('form-title').textContent = 'Editar kiosko';
+  document.getElementById('f-nombre').value = k['Kiosko'] || '';
+  document.getElementById('f-ubicacion').value = k['Ubicación'] || '';
+  poblarEncargados(k['Encargado'] || '');
+  document.getElementById('f-contacto').value = k['Contacto'] || '';
+  document.getElementById('f-whatsapp').value = k['WhatsApp'] || '';
+  document.getElementById('f-activo').value = String(k['Activo'] || 'Sí').trim().toLowerCase() === 'no' ? 'No' : 'Sí';
+  setHorarioForm(horariosDeRegistro(k));
+  document.getElementById('form-card').classList.add('open');
+  window.scrollTo({ top: document.getElementById('form-card').offsetTop - 80, behavior: 'smooth' });
+}
+
+function cerrarForm() {
+  document.getElementById('form-card').classList.remove('open');
+  editando = null;
+}
+
+async function guardarKiosko() {
+  const nombre = document.getElementById('f-nombre').value.trim();
+  if (!nombre) { showToast('Falta el nombre del kiosko', 'error'); return; }
+
+  const payload = {
+    modulo: 'kiosko_guardar',
+    kiosko_original: editando || '',
+    kiosko: nombre,
+    ubicacion: document.getElementById('f-ubicacion').value.trim(),
+    encargado: document.getElementById('f-encargado').value.trim(),
+    contacto: document.getElementById('f-contacto').value.trim(),
+    whatsapp: document.getElementById('f-whatsapp').value.trim(),
+    horarios: leerHorarioForm(),
+    activo: document.getElementById('f-activo').value,
+    registrado_en: new Date().toISOString()
+  };
+
+  const btn = document.getElementById('btn-guardar');
+  btn.disabled = true;
+  btn.textContent = 'Guardando…';
+  try {
+    const resp = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Error al guardar');
+    showToast('Kiosko guardado ✓');
+    cerrarForm();
+    await cargarKioskos();
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Guardar kiosko ✓';
+  }
+}
+
+async function toggleActivo(nombre, activoActual) {
+  const nuevoEstado = activoActual ? 'No' : 'Sí';
+  try {
+    const resp = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ modulo: 'kiosko_estado', kiosko: nombre, activo: nuevoEstado })
+    });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Error al actualizar');
+    showToast(nuevoEstado === 'Sí' ? 'Kiosko activado ✓' : 'Kiosko desactivado ✓');
+    await cargarKioskos();
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').innerHTML = type === 'success'
+    ? '<polyline points="3 8 7 12 13 4"/>'
+    : '<line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>';
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = `toast ${type}`;
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────
+construirFilasHorario();
+cargarKioskos();
+cargarPersonal();
+
+// Redirige a login si no hay sesión válida (8 horas) — mismo patrón que index.html.
+const sesion = JSON.parse(localStorage.getItem('portal_sesion')||'null');
+if (!sesion || (Date.now() - sesion.ts) >= 8 * 60 * 60 * 1000) {
+  window.location.href = 'login.html';
+}
+</script>
+</body>
+</html>
