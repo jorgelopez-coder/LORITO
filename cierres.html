@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Cierre de Caja · Playa Grande Brew House</title>
+<title>Cierre de Caja · Grupo del Sol</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
 <style>
@@ -35,9 +35,11 @@ header{height:56px;border-bottom:1px solid var(--border);padding:0 2rem;display:
 main{max-width:860px;margin:0 auto;padding:2rem 2rem 5rem}
 .page{display:none}.page.active{display:block}
 
+/* Cards */
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem}
 .card-title{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:1.25rem}
 
+/* Fields */
 .field{margin-bottom:1rem}
 .field:last-child{margin-bottom:0}
 .field label{display:block;font-size:13px;font-weight:500;color:var(--text);margin-bottom:5px}
@@ -56,7 +58,9 @@ textarea{resize:vertical;min-height:70px;line-height:1.5}
 select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a8a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;cursor:pointer}
 input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 
-.paso{display:none}.paso.active{display:block}
+/* Pasos (wizard) */
+.paso{display:none}
+.paso.active{display:block}
 .paso-nav{display:flex;gap:8px;margin-bottom:1rem}
 .paso-nav-item{flex:1;text-align:center;font-size:12px;font-weight:500;color:var(--muted);padding:9px 6px;border-radius:9px;background:var(--surface);border:1px solid var(--border);cursor:pointer;transition:all .15s}
 .paso-nav-item:hover{border-color:var(--border-h);color:var(--text)}
@@ -64,10 +68,12 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 .paso-nav-item.active{border-color:var(--green);background:var(--green-bg);color:var(--green)}
 .paso-nav-item.active .pnav-num{background:var(--green);color:#fff}
 
+/* Efectivo en caja — columnas */
 .efectivo-cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:1.25rem}
 .denom-list{display:flex;flex-direction:column;gap:8px}
 .calc-detalle{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.75rem}
 
+/* Denominaciones */
 .denom-section{border-top:1px solid var(--border);padding-top:1.25rem;margin-top:1.25rem}
 .denom-group-title{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem}
 .denom-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:1rem}
@@ -80,6 +86,7 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 .denom-input:focus{border-color:var(--green)}
 .denom-sub{font-size:11px;font-family:var(--font-m);color:var(--muted);margin-left:auto;min-width:60px;text-align:right}
 
+/* Cuadre summary */
 .cuadre-card{background:var(--green-bg);border:1px solid var(--green-lt);border-radius:var(--radius);padding:1.25rem;margin-top:1rem}
 .cuadre-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px}
 .cuadre-row+.cuadre-row{border-top:1px solid var(--green-lt)}
@@ -89,50 +96,57 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 .cuadre-total .val{font-family:var(--font-m)}
 .diff-ok{color:var(--green)}.diff-warn{color:var(--red)}.diff-minor{color:var(--amber)}
 
+/* Submit area */
 .submit-area{display:flex;gap:10px;margin-top:1.5rem;flex-wrap:wrap}
 .btn-primary{flex:1;min-width:160px;background:var(--green);color:#fff;border:none;border-radius:9px;font-family:var(--font-d);font-size:15px;font-weight:700;padding:12px 24px;cursor:pointer;transition:opacity .15s}
 .btn-primary:hover{opacity:.9}
 .btn-primary:disabled{opacity:.4;cursor:not-allowed}
 .btn-secondary{padding:12px 16px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;cursor:pointer}
 .btn-secondary:hover{color:var(--text);border-color:var(--border-h)}
-.btn-secondary:disabled{opacity:.4;cursor:not-allowed}
 .btn-wa{width:100%;background:#25D366;color:#fff;border:none;border-radius:9px;font-family:var(--font-d);font-size:15px;font-weight:700;padding:12px 24px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:opacity .15s;margin-top:10px}
 .btn-wa:hover{opacity:.9}
 .btn-wa:disabled{opacity:.35;cursor:not-allowed}
 
+/* Toast */
 .toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(80px);background:var(--card);border:1px solid var(--border-h);border-radius:10px;padding:11px 18px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;z-index:100;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.08)}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 .toast.success{border-color:var(--green);color:var(--green)}
 .toast.error{border-color:var(--red);color:var(--red)}
 .toast svg{width:16px;height:16px;flex-shrink:0}
 
+/* Historial */
 .hist-filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
 .hist-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:8px;cursor:pointer;transition:border-color .12s}
 .hist-card:hover{border-color:var(--border-h)}
 .hist-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .hist-fecha{font-weight:600;font-size:13px}
-.hist-sub{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.hist-encargado{font-size:12px;color:var(--muted)}
 .hist-total{font-family:var(--font-m);font-size:16px;font-weight:700;color:var(--green)}
 .hist-total.warn{color:var(--red)}
-.hist-row{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.hist-row{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
 .hist-row span{display:flex;align-items:center;gap:4px}
 .badge{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:2px 8px;border-radius:20px}
-.badge-kiosko{background:var(--blue-bg);color:var(--blue)}
+.badge-t1{background:var(--blue-bg);color:var(--blue)}
+.badge-t2{background:var(--amber-bg);color:var(--amber)}
 .badge-ok{background:var(--green-bg);color:var(--green)}
 .badge-warn{background:var(--red-bg);color:var(--red)}
+.badge-minor{background:var(--amber-bg);color:var(--amber)}
 .empty-state{text-align:center;padding:3rem 1rem;color:var(--subtle);font-size:13px}
 
+/* Dashboard mensual */
 .dashboard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
 .dashboard-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.75rem 1rem}
-.dashboard-item .dm-label{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.dashboard-item .dm-mes{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
 .dashboard-item .dm-total{font-family:var(--font-m);font-size:17px;font-weight:700;color:var(--green)}
 .dashboard-item .dm-count{font-size:11px;color:var(--subtle);margin-top:2px}
 
+/* Iconos de cuadre en historial */
 .cuadre-icons{display:flex;gap:6px}
 .cuadre-icon{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:500;padding:2px 7px;border-radius:20px}
 .cuadre-icon.ok{background:var(--green-bg);color:var(--green)}
 .cuadre-icon.warn{background:var(--red-bg);color:var(--red)}
 
+/* Detalle expandible */
 .hist-detail{background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:1rem 1.25rem;margin-top:-9px;margin-bottom:8px;font-size:12px;display:none}
 .hist-detail.open{display:block}
 .hist-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px}
@@ -144,6 +158,7 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 .hist-detail-fotos{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
 .hist-detail-fotos a{font-size:11px;color:var(--blue);text-decoration:none;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px}
 
+/* Resumen ventas antes de submit */
 .resumen-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;margin-top:1rem}
 .resumen-title{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem}
 .resumen-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px}
@@ -152,6 +167,11 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 .resumen-total{display:flex;justify-content:space-between;align-items:center;padding:8px 0 0;margin-top:6px;border-top:1px solid var(--border);font-size:14px;font-weight:700}
 .resumen-total .v{font-family:var(--font-m);color:var(--green);font-size:16px}
 
+.status-bar{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.6rem 1.25rem;font-size:12px;color:var(--muted)}
+.conn-dot{width:7px;height:7px;border-radius:50%;background:var(--subtle);flex-shrink:0}
+.conn-dot.on{background:var(--green)}
+
+/* Fotos de respaldo */
 .foto-label{font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px;display:block}
 .foto-box{border:2px dashed var(--border);border-radius:10px;padding:1rem;text-align:center;cursor:pointer;transition:border-color .15s;position:relative;min-height:130px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:var(--surface)}
 .foto-box:hover{border-color:var(--border-h)}
@@ -162,10 +182,16 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 .foto-remove{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(20,30,25,.6);color:#fff;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;line-height:1}
 .foto-remove:hover{background:rgba(20,30,25,.85)}
 .foto-badge{position:absolute;bottom:6px;left:6px;background:rgba(20,30,25,.6);color:#fff;font-size:10px;font-weight:600;padding:3px 7px;border-radius:5px}
+.btn-secondary:disabled{opacity:.4;cursor:not-allowed}
 .ia-box{border-radius:10px;padding:.85rem 1rem;font-size:12px;line-height:1.6}
 .ia-box.ia-ok{background:var(--green-bg);border:1px solid var(--green-lt);color:var(--text)}
 .ia-box.ia-warn{background:var(--amber-bg);border:1px solid var(--amber-lt);color:var(--text)}
 .ia-box.ia-error{background:var(--red-bg);border:1px solid var(--red-lt);color:var(--text)}
+.ia-box .ia-title{font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.ia-conf{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;text-transform:uppercase}
+.ia-conf.alta{background:var(--green-lt);color:var(--green)}
+.ia-conf.media{background:var(--amber-lt);color:var(--amber)}
+.ia-conf.baja{background:var(--red-lt);color:var(--red)}
 
 @media(max-width:600px){
   header{padding:0 1rem}main{padding:1.5rem 1rem 3rem}
@@ -201,27 +227,36 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 <div class="page active" id="tab-form">
 
   <div class="paso-nav">
-    <div class="paso-nav-item active" id="pnav-1" onclick="irPaso(1)"><span class="pnav-num">1</span> Kiosko y ventas</div>
+    <div class="paso-nav-item active" id="pnav-1" onclick="irPaso(1)"><span class="pnav-num">1</span> Fotos y datos</div>
     <div class="paso-nav-item" id="pnav-2" onclick="irPaso(2)"><span class="pnav-num">2</span> Efectivo</div>
     <div class="paso-nav-item" id="pnav-3" onclick="irPaso(3)"><span class="pnav-num">3</span> Resultado</div>
   </div>
 
-  <!-- ── PASO 1: Identificación y ventas ── -->
+  <!-- ── PASO 1: Fotos, identificación y ventas ── -->
   <div class="paso active" id="paso-1">
+
+    <div class="card">
+      <p class="card-title">Evidencia fotográfica</p>
+      <div class="field">
+        <label class="foto-label">Foto del cierre (sistema y datáfono)</label>
+        <div class="foto-box" id="foto-box" onclick="document.getElementById('input-foto').click()">
+          <svg class="foto-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-2h6l2 2h3v12H4V7z"/><circle cx="12" cy="13" r="3.5"/></svg>
+          <span class="foto-hint">Tocá para tomar o subir una foto donde se vean el cierre del sistema y el voucher del datáfono juntos</span>
+        </div>
+        <input type="file" id="input-foto" accept="image/*" capture="environment" style="display:none"/>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:.75rem">Con una sola foto alcanza (bajás consumo de datos). Si no la tenés a mano, podés completar todo el formulario manualmente.</p>
+      <button class="btn-secondary" id="btn-extraer-ia" onclick="extraerConIA()" disabled style="margin-top:12px;width:100%">🪄 Extraer datos con IA</button>
+      <div id="ia-resultado" style="display:none;margin-top:10px"></div>
+    </div>
 
     <div class="card">
       <p class="card-title">Identificación</p>
       <div class="field-row">
         <div class="field">
-          <label for="f-kiosko">Kiosko <span class="req">*</span></label>
-          <select id="f-kiosko" onchange="alCambiarKiosko()">
-            <option value="" disabled selected>Seleccioná un kiosko…</option>
-          </select>
-        </div>
-        <div class="field">
           <label for="f-encargado">Encargado <span class="req">*</span></label>
           <select id="f-encargado">
-            <option value="" disabled selected>Elegí el kiosko primero</option>
+            <option value="" disabled selected>Cargando...</option>
           </select>
           <div id="enc-error" style="display:none;font-size:12px;color:var(--red);margin-top:5px;">
             <span id="enc-error-msg"></span>
@@ -236,22 +271,6 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
           <label for="f-tc">Tipo de cambio del día (₡ por $1)</label>
           <input type="number" id="f-tc" placeholder="Ej: 520" min="1" step="0.01" oninput="actualizarResumen();calcCuadre()"/>
         </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <p class="card-title">Evidencia fotográfica (opcional)</p>
-      <div class="field">
-        <label class="foto-label">Foto del cierre / arqueo</label>
-        <div class="foto-box" id="foto-box" onclick="document.getElementById('input-foto').click()">
-          <svg class="foto-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-2h6l2 2h3v12H4V7z"/><circle cx="12" cy="13" r="3.5"/></svg>
-          <span class="foto-hint">Tocá para tomar o subir una foto de respaldo del cierre (opcional)</span>
-        </div>
-        <input type="file" id="input-foto" accept="image/*" capture="environment" style="display:none"/>
-      </div>
-      <div id="ia-box-extractor" style="display:none;margin-top:12px">
-        <button class="btn-secondary" id="btn-extraer-ia" onclick="extraerConIA()" disabled style="width:100%">🪄 Extraer datos con IA</button>
-        <div id="ia-resultado" style="display:none;margin-top:10px"></div>
       </div>
     </div>
 
@@ -271,24 +290,59 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
           <input type="number" id="f-sinpe" placeholder="0" min="0" oninput="actualizarResumen()"/>
         </div>
         <div class="field">
+          <label for="f-credito">Ventas a Crédito (₡)</label>
+          <input type="number" id="f-credito" placeholder="0" min="0" oninput="actualizarResumen()"/>
+        </div>
+        <div class="field">
+          <label for="f-plataformas">Ventas por Plataformas (₡)</label>
+          <input type="number" id="f-plataformas" placeholder="0" min="0" oninput="actualizarResumen()"/>
+          <input type="text" id="f-plataformas-desc" placeholder="Ej: Uber Eats, Rappi…" style="margin-top:5px;font-size:12px;padding:6px 10px"/>
+        </div>
+        <div class="field">
           <label for="f-otras">Otras Ventas (₡)</label>
           <input type="number" id="f-otras" placeholder="0" min="0" oninput="actualizarResumen()"/>
         </div>
       </div>
-      <p style="font-size:11px;color:var(--muted);margin-top:-.5rem;margin-bottom:1rem">Si el cliente pagó en dólares en efectivo, convertí a colones con el tipo de cambio del día e incluilo en "Ventas en Efectivo".</p>
+      <p style="font-size:11px;color:var(--muted);margin-top:-.5rem;margin-bottom:1rem">La línea "DOLARES" del recibo ya va sumada dentro de "Ventas en Efectivo" (el sistema la reporta convertida a colones).</p>
 
-      <div class="field-row">
-        <div class="field" style="max-width:260px">
-          <label for="f-datafono-total">Total procesado en datáfono (₡)</label>
-          <input type="number" id="f-datafono-total" placeholder="0" min="0" oninput="calcRevisionTarjeta()"/>
+      <div class="field" style="max-width:260px">
+        <label>Total Ventas del Día (₡)</label>
+        <input type="text" id="f-total-ventas-dia" placeholder="₡0" readonly/>
+      </div>
+
+      <div class="denom-section">
+        <p class="denom-group-title">🧾 10% Servicio por forma de pago</p>
+        <div class="field-row-3">
+          <div class="field">
+            <label for="f-propina-efectivo">10% Servicio Efectivo (₡)</label>
+            <input type="number" id="f-propina-efectivo" placeholder="0" min="0" oninput="actualizarResumen()"/>
+          </div>
+          <div class="field">
+            <label for="f-propina-tarjeta">10% Servicio Tarjeta (₡)</label>
+            <input type="number" id="f-propina-tarjeta" placeholder="0" min="0" oninput="actualizarResumen();calcRevisionTarjeta()"/>
+          </div>
+          <div class="field">
+            <label for="f-propina-credito">10% Servicio Crédito (₡)</label>
+            <input type="number" id="f-propina-credito" placeholder="0" min="0" oninput="actualizarResumen()"/>
+          </div>
+          <div class="field">
+            <label for="f-propina-otro">10% Servicio Otro (₡)</label>
+            <input type="number" id="f-propina-otro" placeholder="0" min="0" oninput="actualizarResumen()"/>
+          </div>
         </div>
+        <p style="font-size:11px;color:var(--muted);margin-top:-.5rem;margin-bottom:1rem">La línea "DOLARES" de propina también va sumada dentro de "10% Servicio Efectivo".</p>
         <div class="field" style="max-width:260px">
-          <label for="f-tips">Propinas / Tips del día (₡)</label>
-          <input type="number" id="f-tips" placeholder="0" min="0" oninput="actualizarResumen()"/>
+          <label>Total 10% Servicio (₡)</label>
+          <input type="text" id="f-total-servicio" placeholder="₡0" readonly/>
         </div>
       </div>
-      <p style="font-size:11px;color:var(--muted);margin-top:-.5rem;margin-bottom:1rem">Propinas informativas — no se suman a "Total ventas" ni afectan el cuadre de caja.</p>
 
+      <div class="field" style="max-width:260px">
+        <label for="f-datafono-total">Total procesado en datáfono (₡)</label>
+        <input type="number" id="f-datafono-total" placeholder="0" min="0" oninput="calcRevisionTarjeta()"/>
+      </div>
+
+      <!-- Resumen ventas -->
       <div class="resumen-card" id="resumen-ventas">
         <p class="resumen-title">Resumen de ventas</p>
         <div class="resumen-grid" id="resumen-grid"></div>
@@ -369,13 +423,15 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
     <div class="card">
       <p class="card-title">Revisión de Tarjeta</p>
       <div class="cuadre-card">
-        <div class="cuadre-row"><label>Tarjeta reportada</label><span class="val" id="rt-reportado">₡0</span></div>
+        <div class="cuadre-row"><label>Tarjeta reportada (ventas + 10% servicio)</label><span class="val" id="rt-reportado">₡0</span></div>
         <div class="cuadre-row"><label>Total datáfono</label><span class="val" id="rt-datafono">₡0</span></div>
         <div class="cuadre-total">
           <span>Diferencia</span>
           <span class="val" id="rt-diff">₡0</span>
         </div>
         <div id="rt-badge" style="margin-top:10px"></div>
+        <button class="btn-secondary" style="margin-top:10px;width:100%;font-size:12px;padding:7px" onclick="toggleDetalleCalculo('rt', this)">Ver detalle del cálculo ▾</button>
+        <div class="calc-detalle" id="rt-detalle" style="display:none;margin-top:10px"></div>
       </div>
     </div>
 
@@ -385,12 +441,14 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
         <div class="cuadre-row"><label>Total en colones</label><span class="val" id="cuadre-total-crc">₡0</span></div>
         <div class="cuadre-row"><label>Total en dólares (≈₡ al tipo de cambio)</label><span class="val" id="cuadre-total-usd">$0 (≈₡0)</span></div>
         <div class="cuadre-row"><label>Total contado en caja</label><span class="val" id="cuadre-total">₡0</span></div>
-        <div class="cuadre-row"><label>Efectivo esperado (ventas + fondo)</label><span class="val" id="cuadre-esperado">₡0</span></div>
+        <div class="cuadre-row"><label>Efectivo esperado (ventas)</label><span class="val" id="cuadre-esperado">₡0</span></div>
         <div class="cuadre-total">
           <span>Diferencia de caja (₡)</span>
           <span class="val" id="cuadre-diff">₡0</span>
         </div>
         <div id="cuadre-badge" style="margin-top:10px"></div>
+        <button class="btn-secondary" style="margin-top:10px;width:100%;font-size:12px;padding:7px" onclick="toggleDetalleCalculo('ef', this)">Ver detalle del cálculo ▾</button>
+        <div class="calc-detalle" id="ef-detalle" style="display:none;margin-top:10px"></div>
       </div>
     </div>
 
@@ -431,11 +489,6 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 <!-- ── TAB HISTORIAL ── -->
 <div class="page" id="tab-historial">
 
-  <div class="card" id="hist-dashboard-kiosko">
-    <p class="card-title">Ventas por kiosko (filtro actual)</p>
-    <div class="dashboard-grid" id="hist-dashboard-kiosko-grid"></div>
-  </div>
-
   <div class="card" id="hist-dashboard">
     <p class="card-title">Balance por mes</p>
     <div class="dashboard-grid" id="hist-dashboard-grid"></div>
@@ -443,9 +496,10 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 
   <div class="hist-filters">
     <input type="text" id="hist-buscar" placeholder="Buscar encargado…" style="width:170px" oninput="renderHistorial()"/>
-    <select id="hist-kiosko" onchange="renderHistorial()" style="width:150px"><option value="">Kiosko</option></select>
     <select id="hist-anio" onchange="renderHistorial()" style="width:100px"><option value="">Año</option></select>
     <select id="hist-mes" onchange="renderHistorial()" style="width:120px"><option value="">Mes</option></select>
+    <select id="hist-semana" onchange="renderHistorial()" style="width:130px"><option value="">Semana</option></select>
+    <select id="hist-dia" onchange="renderHistorial()" style="width:130px"><option value="">Día de semana</option></select>
     <button class="btn-secondary" onclick="cargarHistorial()" style="padding:8px 14px;font-size:12px">↻ Actualizar</button>
     <span style="font-size:12px;color:var(--muted);margin-left:auto" id="hist-count"></span>
   </div>
@@ -463,19 +517,10 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
 
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────
-// Pegá acá las URLs /exec de tus Web Apps de Apps Script (ver README.md).
-const SHEETS_URL       = 'https://script.google.com/macros/s/AKfycbzegddEwvSBsQ-z5RbmL8vevqjZmcgIEltb3BKAvpcwGTYNWTuwNxweN-LYKOcMKLq2Dg/exec';
-const APPS_SCRIPT_RRHH = 'https://script.google.com/macros/s/AKfycbwF97oX3BogjtjGjd5ZL9OfWsdU7MDGc12CuD-TGTQUdRe6I9OR6oamsiWJD_T-xNjaWQ/exec';
-// Opcional — solo si desplegás el extractor con IA (ver README.md). Si lo
-// dejás vacío, el botón "Extraer datos con IA" queda oculto y el formulario
-// funciona igual, 100% manual.
-const EXTRACTOR_URL    = '';
-
-// Lista de kioskos activos — se carga desde la pestaña "Configuracion" del
-// Sheet de RRHH (ver cargarKioskos()/configuracion.html). Este arreglo es
-// solo el respaldo por si todavía no se corrió configurarHojas() o falla la
-// conexión, para que la pantalla no quede sin opciones.
-let KIOSKOS = ['Playa Grande', 'Liberia', 'Nosara', 'Playa Hermosa'];
+const SHEETS_URL      = 'https://script.google.com/macros/s/AKfycbwp-pTaJAeZ2PPl6Xig4e8JH8tw1o6AHun4yiDxDLFFZs1tVUXlhEwNVPlQ9kDl04kh/exec';
+const APPS_SCRIPT_RRHH = 'https://script.google.com/macros/s/AKfycbz0Awt-S-Kl9p0WtH9z9nnMkDhbLlPwxv7-p8wG4fM6hKJex3HAV_eAsbz-Qpot_OAY/exec';
+const EXTRACTOR_URL   = 'https://script.google.com/a/macros/casaaguizotes.com/s/AKfycbz9ZitIaHQJ6U5wPBGH8NsHyvgugCr_2IyAjdwJv6PmxAbmvFtAxewCWWOFyXN65nzV/exec';
+const PUNTO_VENTA     = 'Lorito'; // valor fijo, sin selección en UI
 
 // ── DENOMINACIONES ────────────────────────────────────────────────
 const DENOMS_CRC = [50000,20000,10000,5000,2000,1000,500,100,50,25,10,5];
@@ -486,60 +531,9 @@ const DENOMS_USD = [
 
 // ── HISTORIAL LOCAL ───────────────────────────────────────────────
 let historialData = [];
-let personalData = [];
-
-// ── KIOSKO ────────────────────────────────────────────────────────
-// Trae la lista de kioskos activos desde Configuración (RRHH backend). Si no
-// hay conexión o la pestaña Configuracion todavía no existe, se sigue usando
-// el respaldo definido arriba en KIOSKOS.
-async function cargarKioskos() {
-  if (APPS_SCRIPT_RRHH && !APPS_SCRIPT_RRHH.startsWith('TODO_')) {
-    try {
-      const resp = await fetch(APPS_SCRIPT_RRHH + '?modulo=kioskos');
-      const data = await resp.json();
-      if (data.ok && Array.isArray(data.kioskos) && data.kioskos.length) {
-        KIOSKOS = data.kioskos;
-      }
-    } catch (e) { /* sin conexión: sigue con el respaldo */ }
-  }
-  poblarKioskos();
-}
-
-function poblarKioskos() {
-  const sel = document.getElementById('f-kiosko');
-  sel.innerHTML = '<option value="" disabled selected>Seleccioná un kiosko…</option>'
-    + KIOSKOS.map(k => `<option>${k}</option>`).join('');
-  const ultimo = localStorage.getItem('kiosko_actual');
-  if (ultimo && KIOSKOS.includes(ultimo)) {
-    sel.value = ultimo;
-    alCambiarKiosko();
-  }
-
-  const selHist = document.getElementById('hist-kiosko');
-  selHist.innerHTML = '<option value="">Kiosko</option>' + KIOSKOS.map(k => `<option>${k}</option>`).join('');
-}
-
-function alCambiarKiosko() {
-  const kiosko = document.getElementById('f-kiosko').value;
-  if (kiosko) localStorage.setItem('kiosko_actual', kiosko);
-  cargarEncargados();
-}
 
 // ── FOTOS DE RESPALDO ────────────────────────────────────────────
-const fotos = { sistema: null };
-
-async function handleFotoSelect(file) {
-  if (!file) return;
-  if (!file.type.startsWith('image/')) { showToast('Seleccioná una imagen válida', 'error'); return; }
-  try {
-    const { base64, mime } = await comprimirImagen(file);
-    fotos.sistema = { base64, mime, nombre: file.name };
-    renderFotoBox();
-    actualizarBtnExtraer();
-  } catch (e) {
-    showToast('No se pudo procesar la imagen', 'error');
-  }
-}
+const fotos = { sistema: null }; // {base64, mime, nombre} — una sola foto con ambos documentos
 
 function comprimirImagen(file, maxDim = 1600, calidad = 0.82) {
   return new Promise((resolve, reject) => {
@@ -567,6 +561,19 @@ function comprimirImagen(file, maxDim = 1600, calidad = 0.82) {
   });
 }
 
+async function handleFotoSelect(file) {
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showToast('Seleccioná una imagen válida', 'error'); return; }
+  try {
+    const { base64, mime } = await comprimirImagen(file);
+    fotos.sistema = { base64, mime, nombre: file.name };
+    renderFotoBox();
+    actualizarBtnExtraer();
+  } catch (e) {
+    showToast('No se pudo procesar la imagen', 'error');
+  }
+}
+
 function actualizarBtnExtraer() {
   const btn = document.getElementById('btn-extraer-ia');
   if (btn) btn.disabled = !fotos.sistema;
@@ -574,7 +581,7 @@ function actualizarBtnExtraer() {
 
 function fotoBoxPlaceholder() {
   return `<svg class="foto-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-2h6l2 2h3v12H4V7z"/><circle cx="12" cy="13" r="3.5"/></svg>
-    <span class="foto-hint">Tocá para tomar o subir una foto de respaldo del cierre (opcional)</span>`;
+    <span class="foto-hint">Tocá para tomar o subir una foto donde se vean el cierre del sistema y el voucher del datáfono juntos</span>`;
 }
 
 function renderFotoBox() {
@@ -599,9 +606,17 @@ function quitarFoto() {
   actualizarBtnExtraer();
 }
 
-// ── EXTRACCIÓN CON IA (opcional) ─────────────────────────────────
+// ── EXTRACCIÓN CON IA ────────────────────────────────────────────
 async function extraerConIA() {
-  if (!EXTRACTOR_URL || !fotos.sistema) return;
+  if (!EXTRACTOR_URL) {
+    showToast('Falta configurar EXTRACTOR_URL', 'error');
+    return;
+  }
+  if (!fotos.sistema) {
+    showToast('Subí la foto primero', 'error');
+    return;
+  }
+
   const btn = document.getElementById('btn-extraer-ia');
   const resultBox = document.getElementById('ia-resultado');
   btn.disabled = true;
@@ -613,18 +628,28 @@ async function extraerConIA() {
     const resp = await fetch(EXTRACTOR_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ fotoSistema: fotos.sistema.base64, fotoSistemaMime: fotos.sistema.mime })
+      body: JSON.stringify({
+        fotoSistema: fotos.sistema ? fotos.sistema.base64 : '',
+        fotoSistemaMime: fotos.sistema ? fotos.sistema.mime : '',
+        fotoDatafono: '',
+        fotoDatafonoMime: '',
+      })
     });
     const raw = await resp.text();
     let json;
-    try { json = JSON.parse(raw); }
-    catch (parseErr) { throw new Error(`Respuesta inválida del servidor (HTTP ${resp.status}).`); }
+    try {
+      json = JSON.parse(raw);
+    } catch (parseErr) {
+      // El servidor devolvió HTML en vez de JSON (típico de una página de error
+      // de Google: cuota excedida, foto muy pesada, o un problema temporal del servicio).
+      throw new Error(`Respuesta inválida del servidor (HTTP ${resp.status}). Probá con una foto más liviana o intentá de nuevo en un momento.`);
+    }
     if (!json.ok) throw new Error(json.error || 'Error desconocido');
     aplicarExtraccionIA(json.data);
     showToast('Datos extraídos — revisá antes de guardar');
   } catch (e) {
     resultBox.style.display = 'block';
-    resultBox.innerHTML = `<div class="ia-box ia-error"><b>⚠️ No se pudo extraer</b><br/>${e.message} — completá los campos manualmente.</div>`;
+    resultBox.innerHTML = `<div class="ia-box ia-error"><div class="ia-title">⚠️ No se pudo extraer</div>${e.message} — completá los campos manualmente.</div>`;
     showToast('Error al extraer — completá manualmente', 'error');
   } finally {
     btn.disabled = !fotos.sistema;
@@ -637,16 +662,40 @@ function aplicarExtraccionIA(d) {
     const el = document.getElementById(id);
     if (el && typeof val === 'number') el.value = val || '';
   };
-  if (d.fecha && /^\d{4}-\d{2}-\d{2}$/.test(d.fecha)) document.getElementById('f-fecha').value = d.fecha;
+  if (d.fecha && /^\d{4}-\d{2}-\d{2}$/.test(d.fecha)) {
+    document.getElementById('f-fecha').value = d.fecha;
+  }
   setIfNum('f-efectivo', d.ventasEfectivo);
   setIfNum('f-tarjeta', d.ventasTarjeta);
+  setIfNum('f-credito', d.ventasCredito);
   setIfNum('f-sinpe', d.ventasSinpe);
   setIfNum('f-otras', d.ventasOtros);
+  setIfNum('f-propina-efectivo', d.propinaEfectivo);
+  setIfNum('f-propina-tarjeta', d.propinaTarjeta);
+  setIfNum('f-propina-credito', d.propinaCredito);
+  setIfNum('f-propina-otro', d.propinaOtros);
   setIfNum('f-datafono-total', d.datafonoTotalGlobal);
   actualizarResumen(); calcCuadre(); calcRevisionTarjeta();
+
   const resultBox = document.getElementById('ia-resultado');
   resultBox.style.display = 'block';
-  resultBox.innerHTML = `<div class="ia-box ia-ok"><b>✓ Extraído</b><br/>Revisá los montos antes de guardar.</div>`;
+  const conf = (d.confianza || 'media').toLowerCase();
+  const tieneDif = Math.abs(d.diferenciaTarjetaVsDatafono || 0) > 500;
+
+  // Valida que la suma de las ventas ingresadas cuadre con "TOTAL FORMAS" del recibo.
+  const sumaVentas = (d.ventasEfectivo||0) + (d.ventasTarjeta||0) + (d.ventasCredito||0) + (d.ventasSinpe||0) + (d.ventasOtros||0);
+  const diferenciaTotalFormas = d.totalVentasSistema != null ? sumaVentas - d.totalVentasSistema : null;
+  const tieneDifTotalFormas = diferenciaTotalFormas != null && Math.abs(diferenciaTotalFormas) > 1;
+
+  const tipo = (tieneDif || tieneDifTotalFormas) ? 'ia-warn' : 'ia-ok';
+  resultBox.innerHTML = `
+    <div class="ia-box ${tipo}">
+      <div class="ia-title">✓ Extraído${d.puntoVenta ? ' — ' + d.puntoVenta : ''} <span class="ia-conf ${conf}">${conf}</span></div>
+      ${d.totalVentasSistema != null ? `Total Formas (recibo): ₡${Math.round(d.totalVentasSistema).toLocaleString('es-CR')}${tieneDifTotalFormas ? ` · ⚠️ no cuadra con la suma ingresada (₡${Math.round(sumaVentas).toLocaleString('es-CR')}, dif. ₡${Math.round(Math.abs(diferenciaTotalFormas)).toLocaleString('es-CR')})` : ' · cuadra con la suma ✓'}<br/>` : ''}
+      ${d.datafonoTotalGlobal != null ? `Datáfono: ₡${Math.round(d.datafonoTotalGlobal).toLocaleString('es-CR')}${tieneDif ? ` · ⚠️ diferencia vs. tarjeta del sistema: ₡${Math.round(d.diferenciaTarjetaVsDatafono).toLocaleString('es-CR')}` : ' · cuadra con tarjeta ✓'}<br/>` : ''}
+      ${d.notas ? `📝 ${d.notas}` : ''}
+      <div style="margin-top:4px;color:var(--muted)">Revisá los montos antes de guardar.</div>
+    </div>`;
 }
 
 // ── TABS ──────────────────────────────────────────────────────────
@@ -673,31 +722,26 @@ function showToast(msg, type='success') {
 // ── TIPO DE CAMBIO ────────────────────────────────────────────────
 function getTC() { return parseFloat(document.getElementById('f-tc')?.value) || 0; }
 
-// ── ENCARGADOS DESDE RRHH (filtrados por kiosko) ─────────────────
+// ── ENCARGADOS DESDE RRHH ─────────────────────────────────────────
 async function cargarEncargados() {
   const sel = document.getElementById('f-encargado');
   const errBox = document.getElementById('enc-error');
   const errMsg = document.getElementById('enc-error-msg');
-  const kiosko = document.getElementById('f-kiosko').value;
   sel.innerHTML = '<option value="" disabled selected>Cargando…</option>';
   errBox.style.display = 'none';
-  if (!APPS_SCRIPT_RRHH || APPS_SCRIPT_RRHH.startsWith('TODO_')) {
-    sel.innerHTML = '<option value="" disabled selected>Configurá APPS_SCRIPT_RRHH primero</option>';
-    return;
-  }
   try {
     const resp = await fetch(APPS_SCRIPT_RRHH + '?modulo=personal');
     if (!resp.ok) throw new Error('Error ' + resp.status);
     const data = await resp.json();
     if (!data.ok) throw new Error(data.error || 'Sin datos');
-    personalData = data.registros || [];
-    const activos = personalData.filter(p =>
+    const activos = (data.registros || []).filter(p =>
       (p['Estado'] || '').toString().toUpperCase() === 'ACTIVO'
-      && (!kiosko || !p['Kiosko'] || p['Kiosko'] === kiosko)
-    ).map(p => p['Nombre completo']).filter(Boolean).sort((a, b) => a.localeCompare(b));
+    ).map(p => p['Nombre completo'] || ((p['Nombre']||'') + ' ' + (p['Apellidos']||'')).trim())
+     .filter(Boolean)
+     .sort((a, b) => a.localeCompare(b));
     sel.innerHTML = '<option value="" disabled selected>Seleccioná un encargado…</option>'
       + activos.map(n => `<option>${n}</option>`).join('');
-    if (!activos.length) sel.innerHTML = '<option value="" disabled selected>Sin colaboradores activos para este kiosko</option>';
+    if (!activos.length) sel.innerHTML = '<option value="" disabled selected>Sin colaboradores activos</option>';
   } catch(e) {
     sel.innerHTML = '<option value="" disabled selected>Error al cargar</option>';
     errMsg.textContent = 'No se pudo conectar con RRHH (' + e.message + ').';
@@ -708,21 +752,35 @@ async function cargarEncargados() {
 // ── TOTALES ───────────────────────────────────────────────────────
 function getTotales() {
   const v = id => parseFloat(document.getElementById(id)?.value) || 0;
-  const efectivo = v('f-efectivo');
-  const tarjeta  = v('f-tarjeta');
-  const sinpe    = v('f-sinpe');
-  const otras    = v('f-otras');
+  const tc = getTC();
+  // La línea "DOLARES" del recibo (ventas y propina) ya viene sumada dentro de
+  // "Ventas en Efectivo" / "10% Servicio Efectivo" — el sistema la reporta en ₡.
+  const efectivo    = v('f-efectivo');
+  const tarjeta     = v('f-tarjeta');
+  const sinpe       = v('f-sinpe');
+  const otras       = v('f-otras');
+  const credito     = v('f-credito');
+  const plataformas = v('f-plataformas');
+  const propinaEfectivo = v('f-propina-efectivo');
+  const propinaTarjeta  = v('f-propina-tarjeta');
+  const propinaCredito  = v('f-propina-credito');
+  const propinaOtro     = v('f-propina-otro');
+  const servicio    = propinaEfectivo + propinaTarjeta + propinaCredito + propinaOtro;
   const datafonoTotal = v('f-datafono-total');
-  const tips = v('f-tips');
-  const totalVentas = efectivo + tarjeta + sinpe + otras;
-  return {efectivo, tarjeta, sinpe, otras, datafonoTotal, tips, tc: getTC(), totalVentas};
+  const ventasDia = efectivo + tarjeta + sinpe + otras + credito + plataformas;
+  const totalVentas = ventasDia + servicio;
+  return {efectivo,tarjeta,sinpe,otras,credito,plataformas,servicio,
+    propinaEfectivo,propinaTarjeta,propinaCredito,propinaOtro,datafonoTotal,
+    tc,ventasDia,totalVentas};
 }
 
 function actualizarResumen() {
   const t = getTotales();
   const items = [
     ['Efectivo ₡', t.efectivo],['Tarjeta ₡', t.tarjeta],
-    ['SINPE ₡', t.sinpe],['Otras ₡', t.otras],
+    ['SINPE ₡', t.sinpe],['Crédito ₡', t.credito],
+    ['Plataformas ₡', t.plataformas],['10% Servicio ₡', t.servicio],
+    ['Otras ₡', t.otras],
   ].filter(([,v]) => v > 0);
 
   const grid = document.getElementById('resumen-grid');
@@ -730,36 +788,28 @@ function actualizarResumen() {
     `<div class="resumen-item"><span>${lbl}</span><span class="v">${fmtCRC(val)}</span></div>`
   ).join('');
   document.getElementById('resumen-total').textContent = fmtCRC(t.totalVentas);
-
-  let tipsEl = document.getElementById('resumen-tips');
-  const card = document.getElementById('resumen-ventas');
-  if (t.tips > 0) {
-    if (!tipsEl) {
-      tipsEl = document.createElement('div');
-      tipsEl.id = 'resumen-tips';
-      tipsEl.style.cssText = 'display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);padding-top:6px;margin-top:6px;border-top:1px dashed var(--border)';
-      card.appendChild(tipsEl);
-    }
-    tipsEl.innerHTML = `<span>Propinas (no incluidas)</span><span class="v" style="font-family:var(--font-m);color:var(--text);font-weight:500">${fmtCRC(t.tips)}</span>`;
-  } else if (tipsEl) {
-    tipsEl.remove();
-  }
+  const totalVentasDiaEl = document.getElementById('f-total-ventas-dia');
+  if (totalVentasDiaEl) totalVentasDiaEl.value = fmtCRC(t.ventasDia);
+  const totalServicioEl = document.getElementById('f-total-servicio');
+  if (totalServicioEl) totalServicioEl.value = fmtCRC(t.servicio);
   actualizarWhatsAppBtn();
 }
 
 function calcRevisionTarjeta() {
   const tarjeta = parseFloat(document.getElementById('f-tarjeta')?.value) || 0;
+  const propinaTarjeta = parseFloat(document.getElementById('f-propina-tarjeta')?.value) || 0;
   const datafono = parseFloat(document.getElementById('f-datafono-total')?.value) || 0;
-  const diff = datafono - tarjeta;
+  const reportado = tarjeta + propinaTarjeta;
+  const diff = datafono - reportado;
 
-  document.getElementById('rt-reportado').textContent = fmtCRC(tarjeta);
+  document.getElementById('rt-reportado').textContent = fmtCRC(reportado);
   document.getElementById('rt-datafono').textContent = fmtCRC(datafono);
   const diffEl = document.getElementById('rt-diff');
   diffEl.textContent = (diff >= 0 ? '+' : '') + fmtCRC(diff);
   diffEl.className = 'val ' + (Math.abs(diff) <= 500 ? 'diff-ok' : 'diff-warn');
 
   const badge = document.getElementById('rt-badge');
-  if (!datafono && !tarjeta) {
+  if (!datafono && !reportado) {
     badge.innerHTML = '';
   } else {
     const cuadra = Math.abs(diff) <= 500;
@@ -767,6 +817,7 @@ function calcRevisionTarjeta() {
       ? `<div class="ia-box ia-ok">✅ Cuadra — diferencia dentro de tolerancia (±₡500)</div>`
       : `<div class="ia-box ia-warn">⚠️ No cuadra — diferencia de ${fmtCRC(Math.abs(diff))} (tolerancia ±₡500)</div>`;
   }
+  actualizarDetalleTarjeta();
   actualizarBalanceFinal();
   actualizarWhatsAppBtn();
 }
@@ -775,8 +826,9 @@ function actualizarBalanceFinal() {
   const bfTarjeta = document.getElementById('bf-tarjeta');
   if (!bfTarjeta) return;
   const tarjeta = parseFloat(document.getElementById('f-tarjeta')?.value) || 0;
+  const propinaTarjeta = parseFloat(document.getElementById('f-propina-tarjeta')?.value) || 0;
   const datafono = parseFloat(document.getElementById('f-datafono-total')?.value) || 0;
-  const diffTarjeta = datafono - tarjeta;
+  const diffTarjeta = datafono - (tarjeta + propinaTarjeta);
 
   let totalCaja = 0;
   DENOMS_CRC.forEach(d => { totalCaja += (parseInt(document.getElementById('d-'+d)?.value)||0) * d; });
@@ -785,8 +837,11 @@ function actualizarBalanceFinal() {
   const tc = getTC();
   const totalUsdEnColones = Math.round(totalUsd * tc);
   const efectivo = parseFloat(document.getElementById('f-efectivo')?.value) || 0;
+  const propinaEfectivo = parseFloat(document.getElementById('f-propina-efectivo')?.value) || 0;
   const fondo = parseFloat(document.getElementById('f-fondo')?.value) || 0;
-  const diffEfectivo = (totalCaja + totalUsdEnColones) - (efectivo + fondo);
+  // Misma fórmula que calcCuadre(): el efectivo contado incluye los billetes en
+  // dólares convertidos a colones con el tipo de cambio ingresado.
+  const diffEfectivo = (totalCaja + totalUsdEnColones) - (efectivo + propinaEfectivo + fondo);
 
   const balance = diffTarjeta + diffEfectivo;
 
@@ -803,6 +858,20 @@ function actualizarBalanceFinal() {
   badge.innerHTML = cuadra
     ? `<div class="ia-box ia-ok">✅ Cuadra — diferencia dentro de tolerancia (±₡500)</div>`
     : `<div class="ia-box ia-warn">⚠️ No cuadra — diferencia de ${fmtCRC(Math.abs(balance))} (tolerancia ±₡500)</div>`;
+}
+
+function actualizarDetalleTarjeta() {
+  const el = document.getElementById('rt-detalle');
+  if (!el) return;
+  const tarjeta = parseFloat(document.getElementById('f-tarjeta')?.value) || 0;
+  const propinaTarjeta = parseFloat(document.getElementById('f-propina-tarjeta')?.value) || 0;
+  const datafono = parseFloat(document.getElementById('f-datafono-total')?.value) || 0;
+  el.innerHTML = `
+    <div class="hist-detail-item"><span>Ventas con tarjeta</span><span class="v">${fmtCRC(tarjeta)}</span></div>
+    <div class="hist-detail-item"><span>+ 10% Servicio en tarjeta</span><span class="v">${fmtCRC(propinaTarjeta)}</span></div>
+    <div class="hist-detail-item" style="border-top:1px solid var(--border);padding-top:5px;font-weight:600"><span>= Total reportado</span><span class="v">${fmtCRC(tarjeta+propinaTarjeta)}</span></div>
+    <div class="hist-detail-item" style="margin-top:6px"><span>Total datáfono</span><span class="v">${fmtCRC(datafono)}</span></div>
+  `;
 }
 
 function calcCuadre() {
@@ -825,11 +894,15 @@ function calcCuadre() {
   });
 
   const efectivo = parseFloat(document.getElementById('f-efectivo')?.value) || 0;
+  const propinaEfectivo = parseFloat(document.getElementById('f-propina-efectivo')?.value) || 0;
   const fondo    = parseFloat(document.getElementById('f-fondo')?.value) || 0;
   const tc = getTC();
+  // Ventas/Propina en Efectivo ya incluyen la línea "DOLARES" convertida a ₡ por el sistema.
+  // Los billetes en dólares contados físicamente se convierten a ₡ con el tipo de cambio
+  // y se suman al total contado, para comparar todo en una sola cifra combinada.
   const totalUsdEnColones = Math.round(totalUsd * tc);
   const totalContado = total + totalUsdEnColones;
-  const esperado = efectivo + fondo;
+  const esperado = efectivo + propinaEfectivo + fondo;
   const diff     = totalContado - esperado;
 
   document.getElementById('cuadre-total-crc').textContent = fmtCRC(total);
@@ -846,7 +919,7 @@ function calcCuadre() {
   diffEl.className = 'val ' + (diff === 0 ? 'diff-ok' : Math.abs(diff) <= 500 ? 'diff-minor' : 'diff-warn');
 
   const badge = document.getElementById('cuadre-badge');
-  if (efectivo || fondo || totalContado) {
+  if (efectivo || propinaEfectivo || fondo || totalContado) {
     const cuadra = Math.abs(diff) <= 500;
     badge.innerHTML = cuadra
       ? `<div class="ia-box ia-ok">✅ Cuadra — diferencia dentro de tolerancia (±₡500)</div>`
@@ -855,8 +928,42 @@ function calcCuadre() {
     badge.innerHTML = '';
   }
 
+  actualizarDetalleEfectivo();
   actualizarBalanceFinal();
   actualizarWhatsAppBtn();
+}
+
+function actualizarDetalleEfectivo() {
+  const el = document.getElementById('ef-detalle');
+  if (!el) return;
+  let totalBilletesCRC = 0, totalMonedasCRC = 0;
+  [50000,20000,10000,5000,2000,1000].forEach(d => { totalBilletesCRC += (parseInt(document.getElementById('d-'+d)?.value)||0) * d; });
+  [500,100,50,25,10,5].forEach(d => { totalMonedasCRC += (parseInt(document.getElementById('d-'+d)?.value)||0) * d; });
+  let totalUsd = 0;
+  DENOMS_USD.forEach(({id,val}) => { totalUsd += (parseInt(document.getElementById('d-'+id)?.value)||0) * val; });
+  const tc = getTC();
+  const totalUsdEnColones = Math.round(totalUsd * tc);
+  const fondo = parseFloat(document.getElementById('f-fondo')?.value) || 0;
+  const efectivoVentas = parseFloat(document.getElementById('f-efectivo')?.value) || 0;
+  const propinaEfectivo = parseFloat(document.getElementById('f-propina-efectivo')?.value) || 0;
+  el.innerHTML = `
+    <div class="hist-detail-item"><span>Billetes ₡</span><span class="v">${fmtCRC(totalBilletesCRC)}</span></div>
+    <div class="hist-detail-item"><span>Monedas ₡</span><span class="v">${fmtCRC(totalMonedasCRC)}</span></div>
+    <div class="hist-detail-item"><span>+ Billetes $ (≈₡ al tipo de cambio)</span><span class="v">$${totalUsd} (≈${fmtCRC(totalUsdEnColones)})</span></div>
+    <div class="hist-detail-item" style="border-top:1px solid var(--border);padding-top:5px;font-weight:600"><span>= Total contado en caja</span><span class="v">${fmtCRC(totalBilletesCRC+totalMonedasCRC+totalUsdEnColones)}</span></div>
+    <div class="hist-detail-item" style="margin-top:6px"><span>Ventas en efectivo</span><span class="v">${fmtCRC(efectivoVentas)}</span></div>
+    <div class="hist-detail-item"><span>+ 10% Servicio en efectivo</span><span class="v">${fmtCRC(propinaEfectivo)}</span></div>
+    <div class="hist-detail-item"><span>+ Fondo de caja inicial</span><span class="v">${fmtCRC(fondo)}</span></div>
+    <div class="hist-detail-item" style="border-top:1px solid var(--border);padding-top:5px;font-weight:600"><span>= Efectivo esperado</span><span class="v">${fmtCRC(efectivoVentas+propinaEfectivo+fondo)}</span></div>
+  `;
+}
+
+function toggleDetalleCalculo(tipo, btn) {
+  const el = document.getElementById(tipo+'-detalle');
+  if (!el) return;
+  const abierto = el.style.display === 'block';
+  el.style.display = abierto ? 'none' : 'block';
+  if (btn) btn.textContent = abierto ? 'Ver detalle del cálculo ▾' : 'Ocultar detalle ▴';
 }
 
 // ── PASOS (WIZARD) ────────────────────────────────────────────────
@@ -870,22 +977,22 @@ function irPaso(n) {
 }
 
 function irPaso1Siguiente() {
-  const kiosko = document.getElementById('f-kiosko').value;
   const encargado = document.getElementById('f-encargado').value.trim();
-  if (!kiosko) { showToast('Seleccioná un kiosko', 'error'); return; }
   if (!encargado) { showToast('Seleccioná un encargado', 'error'); return; }
   irPaso(2);
 }
 
 // ── PAYLOAD ───────────────────────────────────────────────────────
 function construirPayload() {
-  const kiosko = document.getElementById('f-kiosko').value;
   const encargado = document.getElementById('f-encargado').value.trim();
-  const {efectivo,tarjeta,sinpe,otras,datafonoTotal,tips,tc,totalVentas} = getTotales();
-  const diferenciaTarjeta = datafonoTotal - tarjeta;
+  const {efectivo,tarjeta,sinpe,otras,credito,plataformas,servicio,
+    propinaEfectivo,propinaTarjeta,propinaCredito,propinaOtro,datafonoTotal,
+    tc,totalVentas} = getTotales();
+  const diferenciaTarjeta = datafonoTotal - (tarjeta + propinaTarjeta);
   const tarjetaCuadra = Math.abs(diferenciaTarjeta) <= 500;
   const fondo = parseFloat(document.getElementById('f-fondo').value) || 0;
   const obs   = document.getElementById('f-obs').value.trim();
+  const plataformasDesc = document.getElementById('f-plataformas-desc').value.trim();
   const fecha = document.getElementById('f-fecha').value || hoy();
 
   const denomDetalle = {};
@@ -895,49 +1002,52 @@ function construirPayload() {
     denomDetalle[d] = qty;
     caja += qty * d;
   });
-  const usdDenomDetalle = Object.fromEntries(DENOMS_USD.map(({id}) => [id, parseInt(document.getElementById('d-'+id)?.value)||0]));
+  const usdDenomDetalle = Object.fromEntries(DENOMS_USD.map(({id,val}) => [id, parseInt(document.getElementById('d-'+id)?.value)||0]));
   const usdCajaTotalContado = DENOMS_USD.reduce((s,{id,val}) => s+(parseInt(document.getElementById('d-'+id)?.value)||0)*val, 0);
+  // Los billetes en dólares contados se convierten a ₡ con el tipo de cambio y se suman
+  // al total contado, porque "Ventas/10% Servicio en Efectivo" ya incluyen la línea
+  // "DOLARES" del recibo convertida a ₡ por el sistema.
   const usdCajaEnColones = Math.round(usdCajaTotalContado * tc);
   const cajaTotalConUsd = caja + usdCajaEnColones;
-  const diferenciaCaja = cajaTotalConUsd - (efectivo + fondo);
-  const cajaCuadra = Math.abs(diferenciaCaja) <= 500;
-  const balanceFinal = diferenciaTarjeta + diferenciaCaja;
+  const diferencia = cajaTotalConUsd - (efectivo + propinaEfectivo + fondo);
+  const balanceFinal = diferenciaTarjeta + diferencia;
   const balanceCuadra = Math.abs(balanceFinal) <= 500;
 
   return {
     id: Date.now(),
     fecha, hora: new Date().toLocaleTimeString('es-CR',{hour:'2-digit',minute:'2-digit'}),
-    kiosko, encargado,
-    efectivo, tarjeta, sinpe, otras, totalVentas, tips,
-    fondoCajaInicial: fondo,
+    punto: PUNTO_VENTA, encargado,
+    efectivo, tarjeta, sinpe, otras, credito, plataformas, plataformasDesc, servicio,
+    propinaEfectivo, propinaTarjeta, propinaCredito, propinaOtro, propinaDolares: 0,
+    datafonoTotal, diferenciaTarjeta, tarjetaCuadra,
+    balanceFinal, balanceCuadra,
+    totalVentas, fondo, caja: cajaTotalConUsd, diferencia, obs,
+    usdEfectivo: 0, usdTarjeta: 0, tc, usdTotalCrc: usdCajaEnColones,
     d50000: denomDetalle[50000]||0, d20000: denomDetalle[20000]||0,
     d10000: denomDetalle[10000]||0, d5000: denomDetalle[5000]||0,
     d2000: denomDetalle[2000]||0,   d1000: denomDetalle[1000]||0,
     d500: denomDetalle[500]||0,     d100: denomDetalle[100]||0,
     d50: denomDetalle[50]||0,       d25: denomDetalle[25]||0,
     d10: denomDetalle[10]||0,       d5: denomDetalle[5]||0,
-    tc, usdTotalCrc: usdCajaEnColones,
     usdD100: usdDenomDetalle.usd100||0, usdD50: usdDenomDetalle.usd50||0,
     usdD20:  usdDenomDetalle.usd20||0,  usdD10: usdDenomDetalle.usd10||0,
     usdD5:   usdDenomDetalle.usd5||0,   usdD1:  usdDenomDetalle.usd1||0,
     usdCajaTotalContado,
-    cajaTotalContada: cajaTotalConUsd,
-    efectivoEsperado: efectivo + fondo,
-    diferenciaCaja, cajaCuadra,
-    datafonoTotal, diferenciaTarjeta, tarjetaCuadra,
-    balanceFinal, balanceCuadra, obs,
+    cajaTotalContada: cajaTotalConUsd, fondoCajaInicial: fondo,
+    efectivoEsperado: efectivo + propinaEfectivo + fondo, diferenciaColones: diferencia,
+    usdTotalContado: usdCajaTotalContado, usdReportadoVentas: 0,
+    diferenciaUsd: 0,
     fotoSistema: fotos.sistema ? fotos.sistema.base64 : '',
     fotoSistemaMime: fotos.sistema ? fotos.sistema.mime : '',
+    fotoDatafono: '',
+    fotoDatafonoMime: '',
   };
 }
 
 // ── SUBMIT ────────────────────────────────────────────────────────
 async function submitCierre() {
-  const kiosko = document.getElementById('f-kiosko').value;
   const encargado = document.getElementById('f-encargado').value.trim();
-  if (!kiosko) { showToast('Seleccioná un kiosko', 'error'); return; }
   if (!encargado) { showToast('Seleccioná un encargado', 'error'); return; }
-  if (!SHEETS_URL || SHEETS_URL.startsWith('TODO_')) { showToast('Configurá SHEETS_URL primero', 'error'); return; }
 
   const payload = construirPayload();
   const btn = document.getElementById('btn-submit');
@@ -951,6 +1061,8 @@ async function submitCierre() {
     });
     showToast('Cierre guardado correctamente — ya podés enviarlo por WhatsApp');
     btn.textContent = 'Cierre guardado ✓';
+    // El botón queda deshabilitado para evitar guardar dos veces; "Limpiar" lo reactiva.
+    // El botón de WhatsApp sigue disponible para enviar el resumen de este cierre.
   } catch(e) {
     showToast('Error al guardar — revisá la conexión', 'error');
     btn.disabled = false; btn.textContent = 'Guardar cierre ✓';
@@ -958,35 +1070,36 @@ async function submitCierre() {
 }
 
 // ── WHATSAPP ──────────────────────────────────────────────────────
-const WA_NUMERO_DEFAULT = '';
+const WA_NUMERO_DEFAULT = '50688301564';
 
 function buildWAMessage(r) {
   const fecha = new Date((r.fecha||hoy())+'T12:00:00').toLocaleDateString('es-CR',{day:'numeric',month:'long',year:'numeric'});
-  const difCaja = r.diferenciaCaja || 0;
+
+  const difCaja = r.diferencia || 0;
   const efectivoCuadra = Math.abs(difCaja) <= 500;
   const efectivoEmoji = efectivoCuadra ? '✅' : '⚠️';
 
   const difTarjeta = r.diferenciaTarjeta || 0;
   const tarjetaCuadra = !!r.tarjetaCuadra;
   const tarjetaEmoji = tarjetaCuadra ? '✅' : '⚠️';
-  const tieneTarjetaRev = !!(r.datafonoTotal || r.tarjeta);
+  const tieneTarjetaRev = !!(r.datafonoTotal || r.tarjeta || r.propinaTarjeta);
 
   const balanceFinal = r.balanceFinal || 0;
   const balanceCuadra = !!r.balanceCuadra;
   const balanceEmoji = balanceCuadra ? '✅' : '⚠️';
 
   return `📊 *Cierre de Caja*
-🏖️ Kiosko: ${r.kiosko || '—'}
+🏪 Punto de venta: ${r.punto}
 📅 Fecha: ${fecha}
-👤 Encargado: ${r.encargado || '—'}
+👤 Encargado: ${r.encargado}
 
 💰 *Ventas Totales: ₡${(r.totalVentas||0).toLocaleString('es-CR')}*
 • Efectivo: ₡${(r.efectivo||0).toLocaleString('es-CR')}
-• Tarjeta: ₡${(r.tarjeta||0).toLocaleString('es-CR')}${r.sinpe?`\n• SINPE: ₡${r.sinpe.toLocaleString('es-CR')}`:''}${r.otras?`\n• Otras: ₡${r.otras.toLocaleString('es-CR')}`:''}
+• Tarjeta: ₡${(r.tarjeta||0).toLocaleString('es-CR')}
+• Crédito: ₡${(r.credito||0).toLocaleString('es-CR')}${r.sinpe?`\n• SINPE: ₡${r.sinpe.toLocaleString('es-CR')}`:''}${r.plataformas?`\n• Plataformas: ₡${r.plataformas.toLocaleString('es-CR')}${r.plataformasDesc?' ('+r.plataformasDesc+')':''}`:''}${r.otras?`\n• Otras: ₡${r.otras.toLocaleString('es-CR')}`:''}${r.servicio?`\n• 10% Servicio: ₡${r.servicio.toLocaleString('es-CR')}`:''}${(r.usdEfectivo||r.usdTarjeta)?`\n• 💵 USD: $${((r.usdEfectivo||0)+(r.usdTarjeta||0)).toFixed(2)} (TC ₡${(r.tc||0).toLocaleString('es-CR')})`:''}
 
 ${tieneTarjetaRev ? `💳 *Revisión Tarjeta:* ${tarjetaEmoji} ${tarjetaCuadra ? 'Cuadra' : 'No cuadra'} (dif. ₡${Math.abs(difTarjeta).toLocaleString('es-CR')})\n` : ''}💵 *Revisión Efectivo:* ${efectivoEmoji} ${efectivoCuadra ? 'Cuadra' : 'No cuadra'} (dif. ₡${Math.abs(difCaja).toLocaleString('es-CR')})
 📊 *Balance Final:* ${balanceEmoji} ${balanceCuadra ? 'Cuadra' : 'No cuadra'} (₡${balanceFinal>=0?'+':''}${balanceFinal.toLocaleString('es-CR')})
-${r.tips?`\n💵 Propinas del día: ₡${r.tips.toLocaleString('es-CR')} (informativo)`:''}
 ${r.obs?`\n📝 *Observaciones:* ${r.obs}`:''}`;
 }
 
@@ -997,52 +1110,56 @@ function actualizarWhatsAppBtn() {
   if (!btns) return;
   const payload = construirPayload();
   const msg = buildWAMessage(payload);
-  const numero = WA_NUMERO_DEFAULT || '';
-  btns.innerHTML = `<button class="btn-wa" onclick="window.open('https://wa.me/${numero}?text='+encodeURIComponent(\`${msg.replace(/`/g,'\\`')}\`),'_blank')">${WA_SVG} Enviar resumen por WhatsApp</button>`;
+  btns.innerHTML = `<button class="btn-wa" onclick="window.open('https://wa.me/${WA_NUMERO_DEFAULT}?text='+encodeURIComponent(\`${msg.replace(/`/g,'\\`')}\`),'_blank')">${WA_SVG} Enviar resumen por WhatsApp</button>`;
 }
 
 // ── HISTORIAL ─────────────────────────────────────────────────────
-function soloFecha(fecha) { return fecha ? String(fecha).slice(0, 10) : ''; }
+// Sheets a veces devuelve la fecha como datetime completo (celda tipo Date);
+// nos quedamos solo con los primeros 10 caracteres (YYYY-MM-DD).
+function soloFecha(fecha) {
+  return fecha ? String(fecha).slice(0, 10) : '';
+}
+function semanaDelAnio(fechaYMD) {
+  const d = new Date(fechaYMD + 'T12:00:00');
+  const start = new Date(d.getFullYear(), 0, 1);
+  const diff = (d - start) / 86400000;
+  return Math.ceil((diff + start.getDay() + 1) / 7);
+}
 
 async function cargarHistorial() {
   document.getElementById('hist-lista').innerHTML = '<div class="empty-state">Cargando…</div>';
   document.getElementById('hist-count').textContent = '';
-  if (!SHEETS_URL || SHEETS_URL.startsWith('TODO_')) {
-    document.getElementById('hist-lista').innerHTML = '<div class="empty-state">Configurá SHEETS_URL primero.</div>';
-    return;
-  }
   try {
     const resp = await fetch(SHEETS_URL + '?action=read');
     const data = await resp.json();
-    // Columnas del Sheet (ver Code-cierres-kioskos-backend.gs → HEADERS):
-    // 0 ID, 1 Fecha, 2 Hora, 3 Kiosko, 4 Encargado, 5 Turno,
-    // 6 Efectivo, 7 Tarjeta, 8 SINPE, 9 Otras, 10 Total Ventas, 11 Fondo,
-    // 12-23 denominaciones ₡, 24 Tipo de Cambio, 25 USD Total en ₡,
-    // 26-31 denominaciones $, 32 Total USD Contado, 33 Caja Total Contada,
-    // 34 Efectivo Esperado, 35 Diferencia Caja, 36 Caja Cuadra,
-    // 37 Total Datáfono, 38 Diferencia Tarjeta, 39 Tarjeta Cuadra,
-    // 40 Foto Sistema, 41 Foto Datáfono, 42 Observaciones, 43 Tips ₡ (nueva,
-    // agregada al final para no correr las columnas de cierres anteriores).
     historialData = (data.records || []).map(r => {
       const fecha = soloFecha(r[1]);
-      let anio = '', mes = '';
+      let anio = '', mes = '', semana = '', diaSemana = '';
       if (fecha) {
         const d = new Date(fecha + 'T12:00:00');
-        if (!isNaN(d)) { anio = d.getFullYear(); mes = d.getMonth() + 1; }
+        if (!isNaN(d)) {
+          anio = d.getFullYear();
+          mes = d.getMonth() + 1;
+          semana = semanaDelAnio(fecha);
+          diaSemana = d.getDay();
+        }
       }
       return {
-        id: r[0], fecha, hora: r[2], kiosko: r[3], encargado: r[4], turno: r[5],
-        efectivo: +r[6]||0, tarjeta: +r[7]||0, sinpe: +r[8]||0, otras: +r[9]||0,
-        totalVentas: +r[10]||0, fondo: +r[11]||0, tips: +r[43]||0,
-        cajaTotalContada: +r[33]||0, efectivoEsperado: +r[34]||0,
-        diferenciaCaja: +r[35]||0, cajaCuadra: r[36]==='SI',
-        datafonoTotal: +r[37]||0, diferenciaTarjeta: +r[38]||0, tarjetaCuadra: r[39]==='SI',
-        fotoSistemaUrl: r[40]||'', fotoDatafonoUrl: r[41]||'', obs: r[42]||'',
-        anio, mes,
+        id: r[0], fecha, hora: r[2], encargado: r[4],
+        efectivo:    +r[6]||0, tarjeta: +r[7]||0, sinpe: +r[8]||0,
+        otras:       +r[9]||0, credito: +r[10]||0, plataformas: +r[11]||0,
+        plataformasDesc: r[12]||'', servicio: +r[13]||0,
+        totalVentas: +r[14]||0, fondo: +r[15]||0, caja: +r[16]||0,
+        diferencia:  +r[17]||0, obs: r[18]||'',
+        usdEfectivo: +r[31]||0, usdTarjeta: +r[32]||0, tc: +r[33]||0, usdTotalCrc: +r[34]||0,
+        fotoSistemaUrl: r[49]||'', fotoDatafonoUrl: r[50]||'',
+        propinaEfectivo: +r[51]||0, propinaTarjeta: +r[52]||0, propinaCredito: +r[53]||0, propinaOtro: +r[54]||0,
+        datafonoTotal: +r[55]||0, diferenciaTarjeta: +r[56]||0, tarjetaCuadra: r[57]==='SI',
+        balanceFinal: +r[59]||0, balanceCuadra: r[60]==='SI',
+        anio, mes, semana, diaSemana,
       };
-    }).filter(r => r.id).reverse();
+    }).filter(r => r.id).reverse(); // más reciente primero, descarta filas vacías
     poblarFiltrosHistorial();
-    renderDashboardKiosko();
     renderDashboardMensual();
     renderHistorial();
   } catch(e) {
@@ -1055,55 +1172,29 @@ function poblarFiltrosHistorial() {
   const anios = [...new Set(historialData.map(r => r.anio).filter(Boolean))].sort((a,b) => b - a);
   document.getElementById('hist-anio').innerHTML = '<option value="">Año</option>'
     + anios.map(a => `<option value="${a}">${a}</option>`).join('');
+
   const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   document.getElementById('hist-mes').innerHTML = '<option value="">Mes</option>'
     + MESES.map((m,i) => `<option value="${i+1}">${m}</option>`).join('');
-}
 
-function filaFiltrada() {
-  const busq   = (document.getElementById('hist-buscar')?.value||'').toLowerCase();
-  const kiosko = document.getElementById('hist-kiosko')?.value||'';
-  const anio   = document.getElementById('hist-anio')?.value||'';
-  const mes    = document.getElementById('hist-mes')?.value||'';
-  return historialData.filter(r =>
-    (!busq   || (r.encargado||'').toLowerCase().includes(busq)) &&
-    (!kiosko || r.kiosko === kiosko) &&
-    (!anio   || String(r.anio) === anio) &&
-    (!mes    || String(r.mes) === mes)
-  );
-}
+  const semanas = [...new Set(historialData.map(r => r.semana ? r.anio+'-'+r.semana : null).filter(Boolean))]
+    .sort((a,b) => b.localeCompare(a));
+  document.getElementById('hist-semana').innerHTML = '<option value="">Semana</option>'
+    + semanas.map(s => { const [a,sem] = s.split('-'); return `<option value="${s}">Sem. ${sem} · ${a}</option>`; }).join('');
 
-function renderDashboardKiosko() {
-  const lista = filaFiltrada();
-  const grupos = {};
-  lista.forEach(r => {
-    const key = r.kiosko || 'Sin kiosko';
-    if (!grupos[key]) grupos[key] = { ventas: 0, count: 0 };
-    grupos[key].ventas += r.totalVentas || 0;
-    grupos[key].count += 1;
-  });
-  const keys = Object.keys(grupos).sort((a,b) => grupos[b].ventas - grupos[a].ventas);
-  const grid = document.getElementById('hist-dashboard-kiosko-grid');
-  if (!keys.length) { grid.innerHTML = '<div class="empty-state" style="padding:1rem">Sin datos aún.</div>'; return; }
-  grid.innerHTML = keys.map(k => {
-    const g = grupos[k];
-    return `<div class="dashboard-item">
-      <div class="dm-label">${k}</div>
-      <div class="dm-total">${fmtCRC(g.ventas)}</div>
-      <div class="dm-count">${g.count} cierre${g.count===1?'':'s'}</div>
-    </div>`;
-  }).join('');
+  const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  document.getElementById('hist-dia').innerHTML = '<option value="">Día de semana</option>'
+    + DIAS.map((d,i) => `<option value="${i}">${d}</option>`).join('');
 }
 
 function renderDashboardMensual() {
   const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  const lista = filaFiltrada();
   const grupos = {};
-  lista.forEach(r => {
+  historialData.forEach(r => {
     if (!r.anio || !r.mes) return;
     const key = r.anio + '-' + String(r.mes).padStart(2,'0');
     if (!grupos[key]) grupos[key] = { balance: 0, count: 0, anio: r.anio, mes: r.mes };
-    grupos[key].balance += (r.diferenciaTarjeta || 0) + (r.diferenciaCaja || 0);
+    grupos[key].balance += (r.diferenciaTarjeta || 0) + (r.diferencia || 0);
     grupos[key].count += 1;
   });
   const keys = Object.keys(grupos).sort((a,b) => b.localeCompare(a));
@@ -1112,7 +1203,7 @@ function renderDashboardMensual() {
   grid.innerHTML = keys.map(k => {
     const g = grupos[k];
     return `<div class="dashboard-item">
-      <div class="dm-label">${MESES[g.mes-1]} ${g.anio}</div>
+      <div class="dm-mes">${MESES[g.mes-1]} ${g.anio}</div>
       <div class="dm-total" style="color:${g.balance>=0?'var(--green)':'var(--red)'}">${(g.balance>=0?'+':'')+fmtCRC(g.balance)}</div>
       <div class="dm-count">${g.count} cierre${g.count===1?'':'s'}</div>
     </div>`;
@@ -1120,31 +1211,46 @@ function renderDashboardMensual() {
 }
 
 function renderHistorial() {
-  const lista = filaFiltrada();
-  renderDashboardKiosko();
-  renderDashboardMensual();
+  const busq   = (document.getElementById('hist-buscar')?.value||'').toLowerCase();
+  const anio   = document.getElementById('hist-anio')?.value||'';
+  const mes    = document.getElementById('hist-mes')?.value||'';
+  const semana = document.getElementById('hist-semana')?.value||'';
+  const dia    = document.getElementById('hist-dia')?.value;
+
+  let lista = historialData.filter(r =>
+    (!busq   || (r.encargado||'').toLowerCase().includes(busq)) &&
+    (!anio   || String(r.anio) === anio) &&
+    (!mes    || String(r.mes) === mes) &&
+    (!semana || (r.anio+'-'+r.semana) === semana) &&
+    (!dia    || String(r.diaSemana) === dia)
+  );
   document.getElementById('hist-count').textContent = lista.length + ' de ' + historialData.length + ' cierres';
   if (!lista.length) {
     document.getElementById('hist-lista').innerHTML = '<div class="empty-state">Sin resultados.</div>';
     return;
   }
   document.getElementById('hist-lista').innerHTML = lista.map((r, i) => {
-    const balanceFinal = (r.diferenciaTarjeta || 0) + (r.diferenciaCaja || 0);
+    const efectivoCuadra = Math.abs(r.diferencia || 0) <= 500;
+    const tieneTarjetaRev = !!(r.datafonoTotal || r.tarjeta || r.propinaTarjeta);
+    const balanceFinal = (r.diferenciaTarjeta || 0) + (r.diferencia || 0);
     const balanceCuadra = Math.abs(balanceFinal) <= 500;
     const fechaLbl = r.fecha
       ? new Date(r.fecha+'T12:00:00').toLocaleDateString('es-CR',{weekday:'short',day:'2-digit',month:'short'})
       : '—';
     const iconBalance = `<span class="cuadre-icon ${balanceCuadra?'ok':'warn'}">${balanceCuadra?'✅':'⚠️'} Balance</span>`;
+    const iconTarjeta = tieneTarjetaRev
+      ? `<span class="cuadre-icon ${r.tarjetaCuadra?'ok':'warn'}">${r.tarjetaCuadra?'✅':'⚠️'} Tarjeta</span>` : '';
+    const iconEfectivo = `<span class="cuadre-icon ${efectivoCuadra?'ok':'warn'}">${efectivoCuadra?'✅':'⚠️'} Efectivo</span>`;
     return `<div class="hist-card" onclick="toggleDetalle(${i})">
       <div class="hist-head">
         <div>
           <div class="hist-fecha">${fechaLbl} · ${r.hora||'—'}</div>
-          <div class="hist-sub"><span class="badge badge-kiosko">${r.kiosko||'—'}</span> ${r.encargado||'—'}</div>
+          <div class="hist-encargado">${r.encargado||'—'}</div>
         </div>
         <div class="hist-total ${balanceFinal>=0?'':'warn'}">${(balanceFinal>=0?'+':'')+fmtCRC(balanceFinal)}</div>
       </div>
       <div class="hist-row">
-        <div class="cuadre-icons">${iconBalance}</div>
+        <div class="cuadre-icons">${iconBalance}${iconTarjeta}${iconEfectivo}</div>
         ${r.obs?`<span title="${r.obs.replace(/"/g,'')}" style="color:var(--amber)">📝 Observación</span>`:''}
       </div>
     </div>
@@ -1159,7 +1265,9 @@ function toggleDetalle(i) {
 
 function renderDetalleCierre(r) {
   const item = (label, val) => `<div class="hist-detail-item"><span>${label}</span><span class="v">${val}</span></div>`;
-  const balanceFinal = (r.diferenciaTarjeta||0) + (r.diferenciaCaja||0);
+  const tarjetaReportada = (r.tarjeta||0) + (r.propinaTarjeta||0);
+  const efectivoEsperado = (r.efectivo||0) + (r.propinaEfectivo||0) + (r.fondo||0);
+  const balanceFinal = (r.diferenciaTarjeta||0) + (r.diferencia||0);
   const balanceCuadra = Math.abs(balanceFinal) <= 500;
   return `
     <div class="hist-detail-section">
@@ -1167,16 +1275,27 @@ function renderDetalleCierre(r) {
       <div class="hist-detail-grid">
         ${item('Efectivo', fmtCRC(r.efectivo))}
         ${item('Tarjeta', fmtCRC(r.tarjeta))}
+        ${item('Crédito', fmtCRC(r.credito))}
         ${item('SINPE', fmtCRC(r.sinpe))}
+        ${item('Plataformas', fmtCRC(r.plataformas) + (r.plataformasDesc?` (${r.plataformasDesc})`:''))}
         ${item('Otras', fmtCRC(r.otras))}
-        ${r.turno ? item('Turno', r.turno) : ''}
-        ${r.tips ? item('Propinas (informativo)', fmtCRC(r.tips)) : ''}
+        ${item('10% Servicio', fmtCRC(r.servicio))}
+        ${(r.usdEfectivo||r.usdTarjeta) ? item('USD', '$'+((r.usdEfectivo||0)+(r.usdTarjeta||0)).toFixed(2) + ' (TC ₡'+(r.tc||0).toLocaleString('es-CR')+')') : ''}
+      </div>
+    </div>
+    <div class="hist-detail-section">
+      <div class="hist-detail-title">10% Servicio por forma de pago</div>
+      <div class="hist-detail-grid">
+        ${item('Efectivo', fmtCRC(r.propinaEfectivo))}
+        ${item('Tarjeta', fmtCRC(r.propinaTarjeta))}
+        ${item('Crédito', fmtCRC(r.propinaCredito))}
+        ${item('Otro', fmtCRC(r.propinaOtro))}
       </div>
     </div>
     <div class="hist-detail-section">
       <div class="hist-detail-title">Revisión de Tarjeta</div>
       <div class="hist-detail-grid">
-        ${item('Tarjeta reportada', fmtCRC(r.tarjeta))}
+        ${item('Tarjeta reportada', fmtCRC(tarjetaReportada))}
         ${item('Total datáfono', fmtCRC(r.datafonoTotal))}
         ${item('Diferencia', (r.diferenciaTarjeta>=0?'+':'')+fmtCRC(r.diferenciaTarjeta))}
         ${item('Cuadra', r.tarjetaCuadra ? '✅ Sí' : '⚠️ No')}
@@ -1185,30 +1304,35 @@ function renderDetalleCierre(r) {
     <div class="hist-detail-section">
       <div class="hist-detail-title">Revisión de Efectivo</div>
       <div class="hist-detail-grid">
-        ${item('Caja contada', fmtCRC(r.cajaTotalContada))}
-        ${item('Efectivo esperado', fmtCRC(r.efectivoEsperado))}
-        ${item('Diferencia', (r.diferenciaCaja>=0?'+':'')+fmtCRC(r.diferenciaCaja))}
-        ${item('Cuadra', r.cajaCuadra ? '✅ Sí' : '⚠️ No')}
+        ${item('Caja contada', fmtCRC(r.caja))}
+        ${item('Efectivo esperado', fmtCRC(efectivoEsperado))}
+        ${item('Diferencia', (r.diferencia>=0?'+':'')+fmtCRC(r.diferencia))}
+        ${item('Cuadra', Math.abs(r.diferencia||0)<=500 ? '✅ Sí' : '⚠️ No')}
       </div>
     </div>
     <div class="hist-detail-section">
       <div class="hist-detail-title">Balance Final</div>
       <div class="hist-detail-grid">
+        ${item('Diferencia Tarjeta', (r.diferenciaTarjeta>=0?'+':'')+fmtCRC(r.diferenciaTarjeta))}
+        ${item('Diferencia Efectivo', (r.diferencia>=0?'+':'')+fmtCRC(r.diferencia))}
         <div class="hist-detail-item"><span>Balance Final</span><span class="v" style="color:${balanceFinal>=0?'var(--green)':'var(--red)'}">${(balanceFinal>=0?'+':'')+fmtCRC(balanceFinal)}</span></div>
         ${item('Cuadra', balanceCuadra ? '✅ Sí' : '⚠️ No')}
       </div>
     </div>
     ${r.obs ? `<div class="hist-detail-section"><div class="hist-detail-title">Observaciones</div><div style="color:var(--text)">${r.obs}</div></div>` : ''}
     ${(r.fotoSistemaUrl||r.fotoDatafonoUrl) ? `<div class="hist-detail-section"><div class="hist-detail-title">Fotos</div><div class="hist-detail-fotos">
-      ${r.fotoSistemaUrl?`<a href="${r.fotoSistemaUrl}" target="_blank">📷 Foto</a>`:''}
+      ${r.fotoSistemaUrl?`<a href="${r.fotoSistemaUrl}" target="_blank">📷 Sistema</a>`:''}
+      ${r.fotoDatafonoUrl?`<a href="${r.fotoDatafonoUrl}" target="_blank">📷 Datáfono</a>`:''}
     </div></div>` : ''}
   `;
 }
 
 // ── LIMPIAR FORM ──────────────────────────────────────────────────
 function limpiarForm() {
-  document.getElementById('f-obs').value = '';
-  ['f-efectivo','f-tarjeta','f-sinpe','f-otras','f-datafono-total','f-tips','f-tc','f-fondo'].forEach(id => {
+  ['f-encargado','f-obs'].forEach(id => { const el=document.getElementById(id); if(el)el.value=''; });
+  ['f-efectivo','f-tarjeta','f-sinpe','f-otras','f-credito','f-plataformas','f-plataformas-desc',
+   'f-propina-efectivo','f-propina-tarjeta','f-propina-credito','f-propina-otro','f-datafono-total',
+   'f-tc','f-fondo'].forEach(id => {
     const el=document.getElementById(id); if(el)el.value='';
   });
   document.getElementById('f-fecha').value = hoy();
@@ -1219,7 +1343,13 @@ function limpiarForm() {
   calcCuadre(); actualizarResumen(); calcRevisionTarjeta();
   quitarFoto();
   document.getElementById('ia-resultado').style.display = 'none';
+  ['rt-detalle','ef-detalle'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
+  document.querySelectorAll('.calc-detalle').forEach(el => {
+    const btn = el.previousElementSibling;
+    if (btn && btn.tagName === 'BUTTON') btn.textContent = 'Ver detalle del cálculo ▾';
+  });
   irPaso(1);
+  // Recargar encargados por si cambió personal
   cargarEncargados();
 }
 
@@ -1231,8 +1361,7 @@ function fmtCRC(n) { return '₡' + Math.round(n||0).toLocaleString('es-CR'); }
 document.getElementById('date-chip').textContent =
   new Date().toLocaleDateString('es-CR',{weekday:'long',day:'numeric',month:'long'});
 document.getElementById('f-fecha').value = hoy();
-cargarKioskos();
-if (EXTRACTOR_URL) document.getElementById('ia-box-extractor').style.display = 'block';
+cargarEncargados();
 actualizarResumen();
 calcRevisionTarjeta();
 calcCuadre();

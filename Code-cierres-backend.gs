@@ -26,6 +26,29 @@
 //    de comprobante se guardan en una carpeta "Depósitos - Comprobantes" (se crea
 //    sola, hermana de "Cierres de caja"). Después de pegar esto, corré UNA VEZ
 //    agregarEncabezadosDepositos() desde el editor.
+//
+// Actualización — Propina en Dólares:
+// 7. Se agregó 1 columna más al final ('Propina Dólares $'), ya que "Ventas en
+//    Dólares" y "Propina en Dólares" ahora son un solo campo cada uno (antes
+//    "Ventas en Dólares" separaba Efectivo($)/Tarjeta($); ese monto ahora se
+//    guarda completo en 'USD Efectivo $', dejando 'USD Tarjeta $' en 0). Volvé
+//    a correr agregarEncabezados().
+//
+// Actualización — Balance Final:
+// 8. Se agregaron 2 columnas más al final ('Balance Final ₡', 'Balance Cuadra'):
+//    la suma de la Diferencia Tarjeta más la Diferencia Caja, con su indicador
+//    de si cuadra (±₡500). Volvé a correr agregarEncabezados().
+//
+// Actualización — DOLARES pasa a Efectivo:
+// 9. La línea "DOLARES" del recibo (ventas y propina) ahora se suma directo dentro
+//    de "Ventas Efectivo ₡" / "10% Servicio ₡" (ya viene en colones). No hay columnas
+//    nuevas ni movidas, pero estas quedan en desuso a partir de ahora (siempre 0 en
+//    cierres nuevos, sin afectar filas viejas): 'USD Efectivo $', 'USD Tarjeta $',
+//    'USD Reportado Ventas $', 'Diferencia USD $', 'Propina Dólares $'. La columna
+//    'USD Total en ₡' cambia de significado: ahora es el equivalente en ₡ de los
+//    billetes en dólares CONTADOS físicamente (Total USD Contado $ × Tipo de Cambio),
+//    y 'Total Caja Contada ₡' / 'Caja Total Contada ₡' / 'Diferencia Caja ₡' ya
+//    incluyen ese monto sumado al conteo en colones.
 
 const HEADERS_DEPOSITOS = [
   'ID', 'Fecha registro', 'Fecha depósito', 'Número de referencia',
@@ -48,8 +71,10 @@ const HEADERS = [
   'Caja Total Contada ₡', 'Fondo Caja Inicial ₡', 'Efectivo Esperado ₡', 'Diferencia Caja ₡',
   'USD Total Contado $', 'USD Reportado Ventas $', 'Diferencia USD $',
   'Foto Cierre Sistema (URL)', 'Foto Cierre Datáfono (URL)',
-  'Propina Efectivo ₡', 'Propina Tarjeta ₡', 'Propina Crédito ₡', 'Propina Otro ₡',
-  'Total Datáfono ₡', 'Diferencia Tarjeta ₡', 'Tarjeta Cuadra'
+  '10% Servicio Efectivo ₡', '10% Servicio Tarjeta ₡', '10% Servicio Crédito ₡', '10% Servicio Otro ₡',
+  'Total Datáfono ₡', 'Diferencia Tarjeta ₡', 'Tarjeta Cuadra',
+  '10% Servicio Dólares $',
+  'Balance Final ₡', 'Balance Cuadra'
 ];
 
 function doPost(e) {
@@ -148,7 +173,10 @@ function doPost(e) {
       data.propinaOtro     || 0,       // BC - Propina Otro ₡
       data.datafonoTotal    || 0,      // BD - Total Datáfono ₡
       data.diferenciaTarjeta || 0,     // BE - Diferencia Tarjeta ₡
-      data.tarjetaCuadra ? 'SI' : 'NO' // BF - Tarjeta Cuadra
+      data.tarjetaCuadra ? 'SI' : 'NO',// BF - Tarjeta Cuadra
+      data.propinaDolares || 0,        // BG - Propina Dólares $
+      data.balanceFinal || 0,          // BH - Balance Final ₡
+      data.balanceCuadra ? 'SI' : 'NO' // BI - Balance Cuadra
     ]);
 
     return ContentService.createTextOutput(JSON.stringify({result:'ok'}))

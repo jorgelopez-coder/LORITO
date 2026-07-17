@@ -1,185 +1,212 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Portal · Ecosistema Kioskos</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-<style>
-*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-:root {
-  --bg:#faf7f0; --surface:#f2ede2; --card:#ffffff;
-  --border:#c8ddd0; --border-h:#8ab89e;
-  --text:#1c3a28; --muted:#5a8a6a; --subtle:#a0c8b0;
-  --green:#1a7a4a; --green-bg:#eef8f2; --green-lt:#d0eedd;
-  --red:#c84a20; --red-bg:#fdf0eb; --red-lt:#f0c0a8;
-  --amber:#c87820; --amber-bg:#fdf6e3; --amber-lt:#f0d890;
-  --blue:#185fa5; --blue-bg:#eef4fb; --blue-lt:#b8d0f0;
-  --purple:#6a3a9a; --purple-bg:#f3eefb; --purple-lt:#d0b8f0;
-  --radius:12px; --font-d:'Inter Tight',sans-serif; --font-b:'Inter',sans-serif; --font-m:'JetBrains Mono',monospace;
-}
-body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
-:focus-visible { outline:2px solid var(--green); outline-offset:2px; }
-.clip { display:inline-block; width:8px; height:8px; border-radius:50%; border:1.6px solid var(--border-h); margin-right:7px; flex-shrink:0; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal · Lorito</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#EFE9DA; --surface:#E7E0CC; --card:#FBF8F0;
+      --border:#DAD0B8; --border-h:#B8A67E;
+      --text:#262019; --muted:#6B6153; --subtle:#A79A85;
+      --green:#435E33; --green-bg:#E6EEDC; --green-lt:#c9dbb8;
+      --red:#A8371E; --red-bg:#F7E3DC; --red-lt:#eec4b3;
+      --amber:#9C6E1E; --amber-bg:#F2E6C8; --amber-lt:#e6cf95;
+      --blue:#2C4B6E; --blue-bg:#E1E8F0; --blue-lt:#b9c9dc;
+      --teal:#1F5C63; --teal-bg:#DBEAEA; --teal-lt:#a9cbcd;
+      --purple:#5B3B66; --purple-bg:#EAE0ED; --purple-lt:#cdb3d6;
+      --radius:6px; --font-d:'Space Grotesk',sans-serif; --font-b:'Inter',sans-serif; --font-m:'IBM Plex Mono',monospace;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:14px; line-height:1.6; min-height:100vh; }
+    :focus-visible { outline:2px solid var(--teal); outline-offset:2px; }
 
-/* ── HEADER ─────────────────────────────────────────────── */
-header {
-  min-height:60px; border-bottom:1px solid var(--border);
-  padding:0 2rem; display:flex; align-items:center;
-  justify-content:space-between; background:var(--bg);
-  position:sticky; top:0; z-index:20;
-}
-.logo { display:flex; align-items:center; gap:10px; }
-.logo-mark { width:32px; height:32px; border-radius:8px; background:var(--text); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.logo-mark svg { width:18px; height:18px; stroke:#fff; fill:none; }
-.logo-name { font-family:var(--font-d); font-size:15px; font-weight:700; }
-.logo-sub { font-size:11px; color:var(--muted); margin-left:4px; }
-.header-right { display:flex; align-items:center; gap:8px; }
-.date-chip { font-family:var(--font-m); font-size:11px; color:var(--muted); background:var(--card); border:1px solid var(--border); border-radius:20px; padding:5px 12px; }
-.user-chip { display:flex; align-items:center; gap:6px; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:5px 10px; }
-.user-chip svg { width:13px; height:13px; color:var(--muted); }
-.user-chip span { font-size:12px; font-weight:500; color:var(--muted); }
-.user-chip button { background:none; border:none; font-size:11px; color:var(--subtle); cursor:pointer; padding:0 2px; font-family:var(--font-b); }
-.user-chip button:hover { color:var(--red); }
-.sync-btn { font-family:var(--font-m); font-size:11px; color:var(--muted); background:transparent; border:1px solid var(--border); border-radius:8px; padding:6px 11px; cursor:pointer; display:flex; align-items:center; gap:6px; }
-.sync-btn:hover { border-color:var(--border-h); color:var(--text); }
-.sync-btn svg { width:12px; height:12px; }
+    /* clip icon usado en encabezados de sección (motivo firma) */
+    .clip { display:inline-block; width:8px; height:8px; border-radius:50%; border:1.6px solid var(--border-h); margin-right:7px; flex-shrink:0; }
 
-/* ── MENÚ HORIZONTAL DE MÓDULOS ── */
-.topnav { height:46px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:stretch; gap:2px; background:var(--card); position:sticky; top:60px; z-index:19; }
-.nav-item { position:relative; display:flex; }
-.nav-btn { display:flex; align-items:center; gap:7px; padding:0 14px; border:none; background:none; cursor:pointer; font-family:var(--font-m); font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); border-bottom:2px solid transparent; white-space:nowrap; }
-.nav-btn svg { width:11px; height:11px; stroke:currentColor; fill:none; stroke-width:2; transition:transform .15s; flex-shrink:0; }
-.nav-item:hover .nav-btn, .nav-item.open .nav-btn { color:var(--text); border-bottom-color:var(--border-h); }
-.nav-item.open .nav-btn svg { transform:rotate(180deg); }
-.nav-panel {
-  display:none; position:absolute; top:100%; left:0; background:var(--card);
-  border:1px solid var(--border); border-radius:0 0 var(--radius) var(--radius);
-  box-shadow:0 10px 28px rgba(28,58,40,.14); padding:12px; z-index:30; min-width:420px;
-}
-.nav-item.open .nav-panel { display:grid; grid-template-columns:repeat(2,1fr); gap:7px; }
-.nav-panel.single-col { min-width:230px; }
-.nav-item.open .nav-panel.single-col { grid-template-columns:1fr; }
+    /* ── HEADER ─────────────────────────────────────────────── */
+    header {
+      min-height:60px; border-bottom:1px solid var(--border);
+      padding:0 2rem; display:flex; align-items:center;
+      justify-content:space-between; background:var(--bg);
+      position:sticky; top:0; z-index:20;
+    }
+    .logo { display:flex; align-items:center; gap:10px; }
+    .logo-mark {
+      width:32px; height:32px; border-radius:8px;
+      background:var(--text); display:flex; align-items:center;
+      justify-content:center;
+    }
+    .logo-mark svg { width:18px; height:18px; stroke:#fff; fill:none; }
+    .logo-name { font-family:var(--font-d); font-size:15px; font-weight:700; }
+    .logo-sub  { font-size:11px; color:var(--muted); margin-left:4px; }
+    .header-right { display:flex; align-items:center; gap:8px; }
+    .date-chip { font-family:var(--font-m); font-size:11px; color:var(--muted); background:var(--card); border:1px solid var(--border); border-radius:20px; padding:5px 12px; }
+    .user-chip { display:flex; align-items:center; gap:6px; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:5px 10px; }
+    .user-chip svg { width:13px; height:13px; color:var(--muted); }
+    .user-chip span { font-size:12px; font-weight:500; color:var(--muted); }
+    .user-chip button { background:none; border:none; font-size:11px; color:var(--subtle); cursor:pointer; padding:0 2px; }
+    .admin-chip { font-size:12px; color:var(--muted); padding:5px 10px; border-radius:8px; border:1px solid var(--border); background:var(--card); text-decoration:none; }
+    .admin-chip:hover { border-color:var(--border-h); color:var(--text); }
+    .sync-btn { font-family:var(--font-m); font-size:11px; color:var(--muted); background:transparent; border:1px solid var(--border); border-radius:8px; padding:6px 11px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+    .sync-btn:hover { border-color:var(--border-h); color:var(--text); }
+    .sync-btn svg { width:12px; height:12px; }
 
-/* ── MAIN ───────────────────────────────────────────────── */
-main { max-width:1080px; margin:0 auto; padding:2rem 2rem 4rem; }
+    /* ── MENÚ HORIZONTAL DE MÓDULOS ── */
+    .topnav { height:46px; border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:stretch; gap:2px; background:var(--card); position:sticky; top:60px; z-index:19; }
+    .nav-item { position:relative; display:flex; }
+    .nav-btn { display:flex; align-items:center; gap:7px; padding:0 14px; border:none; background:none; cursor:pointer; font-family:var(--font-m); font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); border-bottom:2px solid transparent; white-space:nowrap; }
+    .nav-btn svg { width:11px; height:11px; stroke:currentColor; fill:none; stroke-width:2; transition:transform .15s; flex-shrink:0; }
+    .nav-item:hover .nav-btn, .nav-item.open .nav-btn { color:var(--text); border-bottom-color:var(--border-h); }
+    .nav-item.open .nav-btn svg { transform:rotate(180deg); }
+    .nav-panel {
+      display:none; position:absolute; top:100%; left:0; background:var(--card);
+      border:1px solid var(--border); border-radius:0 0 var(--radius) var(--radius);
+      box-shadow:0 10px 28px rgba(38,32,25,.14); padding:12px; z-index:30; min-width:420px;
+    }
+    .nav-item.open .nav-panel { display:grid; grid-template-columns:repeat(2,1fr); gap:7px; }
+    .nav-panel.single-col { min-width:230px; }
+    .nav-item.open .nav-panel.single-col { grid-template-columns:1fr; }
 
-/* ── SALUDO / HERO ──────────────────────────────────────── */
-.hero { display:flex; align-items:flex-end; justify-content:space-between; gap:1.5rem; margin-bottom:1.75rem; flex-wrap:wrap; }
-.hero h1 { font-family:var(--font-d); font-size:28px; font-weight:800; letter-spacing:-.01em; margin-bottom:5px; }
-.hero p { font-size:13px; color:var(--muted); }
-.board { background:var(--text); color:var(--bg); border-radius:var(--radius); padding:10px 18px; text-align:right; flex-shrink:0; }
-.board-date { font-family:var(--font-m); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#9fc4ab; }
-.board-time { font-family:var(--font-m); font-size:22px; font-weight:600; color:#e8c93c; letter-spacing:.02em; }
+    /* ── MAIN ───────────────────────────────────────────────── */
+    main { max-width:1080px; margin:0 auto; padding:2rem 2rem 4rem; }
 
-/* ── KPI STRIP (tickets) ────────────────────────────────── */
-.ticket-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:1.5rem; }
-.ticket { position:relative; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:22px 18px 16px; }
-.ticket.clickable { cursor:pointer; transition:border-color .12s; }
-.ticket.clickable:hover { border-color:var(--border-h); }
-.ticket-chevron { position:absolute; top:16px; right:14px; color:var(--subtle); display:flex; transition:transform .15s; }
-.ticket.clickable.open .ticket-chevron { transform:rotate(180deg); color:var(--text); }
-.ticket::before {
-  content:''; position:absolute; top:-1px; left:0; right:0; height:9px;
-  background-image:radial-gradient(circle at 7px 5px, var(--bg) 3px, transparent 3.3px);
-  background-size:15px 9px; background-repeat:repeat-x;
-}
-.ticket-punch { position:absolute; top:9px; left:12px; width:9px; height:9px; border-radius:50%; background:var(--bg); border:1.5px solid var(--border-h); }
-.ticket-val { font-family:var(--font-m); font-size:21px; font-weight:600; letter-spacing:-.01em; margin-bottom:3px; }
-.ticket-lbl { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
-.ticket-sub { font-size:11px; margin-top:5px; color:var(--subtle); }
+    /* ── SALUDO / HERO ──────────────────────────────────────── */
+    .hero { display:flex; align-items:flex-end; justify-content:space-between; gap:1.5rem; margin-bottom:1.75rem; flex-wrap:wrap; }
+    .hero h1 { font-family:var(--font-d); font-size:28px; font-weight:700; letter-spacing:-.01em; margin-bottom:5px; }
+    .hero p  { font-size:13px; color:var(--muted); }
+    .board { background:var(--text); color:var(--bg); border-radius:var(--radius); padding:10px 18px; text-align:right; flex-shrink:0; }
+    .board-date { font-family:var(--font-m); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#B8AE96; }
+    .board-time { font-family:var(--font-m); font-size:22px; font-weight:600; color:#E8A93C; letter-spacing:.02em; }
 
-/* ── GRID PRINCIPAL ─────────────────────────────────────── */
-.main-grid { display:grid; grid-template-columns:1fr 300px; gap:14px; margin-bottom:1.5rem; }
+    /* ── KPI STRIP (tickets) ────────────────────────────────── */
+    .ticket-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:1.5rem; }
+    .fecha-chip-idx { display:inline-block; font-size:11px; font-family:var(--font-m); background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:4px 9px; margin:2px 4px 2px 0; }
+    .cash-val-row { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+    .cash-val-row .ticket-val { margin-bottom:3px; }
+    .cash-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); }
+    .cash-row:last-child { border-bottom:none; }
+    .cash-row .cash-fecha { font-size:12.5px; color:var(--text); }
+    .cash-row .cash-montos { display:flex; gap:16px; font-family:var(--font-m); font-size:12.5px; font-weight:600; color:var(--text); white-space:nowrap; }
+    .ticket { position:relative; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:22px 18px 16px; }
+    .ticket::before {
+      content:''; position:absolute; top:-1px; left:0; right:0; height:9px;
+      background-image:radial-gradient(circle at 7px 5px, var(--bg) 3px, transparent 3.3px);
+      background-size:15px 9px; background-repeat:repeat-x;
+    }
+    .ticket-punch { position:absolute; top:9px; left:12px; width:9px; height:9px; border-radius:50%; background:var(--bg); border:1.5px solid var(--border-h); }
+    .ticket-val { font-family:var(--font-m); font-size:21px; font-weight:600; letter-spacing:-.01em; margin-bottom:3px; }
+    .ticket-lbl { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+    .ticket-sub { font-size:11px; margin-top:5px; color:var(--subtle); }
 
-/* ── SECCIÓN ────────────────────────────────────────────── */
-.section-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
-.section-head { padding:.9rem 1.25rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
-.section-title { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); }
-.section-link { font-size:12px; color:var(--blue); text-decoration:none; font-weight:500; }
-.section-link:hover { text-decoration:underline; }
+    /* ── GRID PRINCIPAL ─────────────────────────────────────── */
+    .main-grid { display:grid; grid-template-columns:1fr 240px 220px; gap:14px; margin-bottom:1.5rem; }
 
-/* ── ACCIONES RÁPIDAS ───────────────────────────────────── */
-.quick-action { display:flex; align-items:center; gap:12px; padding:.85rem 1.25rem; border-bottom:1px solid var(--border); text-decoration:none; color:var(--text); transition:background .12s; cursor:pointer; }
-.quick-action:last-child { border-bottom:none; }
-.quick-action:hover { background:var(--surface); }
-.qa-icon { width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.qa-icon svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
-.qa-text { flex:1; min-width:0; }
-.qa-name { font-size:13px; font-weight:500; }
-.qa-sub { font-size:11px; color:var(--muted); }
-.qa-arrow { color:var(--subtle); flex-shrink:0; }
-.qa-arrow svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
-.qa-badge { font-family:var(--font-m); font-size:10px; font-weight:600; padding:2px 7px; border-radius:20px; flex-shrink:0; }
-.no-alerts { padding:1.5rem 1.25rem; text-align:center; font-size:12px; color:var(--subtle); }
+    /* ── SECCIÓN ────────────────────────────────────────────── */
+    .section-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+    .section-head { padding:.9rem 1.25rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .section-title { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); }
+    .section-link { font-size:12px; color:var(--blue); text-decoration:none; font-weight:500; }
+    .section-link:hover { text-decoration:underline; }
 
-/* ── ÚLTIMO CIERRE POR KIOSKO ───────────────────────────── */
-.kiosko-row { display:flex; align-items:center; gap:10px; padding:.75rem 1.25rem; border-bottom:1px solid var(--border); }
-.kiosko-row:last-child { border-bottom:none; }
-.kiosko-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-.kiosko-info { flex:1; min-width:0; }
-.kiosko-nombre { font-size:12.5px; font-weight:500; }
-.kiosko-meta { font-size:11px; color:var(--muted); margin-top:1px; }
-.kiosko-badge { font-family:var(--font-m); font-size:9.5px; font-weight:600; padding:2px 8px; border-radius:20px; white-space:nowrap; flex-shrink:0; }
-.kb-ok { background:var(--green-bg); color:var(--green); }
-.kb-warn { background:var(--red-bg); color:var(--red); }
-.kb-none { background:var(--surface); color:var(--subtle); }
-.kb-soon { background:var(--amber-bg); color:var(--amber); }
+    /* ── ACCIONES RÁPIDAS ───────────────────────────────────── */
+    .quick-action { display:flex; align-items:center; gap:12px; padding:.85rem 1.25rem; border-bottom:1px solid var(--border); text-decoration:none; color:var(--text); transition:background .12s; cursor:pointer; }
+    .quick-action:last-child { border-bottom:none; }
+    .quick-action:hover { background:var(--surface); }
+    .qa-icon { width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .qa-icon svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+    .qa-text { flex:1; }
+    .qa-name { font-size:13px; font-weight:500; }
+    .qa-sub  { font-size:11px; color:var(--muted); }
+    .qa-arrow { color:var(--subtle); }
+    .qa-arrow svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+    .qa-badge { font-family:var(--font-m); font-size:10px; font-weight:600; padding:2px 7px; border-radius:20px; }
 
-/* ── TOP 10 PRODUCTOS ───────────────────────────────────── */
-.prod-row { display:flex; align-items:center; gap:12px; padding:.7rem 1.25rem; border-bottom:1px solid var(--border); }
-.prod-row:last-child { border-bottom:none; }
-.prod-rank { font-family:var(--font-m); font-size:11px; font-weight:600; color:var(--subtle); width:16px; flex-shrink:0; }
-.prod-info { flex:1; min-width:0; }
-.prod-nombre { font-size:12.5px; font-weight:500; }
-.prod-meta { font-size:11px; color:var(--muted); margin-top:1px; }
-.prod-monto { font-family:var(--font-m); font-size:13px; font-weight:600; color:var(--green); flex-shrink:0; white-space:nowrap; }
+    .no-alerts { padding:1.5rem 1.25rem; text-align:center; font-size:12px; color:var(--subtle); }
 
-/* ── DETALLE DESPLEGABLE DE KPI (personal / ventas) ──────── */
-.kpi-detail { display:none; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:1.5rem; }
-.kpi-detail.open { display:block; }
-.kpi-detail-head { padding:.9rem 1.25rem; border-bottom:1px solid var(--border); font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); }
-.kpi-group-label { padding:.5rem 1.25rem .3rem; font-size:10px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--subtle); background:var(--surface); }
-.persona-row { display:flex; align-items:center; gap:10px; padding:.6rem 1.25rem; border-bottom:1px solid var(--border); }
-.persona-row:last-child { border-bottom:none; }
-.persona-nombre { font-size:12.5px; font-weight:500; }
-.persona-puesto { font-size:11px; color:var(--muted); margin-left:auto; text-align:right; flex-shrink:0; }
+    /* ── HORARIO RESUMEN ────────────────────────────────────── */
+    .horario-resumen { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:1.5rem; }
+    .horario-resumen table { width:100%; border-collapse:collapse; font-size:12px; min-width:620px; }
+    .horario-resumen thead th { font-size:10px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); padding:7px 8px; background:var(--surface); border-bottom:1px solid var(--border); text-align:center; white-space:nowrap; }
+    .horario-resumen thead th.th-emp { text-align:left; padding-left:14px; min-width:140px; }
+    .horario-resumen tbody td { padding:6px 8px; border-bottom:1px solid var(--border); text-align:center; vertical-align:middle; }
+    .horario-resumen tbody td.td-emp { text-align:left; padding-left:14px; font-weight:500; font-size:12px; }
+    .horario-resumen tbody td.td-dep { color:var(--muted); font-size:11px; text-align:left; }
+    .horario-resumen tbody tr:last-child td { border-bottom:none; }
+    .horario-resumen tbody tr:hover td { background:var(--surface); }
+    .hor-dot { display:inline-flex; align-items:center; justify-content:center; width:28px; height:22px; border-radius:5px; font-family:var(--font-m); font-size:10px; font-weight:600; }
+    .hor-trabajo  { background:var(--green-bg); color:var(--green); }
+    .hor-libre    { background:var(--surface); color:var(--muted); border:1px solid var(--border); }
+    .hor-vac      { background:var(--blue-bg); color:var(--blue); }
+    .hor-inc      { background:var(--red-bg); color:var(--red); }
+    .hor-perm     { background:var(--purple-bg); color:var(--purple); }
+    .hor-otro     { background:var(--surface); color:var(--muted); border:1px solid var(--border); }
+    .hor-vacio    { color:var(--subtle); font-size:14px; }
+    .hor-tot      { font-family:var(--font-m); font-weight:600; color:var(--green); font-size:12px; }
+    .hor-overflow { overflow-x:auto; }
 
-/* ── MÓDULOS (tiles dentro del menú desplegable) ────────── */
-.mod-tile { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:5px; text-decoration:none; color:var(--text); transition:background .12s; }
-.mod-tile:hover { background:var(--surface); }
-.mod-tile.disabled { opacity:.45; pointer-events:none; }
-.mod-tile-icon { width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.mod-tile-icon svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
-.mod-tile-txt { min-width:0; }
-.mod-tile-name { font-size:12.5px; font-weight:500; white-space:nowrap; }
-.mod-tile-area { font-size:10px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    /* ── FACTURAS CON FECHA DE HOY ──────────────────────────── */
+    .fh-row { display:flex; align-items:center; gap:12px; padding:.85rem 1.25rem; border-bottom:1px solid var(--border); cursor:pointer; transition:background .12s; }
+    .fh-row:hover { background:var(--surface); }
+    .fh-arrow { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.6; color:var(--subtle); transition:transform .15s; flex-shrink:0; }
+    .fh-arrow.open { transform:rotate(180deg); }
+    .fh-detalle { display:none; padding:.15rem 1.25rem .95rem 1.25rem; border-bottom:1px solid var(--border); background:var(--surface); font-size:12px; color:var(--muted); }
+    .fh-detalle div { padding:2px 0; }
+    .fh-detalle strong { color:var(--text); font-weight:600; }
 
-.ic-green  { background:var(--green-bg); color:var(--green); }
-.ic-blue   { background:var(--blue-bg);  color:var(--blue);  }
-.ic-amber  { background:var(--amber-bg); color:var(--amber); }
-.ic-red    { background:var(--red-bg);   color:var(--red);   }
-.ic-purple { background:var(--purple-bg);color:var(--purple);}
+    /* ── MÓDULOS (tiles dentro del menú desplegable) ────────── */
+    .mod-tile { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:5px; text-decoration:none; color:var(--text); transition:background .12s; }
+    .mod-tile:hover { background:var(--surface); }
+    .mod-tile.disabled { opacity:.45; pointer-events:none; }
+    .mod-tile-icon { width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .mod-tile-icon svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+    .mod-tile-txt { min-width:0; }
+    .mod-tile-name { font-size:12.5px; font-weight:500; white-space:nowrap; }
+    .mod-tile-area { font-size:10px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-/* ── STATUS ─────────────────────────────────────────────── */
-.status-bar { display:flex; align-items:center; gap:12px; font-family:var(--font-m); font-size:10.5px; color:var(--muted); border-top:1px solid var(--border); padding-top:1rem; margin-top:.5rem; }
-.sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
-.sdot.off { background:var(--subtle); }
-.spinner { display:inline-block; width:10px; height:10px; border:1.5px solid var(--border); border-top-color:var(--green); border-radius:50%; animation:spin .7s linear infinite; }
-@keyframes spin { to { transform:rotate(360deg); } }
+    /* colores de iconos */
+    .ic-green  { background:var(--green-bg); color:var(--green); }
+    .ic-teal   { background:var(--teal-bg);  color:var(--teal);  }
+    .ic-blue   { background:var(--blue-bg);  color:var(--blue);  }
+    .ic-amber  { background:var(--amber-bg); color:var(--amber); }
+    .ic-red    { background:var(--red-bg);   color:var(--red);   }
+    .ic-purple { background:var(--purple-bg);color:var(--purple);}
 
-@media (max-width:720px) {
-  main { padding:1.25rem 1rem 3rem; }
-  .ticket-strip { grid-template-columns:1fr 1fr; }
-  .main-grid { grid-template-columns:1fr; }
-  .hero { align-items:flex-start; }
-  .date-chip, .logo-sub, .sync-label { display:none; }
-  .topnav { padding:0 1rem; top:56px; overflow-x:auto; }
-  .nav-panel { position:fixed; left:1rem; right:1rem; top:102px; min-width:0 !important; grid-template-columns:1fr !important; max-height:70vh; overflow-y:auto; }
-}
-</style>
+    /* ── MANTENIMIENTO RESUMEN ─────────────────────────────── */
+    .mant-resumen { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:1.5rem; }
+    .mant-item { display:flex; align-items:center; gap:10px; padding:.75rem 1.25rem; border-bottom:1px solid var(--border); text-decoration:none; color:var(--text); transition:background .12s; }
+    .mant-item:last-child { border-bottom:none; }
+    .mant-item:hover { background:var(--surface); }
+    .mant-icon { font-size:18px; width:32px; text-align:center; flex-shrink:0; }
+    .mant-info { flex:1; min-width:0; }
+    .mant-tipo { font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .mant-meta { font-size:11px; color:var(--muted); margin-top:1px; }
+    .mant-badge { font-family:var(--font-m); font-size:9.5px; font-weight:600; padding:2px 8px; border-radius:20px; white-space:nowrap; flex-shrink:0; }
+    .mb-pendiente { background:var(--amber-bg); color:var(--amber); }
+    .mb-proceso   { background:var(--blue-bg);  color:var(--blue);  }
+    .mant-vencido { color:var(--red); font-weight:600; font-size:10px; }
+
+    /* ── STATUS ─────────────────────────────────────────────── */
+    .status-bar { display:flex; align-items:center; gap:12px; font-family:var(--font-m); font-size:10.5px; color:var(--muted); border-top:1px solid var(--border); padding-top:1rem; margin-top:.5rem; }
+    .sdot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+    .sdot.off { background:var(--subtle); }
+    .spinner { display:inline-block; width:10px; height:10px; border:1.5px solid var(--border); border-top-color:var(--teal); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    @media (max-width:720px) {
+      main { padding:1.25rem 1rem 3rem; }
+      .ticket-strip { grid-template-columns:1fr 1fr; }
+      .main-grid { grid-template-columns:1fr; }
+      #lista-pedidos-hoy { max-height:none; }
+      .hero { align-items:flex-start; }
+      .date-chip, .admin-chip, .logo-sub, .sync-label { display:none; }
+      .topnav { padding:0 1rem; top:56px; overflow-x:auto; }
+      .nav-panel { position:fixed; left:1rem; right:1rem; top:102px; min-width:0 !important; grid-template-columns:1fr !important; max-height:70vh; overflow-y:auto; }
+    }
+  </style>
 </head>
 <body>
 <header>
@@ -191,8 +218,8 @@ main { max-width:1080px; margin:0 auto; padding:2rem 2rem 4rem; }
       </svg>
     </div>
     <div>
-      <span class="logo-name">Kioskos</span>
-      <span class="logo-sub">Playa Grande Brew House</span>
+      <span class="logo-name">Lorito</span>
+      <span class="logo-sub">Portal de Operaciones</span>
     </div>
   </div>
   <div class="header-right">
@@ -202,6 +229,7 @@ main { max-width:1080px; margin:0 auto; padding:2rem 2rem 4rem; }
       <span id="user-nombre">—</span>
       <button onclick="cerrarSesion()" title="Cerrar sesión">Salir</button>
     </div>
+    <a href="admin-accesos.html" class="admin-chip" id="btn-admin">⚙ Accesos</a>
     <button class="sync-btn" onclick="cargarKPIs()" title="Actualizar datos">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
       <span class="sync-label">Actualizar</span>
@@ -216,26 +244,75 @@ main { max-width:1080px; margin:0 auto; padding:2rem 2rem 4rem; }
       <svg viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg>
     </button>
     <div class="nav-panel">
+      <a href="inventario.html" class="mod-tile" data-mod="inventario">
+        <div class="mod-tile-icon ic-teal"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><rect x="2" y="10" width="20" height="5" rx="1"/><rect x="2" y="17" width="20" height="5" rx="1"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Inventario</div><div class="mod-tile-area">Toma de stock · valorización</div></div>
+      </a>
+      <a href="ordenes-compra.html" class="mod-tile" data-mod="ordenes-compra">
+        <div class="mod-tile-icon ic-blue"><svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Órdenes de compra</div><div class="mod-tile-area">Pedidos · análisis stock</div></div>
+      </a>
+      <a href="proveedores.html" class="mod-tile" data-mod="proveedores">
+        <div class="mod-tile-icon ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Proveedores</div><div class="mod-tile-area">Base de datos · contactos</div></div>
+      </a>
+      <a href="compras.html" class="mod-tile" data-mod="compras">
+        <div class="mod-tile-icon ic-green"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Datos de compras</div><div class="mod-tile-area">Facturas · proveedores</div></div>
+      </a>
+      <a href="cuentas-por-pagar.html" class="mod-tile" data-mod="cuentas-por-pagar">
+        <div class="mod-tile-icon ic-green"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Cuentas por pagar</div><div class="mod-tile-area">Vencimientos · pagos · abonos</div></div>
+      </a>
+      <a href="factura-manual.html" class="mod-tile" data-mod="factura-manual">
+        <div class="mod-tile-icon ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Factura manual</div><div class="mod-tile-area">Ingreso manual de facturas</div></div>
+      </a>
+      <a href="caja-chica.html" class="mod-tile" data-mod="caja-chica">
+        <div class="mod-tile-icon ic-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Caja Chica</div><div class="mod-tile-area">Balance · gastos · arqueos</div></div>
+      </a>
       <a href="cierres.html" class="mod-tile" data-mod="cierres">
         <div class="mod-tile-icon ic-green"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
-        <div class="mod-tile-txt"><div class="mod-tile-name">Cierre de Caja</div><div class="mod-tile-area">Ventas diarias · arqueo · historial</div></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Cierres de caja</div><div class="mod-tile-area">Registros diarios</div></div>
+      </a>
+      <a href="reportes.html" class="mod-tile" data-mod="reportes">
+        <div class="mod-tile-icon ic-blue"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Reportes de ventas</div><div class="mod-tile-area">Tendencias · forma de pago</div></div>
+      </a>
+      <a href="mantenimiento.html" class="mod-tile" data-mod="mantenimiento">
+        <div class="mod-tile-icon ic-amber"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Mantenimiento</div><div class="mod-tile-area">Reportes · seguimiento</div></div>
+      </a>
+      <a href="mermas.html" class="mod-tile" data-mod="mermas">
+        <div class="mod-tile-icon ic-amber"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Mermas</div><div class="mod-tile-area">Control de pérdidas</div></div>
       </a>
       <a href="depositos.html" class="mod-tile" data-mod="depositos">
-        <div class="mod-tile-icon ic-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V10l7-6 7 6v11"/><path d="M9 21v-6h6v6"/></svg></div>
-        <div class="mod-tile-txt"><div class="mod-tile-name">Depósitos</div><div class="mod-tile-area">Efectivo pendiente · asignar · historial</div></div>
+        <div class="mod-tile-icon ic-teal"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Depósitos</div><div class="mod-tile-area">Depósitos bancarios</div></div>
       </a>
-      <a href="configuracion.html" class="mod-tile" data-mod="configuracion">
-        <div class="mod-tile-icon ic-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9c.14.36.22.75.22 1.15V10.85c0 .4-.08.79-.22 1.15z"/></svg></div>
-        <div class="mod-tile-txt"><div class="mod-tile-name">Configuración</div><div class="mod-tile-area">Kioskos activos · ubicación · contacto</div></div>
-      </a>
-      <div class="mod-tile disabled">
-        <div class="mod-tile-icon ic-amber"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><rect x="2" y="10" width="20" height="5" rx="1"/><rect x="2" y="17" width="20" height="5" rx="1"/></svg></div>
-        <div class="mod-tile-txt"><div class="mod-tile-name">Inventario y Compras</div><div class="mod-tile-area">Próximamente</div></div>
-      </div>
-      <div class="mod-tile disabled">
+    </div>
+  </div>
+
+  <div class="nav-item" data-nav="costos">
+    <button class="nav-btn" onclick="toggleNav('costos')">
+      <span class="clip"></span>Costos y recetas
+      <svg viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg>
+    </button>
+    <div class="nav-panel" style="min-width:340px;">
+      <a href="historial-precios.html" class="mod-tile" data-mod="historial-precios">
         <div class="mod-tile-icon ic-purple"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-        <div class="mod-tile-txt"><div class="mod-tile-name">Reportes</div><div class="mod-tile-area">Próximamente</div></div>
-      </div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Historial de precios</div><div class="mod-tile-area">Evolución de precios · alzas y bajas</div></div>
+      </a>
+      <a href="costos-productos.html" class="mod-tile" data-mod="costos-productos">
+        <div class="mod-tile-icon ic-purple"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Base de productos</div><div class="mod-tile-area">Costos · presentaciones</div></div>
+      </a>
+      <a href="costos-menu-recetas.html" class="mod-tile" data-mod="costos-menu-recetas">
+        <div class="mod-tile-icon ic-purple"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Menú y Recetas</div><div class="mod-tile-area">Platos · recetas · subrecetas · FC</div></div>
+      </a>
     </div>
   </div>
 
@@ -245,58 +322,42 @@ main { max-width:1080px; margin:0 auto; padding:2rem 2rem 4rem; }
       <svg viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg>
     </button>
     <div class="nav-panel">
+      <a href="rrhh-personal.html" class="mod-tile" data-mod="rrhh-personal">
+        <div class="mod-tile-icon ic-red"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Personal</div><div class="mod-tile-area">Expedientes · estado</div></div>
+      </a>
       <a href="rrhh-acciones.html" class="mod-tile" data-mod="rrhh-acciones">
         <div class="mod-tile-icon ic-red"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
-        <div class="mod-tile-txt"><div class="mod-tile-name">Acciones de personal</div><div class="mod-tile-area">Menú de RRHH</div></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Acciones RRHH</div><div class="mod-tile-area">Ingresos · vacaciones</div></div>
       </a>
-      <a href="rrhh-personal.html" class="mod-tile" data-mod="rrhh-personal">
-        <div class="mod-tile-icon ic-blue"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-        <div class="mod-tile-txt"><div class="mod-tile-name">Base de Personal</div><div class="mod-tile-area">Expedientes · estado</div></div>
+      <a href="rrhh-control-vacaciones.html" class="mod-tile" data-mod="rrhh-vacaciones">
+        <div class="mod-tile-icon ic-red"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Vacaciones</div><div class="mod-tile-area">Saldos · solicitudes</div></div>
       </a>
-      <a href="rrhh-nuevo-ingreso.html" class="mod-tile" data-mod="rrhh-nuevo-ingreso">
-        <div class="mod-tile-icon ic-green"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="17" y1="11" x2="23" y2="11"/></svg></div>
-        <div class="mod-tile-txt"><div class="mod-tile-name">Nuevo ingreso</div><div class="mod-tile-area">Alta de colaborador</div></div>
-      </a>
-      <a href="rrhh-vacaciones.html" class="mod-tile" data-mod="rrhh-vacaciones">
-        <div class="mod-tile-icon ic-blue"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-        <div class="mod-tile-txt"><div class="mod-tile-name">Solicitud de vacaciones</div><div class="mod-tile-area">Nueva solicitud</div></div>
-      </a>
-      <a href="rrhh-control-vacaciones.html" class="mod-tile" data-mod="rrhh-control-vacaciones">
-        <div class="mod-tile-icon ic-blue"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-        <div class="mod-tile-txt"><div class="mod-tile-name">Control de vacaciones</div><div class="mod-tile-area">Saldos · historial</div></div>
-      </a>
-      <a href="rrhh-cambio-salario.html" class="mod-tile" data-mod="rrhh-cambio-salario">
-        <div class="mod-tile-icon ic-amber"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
-        <div class="mod-tile-txt"><div class="mod-tile-name">Cambio de salario</div><div class="mod-tile-area">Ajustes de planilla</div></div>
-      </a>
-      <a href="rrhh-amonestaciones.html" class="mod-tile" data-mod="rrhh-amonestaciones">
-        <div class="mod-tile-icon ic-red"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-        <div class="mod-tile-txt"><div class="mod-tile-name">Amonestaciones</div><div class="mod-tile-area">Historial disciplinario</div></div>
-      </a>
-      <a href="rrhh-terminacion.html" class="mod-tile" data-mod="rrhh-terminacion">
-        <div class="mod-tile-icon ic-red"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
-        <div class="mod-tile-txt"><div class="mod-tile-name">Terminación laboral</div><div class="mod-tile-area">Salidas · finiquito</div></div>
+      <a href="horarios.html" class="mod-tile" data-mod="horarios">
+        <div class="mod-tile-icon ic-red"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Horarios</div><div class="mod-tile-area">Turnos · vacaciones automáticas</div></div>
       </a>
       <a href="rrhh-liquidaciones.html" class="mod-tile" data-mod="rrhh-liquidaciones">
-        <div class="mod-tile-icon ic-green"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-        <div class="mod-tile-txt"><div class="mod-tile-name">Liquidaciones</div><div class="mod-tile-area">Cálculo y pago</div></div>
+        <div class="mod-tile-icon ic-amber"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Liquidaciones</div><div class="mod-tile-area">Cálculo y pago de CT</div></div>
+      </a>
+      <a href="rrhh-amonestaciones.html" class="mod-tile" data-mod="rrhh-amonestaciones">
+        <div class="mod-tile-icon ic-amber"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Amonestaciones</div><div class="mod-tile-area">Historial disciplinario</div></div>
       </a>
     </div>
   </div>
 
-  <div class="nav-item" data-nav="horarios">
-    <button class="nav-btn" onclick="toggleNav('horarios')">
-      <span class="clip"></span>Horarios
+  <div class="nav-item" data-nav="admin">
+    <button class="nav-btn" onclick="toggleNav('admin')">
+      <span class="clip"></span>Administración
       <svg viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg>
     </button>
     <div class="nav-panel single-col">
-      <a href="horarios.html" class="mod-tile" data-mod="horarios">
-        <div class="mod-tile-icon ic-purple"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-        <div class="mod-tile-txt"><div class="mod-tile-name">Horario de trabajo</div><div class="mod-tile-area">Turnos por kiosko</div></div>
-      </a>
-      <a href="horarios-historial.html" class="mod-tile" data-mod="horarios-historial">
-        <div class="mod-tile-icon ic-purple"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18.7 8l-5.3 5.3-3-3L3 17.6"/></svg></div>
-        <div class="mod-tile-txt"><div class="mod-tile-name">Historial de horarios</div><div class="mod-tile-area">Semanas anteriores</div></div>
+      <a href="admin-accesos.html" class="mod-tile" data-mod="admin-accesos">
+        <div class="mod-tile-icon ic-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+        <div class="mod-tile-txt"><div class="mod-tile-name">Gestión de accesos</div><div class="mod-tile-area">Roles · PINs · módulos</div></div>
       </a>
     </div>
   </div>
@@ -318,52 +379,54 @@ main { max-width:1080px; margin:0 auto; padding:2rem 2rem 4rem; }
 
   <!-- KPIs -->
   <div class="ticket-strip">
-    <div class="ticket clickable" data-kpi="personal" onclick="toggleKpiDetail('personal')">
-      <span class="ticket-punch"></span>
-      <div class="ticket-val" id="kpi-personal" style="color:var(--blue);">—</div>
-      <div class="ticket-lbl">Personal activo</div>
-      <div class="ticket-sub" id="kpi-personal-sub" style="color:var(--muted);"></div>
-      <span class="ticket-chevron"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-    </div>
     <div class="ticket">
       <span class="ticket-punch"></span>
-      <div class="ticket-val" id="kpi-cierre" style="color:var(--text);">—</div>
-      <div class="ticket-lbl">Último cierre registrado</div>
-      <div class="ticket-sub" id="kpi-cierre-sub" style="color:var(--muted);"></div>
+      <div class="ticket-val" id="kpi-inv" style="color:var(--teal);">—</div>
+      <div class="ticket-lbl">Último inventario</div>
+      <div class="ticket-sub" id="kpi-inv-sub" style="color:var(--muted);"></div>
     </div>
-    <div class="ticket clickable" data-kpi="ventas" onclick="toggleKpiDetail('ventas')">
+    <div class="ticket" id="kpi-cierres-ticket" onclick="toggleFechasFaltantes()" style="cursor:pointer;">
       <span class="ticket-punch"></span>
-      <div class="ticket-val" id="kpi-ventas-hoy" style="color:var(--amber);">—</div>
-      <div class="ticket-lbl">Ventas de hoy</div>
-      <div class="ticket-sub" id="kpi-ventas-hoy-sub" style="color:var(--muted);"></div>
-      <span class="ticket-chevron"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <div class="ticket-val" id="kpi-cierres" style="color:var(--text);">—</div>
+      <div class="ticket-lbl">Días sin cierre de caja</div>
+      <div class="ticket-sub" id="kpi-cierres-sub" style="color:var(--muted);"></div>
+    </div>
+    <div class="ticket" id="kpi-cash-ticket" onclick="toggleCashDetalle()" style="cursor:pointer;">
+      <span class="ticket-punch"></span>
+      <div class="cash-val-row">
+        <div class="ticket-val" id="kpi-cash-crc" style="color:var(--text);">—</div>
+        <div class="ticket-val" id="kpi-cash-usd" style="color:var(--text);">—</div>
+      </div>
+      <div class="ticket-lbl">Cash en caja</div>
+      <div class="ticket-sub" id="kpi-cash-sub" style="color:var(--muted);"></div>
     </div>
   </div>
 
-  <!-- Detalle desplegable: personal activo por kiosko -->
-  <div class="kpi-detail" id="kpi-detail-personal" data-kpi="personal">
-    <div class="kpi-detail-head"><span class="clip"></span>Personal activo por kiosko</div>
-    <div id="personal-detail-body">
-      <div class="no-alerts"><span class="spinner"></span></div>
-    </div>
-  </div>
-
-  <!-- Detalle desplegable: top 10 productos vendidos hoy -->
-  <div class="kpi-detail" id="kpi-detail-ventas" data-kpi="ventas">
-    <div class="kpi-detail-head"><span class="clip"></span>Top 10 productos vendidos hoy</div>
-    <div id="top-productos-body">
-      <div class="no-alerts"><span class="spinner"></span></div>
-    </div>
-  </div>
-
-  <!-- Placeholder: ventas por kiosko (pendiente de que Square reporte el kiosko en Ventas_Por_Producto) -->
-  <div class="section-card" style="margin-bottom:1.5rem;">
+  <!-- Panel expandible: fechas sin cierre -->
+  <div class="section-card" id="panel-fechas-faltantes" style="display:none;margin-bottom:1.5rem;">
     <div class="section-head">
-      <span class="section-title"><span class="clip"></span>Ventas por kiosko</span>
+      <span class="section-title"><span class="clip"></span>Fechas sin cierre de caja</span>
+      <a href="cierres.html" class="section-link">Ir a Cierres →</a>
     </div>
-    <div id="ventas-kiosko-body">
-      <div class="no-alerts"><span class="spinner"></span></div>
+    <div id="lista-fechas-faltantes" style="padding:1rem 1.25rem;"></div>
+  </div>
+
+  <!-- Panel expandible: composición de cash en caja -->
+  <div class="section-card" id="panel-cash-detalle" style="display:none;margin-bottom:1.5rem;">
+    <div class="section-head">
+      <span class="section-title"><span class="clip"></span>Fechas que componen el cash en caja</span>
+      <a href="depositos.html" class="section-link">Ir a Depósitos →</a>
     </div>
+    <div id="lista-cash-detalle" style="padding:.25rem 1.25rem;"></div>
+  </div>
+
+  <!-- Facturas con fecha de hoy -->
+  <div class="section-card" id="card-facturas-hoy" style="display:none;margin-bottom:1.5rem;">
+    <div class="section-head">
+      <span class="section-title"><span class="clip"></span>Facturas con fecha de hoy <span id="facturas-hoy-count" style="color:var(--text);"></span></span>
+      <a href="cuentas-por-pagar.html" class="section-link">Ver cuentas por pagar →</a>
+    </div>
+    <div id="lista-facturas-hoy"></div>
   </div>
 
   <!-- Grid principal -->
@@ -375,37 +438,26 @@ main { max-width:1080px; margin:0 auto; padding:2rem 2rem 4rem; }
         <span class="section-title"><span class="clip"></span>Acciones rápidas</span>
       </div>
 
-      <a href="cierres.html" class="quick-action" data-mod="cierres">
-        <div class="qa-icon ic-green">
-          <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      <a href="inventario.html" class="quick-action" data-mod="inventario">
+        <div class="qa-icon ic-teal">
+          <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
         </div>
         <div class="qa-text">
-          <div class="qa-name">Nuevo cierre de caja</div>
-          <div class="qa-sub">Ventas del día · arqueo de efectivo</div>
+          <div class="qa-name">Nueva toma de inventario</div>
+          <div class="qa-sub">Conteo físico · valorización automática</div>
         </div>
-        <div id="cierre-badge-qa"></div>
         <div class="qa-arrow"><svg viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
 
-      <a href="depositos.html" class="quick-action" data-mod="depositos">
+      <a href="ordenes-compra.html" class="quick-action" data-mod="ordenes-compra">
         <div class="qa-icon ic-blue">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V10l7-6 7 6v11"/><path d="M9 21v-6h6v6"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
         </div>
         <div class="qa-text">
-          <div class="qa-name">Asignar depósito bancario</div>
-          <div class="qa-sub">Efectivo pendiente de depositar</div>
+          <div class="qa-name">Nueva orden de compra</div>
+          <div class="qa-sub">Pedido a proveedor · análisis de stock</div>
         </div>
-        <div class="qa-arrow"><svg viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
-      </a>
-
-      <a href="rrhh-nuevo-ingreso.html" class="quick-action" data-mod="rrhh-nuevo-ingreso">
-        <div class="qa-icon ic-green">
-          <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="17" y1="11" x2="23" y2="11"/></svg>
-        </div>
-        <div class="qa-text">
-          <div class="qa-name">Agregar colaborador</div>
-          <div class="qa-sub">Alta de personal</div>
-        </div>
+        <div id="oc-badge-qa"></div>
         <div class="qa-arrow"><svg viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
 
@@ -415,42 +467,81 @@ main { max-width:1080px; margin:0 auto; padding:2rem 2rem 4rem; }
         </div>
         <div class="qa-text">
           <div class="qa-name">Acción de personal</div>
-          <div class="qa-sub">Vacaciones · amonestaciones · salario · terminación</div>
+          <div class="qa-sub">Ingreso · vacaciones · amonestaciones</div>
         </div>
         <div class="qa-arrow"><svg viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
 
-      <a href="horarios.html" class="quick-action" data-mod="horarios">
+      <a href="costos-productos.html" class="quick-action" data-mod="costos-productos">
         <div class="qa-icon ic-purple">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
         </div>
         <div class="qa-text">
-          <div class="qa-name">Ver horario de la semana</div>
-          <div class="qa-sub">Turnos por kiosko</div>
+          <div class="qa-name">Agregar producto</div>
+          <div class="qa-sub">Base de productos · costos · presentación</div>
         </div>
         <div class="qa-arrow"><svg viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
 
-      <a href="configuracion.html" class="quick-action" data-mod="configuracion">
-        <div class="qa-icon ic-blue">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9c.14.36.22.75.22 1.15V10.85c0 .4-.08.79-.22 1.15z"/></svg>
+      <a href="mantenimiento.html" class="quick-action" data-mod="mantenimiento">
+        <div class="qa-icon ic-amber">
+          <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
         </div>
         <div class="qa-text">
-          <div class="qa-name">Configurar kioskos</div>
-          <div class="qa-sub">Ubicación · encargado · contacto</div>
+          <div class="qa-name">Nuevo reporte de mantenimiento</div>
+          <div class="qa-sub">Reportar incidencia · seguimiento</div>
         </div>
         <div class="qa-arrow"><svg viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
     </div>
 
-    <!-- Último cierre por kiosko -->
-    <div class="section-card">
-      <div class="section-head">
-        <span class="section-title"><span class="clip"></span>Último cierre por kiosko</span>
-        <a href="cierres.html" class="section-link">Ver todos →</a>
+    <!-- Mantenimiento pendiente -->
+    <div>
+      <div class="section-card">
+        <div class="section-head">
+          <span class="section-title"><span class="clip"></span>Mantenimiento</span>
+          <a href="mantenimiento.html" class="section-link">Ver todos →</a>
+        </div>
+        <div id="mant-grid-body">
+          <div class="no-alerts"><span class="spinner"></span></div>
+        </div>
+        <div style="padding:.6rem 1.25rem;border-top:1px solid var(--border);">
+          <a href="mantenimiento.html" style="font-size:12px;color:var(--muted);text-decoration:none;">Nuevo reporte →</a>
+        </div>
       </div>
-      <div id="kiosko-grid-body">
-        <div class="no-alerts"><span class="spinner"></span></div>
+    </div>
+
+    <!-- Pedidos del día -->
+    <div>
+      <div class="section-card" style="margin-top:0;">
+        <div class="section-head">
+          <span class="section-title"><span class="clip"></span>Pedidos de hoy</span>
+          <span id="dia-hoy-label" style="font-size:11px;color:var(--muted);"></span>
+        </div>
+        <div id="lista-pedidos-hoy">
+          <div class="no-alerts" style="padding:1.25rem;text-align:center;font-size:12px;color:var(--subtle);">
+            <span class="spinner"></span>
+          </div>
+        </div>
+        <div style="padding:.6rem 1.25rem;border-top:1px solid var(--border);">
+          <a href="proveedores.html" style="font-size:12px;color:var(--muted);text-decoration:none;">Ver todos los proveedores →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RESUMEN HORARIO SEMANA ── -->
+  <div class="horario-resumen" id="horario-resumen-panel">
+    <div class="section-head">
+      <span class="section-title"><span class="clip"></span>Horario — semana en curso</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span id="horario-semana-lbl" style="font-size:11px;color:var(--muted);"></span>
+        <a href="horarios.html" class="section-link">Ver horario completo →</a>
+      </div>
+    </div>
+    <div class="hor-overflow">
+      <div id="horario-resumen-body" style="padding:1.25rem;text-align:center;font-size:12px;color:var(--subtle);">
+        <span class="spinner"></span>
       </div>
     </div>
   </div>
@@ -458,68 +549,29 @@ main { max-width:1080px; margin:0 auto; padding:2rem 2rem 4rem; }
   <div class="status-bar">
     <span class="sdot" id="status-dot"></span>
     <span id="status-texto">Cargando…</span>
-    <span style="margin-left:auto;color:var(--subtle);">v1.0 · Ecosistema Kioskos</span>
+    <span style="margin-left:auto;color:var(--subtle);">v2.0 · Lorito</span>
   </div>
 
 </main>
 
 <script>
-// ── CONFIG ────────────────────────────────────────────────────
-// Mismas URLs /exec usadas en cierres.html, rrhh.html, configuracion.html y
-// horarios.html (ver README.md).
-const APPS_SCRIPT_URL     = 'https://script.google.com/macros/s/AKfycbwF97oX3BogjtjGjd5ZL9OfWsdU7MDGc12CuD-TGTQUdRe6I9OR6oamsiWJD_T-xNjaWQ/exec';
-const SHEETS_URL_CIERRES  = 'https://script.google.com/macros/s/AKfycbzegddEwvSBsQ-z5RbmL8vevqjZmcgIEltb3BKAvpcwGTYNWTuwNxweN-LYKOcMKLq2Dg/exec';
-// Hoja pública "Lector Square" (Square POS) — pestaña Ventas_Por_Producto, leída vía gviz sin backend.
-const VENTAS_SHEET_ID     = '1a5CTWWVNfGbh_h0pS0OdbKBZ0l6rf_IVKhSb-6RhyUA';
-const VENTAS_SHEET_NOMBRE = 'Ventas_Por_Producto';
+// ── INIT ──────────────────────────────────────────────────────
+const hoy   = new Date();
+const pad   = n => String(n).padStart(2,'0');
+const fmt   = n => '₡' + Number(n||0).toLocaleString('es-CR',{minimumFractionDigits:0,maximumFractionDigits:0});
+const SHEET_COSTOS = '1PtT9AHv2drY7oLygHKWMhHQgeOuT20_cD_igqu6ijyA';
+const REGISTRO_SHEET_ID = '1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw';
+const SHEETS_URL_CIERRES = 'https://script.google.com/macros/s/AKfycbwp-pTaJAeZ2PPl6Xig4e8JH8tw1o6AHun4yiDxDLFFZs1tVUXlhEwNVPlQ9kDl04kh/exec';
+const CIERRES_CONTROL_DESDE = '2026-06-01';
 
-// Respaldo si todavía no hay conexión con Configuración.
-let KIOSKOS = ['Playa Grande', 'Liberia', 'Nosara', 'Playa Hermosa'];
-
-const pad = n => String(n).padStart(2,'0');
-const fmtCRC = n => '₡' + Math.round(n||0).toLocaleString('es-CR');
-
-// ── CONTROL DE ACCESO (mismo patrón que el resto del sistema) ──
-function verificarAcceso() {
-  const sesion = JSON.parse(localStorage.getItem('portal_sesion')||'null');
-  if (!sesion || (Date.now() - sesion.ts) > 8 * 60 * 60 * 1000) {
-    localStorage.removeItem('portal_sesion');
-    window.location.href = 'login.html';
-    return null;
-  }
-  return sesion;
-}
-function cerrarSesion() {
-  localStorage.removeItem('portal_sesion');
-  window.location.href = 'login.html';
-}
-function aplicarRol(sesion) {
-  const nombreEl = document.getElementById('user-nombre');
-  if (nombreEl) nombreEl.textContent = sesion.nombre;
-  if (sesion.modulos === 'todos') return;
-  document.querySelectorAll('.mod-tile[data-mod]').forEach(tile => {
-    if (!sesion.modulos.includes(tile.dataset.mod)) tile.style.display = 'none';
-  });
-  document.querySelectorAll('.nav-item').forEach(item => {
-    const visibles = item.querySelectorAll('.mod-tile:not([style*="display: none"])');
-    if (!visibles.length) item.style.display = 'none';
-  });
-  document.querySelectorAll('.quick-action[data-mod]').forEach(qa => {
-    if (!sesion.modulos.includes(qa.dataset.mod)) qa.style.display = 'none';
-  });
-}
-
-const sesionActual = verificarAcceso();
-
-// ── SALUDO Y FECHA ───────────────────────────────────────────
-const hoyDate = new Date();
-const hora = hoyDate.getHours();
+// Saludo según hora
+const hora = hoy.getHours();
 const saludo = hora < 12 ? 'Buenos días' : hora < 18 ? 'Buenas tardes' : 'Buenas noches';
-document.getElementById('saludo').textContent = saludo + (sesionActual ? ', ' + sesionActual.nombre.split(' ')[0] : '');
+document.getElementById('saludo').textContent = saludo;
 document.getElementById('fecha-hoy').textContent =
-  hoyDate.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  hoy.toLocaleDateString('es-CR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
-// ── RELOJ DEL ENCABEZADO ─────────────────────────────────────
+// ── RELOJ DEL ENCABEZADO ────────────────────────────────────────
 const DIAS_CORTOS = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
 const MESES_CORTOS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
 function tickReloj() {
@@ -530,7 +582,7 @@ function tickReloj() {
 tickReloj();
 setInterval(tickReloj, 15000);
 
-// ── MENÚ DESPLEGABLE DE MÓDULOS ──────────────────────────────
+// ── MENÚ DESPLEGABLE DE MÓDULOS ─────────────────────────────────
 function toggleNav(key) {
   document.querySelectorAll('.nav-item').forEach(item => {
     if (item.dataset.nav === key) item.classList.toggle('open');
@@ -541,237 +593,626 @@ document.addEventListener('click', e => {
   if (!e.target.closest('.nav-item')) {
     document.querySelectorAll('.nav-item.open').forEach(i => i.classList.remove('open'));
   }
-  if (!e.target.closest('.ticket.clickable') && !e.target.closest('.kpi-detail')) {
-    cerrarKpiDetail();
-  }
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     document.querySelectorAll('.nav-item.open').forEach(i => i.classList.remove('open'));
-    cerrarKpiDetail();
   }
 });
 
-// ── KPI DESPLEGABLES (personal activo / top10 ventas) ────────
-function cerrarKpiDetail() {
-  document.querySelectorAll('.kpi-detail.open').forEach(el => el.classList.remove('open'));
-  document.querySelectorAll('.ticket.clickable.open').forEach(t => t.classList.remove('open'));
-}
-function toggleKpiDetail(key) {
-  const yaAbierto = document.querySelector(`.kpi-detail[data-kpi="${key}"]`).classList.contains('open');
-  cerrarKpiDetail();
-  if (!yaAbierto) {
-    document.querySelector(`.kpi-detail[data-kpi="${key}"]`).classList.add('open');
-    document.querySelector(`.ticket.clickable[data-kpi="${key}"]`).classList.add('open');
-  }
-}
-
-// ── KPIs ──────────────────────────────────────────────────────
-function diasDesde(fechaISO) {
-  if (!fechaISO) return null;
-  const d = Math.round((new Date(new Date().toISOString().slice(0,10)+'T00:00:00') - new Date(fechaISO+'T00:00:00')) / 86400000);
-  return d;
-}
-function etiquetaDias(d) {
-  if (d == null) return 'Sin registros';
-  if (d <= 0) return 'Hoy';
-  if (d === 1) return 'Ayer';
-  return `Hace ${d} días`;
+// ── GVIZ helper ───────────────────────────────────────────────
+function gvizLoad(sheetId, hoja) {
+  return new Promise((resolve, reject) => {
+    const cb  = '_idx_' + Math.random().toString(36).slice(2,9);
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=responseHandler:${cb}&sheet=${encodeURIComponent(hoja)}`;
+    const t   = setTimeout(() => { cleanup(); reject(new Error('timeout')); }, 12000);
+    function cleanup() { clearTimeout(t); try{delete window[cb];}catch(e){} try{if(s&&s.parentNode)s.parentNode.removeChild(s);}catch(e){} }
+    window[cb] = data => {
+      cleanup();
+      const cols = (data.table.cols||[]).map(c => c.label||c.id||'');
+      const rows = (data.table.rows||[]).filter(r=>r&&r.c).map(row => {
+        const obj={};
+        cols.forEach((col,i)=>{ const cell=row.c[i]; obj[col]=cell?(cell.f!=null?cell.f:(cell.v!=null?cell.v:'')):''; });
+        return obj;
+      });
+      resolve(rows);
+    };
+    var s = document.createElement('script');
+    s.onerror = () => { cleanup(); reject(new Error('scripterror')); };
+    s.src = url;
+    document.body.appendChild(s);
+  });
 }
 
+// ── CARGAR KPIs ───────────────────────────────────────────────
 async function cargarKPIs() {
   document.getElementById('status-texto').innerHTML = '<span class="spinner"></span> Actualizando datos…';
 
-  let kioskosActivos = [];
-  let totalKioskos = 0;
-  let personalActivo = 0;
+  // 1. PRODUCTOS (localStorage)
+  const productos = JSON.parse(localStorage.getItem('costos_productos')||'[]');
+  const enUso     = productos.filter(p => p.en_uso !== false && p.en_uso !== 'false');
 
-  // 1. KIOSKOS
+  // 2. ÓRDENES DE COMPRA (localStorage)
+  const ordenes     = JSON.parse(localStorage.getItem('ordenes_compra')||'[]');
+  const enProceso   = ordenes.filter(o => o.estado === 'en_proceso');
+  const aprobadas   = ordenes.filter(o => o.estado === 'aprobada');
+  const totalOC     = ordenes.filter(o => o.estado !== 'cancelada').length;
+
+  if (enProceso.length) {
+    document.getElementById('oc-badge-qa').innerHTML = `<span class="qa-badge" style="background:var(--amber-bg);color:var(--amber);">${enProceso.length} activa${enProceso.length!==1?'s':''}</span>`;
+  }
+
+  // 3. INVENTARIO (Sheet via gviz)
   try {
-    const resp = await fetch(APPS_SCRIPT_URL + '?modulo=kioskos');
-    const data = await resp.json();
-    const registros = (data.registros && data.registros.length) ? data.registros : null;
-    if (registros) {
-      totalKioskos = registros.length;
-      kioskosActivos = registros
-        .filter(k => String(k['Activo']||'Sí').trim().toLowerCase() !== 'no')
-        .map(k => k['Kiosko']).filter(Boolean);
-    } else if (Array.isArray(data.kioskos) && data.kioskos.length) {
-      kioskosActivos = data.kioskos;
-      totalKioskos = data.kioskos.length;
+    const filasHist = await gvizLoad(SHEET_COSTOS, 'Inventarios');
+    if (filasHist.length) {
+      // Última toma
+      const ultima = filasHist[filasHist.length - 1];
+      const valor  = parseFloat(String(ultima['Valor total']||'0').replace(/[₡,\s]/g,'')) || 0;
+      const id     = String(ultima['ID']||'').trim();
+      const fecha  = String(ultima['Fecha toma']||'').trim();
+      document.getElementById('kpi-inv').textContent     = valor > 0 ? fmt(valor) : id || '—';
+      document.getElementById('kpi-inv-sub').textContent = fecha ? `${id} · ${fecha}` : id;
+
+      // Alertas de stock bajo mínimo
+      if (enUso.length) {
+        const detalle = await gvizLoad(SHEET_COSTOS, 'HISTORIAL_inventario');
+        const lineasUltima = detalle.filter(l => String(l['Toma ID']||'').trim() === id);
+        const stockMap = {};
+        lineasUltima.forEach(l => {
+          const nombre = String(l['Producto']||'').trim().toLowerCase();
+          const p      = enUso.find(x => (x.nombre||'').toLowerCase() === nombre);
+          if (!p) return;
+          const cantPres = parseFloat(p.cantidad_presentacion)||1;
+          const cerrado  = parseFloat(l['Cant. completos'])||0;
+          const abierto  = parseFloat(l['Cant. en uso'])||0;
+          stockMap[p.id] = cerrado + abierto / cantPres;
+        });
+        const bajos = enUso.filter(p => {
+          const min   = parseFloat(p.stock_minimo)||0;
+          const stock = stockMap[p.id];
+          return min > 0 && stock !== undefined && stock < min;
+        });
+        // bajos disponibles para uso futuro si se requiere
+      }
     } else {
-      kioskosActivos = KIOSKOS; totalKioskos = KIOSKOS.length;
+      document.getElementById('kpi-inv').textContent     = 'Sin datos';
+      document.getElementById('kpi-inv-sub').textContent = 'Finalizá una toma de inventario';
     }
-    if (kioskosActivos.length) KIOSKOS = kioskosActivos;
   } catch(e) {
-    kioskosActivos = KIOSKOS; totalKioskos = KIOSKOS.length;
+    document.getElementById('kpi-inv').textContent     = 'Sin conexión';
+    document.getElementById('kpi-inv-sub').textContent = 'Sheet no accesible';
   }
 
-  const listaKioskosVentas = kioskosActivos.length ? kioskosActivos : KIOSKOS;
-  document.getElementById('ventas-kiosko-body').innerHTML = listaKioskosVentas.map(nombre => `
-    <div class="kiosko-row">
-      <span class="kiosko-dot" style="background:var(--subtle);"></span>
-      <div class="kiosko-info"><div class="kiosko-nombre">${nombre}</div><div class="kiosko-meta">Aún sin ventas desglosadas por kiosko</div></div>
-      <span class="kiosko-badge kb-soon">Próximamente</span>
-    </div>`).join('');
+  // 4. Status bar
+  document.getElementById('status-dot').className = 'sdot';
+  document.getElementById('status-texto').textContent =
+    `${enUso.length} productos · ${totalOC} órdenes · actualizado ${new Date().toLocaleTimeString('es-CR')}`;
+  // Mostrar/ocultar botón admin
+  const btnAdmin = document.getElementById('btn-admin');
+  if (btnAdmin) {
+    const s = JSON.parse(localStorage.getItem('portal_sesion')||'null');
+    btnAdmin.style.display = (s && (s.rol_id === 'admin' || s.modulos === 'todos' || (Array.isArray(s.modulos) && s.modulos.includes('admin-accesos')))) ? '' : 'none';
+  }
 
-  // 2. PERSONAL
-  let personalData = [];
-  const personalBody = document.getElementById('personal-detail-body');
+  document.getElementById('status-general').textContent = `Todo en orden · ${enUso.length} productos cargados`;
+}
+
+// ── CONTROL DE ACCESO ────────────────────────────────────────
+function verificarAcceso() {
+  const sesion = JSON.parse(localStorage.getItem('portal_sesion')||'null');
+  if (!sesion || (Date.now() - sesion.ts) > 8 * 60 * 60 * 1000) {
+    localStorage.removeItem('portal_sesion');
+    window.location.href = 'login.html';
+    return null;
+  }
+  return sesion;
+}
+
+function aplicarRol(sesion) {
+  // Mostrar nombre de usuario
+  const nombreEl = document.getElementById('user-nombre');
+  if (nombreEl) nombreEl.textContent = sesion.nombre;
+
+  // Si tiene todos los módulos, no filtrar
+  if (sesion.modulos === 'todos') return;
+
+  // Ocultar tiles de módulos no permitidos
+  document.querySelectorAll('.mod-tile[data-mod]').forEach(tile => {
+    const modId = tile.dataset.mod;
+    if (!sesion.modulos.includes(modId)) {
+      tile.style.display = 'none';
+    }
+  });
+
+  // Ocultar ítems del menú superior que quedaron sin tiles visibles
+  document.querySelectorAll('.nav-item').forEach(item => {
+    const visibles = item.querySelectorAll('.mod-tile:not([style*="none"])');
+    if (!visibles.length) item.style.display = 'none';
+  });
+
+  // Ocultar acciones rápidas no permitidas
+  document.querySelectorAll('.quick-action[data-mod]').forEach(qa => {
+    if (!sesion.modulos.includes(qa.dataset.mod)) qa.style.display = 'none';
+  });
+}
+
+// ── FACTURAS CON FECHA DE HOY (proyectadas para pago) ──────────
+function limpiarMontoFactura(v) { return parseFloat(String(v||'0').replace(/[,₡\s]/g,'')) || 0; }
+
+// Convierte fechas formateadas por gviz como "D/M/YYYY" a ISO "YYYY-MM-DD".
+function isoDateFactura(str) {
+  const s = String(str||'').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return '';
+  const [, d, mo, y] = m;
+  return y + '-' + mo.padStart(2,'0') + '-' + d.padStart(2,'0');
+}
+
+let facturasHoy = [];
+
+async function cargarFacturasHoy() {
+  const card = document.getElementById('card-facturas-hoy');
   try {
-    const resp = await fetch(APPS_SCRIPT_URL + '?modulo=personal');
-    const data = await resp.json();
-    personalData = data.registros || [];
-    const activos = personalData.filter(p => (p['Estado']||'').toString().toUpperCase() === 'ACTIVO');
-    personalActivo = activos.length;
-    document.getElementById('kpi-personal').textContent = personalActivo;
-    document.getElementById('kpi-personal-sub').textContent = personalActivo + ' de ' + personalData.length + ' colaboradores';
+    const [filasFact, filasProv] = await Promise.all([
+      gvizLoad(REGISTRO_SHEET_ID, 'Registro Facturas'),
+      gvizLoad(REGISTRO_SHEET_ID, 'proveedores').catch(() => [])
+    ]);
 
-    const grupos = {};
-    activos.forEach(p => {
-      const kiosko = (p['Kiosko'] || '').toString().trim() || 'Sin kiosko asignado';
-      (grupos[kiosko] = grupos[kiosko] || []).push(p);
-    });
-    const ordenKioskos = [...kioskosActivos, 'Sin kiosko asignado'];
-    const nombresGrupos = Object.keys(grupos).sort((a, b) => {
-      const ia = ordenKioskos.indexOf(a), ib = ordenKioskos.indexOf(b);
-      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
-    });
-    personalBody.innerHTML = activos.length
-      ? nombresGrupos.map(k => `
-        <div class="kpi-group-label">${k}</div>
-        ${grupos[k].map(p => `
-          <div class="persona-row">
-            <div class="persona-nombre">${p['Nombre completo'] || '—'}</div>
-            <div class="persona-puesto">${p['Puesto'] || ''}</div>
-          </div>`).join('')}`).join('')
-      : '<div class="no-alerts">No hay personal activo registrado.</div>';
+    const hoyISO = new Date().toISOString().slice(0,10);
+    const proveedores = filasProv.map(r => ({
+      nombre_juridico: r['Nombre jurídico'] || '',
+      nombre_comercial: r['Nombre comercial'] || '',
+      cuenta: r['Cuenta'] || '',
+      condicion_pago: r['Condición de pago']
+    }));
+    const buscarProveedor = nombre => {
+      const n = (nombre||'').trim().toLowerCase();
+      if (!n) return null;
+      return proveedores.find(p => (p.nombre_juridico||'').trim().toLowerCase() === n || (p.nombre_comercial||'').trim().toLowerCase() === n) || null;
+    };
+
+    facturasHoy = filasFact
+      .filter(r => (r['Factura']||'').trim())
+      .map(r => {
+        const numero          = r['Factura'].trim();
+        const proveedorNombre = r['Proveedor'] || '';
+        const monto           = limpiarMontoFactura(r['TOTAL']);
+        const moneda          = r['Moneda'] || 'CRC';
+        const tipoCambio      = limpiarMontoFactura(r['Tipo de cambio']) || null;
+        const montoColones    = moneda === 'CRC' ? monto : (tipoCambio ? Math.round(monto * tipoCambio * 100) / 100 : null);
+        const fechaFactura    = isoDateFactura(r['Fecha']);
+        const fechaProyectada = isoDateFactura(r['Fecha proyectada de pago']);
+        const fechaRealPago   = isoDateFactura(r['Fecha de pago']);
+        const totalAbonado    = parseFloat(r['Total abonado'])||0;
+        const prov            = buscarProveedor(proveedorNombre);
+        return {
+          numero, proveedor: proveedorNombre, fechaFactura, monto, moneda, montoColones, fechaProyectada,
+          cuenta: prov ? (prov.cuenta||'') : '', condicionPago: prov ? prov.condicion_pago : '',
+          saldoPendiente: montoColones != null ? Math.round((montoColones - totalAbonado) * 100) / 100 : null,
+          cancelada: !!fechaRealPago
+        };
+      })
+      .filter(f => !f.cancelada && f.fechaProyectada === hoyISO);
+
+    if (!facturasHoy.length) { card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    document.getElementById('facturas-hoy-count').textContent = '(' + facturasHoy.length + ')';
+
+    document.getElementById('lista-facturas-hoy').innerHTML = facturasHoy.map((f, i) => `
+      <div class="fh-row" onclick="toggleDetalleFacturaHoy(${i})">
+        <div class="qa-icon ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.proveedor}</div>
+          <div style="font-size:11px;color:var(--muted);">${f.numero}</div>
+        </div>
+        <div style="font-weight:600;font-family:var(--font-d);white-space:nowrap;">
+          ${f.montoColones != null ? fmt(f.saldoPendiente) : 'US$' + f.monto.toLocaleString('es-CR',{minimumFractionDigits:2})}
+        </div>
+        <svg class="fh-arrow" id="fh-ico-${i}" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg>
+      </div>
+      <div class="fh-detalle" id="fh-det-${i}">
+        <div>Fecha de factura: <strong>${f.fechaFactura || '—'}</strong></div>
+        <div>Número de cuenta: <strong>${f.cuenta || 'Sin registrar'}</strong></div>
+        <div>Condición de pago: <strong>${f.condicionPago!=null && f.condicionPago!=='' ? f.condicionPago + ' días' : 'Sin definir'}</strong></div>
+        <div>Monto: <strong>${f.moneda === 'USD' ? 'US$' + f.monto.toLocaleString('es-CR',{minimumFractionDigits:2}) : fmt(f.monto)}</strong>${f.moneda === 'USD' && f.montoColones == null ? ' <span style="color:var(--amber);">(falta tipo de cambio)</span>' : ''}</div>
+        <div>Saldo pendiente: <strong>${f.saldoPendiente != null ? fmt(f.saldoPendiente) : '—'}</strong></div>
+      </div>`).join('');
   } catch(e) {
-    document.getElementById('kpi-personal').textContent = 'Sin conexión';
-    document.getElementById('kpi-personal-sub').textContent = 'No se pudo cargar RRHH';
-    personalBody.innerHTML = '<div class="no-alerts">No se pudo cargar el personal activo.</div>';
+    card.style.display = 'none';
+  }
+}
+
+function toggleDetalleFacturaHoy(i) {
+  const det = document.getElementById('fh-det-' + i);
+  const ico = document.getElementById('fh-ico-' + i);
+  if (!det) return;
+  const abrir = det.style.display !== 'block';
+  det.style.display = abrir ? 'block' : 'none';
+  if (ico) ico.classList.toggle('open', abrir);
+}
+
+// ── PEDIDOS DEL DÍA ────────────────────────────────────────────
+function cargarPedidosHoy() {
+  const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const diaHoy = DIAS[new Date().getDay()];
+  const diaShort = diaHoy.slice(0,2);
+
+  const labelEl = document.getElementById('dia-hoy-label');
+  if (labelEl) labelEl.textContent = diaHoy;
+
+  const proveedores = JSON.parse(localStorage.getItem('proveedores')||'[]');
+  const cont = document.getElementById('lista-pedidos-hoy');
+  if (!cont) return;
+
+  const provHoy = proveedores.filter(p => {
+    const dias = Array.isArray(p.dias_pedido) ? p.dias_pedido
+      : (p.dia_pedido ? p.dia_pedido.split(', ').filter(Boolean) : []);
+    return dias.includes(diaHoy);
+  });
+
+  if (!provHoy.length) {
+    cont.innerHTML = `<div style="padding:1.25rem;text-align:center;font-size:12px;color:var(--subtle);">
+      Sin pedidos programados para hoy</div>`;
+    return;
   }
 
-  // 3. CIERRES — último general + último por kiosko
-  const grid = document.getElementById('kiosko-grid-body');
+  cont.innerHTML = provHoy.map(p => {
+    const iniciales = (p.nombre_comercial||p.nombre_juridico||'?')
+      .split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+    const credito   = parseInt(p.condicion_pago)||0;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:.75rem 1.25rem;border-bottom:1px solid var(--border);">
+      <div style="width:32px;height:32px;border-radius:8px;background:var(--green-bg);color:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:12px;font-weight:700;flex-shrink:0;">${iniciales}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.nombre_comercial||p.nombre_juridico}</div>
+        <div style="font-size:11px;color:var(--muted);">${p.categoria||''} ${p.contacto ? '· ' + p.contacto : ''}</div>
+      </div>
+      ${credito === 0
+        ? '<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;background:var(--green-bg);color:var(--green);white-space:nowrap;">Contado</span>'
+        : `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;background:var(--amber-bg);color:var(--amber);white-space:nowrap;">${credito}d</span>`}
+    </div>`;
+  }).join('');
+}
+
+function cerrarSesion() {
+  localStorage.removeItem('portal_sesion');
+  window.location.href = 'login.html';
+}
+
+/* ── RESUMEN HORARIO SEMANA EN CURSO ── */
+const APPS_SCRIPT_RRHH = 'https://script.google.com/macros/s/AKfycbz0Awt-S-Kl9p0WtH9z9nnMkDhbLlPwxv7-p8wG4fM6hKJex3HAV_eAsbz-Qpot_OAY/exec';
+const DIAS_SEMANA = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+
+function getMondayISO() {
+  const hoy = new Date();
+  const diff = hoy.getDay() === 0 ? -6 : 1 - hoy.getDay();
+  const lun = new Date(hoy);
+  lun.setDate(hoy.getDate() + diff);
+  return lun.toISOString().slice(0,10);
+}
+
+function getWeekDatesISO_idx(semanaInicio) {
+  const base = new Date(semanaInicio + 'T00:00:00');
+  return Array.from({length:7}, (_,i) => {
+    const d = new Date(base); d.setDate(base.getDate()+i);
+    return d.toISOString().slice(0,10);
+  });
+}
+
+function horDot(registro) {
+  const est = (registro && registro['Estado']) || '';
+  const entrada = registro && registro['Hora entrada'] || '';
+  const salida  = registro && registro['Hora salida']  || '';
+  const horas   = registro ? parseFloat(registro['Horas']||0) : 0;
+
+  if (!registro || est==='trabajo' && !entrada && !salida)
+    return '<span class="hor-dot hor-vacio" title="Sin datos">·</span>';
+
+  switch(est) {
+    case 'trabajo':
+      const lbl = entrada && salida ? entrada.slice(0,5)+'–'+salida.slice(0,5) : horas.toFixed(0)+'h';
+      return '<span class="hor-dot hor-trabajo" title="'+lbl+'">'+horas.toFixed(0)+'h</span>';
+    case 'libre':      return '<span class="hor-dot hor-libre"  title="Día libre">L</span>';
+    case 'vacaciones': return '<span class="hor-dot hor-vac"    title="Vacaciones">V</span>';
+    case 'incapacidad':return '<span class="hor-dot hor-inc"    title="Incapacidad">I</span>';
+    case 'permiso':    return '<span class="hor-dot hor-perm"   title="Permiso sin goce">P</span>';
+    default:           return '<span class="hor-dot hor-otro"   title="Otro">O</span>';
+  }
+}
+
+async function cargarResumenHorario() {
+  const semana = getMondayISO();
+  const fechas = getWeekDatesISO_idx(semana);
+  const lbl = new Date(semana+'T00:00:00').toLocaleDateString('es-CR',{day:'2-digit',month:'short'})
+    + ' – ' + new Date(fechas[6]+'T00:00:00').toLocaleDateString('es-CR',{day:'2-digit',month:'short',year:'numeric'});
+  document.getElementById('horario-semana-lbl').textContent = lbl;
+
+  try {
+    const resp = await fetch(APPS_SCRIPT_RRHH + '?modulo=horarios');
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Sin datos');
+
+    const registros = (data.registros || []).filter(r => (r['Semana inicio']||'') === semana);
+
+    if (!registros.length) {
+      document.getElementById('horario-resumen-body').innerHTML =
+        '<p style="padding:1rem;font-size:12px;color:var(--muted);">No hay horario guardado para esta semana. ' +
+        '<a href="horarios.html" style="color:var(--blue);">Ir a Horarios →</a></p>';
+      return;
+    }
+
+    // Agrupar por colaborador
+    const porColab = {};
+    registros.forEach(r => {
+      const nombre = (r['Colaborador']||'').trim();
+      const fecha  = r['Fecha'] || '';
+      if (!nombre || !fecha) return;
+      if (!porColab[nombre]) porColab[nombre] = { depto: r['Departamento']||'', dias: {}, horas: 0 };
+      porColab[nombre].dias[fecha] = r;
+      porColab[nombre].horas += parseFloat(r['Horas']||0) || 0;
+    });
+
+    const colaboradores = Object.keys(porColab).sort();
+
+    let html = '<table><thead><tr>'
+      + '<th class="th-emp">Colaborador</th>'
+      + '<th class="th-dep" style="text-align:left">Depto</th>'
+      + DIAS_SEMANA.map((d,i) => '<th>'+d+'<br><span style="font-weight:400;font-size:9px;color:var(--subtle);">'+
+          new Date(fechas[i]+'T00:00:00').toLocaleDateString('es-CR',{day:'2-digit',month:'2-digit'})+'</span></th>').join('')
+      + '<th>Total</th>'
+      + '</tr></thead><tbody>';
+
+    colaboradores.forEach(nombre => {
+      const c = porColab[nombre];
+      html += '<tr>'
+        + '<td class="td-emp">' + nombre + '</td>'
+        + '<td class="td-dep">' + (c.depto||'—') + '</td>'
+        + fechas.map(f => '<td>' + horDot(c.dias[f]) + '</td>').join('')
+        + '<td class="hor-tot">' + c.horas.toFixed(1) + 'h</td>'
+        + '</tr>';
+    });
+
+    html += '</tbody></table>';
+    document.getElementById('horario-resumen-body').innerHTML = html;
+
+  } catch(e) {
+    document.getElementById('horario-resumen-body').innerHTML =
+      '<p style="padding:1rem;font-size:12px;color:var(--muted);">No se pudo cargar el horario de esta semana.</p>';
+  }
+}
+
+/* ── RESUMEN MANTENIMIENTO PENDIENTE ── */
+const MANT_URL = 'https://script.google.com/macros/s/AKfycbxbtQz5YmEstXGwcLoR29wME4gOBUVIJ9WuK_wae1jAAxZvnU4-pVPPK5uncIawspnr/exec';
+const MANT_TIPO_ICONS = {
+  'Bombillo quemado':'💡','Fuga de agua':'💧','Plantas dañadas':'🌿',
+  'Problema eléctrico':'⚡','Puerta o ventana dañada':'🚪','Baño en mal estado':'🚽',
+  'Problema con aire acondicionado':'❄️','Daño en mobiliario':'🪑',
+  'Vidrio roto':'🪟','Daño en equipo de cocina':'🍳','Plaga detectada':'🐛','Otro':'📋'
+};
+
+// Antigüedad del reporte en base a su fecha de creación.
+function calcularAntiguedadMant(fechaStr) {
+  if (!fechaStr) return '';
+  const dias = Math.round((new Date(new Date().toISOString().slice(0,10)+'T00:00:00') - new Date(fechaStr+'T00:00:00')) / 86400000);
+  if (dias <= 0) return 'Hoy';
+  if (dias === 1) return 'Hace 1 día';
+  if (dias < 7) return `Hace ${dias} días`;
+  if (dias < 30) { const s = Math.floor(dias/7); return s === 1 ? 'Hace 1 semana' : `Hace ${s} semanas`; }
+  const m = Math.floor(dias/30);
+  return m === 1 ? 'Hace 1 mes' : `Hace ${m} meses`;
+}
+
+async function cargarResumenMantenimiento() {
+  const body = document.getElementById('mant-grid-body');
+  try {
+    const resp = await fetch(MANT_URL);
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Sin datos');
+
+    const hoyStr = new Date().toISOString().slice(0,10);
+    const activos = (data.registros || [])
+      .filter(r => r['Estado'] !== 'Resuelto')
+      .map(r => ({
+        id:     String(r['ID'] || ''),
+        tipo:   r['Tipo'] || '',
+        estado: r['Estado'] || 'Pendiente',
+        fecha:  String(r['Fecha'] || '').slice(0,10),
+        encargado: r['Encargado'] || '',
+        fechaResolucion: String(r['Fecha Resolución'] || '').slice(0,10)
+      }))
+      .sort((a,b) => Number(b.id) - Number(a.id));
+
+    if (!activos.length) {
+      body.innerHTML = `<div style="padding:1rem 1.25rem;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Sin pendientes</div>`;
+      return;
+    }
+
+    body.innerHTML = activos.slice(0, 6).map(r => {
+      const icon     = MANT_TIPO_ICONS[r.tipo] || '📋';
+      const vencido  = r.fechaResolucion && r.fechaResolucion < hoyStr;
+      const badgeCls = r.estado === 'En proceso' ? 'mb-proceso' : 'mb-pendiente';
+      const fechaFmt = r.fecha ? new Date(r.fecha+'T12:00:00').toLocaleDateString('es-CR',{day:'2-digit',month:'short'}) : '';
+      const antiguedadTxt = calcularAntiguedadMant(r.fecha);
+      return `<a href="mantenimiento.html?id=${encodeURIComponent(r.id)}" class="mant-item">
+        <span class="mant-icon">${icon}</span>
+        <div class="mant-info">
+          <div class="mant-tipo">${r.tipo}</div>
+          <div class="mant-meta">${fechaFmt}${antiguedadTxt ? ' · ' + antiguedadTxt : ''}${vencido ? ' · <span class="mant-vencido">⚠ Vencido</span>' : ''}</div>
+        </div>
+        <span class="mant-badge ${badgeCls}">${r.estado}</span>
+      </a>`;
+    }).join('');
+
+  } catch(e) {
+    body.innerHTML = '<div class="no-alerts">Sin conexión</div>';
+  }
+}
+
+/* ── KPI: CONTROL DE CIERRES DE CAJA ──────────────────────────── */
+// Todos los días desde CIERRES_CONTROL_DESDE (hasta ayer) deben tener al
+// menos un cierre de caja registrado. Esta KPI cuenta cuántos NO lo tienen.
+function soloFechaIdx(fecha) { return fecha ? String(fecha).slice(0, 10) : ''; }
+
+let fechasFaltantesGlobal = [];
+
+async function cargarKPICierres() {
+  const valEl = document.getElementById('kpi-cierres');
+  const subEl = document.getElementById('kpi-cierres-sub');
+  if (!valEl) return;
   try {
     const resp = await fetch(SHEETS_URL_CIERRES + '?action=read');
     const data = await resp.json();
-    const registros = (data.records || []).map(r => ({
-      fecha: String(r[1]||'').slice(0,10),
-      kiosko: r[3] || '',
-      cajaCuadra: r[36] === 'SI',
-      tarjetaCuadra: r[39] === 'SI',
-    })).filter(r => r.fecha && r.kiosko);
+    const fechasConCierre = new Set(
+      (data.records || []).map(r => soloFechaIdx(r[1])).filter(Boolean)
+    );
 
-    if (registros.length) {
-      const ultimoGeneral = registros.reduce((a,b) => (b.fecha > a.fecha ? b : a));
-      const d = diasDesde(ultimoGeneral.fecha);
-      document.getElementById('kpi-cierre').textContent = etiquetaDias(d);
-      document.getElementById('kpi-cierre-sub').textContent = `${ultimoGeneral.kiosko} · ${ultimoGeneral.fecha}`;
-      document.getElementById('kpi-cierre').style.color = (d != null && d > 1) ? 'var(--red)' : 'var(--green)';
-      if (d != null && d > 1) {
-        document.getElementById('cierre-badge-qa').innerHTML =
-          `<span class="qa-badge" style="background:var(--amber-bg);color:var(--amber);">${d}d sin cerrar</span>`;
-      }
-    } else {
-      document.getElementById('kpi-cierre').textContent = 'Sin datos';
-      document.getElementById('kpi-cierre-sub').textContent = 'Todavía no hay cierres registrados';
+    const ayer = new Date();
+    ayer.setDate(ayer.getDate() - 1);
+    const ayerISO = ayer.toISOString().slice(0,10);
+
+    const faltantes = [];
+    const cursor = new Date(CIERRES_CONTROL_DESDE + 'T00:00:00');
+    const fin = new Date(ayerISO + 'T00:00:00');
+    while (cursor <= fin) {
+      const iso = cursor.toISOString().slice(0,10);
+      if (!fechasConCierre.has(iso)) faltantes.push(iso);
+      cursor.setDate(cursor.getDate() + 1);
     }
 
-    const porKiosko = {};
-    registros.forEach(r => {
-      if (!porKiosko[r.kiosko] || r.fecha > porKiosko[r.kiosko].fecha) porKiosko[r.kiosko] = r;
-    });
+    fechasFaltantesGlobal = faltantes;
 
-    const listaKioskos = kioskosActivos.length ? kioskosActivos : KIOSKOS;
-    grid.innerHTML = listaKioskos.map(nombre => {
-      const r = porKiosko[nombre];
-      if (!r) {
-        return `<div class="kiosko-row">
-          <span class="kiosko-dot" style="background:var(--subtle);"></span>
-          <div class="kiosko-info"><div class="kiosko-nombre">${nombre}</div><div class="kiosko-meta">Sin registros</div></div>
-          <span class="kiosko-badge kb-none">—</span>
-        </div>`;
-      }
-      const cuadra = r.cajaCuadra && r.tarjetaCuadra;
-      const dK = diasDesde(r.fecha);
-      return `<div class="kiosko-row">
-        <span class="kiosko-dot" style="background:${cuadra ? 'var(--green)' : 'var(--red)'};"></span>
-        <div class="kiosko-info"><div class="kiosko-nombre">${nombre}</div><div class="kiosko-meta">${etiquetaDias(dK)} · ${r.fecha}</div></div>
-        <span class="kiosko-badge ${cuadra ? 'kb-ok' : 'kb-warn'}">${cuadra ? 'Cuadra' : 'Revisar'}</span>
-      </div>`;
-    }).join('');
+    if (!faltantes.length) {
+      valEl.textContent = '0';
+      valEl.style.color = 'var(--green)';
+      const [y,m,d] = CIERRES_CONTROL_DESDE.split('-');
+      subEl.textContent = `Al día desde ${d}/${m}/${y}`;
+    } else {
+      valEl.textContent = String(faltantes.length);
+      valEl.style.color = 'var(--red)';
+      const recientes = faltantes.slice(-3)
+        .map(f => new Date(f+'T12:00:00').toLocaleDateString('es-CR',{day:'2-digit',month:'short'}))
+        .join(', ');
+      subEl.textContent = `Últimas: ${recientes}`;
+    }
   } catch(e) {
-    document.getElementById('kpi-cierre').textContent = 'Sin conexión';
-    document.getElementById('kpi-cierre-sub').textContent = 'No se pudo cargar Cierres';
-    grid.innerHTML = '<div class="no-alerts">No se pudo cargar el historial de cierres.</div>';
+    valEl.textContent = 'Sin conexión';
+    valEl.style.color = 'var(--muted)';
+    subEl.textContent = 'No se pudo verificar';
   }
-
-  // 4. VENTAS DE HOY + TOP 10 PRODUCTOS (hoja Ventas_Por_Producto)
-  await cargarVentasHoy();
-
-  document.getElementById('status-dot').className = 'sdot';
-  document.getElementById('status-texto').textContent =
-    `${kioskosActivos.length} kioskos activos · ${personalActivo} colaboradores · actualizado ${new Date().toLocaleTimeString('es-CR')}`;
-  document.getElementById('status-general').textContent = sesionActual
-    ? `Sesión activa · ${kioskosActivos.length} kioskos en operación`
-    : 'Cargando datos del sistema…';
 }
 
-async function cargarVentasHoy() {
-  const kpiEl  = document.getElementById('kpi-ventas-hoy');
-  const subEl  = document.getElementById('kpi-ventas-hoy-sub');
-  const topBody = document.getElementById('top-productos-body');
+function toggleFechasFaltantes() {
+  const panel = document.getElementById('panel-fechas-faltantes');
+  if (!panel) return;
+  const abrir = panel.style.display === 'none';
+  panel.style.display = abrir ? 'block' : 'none';
+  if (!abrir) return;
+
+  const lista = document.getElementById('lista-fechas-faltantes');
+  if (!fechasFaltantesGlobal.length) {
+    lista.innerHTML = '<div class="no-alerts">Sin fechas pendientes — todo al día.</div>';
+    return;
+  }
+  lista.innerHTML = fechasFaltantesGlobal
+    .slice().reverse()
+    .map(f => `<span class="fecha-chip-idx">${new Date(f+'T12:00:00').toLocaleDateString('es-CR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'})}</span>`)
+    .join('');
+}
+
+/* ── KPI: CASH EN CAJA SIN DEPÓSITO ASIGNADO ─────────────────────── */
+const COL_FECHA_CAJA = 1, COL_FONDO_CAJA = 15, COL_CAJA_CAJA = 16, COL_USD_TOTAL_CAJA = 41;
+
+let cashPendientesGlobal = [];
+
+async function cargarKPICash() {
+  const crcEl = document.getElementById('kpi-cash-crc');
+  const usdEl = document.getElementById('kpi-cash-usd');
+  const subEl = document.getElementById('kpi-cash-sub');
+  if (!crcEl) return;
   try {
-    const url = `https://docs.google.com/spreadsheets/d/${VENTAS_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(VENTAS_SHEET_NOMBRE)}`;
-    const resp = await fetch(url);
-    const texto = await resp.text();
-    const json = JSON.parse(texto.substring(texto.indexOf('{'), texto.lastIndexOf('}') + 1));
-    const filas = json.table.rows || [];
+    const [rCierres, rDepositos] = await Promise.all([
+      fetch(SHEETS_URL_CIERRES + '?action=read').then(r => r.json()),
+      fetch(SHEETS_URL_CIERRES + '?action=depositos').then(r => r.json())
+    ]);
 
-    const ahora = new Date();
-    const hoyISO = ahora.getFullYear() + '-' + pad(ahora.getMonth() + 1) + '-' + pad(ahora.getDate());
-    const porProducto = {};
-    const pedidosHoy = new Set();
-    let totalHoy = 0;
-
-    filas.forEach(fila => {
-      const c = fila.c || [];
-      const fecha = c[0] && (c[0].f || c[0].v);
-      if (fecha !== hoyISO) return;
-      const producto = (c[4] && c[4].v) || 'Sin nombre';
-      const orderId = c[3] && c[3].v;
-      const totalLinea = Number((c[9] && c[9].v) || 0);
-      totalHoy += totalLinea;
-      if (orderId) pedidosHoy.add(orderId);
-      porProducto[producto] = (porProducto[producto] || 0) + totalLinea;
+    const porFecha = {};
+    (rCierres.records || []).forEach(r => {
+      const fecha = soloFechaIdx(r[COL_FECHA_CAJA]);
+      if (!fecha) return;
+      if (!porFecha[fecha]) porFecha[fecha] = { crc: 0, usd: 0 };
+      const caja = +r[COL_CAJA_CAJA]||0, fondo = +r[COL_FONDO_CAJA]||0, usd = +r[COL_USD_TOTAL_CAJA]||0;
+      porFecha[fecha].crc += (caja - fondo);
+      porFecha[fecha].usd += usd;
     });
 
-    kpiEl.textContent = fmtCRC(totalHoy);
-    subEl.textContent = pedidosHoy.size
-      ? `${pedidosHoy.size} pedido${pedidosHoy.size === 1 ? '' : 's'} hoy`
-      : 'Sin ventas registradas hoy';
+    const fechasAsignadas = new Set();
+    (rDepositos.records || []).filter(r => r[0]).forEach(r => {
+      let fechas = [];
+      try { fechas = JSON.parse(r[6] || '[]'); } catch(e) { fechas = []; }
+      if (Array.isArray(fechas)) fechas.forEach(f => fechasAsignadas.add(f));
+    });
 
-    const top10 = Object.entries(porProducto).sort((a, b) => b[1] - a[1]).slice(0, 10);
-    topBody.innerHTML = top10.length
-      ? top10.map(([nombre, monto], i) => `
-        <div class="prod-row">
-          <span class="prod-rank">${i + 1}</span>
-          <div class="prod-info"><div class="prod-nombre">${nombre}</div></div>
-          <span class="prod-monto">${fmtCRC(monto)}</span>
-        </div>`).join('')
-      : '<div class="no-alerts">Todavía no hay ventas registradas hoy.</div>';
-  } catch (e) {
-    kpiEl.textContent = 'Sin conexión';
-    subEl.textContent = 'No se pudo cargar Ventas_Por_Producto';
-    topBody.innerHTML = '<div class="no-alerts">No se pudo cargar el top de productos.</div>';
+    let totalCrc = 0, totalUsd = 0;
+    const pendientes = [];
+    Object.keys(porFecha).forEach(f => {
+      if (fechasAsignadas.has(f)) return;
+      totalCrc += porFecha[f].crc;
+      totalUsd += porFecha[f].usd;
+      pendientes.push({ fecha: f, crc: porFecha[f].crc, usd: porFecha[f].usd });
+    });
+    pendientes.sort((a,b) => b.fecha.localeCompare(a.fecha));
+    cashPendientesGlobal = pendientes;
+
+    crcEl.textContent = '₡' + Math.round(totalCrc).toLocaleString('es-CR');
+    usdEl.textContent = '$' + totalUsd.toLocaleString('es-CR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    subEl.textContent = pendientes.length
+      ? `${pendientes.length} fecha${pendientes.length!==1?'s':''} sin depósito`
+      : 'Todo depositado';
+  } catch(e) {
+    crcEl.textContent = 'Sin conexión';
+    usdEl.textContent = '';
+    subEl.textContent = 'No se pudo verificar';
   }
 }
 
-// ── INIT ──────────────────────────────────────────────────────
-if (sesionActual) aplicarRol(sesionActual);
-cargarKPIs();
+function toggleCashDetalle() {
+  const panel = document.getElementById('panel-cash-detalle');
+  if (!panel) return;
+  const abrir = panel.style.display === 'none';
+  panel.style.display = abrir ? 'block' : 'none';
+  if (!abrir) return;
+
+  const lista = document.getElementById('lista-cash-detalle');
+  if (!cashPendientesGlobal.length) {
+    lista.innerHTML = '<div class="no-alerts">Sin fechas pendientes de depósito.</div>';
+    return;
+  }
+  lista.innerHTML = cashPendientesGlobal.map(d => `
+    <div class="cash-row">
+      <span class="cash-fecha">${new Date(d.fecha+'T12:00:00').toLocaleDateString('es-CR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'})}</span>
+      <span class="cash-montos">
+        <span>₡${Math.round(d.crc).toLocaleString('es-CR')}</span>
+        <span>$${d.usd.toLocaleString('es-CR',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
+      </span>
+    </div>
+  `).join('');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const sesion = verificarAcceso();
+  if (!sesion) return;
+  aplicarRol(sesion);
+  cargarPedidosHoy();
+  cargarKPIs();
+  cargarKPICierres();
+  cargarKPICash();
+  cargarResumenHorario();
+  cargarResumenMantenimiento();
+  cargarFacturasHoy();
+});
 </script>
 </body>
 </html>

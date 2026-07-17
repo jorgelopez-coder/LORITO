@@ -234,6 +234,12 @@ function doPost(e) {
       case 'aceptar_duplicado':
         result = aceptarDuplicado(payload);
         break;
+      case 'eliminar_linea_duplicada':
+        result = eliminarLineaDuplicada(payload);
+        break;
+      case 'aceptar_duplicado_linea':
+        result = aceptarDuplicadoLinea(payload);
+        break;
       case 'procesar_linea_compra':
         result = procesarLineaCompra(payload);
         break;
@@ -1109,6 +1115,75 @@ function aceptarDuplicado(p) {
     }
   });
   if (!marcadas) throw new Error('No se encontraron copias para marcar.');
+  return { marcadas: marcadas };
+}
+
+// ── DUPLICADOS DE LÍNEAS DE COMPRA (Desglose_IA) ──────────────────
+// Detecta líneas de producto repetidas por producto + fecha + proveedor +
+// monto (p.ej. una factura escaneada dos veces por error). Cada línea se
+// identifica por su "ordinal": la posición (1ra, 2da...) en que esa firma
+// aparece recorriendo Desglose_IA de arriba hacia abajo —el mismo orden en
+// que compras.html las lee por gviz— para poder borrar o marcar la copia
+// correcta sin depender de un ID de fila.
+function coincideLineaDesglose(fila, firma) {
+  const nombre = fila[DESGLOSE_COL.NOMBRE_NORMALIZADO - 1] || fila[DESGLOSE_COL.PRODUCTO - 1];
+  return normalizarTextoGS(nombre) === normalizarTextoGS(firma.producto) &&
+    mismaFechaGS(fila[DESGLOSE_COL.FECHA_FACTURA - 1], firma.fecha) &&
+    normalizarTextoGS(fila[DESGLOSE_COL.PROVEEDOR - 1]) === normalizarTextoGS(firma.proveedor) &&
+    mismoMontoGS(fila[DESGLOSE_COL.TOTAL_LINEA - 1], firma.monto);
+}
+
+function filaLineaDesglosePorFirma(hoja, firma, ordinal) {
+  const nFilas = hoja.getLastRow() - 1;
+  if (nFilas <= 0) return -1;
+  const datos = hoja.getRange(2, 1, nFilas, DESGLOSE_COL.FECHA_CARGA).getValues();
+  let contador = 0;
+  for (let i = 0; i < datos.length; i++) {
+    if (coincideLineaDesglose(datos[i], firma)) {
+      contador++;
+      if (contador === Number(ordinal)) return i + 2;
+    }
+  }
+  return -1;
+}
+
+function eliminarLineaDuplicada(p) {
+  if (!p.producto)     throw new Error('Falta el producto.');
+  if (!p.fecha)        throw new Error('Falta la fecha.');
+  if (!p.proveedor)    throw new Error('Falta el proveedor.');
+  if (p.monto == null) throw new Error('Falta el monto.');
+  if (!p.ordinal)      throw new Error('Falta indicar cuál copia eliminar.');
+
+  const hoja  = getHojaDesglose();
+  const firma = { producto: p.producto, fecha: p.fecha, proveedor: p.proveedor, monto: p.monto };
+  const fila  = filaLineaDesglosePorFirma(hoja, firma, p.ordinal);
+  if (fila === -1) throw new Error('No se encontró esa línea (puede que ya se haya eliminado).');
+  hoja.deleteRow(fila);
+  return { eliminado: true, fila: fila };
+}
+
+// Marca una o varias copias de una línea repetida como "duplicado aceptado":
+// quedan registradas como compras legítimas y dejan de aparecer en el control
+// de duplicados de compras.html.
+function aceptarDuplicadoLinea(p) {
+  if (!p.producto)     throw new Error('Falta el producto.');
+  if (!p.fecha)        throw new Error('Falta la fecha.');
+  if (!p.proveedor)    throw new Error('Falta el proveedor.');
+  if (p.monto == null) throw new Error('Falta el monto.');
+  if (!Array.isArray(p.ordinales) || !p.ordinales.length) throw new Error('Falta indicar cuáles copias aceptar.');
+
+  const hoja  = getHojaDesglose();
+  const col   = columnaPorNombre(hoja, 'Duplicado aceptado');
+  const firma = { producto: p.producto, fecha: p.fecha, proveedor: p.proveedor, monto: p.monto };
+  let marcadas = 0;
+  p.ordinales.forEach(function(ordinal) {
+    const fila = filaLineaDesglosePorFirma(hoja, firma, ordinal);
+    if (fila !== -1) {
+      hoja.getRange(fila, col).setValue('Sí');
+      marcadas++;
+    }
+  });
+  if (!marcadas) throw new Error('No se encontraron líneas para marcar.');
   return { marcadas: marcadas };
 }
 
