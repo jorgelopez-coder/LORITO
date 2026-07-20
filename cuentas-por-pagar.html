@@ -568,6 +568,7 @@ const hoyISO = hoy.toISOString().slice(0,10);
 
 const fmt  = n => '₡' + Number(n||0).toLocaleString('es-CR', { minimumFractionDigits:2, maximumFractionDigits:2 });
 const fmtN = n => Number(n||0).toLocaleString('es-CR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+const escapeAttr = s => String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
 
 let dataFacturas = [];   // hoja "Registro Facturas" (una fila por factura)
 let proveedores  = [];   // hoja "proveedores" del Sheet
@@ -1536,9 +1537,11 @@ function renderHistorial() {
 // automático de comprobantes) ──────────────────────────────────────
 function renderPagos() {
   const tabBadge = document.getElementById('pagos-tab-count');
-  const pendientesAsociar = dataPagos.filter(p => p['Estado'] === 'Pendiente de asociar');
-  if (pendientesAsociar.length) {
-    tabBadge.textContent = pendientesAsociar.length;
+  // Cuenta todo lo que no quedó asociado (pendientes + errores tipo "Factura
+  // no encontrada: ..."), igual criterio que separa las dos listas más abajo.
+  const sinResolver = dataPagos.filter(p => !String(p['Estado']||'').startsWith('Asociado'));
+  if (sinResolver.length) {
+    tabBadge.textContent = sinResolver.length;
     tabBadge.style.display = 'inline-flex';
   } else {
     tabBadge.style.display = 'none';
@@ -1569,12 +1572,13 @@ function renderPagos() {
     return 'factura-manual.html?' + params.toString();
   }
 
-  // Recomendación por monto: mismo margen que MONTO_TOLERANCIA en
-  // Code-compras-backend.gs (buscarFacturaParaComprobante_) — compara el
-  // monto y la moneda tal cual, sin convertir a colones, porque el TOTAL de
-  // la factura y el monto del comprobante ya están en la misma moneda cuando
-  // realmente corresponden entre sí.
-  const TOLERANCIA_MONTO_PAGO = 1;
+  // Recomendación por monto: más laxa que MONTO_TOLERANCIA en
+  // Code-compras-backend.gs (esa es solo ±1, para la asociación automática) —
+  // acá conviene un margen más ancho porque es una sugerencia para revisar a
+  // mano, no una asociación automática. Compara el monto y la moneda tal
+  // cual, sin convertir a colones, porque el TOTAL de la factura y el monto
+  // del comprobante ya están en la misma moneda cuando realmente corresponden.
+  const TOLERANCIA_MONTO_PAGO = 1000;
   function facturasRecomendadas(p) {
     const monto = Number(p['Monto']) || 0;
     const moneda = String(p['Moneda']||'CRC').toUpperCase().trim();
@@ -1584,9 +1588,13 @@ function renderPagos() {
     );
   }
 
-  function filaFacturaSinPago(f, recomendada) {
+  function filaFacturaSinPago(f, recomendada, rowId) {
+    const chkId = 'chk-' + rowId + '-' + f.numero + '-' + f.ordinal;
     return `<tr${recomendada ? ' style="background:var(--green-bg);"' : ''}>
-      <td>${f.numero}${recomendada ? ' <span class="badge b-tiempo" style="margin-left:6px;"><span class="b-dot"></span>Recomendada</span>' : ''}</td>
+      <td onclick="event.stopPropagation()">
+        <input type="checkbox" class="chk-factura-pago" id="${chkId}" data-numero="${escapeAttr(f.numero)}" data-ordinal="${f.ordinal}" ${recomendada ? 'checked' : ''}>
+      </td>
+      <td><label for="${chkId}" style="cursor:pointer;">${f.numero}</label>${recomendada ? ' <span class="badge b-tiempo" style="margin-left:6px;"><span class="b-dot"></span>Recomendada</span>' : ''}</td>
       <td style="color:var(--muted);">${f.fechaFactura||'—'}</td>
       <td>${f.proveedor||'—'}</td>
       <td class="num">${(f.moneda==='USD'?'US$':'₡') + fmtN(f.monto)}</td>
@@ -1594,8 +1602,11 @@ function renderPagos() {
   }
 
   // Arma la tabla de facturas sin pago para un comprobante puntual: las que
-  // coinciden en monto (y moneda) van primero, marcadas como recomendadas.
-  function tablaSinPagoParaPago(p) {
+  // coinciden en monto (y moneda) van primero, marcadas como recomendadas y
+  // pre-seleccionadas. Cada fila trae un checkbox para elegir a mano una o
+  // varias facturas (una transferencia puede cubrir más de una) y asignarles
+  // el pago con el botón de abajo, sin salir de la web.
+  function tablaSinPagoParaPago(p, rowId) {
     if (!facturasSinPago.length) {
       return '<div style="font-size:12px;color:var(--subtle);">No hay facturas sin pago asociado en este momento.</div>';
     }
@@ -1605,35 +1616,44 @@ function renderPagos() {
 
     const nota = recomendadas.length === 1
       ? `<div class="banner" style="background:var(--green-bg);border-color:var(--green-lt);color:var(--green);margin-bottom:10px;">
-          Coincide en monto con <strong>${recomendadas[0].numero}</strong> (${recomendadas[0].proveedor}) — es la más probable.
+          Coincide en monto con <strong>${recomendadas[0].numero}</strong> (${recomendadas[0].proveedor}) — es la más probable, ya viene marcada abajo.
         </div>`
       : recomendadas.length > 1
         ? `<div class="banner" style="background:var(--amber-bg);border-color:var(--amber-lt);color:var(--amber);margin-bottom:10px;">
-            ${recomendadas.length} facturas coinciden en este monto — revisá cuál corresponde antes de asociar.
+            ${recomendadas.length} facturas coinciden en este monto — vienen marcadas, desmarcá las que no correspondan antes de asignar.
           </div>`
         : `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Ninguna factura sin pagar coincide en monto exacto con este comprobante — puede que falte cargarla (ver "+ Factura manual").</div>`;
 
     return nota + `
       <table class="detail-table">
-        <thead><tr><th>Factura</th><th>Fecha</th><th>Proveedor</th><th style="text-align:right;">Monto</th></tr></thead>
+        <thead><tr><th></th><th>Factura</th><th>Fecha</th><th>Proveedor</th><th style="text-align:right;">Monto</th></tr></thead>
         <tbody>
-          ${recomendadas.map(f => filaFacturaSinPago(f, true)).join('')}
-          ${resto.map(f => filaFacturaSinPago(f, false)).join('')}
+          ${recomendadas.map(f => filaFacturaSinPago(f, true, rowId)).join('')}
+          ${resto.map(f => filaFacturaSinPago(f, false, rowId)).join('')}
         </tbody>
-      </table>`;
+      </table>
+      <div style="margin-top:10px;display:flex;justify-content:flex-end;" onclick="event.stopPropagation()">
+        <button type="button" class="btn-mini pago" data-link="${escapeAttr(p['Link mensaje']||'')}" onclick="asignarPagoIdentificado(this, '${rowId}')">Asignar pago a la(s) factura(s) marcada(s)</button>
+      </div>`;
   }
 
   const ordenados = [...dataPagos].sort((a,b) =>
     String(b['Fecha procesado']||'').localeCompare(String(a['Fecha procesado']||'')));
 
-  const filas = ordenados.map((p, idx) => {
+  // Ya resuelto = quedó asociado (automática o manualmente); todo lo demás
+  // ("Pendiente de asociar" o un motivo de error tipo "Factura no encontrada: ...")
+  // sigue necesitando revisión, así que se muestra siempre expandido.
+  const estaResuelto = estado => String(estado||'').startsWith('Asociado');
+  const pendientes = ordenados.filter(p => !estaResuelto(p['Estado']));
+  const asociados  = ordenados.filter(p =>  estaResuelto(p['Estado']));
+
+  function filaPago(p, idx, expandible) {
     const estado = p['Estado'] || '';
-    const pendiente = estado === 'Pendiente de asociar';
     const rowId = 'pago-' + idx;
     const montoTxt = (p['Moneda']==='USD'?'US$':'₡') + fmtN(p['Monto']);
 
     const filaPrincipal = `
-      <tr class="tr-main"${pendiente ? ` onclick="toggleDetalle('${rowId}')" style="cursor:pointer;"` : ''}>
+      <tr class="tr-main"${expandible ? ` onclick="toggleDetalle('${rowId}')" style="cursor:pointer;"` : ''}>
         <td style="color:var(--muted);font-size:12px;white-space:nowrap;">${p['Fecha comprobante']||'—'}</td>
         <td style="color:var(--muted);">${p['Banco']||'—'}</td>
         <td class="num" style="font-weight:600;">${montoTxt}</td>
@@ -1642,7 +1662,7 @@ function renderPagos() {
         <td style="font-size:12px;">${p['Factura asociada']||'—'}</td>
       </tr>`;
 
-    if (!pendiente) return filaPrincipal;
+    if (!expandible) return filaPrincipal;
 
     return filaPrincipal + `
       <tr class="tr-detail" id="${rowId}">
@@ -1654,25 +1674,100 @@ function renderPagos() {
               </div>
               <a class="btn-mini" style="text-decoration:none;" href="${urlFacturaManual(p)}" target="_blank" onclick="event.stopPropagation()">+ Factura manual</a>
             </div>
-            ${tablaSinPagoParaPago(p)}
+            ${tablaSinPagoParaPago(p, rowId)}
             <div style="margin-top:10px;font-size:11.5px;color:var(--muted);">
-              ¿Ninguna es la correcta? Puede que la factura nunca se haya ingresado —
-              usá <strong>"+ Factura manual"</strong> arriba para cargarla (con proveedor, fecha y monto ya precargados desde este comprobante) y después asociar el pago normalmente.
-              Para asociar contra una de las de arriba, abrí la hoja <strong>Pagos_Identificados</strong> y elegí la factura correcta en el desplegable de esta fila (o escribí el número a mano) — la asociación se aplica sola al guardar la celda.
+              Marcá una o varias facturas (una misma transferencia puede cubrir más de una) y usá <strong>"Asignar pago"</strong> — queda registrado directo en <strong>Registro Facturas</strong> y este pago pasa a "Asociado manualmente".
+              ¿Ninguna es la correcta? Puede que la factura nunca se haya ingresado — usá <strong>"+ Factura manual"</strong> arriba para cargarla y después asignarle el pago.
             </div>
           </div>
         </td>
       </tr>`;
-  }).join('');
+  }
 
-  document.getElementById('tabla-pagos').innerHTML = `
-    <table>
-      <thead><tr>
-        <th>Fecha comprobante</th><th>Banco</th><th style="text-align:right;">Monto</th>
-        <th>Concepto / referencia</th><th>Estado</th><th>Factura asociada</th>
-      </tr></thead>
-      <tbody>${filas}</tbody>
-    </table>`;
+  const filasPendientes = pendientes.map((p, idx) => filaPago(p, 'p' + idx, true)).join('');
+  const filasAsociados  = asociados.map((p, idx) => filaPago(p, 'a' + idx, false)).join('');
+
+  const tablaHead = `
+    <thead><tr>
+      <th>Fecha comprobante</th><th>Banco</th><th style="text-align:right;">Monto</th>
+      <th>Concepto / referencia</th><th>Estado</th><th>Factura asociada</th>
+    </tr></thead>`;
+
+  const bloquePendientes = pendientes.length ? `
+    <table>${tablaHead}<tbody>${filasPendientes}</tbody></table>`
+    : '<div class="empty">No hay pagos pendientes de asociar — al día 🎉</div>';
+
+  const bloqueAsociados = asociados.length ? `
+    <div style="border-top:1px solid var(--border);">
+      <button type="button" class="proy-toggle" style="margin:12px 12px 0;" onclick="toggleAsociadosPagos()">
+        <span id="asociados-pagos-txt">Ver pagos ya asociados (${asociados.length})</span>
+        <svg class="toggle-arrow" id="asociados-pagos-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+      </button>
+      <div id="asociados-pagos-wrap" style="display:none;padding:12px;">
+        <table>${tablaHead}<tbody>${filasAsociados}</tbody></table>
+      </div>
+    </div>` : '';
+
+  document.getElementById('tabla-pagos').innerHTML = bloquePendientes + bloqueAsociados;
+}
+
+function toggleAsociadosPagos() {
+  const wrap = document.getElementById('asociados-pagos-wrap');
+  const ico  = document.getElementById('asociados-pagos-ico');
+  const abierto = wrap.style.display !== 'none';
+  wrap.style.display = abierto ? 'none' : 'block';
+  ico.classList.toggle('open', !abierto);
+}
+
+// Asigna un pago identificado a una o varias facturas marcadas con checkbox
+// (ver tablaSinPagoParaPago() en renderPagos) — llama a Code-compras-backend.gs
+// (asociarPagoIdentificado), que ubica la fila en Pagos_Identificados por
+// "Link mensaje" y escribe Fecha de pago/Medio/Referencia en cada factura
+// elegida (mismo escribirMatchComprobante_ que usa la asociación automática).
+async function asignarPagoIdentificado(btn, rowId) {
+  const link = btn.dataset.link;
+  if (!link) {
+    showToast('Este pago no tiene un identificador único (sin link de mensaje) — asocialo desde la hoja Pagos_Identificados.', 'error');
+    return;
+  }
+  const marcadas = Array.from(document.getElementById(rowId).querySelectorAll('.chk-factura-pago:checked'));
+  if (!marcadas.length) { showToast('Marcá al menos una factura.', 'error'); return; }
+  const facturas = marcadas.map(c => ({ numero: c.dataset.numero, ordinal: Number(c.dataset.ordinal) }));
+
+  btn.disabled = true;
+  try {
+    const result = await postAP({ modulo: 'asociar_pago_identificado', link, facturas });
+
+    const pago = dataPagos.find(p => p['Link mensaje'] === link);
+    if (pago) {
+      pago['Estado'] = 'Asociado manualmente';
+      pago['Factura asociada'] = result.facturas_asociadas.join(', ');
+    }
+    const fechaISO = pago ? isoDate(pago['Fecha comprobante']) : hoyISO;
+    const medioPago = 'Transferencia' + (pago && pago['Banco'] ? ' ' + pago['Banco'] : '');
+    const referencia = pago ? (pago['Referencia'] || '') : '';
+    facturas
+      .filter(sel => result.facturas_asociadas.includes(sel.numero))
+      .forEach(sel => {
+        const f = facturasAP.find(x => x.numero === sel.numero && x.ordinal === sel.ordinal);
+        if (!f) return;
+        f.fechaRealPago = fechaISO;
+        f.medioPago = medioPago;
+        f.referenciaPago = referencia;
+        f.estado = 'Cancelada';
+        f.saldoPendiente = 0;
+      });
+
+    const msg = result.facturas_omitidas.length
+      ? `Asociado a ${result.facturas_asociadas.length} factura(s). ${result.facturas_omitidas.length} se omitieron (ya tenían fecha de pago) — revisalas en la hoja.`
+      : `Pago asociado a ${result.facturas_asociadas.length} factura(s) ✓`;
+    showToast(msg, result.facturas_omitidas.length ? 'error' : 'success');
+    inicializar();
+  } catch (e) {
+    showToast('No se pudo asignar el pago: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ── DUPLICADOS ────────────────────────────────────────────────────
