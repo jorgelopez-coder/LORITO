@@ -1569,17 +1569,59 @@ function renderPagos() {
     return 'factura-manual.html?' + params.toString();
   }
 
-  const tablaSinPagoHtml = facturasSinPago.length ? `
-    <table class="detail-table">
-      <thead><tr><th>Factura</th><th>Fecha</th><th>Proveedor</th></tr></thead>
-      <tbody>
-        ${facturasSinPago.map(f => `<tr>
-          <td>${f.numero}</td>
-          <td style="color:var(--muted);">${f.fechaFactura||'—'}</td>
-          <td>${f.proveedor||'—'}</td>
-        </tr>`).join('')}
-      </tbody>
-    </table>` : '<div style="font-size:12px;color:var(--subtle);">No hay facturas sin pago asociado en este momento.</div>';
+  // Recomendación por monto: mismo margen que MONTO_TOLERANCIA en
+  // Code-compras-backend.gs (buscarFacturaParaComprobante_) — compara el
+  // monto y la moneda tal cual, sin convertir a colones, porque el TOTAL de
+  // la factura y el monto del comprobante ya están en la misma moneda cuando
+  // realmente corresponden entre sí.
+  const TOLERANCIA_MONTO_PAGO = 1;
+  function facturasRecomendadas(p) {
+    const monto = Number(p['Monto']) || 0;
+    const moneda = String(p['Moneda']||'CRC').toUpperCase().trim();
+    return facturasSinPago.filter(f =>
+      String(f.moneda||'CRC').toUpperCase().trim() === moneda &&
+      Math.abs(f.monto - monto) <= TOLERANCIA_MONTO_PAGO
+    );
+  }
+
+  function filaFacturaSinPago(f, recomendada) {
+    return `<tr${recomendada ? ' style="background:var(--green-bg);"' : ''}>
+      <td>${f.numero}${recomendada ? ' <span class="badge b-tiempo" style="margin-left:6px;"><span class="b-dot"></span>Recomendada</span>' : ''}</td>
+      <td style="color:var(--muted);">${f.fechaFactura||'—'}</td>
+      <td>${f.proveedor||'—'}</td>
+      <td class="num">${(f.moneda==='USD'?'US$':'₡') + fmtN(f.monto)}</td>
+    </tr>`;
+  }
+
+  // Arma la tabla de facturas sin pago para un comprobante puntual: las que
+  // coinciden en monto (y moneda) van primero, marcadas como recomendadas.
+  function tablaSinPagoParaPago(p) {
+    if (!facturasSinPago.length) {
+      return '<div style="font-size:12px;color:var(--subtle);">No hay facturas sin pago asociado en este momento.</div>';
+    }
+    const recomendadas = facturasRecomendadas(p);
+    const numsRecomendados = new Set(recomendadas.map(f => f.numero + '|' + f.ordinal));
+    const resto = facturasSinPago.filter(f => !numsRecomendados.has(f.numero + '|' + f.ordinal));
+
+    const nota = recomendadas.length === 1
+      ? `<div class="banner" style="background:var(--green-bg);border-color:var(--green-lt);color:var(--green);margin-bottom:10px;">
+          Coincide en monto con <strong>${recomendadas[0].numero}</strong> (${recomendadas[0].proveedor}) — es la más probable.
+        </div>`
+      : recomendadas.length > 1
+        ? `<div class="banner" style="background:var(--amber-bg);border-color:var(--amber-lt);color:var(--amber);margin-bottom:10px;">
+            ${recomendadas.length} facturas coinciden en este monto — revisá cuál corresponde antes de asociar.
+          </div>`
+        : `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Ninguna factura sin pagar coincide en monto exacto con este comprobante — puede que falte cargarla (ver "+ Factura manual").</div>`;
+
+    return nota + `
+      <table class="detail-table">
+        <thead><tr><th>Factura</th><th>Fecha</th><th>Proveedor</th><th style="text-align:right;">Monto</th></tr></thead>
+        <tbody>
+          ${recomendadas.map(f => filaFacturaSinPago(f, true)).join('')}
+          ${resto.map(f => filaFacturaSinPago(f, false)).join('')}
+        </tbody>
+      </table>`;
+  }
 
   const ordenados = [...dataPagos].sort((a,b) =>
     String(b['Fecha procesado']||'').localeCompare(String(a['Fecha procesado']||'')));
@@ -1612,7 +1654,7 @@ function renderPagos() {
               </div>
               <a class="btn-mini" style="text-decoration:none;" href="${urlFacturaManual(p)}" target="_blank" onclick="event.stopPropagation()">+ Factura manual</a>
             </div>
-            ${tablaSinPagoHtml}
+            ${tablaSinPagoParaPago(p)}
             <div style="margin-top:10px;font-size:11.5px;color:var(--muted);">
               ¿Ninguna es la correcta? Puede que la factura nunca se haya ingresado —
               usá <strong>"+ Factura manual"</strong> arriba para cargarla (con proveedor, fecha y monto ya precargados desde este comprobante) y después asociar el pago normalmente.
