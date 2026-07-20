@@ -291,6 +291,7 @@
     <button class="tab active" onclick="switchTab('facturas',this)">Facturas</button>
     <button class="tab" onclick="switchTab('proyeccion',this)">Proyección de pagos</button>
     <button class="tab" onclick="switchTab('historial',this)">Historial</button>
+    <button class="tab" onclick="switchTab('pagos',this)">Pagos identificados <span class="filtro-badge" id="pagos-tab-count" style="display:none;background:var(--amber);"></span></button>
     <button class="tab" id="tab-btn-duplicados" onclick="switchTab('duplicados',this)">Duplicados <span class="filtro-badge" id="dup-tab-count" style="display:none;background:var(--red);"></span></button>
   </div>
 
@@ -388,6 +389,19 @@
         Pagos registrados
       </div>
       <div class="tabla-wrap" id="tabla-historial">
+        <div class="empty"><span class="spinner"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB PAGOS IDENTIFICADOS ══════════════════════════════════ -->
+  <div id="tab-pagos" style="display:none;">
+    <div class="card" style="padding:.85rem 1.25rem;margin-bottom:1rem;font-size:12.5px;color:var(--muted);">
+      Transferencias detectadas automáticamente por el lector de comprobantes (hoja <strong>Pagos_Identificados</strong>).
+      Las marcadas <strong>Pendiente de asociar</strong> no encontraron una factura sola — abrilas para ver las facturas sin pago asociado y asociar la correcta directamente en la hoja de Google Sheets.
+    </div>
+    <div class="card">
+      <div class="tabla-wrap" id="tabla-pagos">
         <div class="empty"><span class="spinner"></span></div>
       </div>
     </div>
@@ -559,6 +573,7 @@ let dataFacturas = [];   // hoja "Registro Facturas" (una fila por factura)
 let proveedores  = [];   // hoja "proveedores" del Sheet
 let dataAbonos   = [];   // hoja "Abonos" (pagos parciales)
 let dataDesglose = [];   // hoja "Desglose_IA" (líneas de producto por factura)
+let dataPagos    = [];   // hoja "Pagos_Identificados" (comprobantes leídos por el lector automático)
 let facturasAP   = [];   // dataset ya calculado (estado, saldo, etc.)
 let pagFacturas  = 1;
 const POR_PAGINA = 100;
@@ -618,11 +633,12 @@ function filaAProveedor(r) {
 async function cargarDatos() {
   document.getElementById('status-carga').innerHTML = '<span class="spinner"></span> Conectando con Google Sheets…';
   try {
-    const [dF, dP, dAb, dDes] = await Promise.all([
+    const [dF, dP, dAb, dDes, dPag] = await Promise.all([
       gvizLoad('Registro Facturas', 'Factura'),
       gvizLoad('proveedores', 'ID').catch(() => []),
       gvizLoad('Abonos', 'Monto abonado').catch(() => []),
-      gvizLoad('Desglose_IA', 'Producto').catch(() => [])
+      gvizLoad('Desglose_IA', 'Producto').catch(() => []),
+      gvizLoad('Pagos_Identificados', 'Estado').catch(() => [])
     ]);
 
     if (!dF.length) throw new Error('Sin datos en la hoja de facturas');
@@ -631,6 +647,7 @@ async function cargarDatos() {
     proveedores  = dP.filter(r => r['ID']).map(filaAProveedor);
     dataAbonos   = dAb;
     dataDesglose = dDes;
+    dataPagos    = dPag;
 
     document.getElementById('conn-dot').classList.remove('off');
     document.getElementById('conn-label').textContent = 'Conectado · Google Sheets';
@@ -646,7 +663,7 @@ async function cargarDatos() {
     document.getElementById('conn-label').textContent = 'Error de conexión';
     document.getElementById('status-carga').innerHTML =
       '<span style="color:var(--red);">✕</span> ' + e.message;
-    ['tabla-facturas','tabla-proyeccion','tabla-historial'].forEach(function(id) {
+    ['tabla-facturas','tabla-proyeccion','tabla-historial','tabla-pagos'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.innerHTML = '<div class="empty">No se pudo conectar. Verificá que el Sheet sea público (Compartir → Cualquiera con el enlace).</div>';
     });
@@ -880,6 +897,7 @@ function inicializar() {
   renderFacturas();
   renderProyeccion();
   renderHistorial();
+  renderPagos();
   renderDuplicados();
   renderSemana();
   actualizarBarraSeleccion();
@@ -1018,6 +1036,16 @@ function badgeEstado(estado) {
   };
   const cls = map[estado] || 'b-tiempo';
   return `<span class="badge ${cls}"><span class="b-dot"></span>${estado}</span>`;
+}
+
+// Estados de la hoja "Pagos_Identificados" (ver colorearFilaPagos_ en
+// Code-compras-backend.gs): asociado (verde), pendiente de asociar (ámbar),
+// cualquier otro motivo de "no encontrado" (rojo).
+function badgeEstadoPago(estado) {
+  let cls = 'b-vencida';
+  if (estado === 'Asociado automáticamente' || estado === 'Asociado manualmente') cls = 'b-tiempo';
+  else if (estado === 'Pendiente de asociar') cls = 'b-abono';
+  return `<span class="badge ${cls}"><span class="b-dot"></span>${estado || '—'}</span>`;
 }
 
 function limpiarFiltroFecha() {
@@ -1504,6 +1532,88 @@ function renderHistorial() {
     </table>`;
 }
 
+// ── PAGOS IDENTIFICADOS (hoja "Pagos_Identificados", la arma el lector
+// automático de comprobantes) ──────────────────────────────────────
+function renderPagos() {
+  const tabBadge = document.getElementById('pagos-tab-count');
+  const pendientesAsociar = dataPagos.filter(p => p['Estado'] === 'Pendiente de asociar');
+  if (pendientesAsociar.length) {
+    tabBadge.textContent = pendientesAsociar.length;
+    tabBadge.style.display = 'inline-flex';
+  } else {
+    tabBadge.style.display = 'none';
+  }
+
+  if (!dataPagos.length) {
+    document.getElementById('tabla-pagos').innerHTML = '<div class="empty">Aún no se han identificado pagos automáticamente.</div>';
+    return;
+  }
+
+  // Mismo criterio que facturasPendientes_() en Code-compras-backend.gs (sin
+  // "Fecha de pago"): son las facturas que aparecen en el desplegable de
+  // asociación manual de la hoja Pagos_Identificados.
+  const facturasSinPago = facturasAP.filter(f => !f.fechaRealPago)
+    .sort((a,b) => (a.fechaFactura||'').localeCompare(b.fechaFactura||''));
+
+  const tablaSinPagoHtml = facturasSinPago.length ? `
+    <table class="detail-table">
+      <thead><tr><th>Factura</th><th>Fecha</th><th>Proveedor</th></tr></thead>
+      <tbody>
+        ${facturasSinPago.map(f => `<tr>
+          <td>${f.numero}</td>
+          <td style="color:var(--muted);">${f.fechaFactura||'—'}</td>
+          <td>${f.proveedor||'—'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>` : '<div style="font-size:12px;color:var(--subtle);">No hay facturas sin pago asociado en este momento.</div>';
+
+  const ordenados = [...dataPagos].sort((a,b) =>
+    String(b['Fecha procesado']||'').localeCompare(String(a['Fecha procesado']||'')));
+
+  const filas = ordenados.map((p, idx) => {
+    const estado = p['Estado'] || '';
+    const pendiente = estado === 'Pendiente de asociar';
+    const rowId = 'pago-' + idx;
+    const montoTxt = (p['Moneda']==='USD'?'US$':'₡') + fmtN(p['Monto']);
+
+    const filaPrincipal = `
+      <tr class="tr-main"${pendiente ? ` onclick="toggleDetalle('${rowId}')" style="cursor:pointer;"` : ''}>
+        <td style="color:var(--muted);font-size:12px;white-space:nowrap;">${p['Fecha comprobante']||'—'}</td>
+        <td style="color:var(--muted);">${p['Banco']||'—'}</td>
+        <td class="num" style="font-weight:600;">${montoTxt}</td>
+        <td style="color:var(--muted);font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p['Concepto']||p['Referencia']||'—'}</td>
+        <td>${badgeEstadoPago(estado)}</td>
+        <td style="font-size:12px;">${p['Factura asociada']||'—'}</td>
+      </tr>`;
+
+    if (!pendiente) return filaPrincipal;
+
+    return filaPrincipal + `
+      <tr class="tr-detail" id="${rowId}">
+        <td class="detail-cell" colspan="6">
+          <div class="detail-inner">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;">
+              Facturas sin pago asociado (${facturasSinPago.length})
+            </div>
+            ${tablaSinPagoHtml}
+            <div style="margin-top:10px;font-size:11.5px;color:var(--muted);">
+              Para asociar este pago abrí la hoja <strong>Pagos_Identificados</strong> y elegí la factura correcta en el desplegable de esta fila (o escribí el número a mano) — la asociación se aplica sola al guardar la celda.
+            </div>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('tabla-pagos').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Fecha comprobante</th><th>Banco</th><th style="text-align:right;">Monto</th>
+        <th>Concepto / referencia</th><th>Estado</th><th>Factura asociada</th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+}
+
 // ── DUPLICADOS ────────────────────────────────────────────────────
 // Agrupa por número de Factura los registros repetidos en la hoja
 // "Registro Facturas" (ya calculado en facturasAP con el campo `ordinal`,
@@ -1760,7 +1870,7 @@ function renderPaginacion(id, total, pag, cb) {
 
 // ── TABS ──────────────────────────────────────────────────────────
 function switchTab(tab, el) {
-  ['facturas','proyeccion','historial','duplicados'].forEach(t =>
+  ['facturas','proyeccion','historial','pagos','duplicados'].forEach(t =>
     document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none');
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
