@@ -1555,6 +1555,20 @@ function renderPagos() {
   const facturasSinPago = facturasAP.filter(f => !f.fechaRealPago)
     .sort((a,b) => (a.fechaFactura||'').localeCompare(b.fechaFactura||''));
 
+  // Si ninguna factura sin pagar calza con este comprobante, probablemente la
+  // factura nunca se ingresó al sistema — atajo a factura-manual.html con lo
+  // que ya se conoce del pago precargado (mismo patrón que agregarProveedorRapido()).
+  function urlFacturaManual(p) {
+    const params = new URLSearchParams();
+    if (p['Número factura detectado']) params.set('numero', p['Número factura detectado']);
+    const fechaIso = isoDate(p['Fecha comprobante']);
+    if (fechaIso) params.set('fecha', fechaIso);
+    if (p['Nombre cuenta destino']) params.set('proveedor', p['Nombre cuenta destino']);
+    if (p['Moneda']) params.set('moneda', p['Moneda']);
+    if (p['Monto']) params.set('total', p['Monto']);
+    return 'factura-manual.html?' + params.toString();
+  }
+
   const tablaSinPagoHtml = facturasSinPago.length ? `
     <table class="detail-table">
       <thead><tr><th>Factura</th><th>Fecha</th><th>Proveedor</th></tr></thead>
@@ -1592,12 +1606,17 @@ function renderPagos() {
       <tr class="tr-detail" id="${rowId}">
         <td class="detail-cell" colspan="6">
           <div class="detail-inner">
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;">
-              Facturas sin pago asociado (${facturasSinPago.length})
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px;">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">
+                Facturas sin pago asociado (${facturasSinPago.length})
+              </div>
+              <a class="btn-mini" style="text-decoration:none;" href="${urlFacturaManual(p)}" target="_blank" onclick="event.stopPropagation()">+ Factura manual</a>
             </div>
             ${tablaSinPagoHtml}
             <div style="margin-top:10px;font-size:11.5px;color:var(--muted);">
-              Para asociar este pago abrí la hoja <strong>Pagos_Identificados</strong> y elegí la factura correcta en el desplegable de esta fila (o escribí el número a mano) — la asociación se aplica sola al guardar la celda.
+              ¿Ninguna es la correcta? Puede que la factura nunca se haya ingresado —
+              usá <strong>"+ Factura manual"</strong> arriba para cargarla (con proveedor, fecha y monto ya precargados desde este comprobante) y después asociar el pago normalmente.
+              Para asociar contra una de las de arriba, abrí la hoja <strong>Pagos_Identificados</strong> y elegí la factura correcta en el desplegable de esta fila (o escribí el número a mano) — la asociación se aplica sola al guardar la celda.
             </div>
           </div>
         </td>

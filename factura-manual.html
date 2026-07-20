@@ -159,6 +159,21 @@ document.getElementById('date-chip').textContent =
 const hoyISO = hoy.toISOString().slice(0,10);
 document.getElementById('f-fecha').value = hoyISO;
 
+// Precarga desde un pago identificado sin factura asociada (ver
+// urlFacturaManual() en cuentas-por-pagar.html, pestaña "Pagos identificados") —
+// mismo patrón de acceso rápido que agregarProveedorRapido() en proveedores.html.
+(function precargarDesdeQuery() {
+  const params = new URLSearchParams(location.search);
+  if (![...params.keys()].length) return;
+  if (params.get('numero'))    document.getElementById('f-numero').value = params.get('numero');
+  if (params.get('fecha'))     document.getElementById('f-fecha').value = params.get('fecha');
+  if (params.get('proveedor')) document.getElementById('f-proveedor').value = params.get('proveedor');
+  if (params.get('moneda'))    document.getElementById('f-moneda').value = params.get('moneda');
+  if (params.get('total'))     document.getElementById('f-total').value = params.get('total');
+  document.querySelector('.banner-nota div').textContent =
+    'Precargada desde un pago identificado sin factura asociada — revisá los datos (sobre todo el proveedor y el número de factura) antes de guardar.';
+})();
+
 function getProveedores() { try { return JSON.parse(localStorage.getItem('proveedores')||'[]'); } catch { return []; } }
 
 (function cargarProveedores() {
