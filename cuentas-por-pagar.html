@@ -601,7 +601,10 @@ function gvizLoad(hoja, expectedCol) {
     window[cb] = function(data) {
       cleanup();
       try {
-        var cols = (data.table.cols||[]).map(function(c){ return c.label||c.id||''; });
+        // .trim() por si el encabezado del Sheet trae espacios extra al final
+        // (pasó en Pagos_Identificados: "Estado " en vez de "Estado", lo que
+        // hacía fallar esta validación y dejaba dataPagos vacío en silencio).
+        var cols = (data.table.cols||[]).map(function(c){ return String(c.label||c.id||'').trim(); });
         if (expectedCol && cols.indexOf(expectedCol) === -1) { resolve([]); return; }
         var rows = (data.table.rows||[]).filter(function(r){ return r&&r.c; }).map(function(row){
           var obj = {};
