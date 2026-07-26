@@ -115,6 +115,7 @@
     .btn-mini.abono { border-color:var(--amber-lt); background:var(--amber-bg); color:var(--amber); }
     .btn-mini.abono:hover { background:var(--amber); color:#fff; }
     .btn-mini:disabled { opacity:.4; cursor:default; }
+    .btn-mini.vista-activa { background:var(--text); color:var(--card); border-color:var(--text); }
 
     #btn-toggle-filtros.activo { border-color:var(--green-lt); background:var(--green-bg); color:var(--green); }
     .filtro-badge { display:inline-flex; align-items:center; justify-content:center; min-width:16px; height:16px; padding:0 4px; border-radius:20px; background:var(--green); color:#fff; font-size:10px; font-weight:700; }
@@ -358,6 +359,11 @@
     <div class="card" id="seleccion-bar" style="display:none;padding:.75rem 1.25rem;margin-bottom:12px;background:var(--green-bg);border-color:var(--green-lt);align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
       <span style="font-size:13px;color:var(--green);"><strong id="sel-count">0</strong> factura(s) seleccionada(s)</span>
       <span style="font-size:14px;font-weight:700;color:var(--green);font-family:var(--font-d);">Total: <span id="sel-total">₡0,00</span></span>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <label for="sel-fecha-proyectada" style="font-size:12px;color:var(--green);white-space:nowrap;">Fecha proyectada de pago:</label>
+        <input type="date" id="sel-fecha-proyectada">
+        <button class="btn-mini" id="sel-fecha-btn" style="border-color:var(--green-lt);background:var(--green);color:#fff;" onclick="aplicarFechaProyectadaMasiva()">Aplicar a seleccionadas</button>
+      </div>
       <button class="btn-mini" onclick="limpiarSeleccion()">Limpiar selección</button>
     </div>
 
@@ -372,8 +378,14 @@
   <!-- ══ TAB PROYECCIÓN ═══════════════════════════════════════════ -->
   <div id="tab-proyeccion" style="display:none;">
     <div class="card">
-      <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:1rem 1.25rem;border-bottom:1px solid var(--border);">
-        Línea de tiempo de pagos proyectados
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:1rem 1.25rem;border-bottom:1px solid var(--border);">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);">
+          Proyección de pagos
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-mini vista-activa" id="vista-btn-proveedor" onclick="cambiarVistaProyeccion('proveedor')">Por proveedor</button>
+          <button class="btn-mini" id="vista-btn-linea" onclick="cambiarVistaProyeccion('linea')">Línea de tiempo</button>
+        </div>
       </div>
       <div class="tabla-wrap" id="tabla-proyeccion">
         <div class="empty"><span class="spinner"></span></div>
@@ -1396,8 +1408,125 @@ function actualizarBarraSeleccion() {
   bar.style.display = 'flex';
 }
 
-// ── RENDER PROYECCIÓN (línea de tiempo: columnas = fechas, filas = proveedor/factura) ──
+// ── RENDER PROYECCIÓN: dispatcher entre las dos vistas disponibles ──
+let vistaProyeccion = 'proveedor'; // 'proveedor' | 'linea'
+
 function renderProyeccion() {
+  if (vistaProyeccion === 'linea') renderProyeccionLinea();
+  else renderProyeccionProveedor();
+}
+
+function cambiarVistaProyeccion(vista) {
+  vistaProyeccion = vista;
+  document.getElementById('vista-btn-proveedor').classList.toggle('vista-activa', vista === 'proveedor');
+  document.getElementById('vista-btn-linea').classList.toggle('vista-activa', vista === 'linea');
+  renderProyeccion();
+}
+
+// ── VISTA "POR PROVEEDOR": agrupa las facturas proyectadas por proveedor,
+// totaliza el saldo pendiente de cada uno y permite desglosar (clic en la
+// fila) para ver las facturas individuales que componen ese total. ──
+function renderProyeccionProveedor() {
+  const pendientes = facturasAP.filter(f => f.estado !== 'Cancelada');
+  const conFecha = pendientes.filter(f => f.fechaProyectada);
+
+  if (!conFecha.length) {
+    document.getElementById('tabla-proyeccion').innerHTML = '<div class="empty">Ninguna factura pendiente tiene fecha proyectada todavía.</div>';
+    document.getElementById('proyeccion-resumen').innerHTML = '';
+    return;
+  }
+
+  const grupos = {};
+  conFecha.forEach(f => {
+    if (!grupos[f.proveedor]) grupos[f.proveedor] = { proveedor: f.proveedor, facturas: [], total: 0 };
+    grupos[f.proveedor].facturas.push(f);
+    grupos[f.proveedor].total += f.saldoPendiente;
+  });
+
+  const listaGrupos = Object.values(grupos).map(g => {
+    g.facturas.sort((a,b) => a.fechaProyectada.localeCompare(b.fechaProyectada) || a.numero.localeCompare(b.numero));
+    g.proximaFecha = g.facturas[0].fechaProyectada;
+    return g;
+  }).sort((a,b) => a.proximaFecha.localeCompare(b.proximaFecha) || a.proveedor.localeCompare(b.proveedor));
+
+  const totalGeneral = listaGrupos.reduce((a,g) => a + g.total, 0);
+
+  const filasHtml = listaGrupos.map((g, idx) => {
+    const gid = 'provgrp-' + idx;
+    const filasFacturas = g.facturas.map(f => `
+      <tr>
+        <td style="color:var(--muted);font-size:12px;">${f.fechaProyectada}</td>
+        <td style="font-size:12px;color:var(--muted);">${f.numero}</td>
+        <td>${badgeEstado(f.estado)}</td>
+        <td class="num">${fmt(f.saldoPendiente)}</td>
+        <td style="white-space:nowrap;">
+          <button class="btn-mini pago" onclick="event.stopPropagation();abrirModalPago('${f.numero}')">Pago total</button>
+          <button class="btn-mini abono" onclick="event.stopPropagation();abrirModalAbono('${f.numero}')">Abono</button>
+        </td>
+      </tr>`).join('');
+
+    return `
+      <tr class="tr-main" onclick="toggleDetalle('${gid}')">
+        <td style="font-weight:500;">${g.proveedor}</td>
+        <td class="num">${g.facturas.length}</td>
+        <td style="color:var(--muted);font-size:12px;white-space:nowrap;">${g.proximaFecha}</td>
+        <td class="num" style="font-weight:700;color:var(--green);">${fmt(g.total)}</td>
+        <td onclick="event.stopPropagation()" style="white-space:nowrap;">
+          <button class="btn-mini" style="border-color:#25D36680;background:#25D36615;color:#128C4A;" onclick="enviarWhatsAppProveedor('${g.proveedor.replace(/'/g,"\\'")}')">WhatsApp</button>
+        </td>
+      </tr>
+      <tr class="tr-detail" id="${gid}">
+        <td class="detail-cell" colspan="5">
+          <div class="detail-inner">
+            <table class="detail-table">
+              <thead><tr><th>Fecha proyectada</th><th>Factura</th><th>Estado</th><th style="text-align:right;">Saldo</th><th>Acción</th></tr></thead>
+              <tbody>${filasFacturas}</tbody>
+            </table>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('tabla-proyeccion').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Proveedor</th><th style="text-align:right;">Facturas</th><th>Próxima fecha</th><th style="text-align:right;">Total</th><th>Acción</th>
+      </tr></thead>
+      <tbody>${filasHtml}</tbody>
+      <tfoot>
+        <tr style="background:var(--surface);">
+          <td style="font-weight:700;">Total general</td>
+          <td class="num" style="font-weight:700;">${conFecha.length}</td>
+          <td></td>
+          <td class="num" style="font-weight:700;color:var(--green);">${fmt(totalGeneral)}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>`;
+
+  document.getElementById('proyeccion-resumen').innerHTML = `
+    ${listaGrupos.length} proveedor${listaGrupos.length!==1?'es':''} ·
+    ${conFecha.length} factura${conFecha.length!==1?'s':''} · Total: <strong style="color:var(--green);">${fmt(totalGeneral)}</strong>
+    · Hacé clic en un proveedor para ver el desglose de facturas.`;
+}
+
+// Arma el mensaje de WhatsApp con las facturas proyectadas de un proveedor
+// (todas las fechas juntas) y abre el chat, igual que enviarWhatsAppDia
+// pero agrupado por proveedor en vez de por fecha.
+function enviarWhatsAppProveedor(proveedor) {
+  const facturasProv = facturasAP
+    .filter(f => f.estado !== 'Cancelada' && f.fechaProyectada && f.proveedor === proveedor)
+    .sort((a,b) => a.fechaProyectada.localeCompare(b.fechaProyectada));
+  if (!facturasProv.length) { showToast('No hay facturas proyectadas para ese proveedor.', 'error'); return; }
+
+  const totalProv = facturasProv.reduce((a,f) => a + f.saldoPendiente, 0);
+  const lineas = facturasProv.map(f => `• ${f.numero} (${f.fechaProyectada}): ${fmt(f.saldoPendiente)}`).join('\n');
+  const mensaje = `Facturas de ${proveedor} listas para ser canceladas:\n\n${lineas}\n\nTotal: ${fmt(totalProv)}`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(mensaje), '_blank');
+}
+
+// ── VISTA "LÍNEA DE TIEMPO" (columnas = fechas, filas = proveedor/factura) ──
+function renderProyeccionLinea() {
   const pendientes = facturasAP.filter(f => f.estado !== 'Cancelada');
   const conFecha = pendientes.filter(f => f.fechaProyectada);
 
@@ -2079,6 +2208,49 @@ async function guardarProyeccionFactura(numero, fecha, rowId) {
   } catch(e) {
     showToast('No se pudo guardar: ' + e.message, 'error');
   }
+}
+
+// Aplica una misma fecha proyectada de pago a todas las facturas marcadas
+// con checkbox en la tabla (barra de selección). Guarda cada una en paralelo
+// contra el backend y refresca ambas vistas al terminar.
+async function aplicarFechaProyectadaMasiva() {
+  const fechaInput = document.getElementById('sel-fecha-proyectada');
+  const fecha = fechaInput.value;
+  if (!fecha) { showToast('Elegí una fecha primero.', 'error'); return; }
+
+  const numeros = [...seleccionadas].filter(n => {
+    const f = facturaPorNumero(n);
+    return f && f.estado !== 'Cancelada';
+  });
+  if (!numeros.length) { showToast('No hay facturas seleccionadas que se puedan actualizar.', 'error'); return; }
+
+  const btn = document.getElementById('sel-fecha-btn');
+  const textoOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Aplicando…';
+
+  const resultados = await Promise.allSettled(numeros.map(numero => {
+    const f = facturaPorNumero(numero);
+    return postAP({
+      modulo: 'guardar_proyeccion',
+      numero_factura: numero, ordinal: f.ordinal, proveedor: f.proveedor, fecha_factura: f.fechaFactura,
+      monto: f.monto, fecha_proyectada: fecha
+    }).then(() => { f.fechaProyectada = fecha; });
+  }));
+
+  const ok   = resultados.filter(r => r.status === 'fulfilled').length;
+  const fail = resultados.length - ok;
+  showToast(
+    fail ? `Fecha aplicada a ${ok} factura(s), ${fail} fallaron` : `Fecha proyectada aplicada a ${ok} factura(s) ✓`,
+    fail ? 'error' : 'success'
+  );
+
+  fechaInput.value = '';
+  btn.disabled = false;
+  btn.textContent = textoOriginal;
+
+  _renderFacturas();
+  renderProyeccion();
 }
 
 // ── TIPO DE CAMBIO (solo facturas en USD) ─────────────────────────
