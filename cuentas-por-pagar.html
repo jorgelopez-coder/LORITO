@@ -1467,7 +1467,7 @@ function renderProyeccionProveedor() {
 
     return `
       <tr class="tr-main" onclick="toggleDetalle('${gid}')">
-        <td style="font-weight:500;">${g.proveedor}</td>
+        <td style="font-weight:500;">${g.proveedor} <span style="font-weight:400;font-size:11px;color:var(--muted);">(Cta: ${g.facturas[0].cuentaProveedor||'sin registrar'})</span></td>
         <td class="num">${g.facturas.length}</td>
         <td style="color:var(--muted);font-size:12px;white-space:nowrap;">${g.proximaFecha}</td>
         <td class="num" style="font-weight:700;color:var(--green);">${fmt(g.total)}</td>
@@ -1563,7 +1563,7 @@ function renderProyeccionLinea() {
       ).join('');
       return `<tr>
         <td style="${colFija}background:var(--card);white-space:nowrap;">
-          <div style="font-weight:500;">${f.proveedor}</div>
+          <div style="font-weight:500;">${f.proveedor} <span style="font-weight:400;font-size:11px;color:var(--muted);">(Cta: ${f.cuentaProveedor||'sin registrar'})</span></div>
           <div style="font-size:11px;color:var(--muted);">${f.numero}</div>
         </td>
         ${celdas}
