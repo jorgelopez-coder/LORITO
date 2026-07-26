@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Solicitud de Vacaciones · RRHH · Grupo del Sol</title>
+  <title>Solicitud de Vacaciones · RRHH · Ecosistema Kioskos</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
@@ -202,7 +202,7 @@
   <div class="status-bar">
     <span id="status-msg">Listo</span>
     <span class="ssep"></span>
-    <span style="margin-left:auto;">v1.0 · RRHH · Grupo del Sol</span>
+    <span style="margin-left:auto;">v1.0 · RRHH · Ecosistema Kioskos</span>
   </div>
 </main>
 
@@ -213,7 +213,22 @@
 
 <script>
 // ─── CONFIGURACIÓN ──────────────────────────────────────────────
-const APPS_SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbz0Awt-S-Kl9p0WtH9z9nnMkDhbLlPwxv7-p8wG4fM6hKJex3HAV_eAsbz-Qpot_OAY/exec'; // URL de tu Apps Script
+// ── CONTROL DE ACCESO (rol + kiosko permitido, ver admin-accesos.html) ──
+const PORTAL_SESION = JSON.parse(localStorage.getItem('portal_sesion')||'null');
+if (!PORTAL_SESION || (Date.now() - PORTAL_SESION.ts) >= 8 * 60 * 60 * 1000) {
+  localStorage.removeItem('portal_sesion');
+  window.location.href = 'login.html';
+}
+if (PORTAL_SESION && PORTAL_SESION.modulos !== 'todos' && !PORTAL_SESION.modulos.includes('rrhh-vacaciones')) {
+  alert('Tu usuario no tiene acceso a este módulo.');
+  window.location.href = 'index.html';
+}
+// Filtra una lista de nombres de kiosko según lo que el rol tiene permitido.
+function kioskosPermitidos(lista) {
+  if (!PORTAL_SESION || PORTAL_SESION.kioskos === 'todos') return lista;
+  return (lista || []).filter(k => PORTAL_SESION.kioskos.includes(k));
+}
+const APPS_SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbwF97oX3BogjtjGjd5ZL9OfWsdU7MDGc12CuD-TGTQUdRe6I9OR6oamsiWJD_T-xNjaWQ/exec'; // URL de tu Apps Script
 const EMAIL_GERENCIA   = ''; // Correo de gerencia para notificaciones
 // ────────────────────────────────────────────────────────────────
 
@@ -290,10 +305,11 @@ function cargarBalance() {
 }
 
 function diasHabiles(desde, hasta) {
+  // "hasta" es la fecha de regreso, no se cuenta como día de vacaciones
   let count = 0;
   const cur = new Date(desde);
   cur.setDate(cur.getDate()); // incluir día inicio
-  while (cur <= hasta) {
+  while (cur < hasta) {
     const d = cur.getDay();
     if (d !== 0 && d !== 6) count++;
     cur.setDate(cur.getDate() + 1);

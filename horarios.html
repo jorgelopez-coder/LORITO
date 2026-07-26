@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Horario de trabajo · Grupo del Sol</title>
+<title>Horario de trabajo · Ecosistema Kioskos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
@@ -73,10 +73,14 @@ tbody tr:last-child td{border-bottom:none}
 .sp-bg{background:var(--per-bg)!important;color:var(--per-text)}
 .sl-bg{background:var(--lib-bg)!important;color:var(--lib-text)}
 .auto-tag{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;opacity:.7;margin-top:-2px}
+.cover-tag{font-size:10px;font-weight:600;color:var(--accent);margin-top:1px}
 .btn-extra{font-size:13px;line-height:1;width:20px;height:20px;border-radius:50%;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center}
 .btn-extra:hover{background:var(--surface2);color:var(--text)}
 .btn-quitar{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;border:1px solid currentColor;background:transparent;color:inherit;opacity:.75;cursor:pointer}
 .btn-quitar:hover{opacity:1}
+.th-copy-btn{font-size:9px;font-weight:600;padding:2px 7px;border-radius:12px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;margin-top:4px;white-space:nowrap}
+.th-copy-btn:hover{background:var(--surface2);color:var(--text)}
+.th-copy-btn:disabled{opacity:.35;cursor:not-allowed}
 .extra-popover{position:fixed;z-index:300;display:none;flex-direction:column;gap:2px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);box-shadow:0 6px 24px rgba(0,0,0,.14);padding:5px;min-width:165px}
 .extra-popover button{font-size:12px;font-family:inherit;text-align:left;padding:7px 9px;border:none;background:transparent;border-radius:6px;cursor:pointer;color:var(--text)}
 .extra-popover button:hover{background:var(--surface2)}
@@ -112,8 +116,27 @@ tbody tr:last-child td{border-bottom:none}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;padding:10px 18px;border-radius:var(--radius);font-size:13px;font-weight:500;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;z-index:999}
 .toast.show{opacity:1;transform:translateY(0)}
 .export-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.coverage-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:20px;box-shadow:var(--shadow)}
+.coverage-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:8px}
+.coverage-title{font-size:14px;font-weight:600;color:var(--text)}
+.coverage-hint{font-size:11px;color:var(--text3);margin-bottom:12px}
+.coverage-legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.coverage-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
+.coverage-legend-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.cov-day{margin-bottom:20px}
+.cov-day:last-child{margin-bottom:0}
+.cov-day-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px}
+.cov-ruler{display:flex;margin-left:132px;font-size:9px;color:var(--text3);border-bottom:1px solid var(--border);padding-bottom:3px;margin-bottom:5px;position:relative;height:12px}
+.cov-ruler span{position:absolute;transform:translateX(-50%)}
+.cov-row{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+.cov-row-label{width:124px;flex-shrink:0;font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cov-row-track{position:relative;flex:1;height:22px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.cov-bar{position:absolute;top:2px;bottom:2px;border-radius:3px;font-size:9px;color:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:nowrap;font-weight:600;padding:0 2px}
+.cov-total{margin-top:5px}
+.cov-total .cov-row-label{font-weight:600;color:var(--text)}
+.cov-empty{font-size:11px;color:var(--text3);padding:6px 0 6px 132px}
 @media print{
-  header,.week-bar .btn,.week-bar input,.toolbar,.add-panel,.export-row,.btn-danger,.status-bar,.banner,.legend,.st-sel,.note-ta,#metrics{display:none!important}
+  header,.week-bar .btn,.week-bar input,.toolbar,.add-panel,.export-row,.btn-danger,.status-bar,.banner,.legend,.st-sel,.note-ta,.th-copy-btn,#metrics,.coverage-section{display:none!important}
   .note-print{display:block!important}
   .tbl-wrap{border:none;overflow:visible}
   body{background:white}
@@ -154,6 +177,8 @@ tbody tr:last-child td{border-bottom:none}
     </div>
   </div>
 
+  <div class="tabs" id="kiosko-tabs" style="display:none"></div>
+
   <div id="status-bar" class="status-bar" style="display:none"></div>
 
   <div id="import-banner" class="banner banner-vac">
@@ -165,9 +190,10 @@ tbody tr:last-child td{border-bottom:none}
     <label style="margin:0;font-size:13px;color:var(--text2)">Departamento:</label>
     <select id="filter-area" onchange="renderSched()"><option value="">Todos los departamentos</option></select>
     <div class="toolbar-right">
+      <button class="btn btn-sm" id="btn-copy-week" onclick="copiarSemanaAnterior()">&#10697; Copiar semana anterior</button>
       <button class="btn btn-sm" id="btn-add-extra" onclick="toggleAddPanel()">+ Empleado extra</button>
+      <button class="btn btn-sm" id="btn-add-cover" onclick="toggleCoverPanel()">&#8644; Colaborador de otro kiosko</button>
       <button class="btn btn-sm btn-primary" id="btn-guardar-semana" onclick="guardarSemana()">&#128190; Guardar semana</button>
-      <button class="btn btn-sm" onclick="window.print()">&#9113; Imprimir</button>
     </div>
   </div>
 
@@ -182,6 +208,15 @@ tbody tr:last-child td{border-bottom:none}
     </div>
   </div>
 
+  <div class="add-panel" id="cover-panel">
+    <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text2)">Traer colaborador de otro kiosko para cubrir turno</div>
+    <div class="add-panel-grid">
+      <div class="field"><label>Colaborador (kiosko de origen)</label><select id="cover-emp-select" style="width:280px"></select></div>
+      <button class="btn btn-primary" onclick="addCoverEmp()">Agregar</button>
+      <button class="btn btn-ghost" onclick="toggleCoverPanel()">Cancelar</button>
+    </div>
+  </div>
+
   <div class="legend" id="legend" style="display:none">
     <span style="font-size:11px;font-weight:500;color:var(--text3)">Referencias:</span>
     <span class="legend-item"><span class="legend-dot" style="background:var(--vac-bg);border:1px solid var(--vac-border)"></span>Vacaciones (auto)</span>
@@ -193,6 +228,13 @@ tbody tr:last-child td{border-bottom:none}
 
   <div id="sched-container"></div>
   <div class="metrics" id="metrics" style="display:none"></div>
+
+  <div class="coverage-section" id="coverage-section" style="display:none">
+    <div class="coverage-head"><div class="coverage-title">&#128202; Cobertura semanal por horas</div></div>
+    <div class="coverage-hint">Cada color de barra es una persona. La fila &ldquo;Cobertura&rdquo; muestra cu&aacute;ntas personas hay trabajando en cada franja horaria (m&aacute;s oscuro = m&aacute;s gente cubriendo, gris = nadie).</div>
+    <div class="coverage-legend" id="coverage-legend"></div>
+    <div id="coverage-days"></div>
+  </div>
 
   <div class="export-row" id="export-row" style="display:none">
     <button class="btn" id="btn-pdf" onclick="descargarPDF()" disabled title="Cerrá el horario para habilitar la exportación">&darr; Descargar PDF</button>
@@ -210,7 +252,47 @@ tbody tr:last-child td{border-bottom:none}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 // Mismo Apps Script de RRHH que usan rrhh-vacaciones.html / rrhh-control-vacaciones.html / rrhh-personal.html
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz0Awt-S-Kl9p0WtH9z9nnMkDhbLlPwxv7-p8wG4fM6hKJex3HAV_eAsbz-Qpot_OAY/exec';
+// ── CONTROL DE ACCESO (rol + kiosko permitido, ver admin-accesos.html) ──
+const PORTAL_SESION = JSON.parse(localStorage.getItem('portal_sesion')||'null');
+if (!PORTAL_SESION || (Date.now() - PORTAL_SESION.ts) >= 8 * 60 * 60 * 1000) {
+  localStorage.removeItem('portal_sesion');
+  window.location.href = 'login.html';
+}
+if (PORTAL_SESION && PORTAL_SESION.modulos !== 'todos' && !PORTAL_SESION.modulos.includes('horarios')) {
+  alert('Tu usuario no tiene acceso a este módulo.');
+  window.location.href = 'index.html';
+}
+// Filtra una lista de nombres de kiosko según lo que el rol tiene permitido.
+function kioskosPermitidos(lista) {
+  if (!PORTAL_SESION || PORTAL_SESION.kioskos === 'todos') return lista;
+  return (lista || []).filter(k => PORTAL_SESION.kioskos.includes(k));
+}
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwF97oX3BogjtjGjd5ZL9OfWsdU7MDGc12CuD-TGTQUdRe6I9OR6oamsiWJD_T-xNjaWQ/exec';
+
+// Lista de kioskos activos — se carga desde la pestaña "Configuracion" del
+// Sheet (ver cargarKioskos()/configuracion.html) antes de traer la planilla.
+// Este arreglo es solo el respaldo si todavía no se corrió configurarHojas()
+// o falla la conexión. Cada kiosko es un "resto" (el horario original de
+// Lorito es un solo punto de venta; acá cada kiosko tiene su propia pestaña
+// con su propio equipo).
+let KIOSKOS = ['Playa Grande', 'Liberia', 'Nosara', 'Playa Hermosa'];
+async function cargarKioskos() {
+  if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.startsWith('TODO_')) {
+    try {
+      const resp = await fetch(APPS_SCRIPT_URL + '?modulo=kioskos');
+      const data = await resp.json();
+      if (data.ok && Array.isArray(data.kioskos) && data.kioskos.length) {
+        KIOSKOS = kioskosPermitidos(data.kioskos);
+      }
+    } catch (e) { /* sin conexión: sigue con el respaldo */ }
+  }
+}
+// Sentinel histórico para colaboradores sin Kiosko fijo. Ya NO se usa para
+// mostrarlos en horarios.html — por decisión del negocio, un colaborador sin
+// Kiosko asignado no está sujeto a horario y se excluye por completo (ver
+// buildFromPersonal). Se deja declarado porque otras funciones todavía
+// comparan contra él (comparación que ahora nunca calza, sin efecto).
+const ROTATIVO = 'ROTATIVO';
 
 const DAYS = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
 const ST = {
@@ -276,6 +358,10 @@ function getWeekLabel(){
   const s=new Date(base+'T00:00:00'),e=new Date(s);e.setDate(s.getDate()+6);
   return fmtShort(s)+'–'+fmtShort(e)+' '+s.getFullYear();
 }
+function diffDays(isoA,isoB){
+  const a=new Date(isoA+'T00:00:00'),b=new Date(isoB+'T00:00:00');
+  return Math.round((a-b)/86400000);
+}
 
 /* ── Data: staff activo + vacaciones desde RRHH (Apps Script / Sheet) ── */
 async function loadSheet(){
@@ -307,10 +393,12 @@ async function loadSheet(){
   }
 }
 
+// "split"/"in2"/"out2": segundo tramo de un turno partido en el mismo día
+// (ej. 08:00-12:00 y 17:00-21:00). Vacíos/false si el turno es continuo.
 function initSchedule(emp){
   if(!schedule[emp.id]){
     schedule[emp.id]={};
-    DAYS.forEach((_,i)=>{schedule[emp.id][i]={status:'trabajo',in:'',out:'',note:'',autoVac:false,otroLabel:''}});
+    DAYS.forEach((_,i)=>{schedule[emp.id][i]={status:'trabajo',in:'',out:'',note:'',autoVac:false,otroLabel:'',split:false,in2:'',out2:''}});
   }
 }
 
@@ -319,7 +407,7 @@ function initSchedule(emp){
 function resetWeekCells(){
   employees.forEach(emp=>{
     if(!schedule[emp.id]) initSchedule(emp);
-    DAYS.forEach((_,i)=>{ schedule[emp.id][i]={status:'trabajo',in:'',out:'',note:'',autoVac:false,otroLabel:''}; });
+    DAYS.forEach((_,i)=>{ schedule[emp.id][i]={status:'trabajo',in:'',out:'',note:'',autoVac:false,otroLabel:'',split:false,in2:'',out2:''}; });
   });
 }
 
@@ -337,20 +425,45 @@ async function cargarHorarioGuardado(){
     if(!registros.length)return;
 
     registros.forEach(r=>{
-      const nombre=(r['Colaborador']||'').toString().trim().toLowerCase();
+      const nombreOrig=(r['Colaborador']||'').toString().trim();
+      const nombre=nombreOrig.toLowerCase();
       const fecha=r['Fecha']||'';
       const dayIdx=dates.indexOf(fecha);
       if(dayIdx<0)return;
-      const emp=employees.find(e=>e.name.trim().toLowerCase()===nombre);
-      if(!emp)return;
+      // Un mismo colaborador puede aparecer dos veces en "employees" (su
+      // kiosko de origen + una fila de cobertura en otro kiosko, ver
+      // addCoverEmp). Desambiguar primero por la columna "Kiosko" guardada;
+      // si no calza (registros viejos sin ese dato, o sin ambigüedad) cae al
+      // match solo por nombre como antes.
+      const kioskoRegOrig=(r['Kiosko']||'').toString().trim();
+      const kioskoReg=kioskoRegOrig.toLowerCase();
+      let emp=employees.find(e=>e.name.trim().toLowerCase()===nombre && (e.kiosko||e.restoId||'').toString().trim().toLowerCase()===kioskoReg);
+      if(!emp) emp=employees.find(e=>e.name.trim().toLowerCase()===nombre);
+      if(!emp){
+        // Colaborador guardado que no está en RRHH "Personal": es un
+        // empleado extra agregado manualmente en una sesión anterior. Al
+        // recargar la página, "employees" se reconstruye solo desde RRHH
+        // (buildFromPersonal) y no incluye extras de sesiones pasadas, por
+        // lo que su horario guardado se descartaba en silencio (bug
+        // reportado: "al ingresar un empleado extra no se está
+        // almacenando la data"). Reconstruirlo acá para no perder ese dato.
+        if(!nombreOrig)return;
+        const kiosko=kioskoRegOrig||activeResto||(restos[0]&&restos[0].id)||'';
+        const extraId='EXTRA-'+nombre.replace(/\s+/g,'-')+'-'+kioskoReg.replace(/\s+/g,'-');
+        emp={id:extraId,name:nombreOrig,restoId:kiosko,kiosko:kiosko,area:r['Departamento']||'',puesto:r['Puesto']||'',extra:true};
+        employees.push(emp);
+      }
       if(!schedule[emp.id])initSchedule(emp);
+      const in2=r['Hora entrada 2']||'', out2=r['Hora salida 2']||'';
       schedule[emp.id][dayIdx]={
         status: r['Estado']||'trabajo',
         in:     r['Hora entrada']||'',
         out:    r['Hora salida']||'',
         note:   r['Nota']||'',
         autoVac:false,
-        otroLabel: r['Detalle']||''
+        otroLabel: r['Detalle']||'',
+        split: !!(in2||out2),
+        in2, out2
       };
     });
   }catch(e){
@@ -368,10 +481,12 @@ async function guardarSemana(){
       const s=schedule[emp.id]?.[i];
       if(!s)return;
       dias.push({
-        fecha, colaborador:emp.name, departamento:emp.area||'', puesto:emp.puesto||'',
+        fecha, colaborador:emp.name, departamento:emp.area||'',
+        kiosko:(emp.kiosko||(emp.restoId!==ROTATIVO?emp.restoId:'')||''), puesto:emp.puesto||'',
         estado:s.status||'trabajo', entrada:s.in||'', salida:s.out||'',
         horas:calcH(emp.id,i), nota:s.note||'',
-        detalle:(s.status==='otro'?(s.otroLabel||''):'')
+        detalle:(s.status==='otro'?(s.otroLabel||''):''),
+        entrada2:(s.split?(s.in2||''):''), salida2:(s.split?(s.out2||''):'')
       });
     });
   });
@@ -390,6 +505,144 @@ async function guardarSemana(){
     toast('Sin conexión — no se pudo guardar');
   }finally{
     if(btn){btn.disabled=false;btn.innerHTML='&#128190; Guardar semana';}
+  }
+}
+
+/* ── Copiar horario de la semana anterior ──
+   Trae de la hoja "Horarios" (histórico guardado) los registros de la semana
+   que empieza 7 días antes de la visible y los aplica sobre el horario actual
+   de TODOS los colaboradores (no solo del kiosko activo), sobreescribiendo lo
+   que hubiera en pantalla. Usa la misma lógica de emparejamiento nombre+kiosko
+   que cargarHorarioGuardado, pero calculando el día (0-6) por diferencia de
+   fechas en vez de buscarlo en las fechas de la semana actual. */
+async function copiarSemanaAnterior(){
+  if(semanaCerrada){toast('Semana cerrada — reabrila para editar');return}
+  if(!employees.length){toast('No hay colaboradores cargados');return}
+  const semanaActual=document.getElementById('week-start').value;
+  const dPrev=new Date(semanaActual+'T00:00:00');dPrev.setDate(dPrev.getDate()-7);
+  const semanaPrev=fmt(dPrev);
+  if(!confirm('¿Copiar el horario de la semana del '+semanaPrev+' a esta semana?\n\nSe sobreescribirán los turnos actuales de todos los colaboradores.'))return;
+
+  const btn=document.getElementById('btn-copy-week');
+  if(btn){btn.disabled=true;btn.textContent='Copiando…';}
+  try{
+    const resp=await fetch(APPS_SCRIPT_URL+'?modulo=horarios');
+    if(!resp.ok){toast('No se pudo cargar la semana anterior');return}
+    const data=await resp.json();
+    if(!data.ok||!Array.isArray(data.registros)){toast('No se pudo cargar la semana anterior');return}
+    const registros=data.registros.filter(r=>(r['Semana inicio']||'')===semanaPrev);
+    if(!registros.length){toast('No hay horario guardado para la semana del '+semanaPrev);return}
+
+    resetWeekCells();
+
+    registros.forEach(r=>{
+      const nombreOrig=(r['Colaborador']||'').toString().trim();
+      const nombre=nombreOrig.toLowerCase();
+      const fecha=r['Fecha']||'';
+      if(!fecha)return;
+      const dayIdx=diffDays(fecha,semanaPrev);
+      if(dayIdx<0||dayIdx>6)return;
+      const kioskoRegOrig=(r['Kiosko']||'').toString().trim();
+      const kioskoReg=kioskoRegOrig.toLowerCase();
+      let emp=employees.find(e=>e.name.trim().toLowerCase()===nombre && (e.kiosko||e.restoId||'').toString().trim().toLowerCase()===kioskoReg);
+      if(!emp) emp=employees.find(e=>e.name.trim().toLowerCase()===nombre);
+      if(!emp){
+        // Igual que en cargarHorarioGuardado: reconstruir empleados extra que
+        // ya no están en RRHH "Personal" pero sí en el horario guardado.
+        if(!nombreOrig)return;
+        const kiosko=kioskoRegOrig||activeResto||(restos[0]&&restos[0].id)||'';
+        const extraId='EXTRA-'+nombre.replace(/\s+/g,'-')+'-'+kioskoReg.replace(/\s+/g,'-');
+        emp={id:extraId,name:nombreOrig,restoId:kiosko,kiosko:kiosko,area:r['Departamento']||'',puesto:r['Puesto']||'',extra:true};
+        employees.push(emp);
+      }
+      if(!schedule[emp.id])initSchedule(emp);
+      const in2=r['Hora entrada 2']||'', out2=r['Hora salida 2']||'';
+      schedule[emp.id][dayIdx]={
+        status: r['Estado']||'trabajo',
+        in:     r['Hora entrada']||'',
+        out:    r['Hora salida']||'',
+        note:   r['Nota']||'',
+        autoVac:false,
+        otroLabel: r['Detalle']||'',
+        split: !!(in2||out2),
+        in2, out2
+      };
+    });
+
+    aplicarVacaciones();
+    renderAll();
+    toast('Horario de la semana anterior copiado ✓ — recordá guardar');
+  }catch(e){
+    toast('Sin conexión — no se pudo copiar la semana anterior');
+  }finally{
+    if(btn){btn.disabled=semanaCerrada;btn.innerHTML='&#10697; Copiar semana anterior';}
+  }
+}
+
+/* ── Copiar horario del día anterior ──
+   Botón por columna (ver renderSched). Para Mar-Dom el día anterior está en
+   la misma semana ya cargada en memoria, así que es una copia local directa.
+   Para Lun el día anterior (Dom) cae en la semana previa, que no está
+   cargada: se trae puntualmente de la hoja "Horarios" filtrando por esa
+   fecha exacta. Solo aplica a colaboradores que ya están en pantalla (no
+   recrea empleados extra de sesiones pasadas, a diferencia de la copia de
+   semana completa). */
+async function copiarDiaAnterior(dayIdx){
+  if(semanaCerrada){toast('Semana cerrada — reabrila para editar');return}
+  const dates=getWeekDates();
+  const labelDia=dates[dayIdx].label+' '+dates[dayIdx].date;
+
+  if(dayIdx>0){
+    if(!confirm('¿Copiar el horario de '+dates[dayIdx-1].label+' a '+labelDia+'?\n\nSe sobreescribirán los turnos de ese día para todos los colaboradores visibles.'))return;
+    employees.forEach(emp=>{
+      if(!schedule[emp.id])initSchedule(emp);
+      schedule[emp.id][dayIdx]=Object.assign({},schedule[emp.id][dayIdx-1]);
+    });
+    renderAll();
+    toast('Horario de '+dates[dayIdx-1].label+' copiado a '+labelDia+' ✓ — recordá guardar');
+    return;
+  }
+
+  const semanaActual=document.getElementById('week-start').value;
+  const fechaLunes=new Date(semanaActual+'T00:00:00');
+  const fechaAnteriorD=new Date(fechaLunes);fechaAnteriorD.setDate(fechaAnteriorD.getDate()-1);
+  const fechaAnteriorISO=fmt(fechaAnteriorD);
+  if(!confirm('¿Copiar el horario del '+fechaAnteriorISO+' (domingo anterior) a '+labelDia+'?\n\nSe sobreescribirán los turnos de ese día para todos los colaboradores visibles.'))return;
+  try{
+    const resp=await fetch(APPS_SCRIPT_URL+'?modulo=horarios');
+    if(!resp.ok){toast('No se pudo cargar el día anterior');return}
+    const data=await resp.json();
+    if(!data.ok||!Array.isArray(data.registros)){toast('No se pudo cargar el día anterior');return}
+    const registros=data.registros.filter(r=>(r['Fecha']||'')===fechaAnteriorISO);
+    if(!registros.length){toast('No hay horario guardado para el '+fechaAnteriorISO);return}
+    let aplicados=0;
+    registros.forEach(r=>{
+      const nombre=(r['Colaborador']||'').toString().trim().toLowerCase();
+      if(!nombre)return;
+      const kioskoReg=(r['Kiosko']||'').toString().trim().toLowerCase();
+      let emp=employees.find(e=>e.name.trim().toLowerCase()===nombre && (e.kiosko||e.restoId||'').toString().trim().toLowerCase()===kioskoReg);
+      if(!emp) emp=employees.find(e=>e.name.trim().toLowerCase()===nombre);
+      if(!emp)return; // colaborador ya no visible en pantalla: se omite
+      if(!schedule[emp.id])initSchedule(emp);
+      const in2=r['Hora entrada 2']||'', out2=r['Hora salida 2']||'';
+      schedule[emp.id][0]={
+        status: r['Estado']||'trabajo',
+        in:     r['Hora entrada']||'',
+        out:    r['Hora salida']||'',
+        note:   r['Nota']||'',
+        autoVac:false,
+        otroLabel: r['Detalle']||'',
+        split: !!(in2||out2),
+        in2, out2
+      };
+      aplicados++;
+    });
+    if(!aplicados){toast('Ningún colaborador visible coincide con el horario del '+fechaAnteriorISO);return}
+    aplicarVacaciones();
+    renderAll();
+    toast('Horario del '+fechaAnteriorISO+' copiado ✓ — recordá guardar');
+  }catch(e){
+    toast('Sin conexión — no se pudo copiar el día anterior');
   }
 }
 
@@ -425,7 +678,7 @@ async function cerrarSemana(){
   try{
     const resp=await fetch(APPS_SCRIPT_URL,{
       method:'POST',
-      body:new URLSearchParams({data:JSON.stringify({modulo:'cerrar_horario',semana_inicio:semana,pdf_base64:pdfBase64})})
+      body:new URLSearchParams({data:JSON.stringify({modulo:'cerrar_horario',semana_inicio:semana,pdf_base64:pdfBase64,kiosko:r.kiosko})})
     });
     const out=await resp.json();
     if(!out.ok){toast('Error al cerrar: '+(out.error||'desconocido'));return}
@@ -473,39 +726,86 @@ function aplicarEstadoUI(){
   if(btnCerrar) btnCerrar.style.display=(employees.length&&!semanaCerrada)?'inline-flex':'none';
   if(btnReabrir) btnReabrir.style.display=(employees.length&&semanaCerrada)?'inline-flex':'none';
   if(btnGuardar) btnGuardar.disabled=semanaCerrada;
+  const btnCopyWeek=document.getElementById('btn-copy-week');
+  if(btnCopyWeek) btnCopyWeek.disabled=semanaCerrada;
   const btnAddExtra=document.getElementById('btn-add-extra');
   if(btnAddExtra) btnAddExtra.disabled=semanaCerrada;
+  const btnAddCover=document.getElementById('btn-add-cover');
+  if(btnAddCover) btnAddCover.disabled=semanaCerrada;
   if(btnPDF) btnPDF.disabled=!semanaCerrada;
   if(btnWA) btnWA.disabled=!semanaCerrada;
   renderSched();
 }
 
-// Convierte el listado de "Personal" (RRHH) en empleados activos para el horario.
-// Un solo punto de venta (Lorito); el filtro de departamento reemplaza
-// el concepto de "PDV" que traía el módulo original.
+// Convierte el listado de "Personal" (RRHH) en empleados activos para el
+// horario. Cada kiosko es un "resto" (el horario original de Lorito era un
+// solo punto de venta); el filtro de departamento sigue disponible dentro de
+// cada kiosko. Un colaborador sin Kiosko asignado NO está sujeto a horario
+// (ej. puestos administrativos como Gerencia/Finanzas) y se excluye acá por
+// completo — no aparece en ninguna pestaña ni cuenta en los totales.
 function buildFromPersonal(regs){
   const activos = (regs||[]).filter(p=>((p['Estado']||p.estado||'').toString().toUpperCase())==='ACTIVO');
 
-  const idsExtra = new Set(employees.filter(e=>e.extra).map(e=>e));
   const extras = employees.filter(e=>e.extra); // conservar empleados extra agregados manualmente
 
-  restos = [{id:'PRINCIPAL', name:'Lorito'}];
+  restos = KIOSKOS.map(k=>({id:k, name:k}));
   employees = activos.map(p=>{
     const nombre = p['Nombre completo'] || ((p['Nombre']||p.nombre||'')+' '+(p['Apellidos']||p.apellidos||'')).trim();
+    const kioskoRaw = (p['Kiosko']||p.kiosko||'').toString().trim();
+    // El Sheet no siempre tiene el mismo "case" que la pestaña Configuracion
+    // (ej. "PLAYA GRANDE" en Personal vs "Playa Grande" en Configuracion). Sin
+    // esto, esos colaboradores quedaban ACTIVO pero invisibles en todas las
+    // pestañas porque restoId no calzaba (===) con ningún kiosko de la tabla.
+    const kioskoMatch = KIOSKOS.find(k=>k.toLowerCase()===kioskoRaw.toLowerCase());
+    const kiosko = kioskoMatch || kioskoRaw;
     return {
       id: 'EMP-'+(p['Cédula']||p.cedula||nombre),
       name: nombre,
-      restoId: 'PRINCIPAL',
+      restoId: kiosko,
+      kiosko: kiosko,
       area: (p['Departamento']||p.departamento||'').toString(),
       puesto: p['Puesto']||p.puesto||''
     };
-  }).filter(e=>e.name.trim());
+  }).filter(e=>e.name.trim() && e.kiosko); // sin Kiosko asignado = no sujeto a horario, se excluye
 
   employees = employees.concat(extras);
   employees.forEach(emp=>initSchedule(emp));
 
   if(!activeResto||!restos.find(r=>r.id===activeResto)) activeResto = restos[0]?.id||null;
-  showStatus(employees.length+' colaboradores activos · '+vacaciones.length+' solicitudes de vacaciones cargadas', false);
+  renderKioskoTabs();
+  mostrarConteoActivos();
+}
+
+// Cuenta los activos del kiosko actualmente seleccionado (antes mostraba el
+// total global de todos los kioskos, lo que no coincidía con la tabla de abajo).
+function mostrarConteoActivos(){
+  const emps=employees.filter(e=>e.restoId===activeResto||e.restoId===ROTATIVO);
+  showStatus(emps.length+' colaboradores activos en este kiosko · '+vacaciones.length+' solicitudes de vacaciones cargadas', false);
+}
+
+// ── PESTAÑAS DE KIOSKO ────────────────────────────────────────────
+function renderKioskoTabs(){
+  const cont=document.getElementById('kiosko-tabs');
+  if(!restos.length){cont.style.display='none';return}
+  cont.style.display='flex';
+  cont.innerHTML=restos.map(r=>
+    '<button type="button" class="tab'+(r.id===activeResto?' active':'')+'" data-resto-id="'+esc(r.id)+'">'+esc(r.name)+'</button>'
+  ).join('');
+}
+// Delegado en vez de onclick="switchResto("+JSON.stringify(r.id)+")" inline: ese
+// patrón generaba onclick="switchResto("Playa Grande")" — las comillas dobles de
+// JSON.stringify cortaban el atributo HTML (que también usa comillas dobles) a la
+// mitad, dejando el handler roto ("switchResto(" sin cerrar) y por eso las
+// pestañas de kiosko no cambiaban de selección al hacer clic.
+document.getElementById('kiosko-tabs').addEventListener('click', function(e){
+  const btn = e.target.closest('.tab');
+  if(btn && btn.dataset.restoId) switchResto(btn.dataset.restoId);
+});
+function switchResto(id){
+  activeResto=id;
+  renderKioskoTabs();
+  renderAll();
+  mostrarConteoActivos();
 }
 
 function normalizarVacaciones(regs){
@@ -530,7 +830,7 @@ function aplicarVacaciones(){
       const cubierto = vacaciones.some(v=>
         v.nombre.toLowerCase()===emp.name.toLowerCase().trim() &&
         v.estado.toLowerCase()==='aprobado' &&
-        iso>=v.inicio && iso<=v.fin
+        iso>=v.inicio && iso<v.fin // fin = fecha de regreso, no cuenta como vacaciones
       );
       const cell = schedule[emp.id][i];
       if(cubierto){
@@ -544,8 +844,9 @@ function aplicarVacaciones(){
 
 function loadFallback(){
   showStatus('No se pudo conectar con la base de RRHH — verificá tu conexión y reintentá con "Actualizar planilla".', true);
-  if(!restos.length) restos=[{id:'PRINCIPAL',name:'Lorito'}];
+  if(!restos.length) restos=KIOSKOS.map(k=>({id:k,name:k}));
   if(!activeResto) activeResto=restos[0]?.id||null;
+  renderKioskoTabs();
   renderAll();
 }
 
@@ -555,13 +856,21 @@ function showStatus(msg,warn){
 }
 
 /* ── Schedule ── */
+// Suma tramo 1 (in/out) + tramo 2 (in2/out2, solo si el turno está partido) —
+// un turno partido de 08:00-12:00 y 17:00-21:00 da 8h en total, no 13h.
+function calcTramo(ini,fin){
+  if(!ini||!fin)return 0;
+  const[ih,im]=ini.split(':').map(Number),[oh,om]=fin.split(':').map(Number);
+  const diff=(oh*60+om)-(ih*60+im);return diff>0?diff/60:0;
+}
 function calcH(empId,day){
   const s=schedule[empId]?.[day];
   if(!s)return 0;
   if(s.status==='vacaciones')return HORAS_VACACIONES;
-  if(s.status!=='trabajo'||!s.in||!s.out)return 0;
-  const[ih,im]=s.in.split(':').map(Number),[oh,om]=s.out.split(':').map(Number);
-  const diff=(oh*60+om)-(ih*60+im);return diff>0?diff/60:0;
+  if(s.status!=='trabajo')return 0;
+  let h=calcTramo(s.in,s.out);
+  if(s.split) h+=calcTramo(s.in2,s.out2);
+  return h;
 }
 function setStatus(empId,day,val){
   if(semanaCerrada){toast('Semana cerrada — reabrila para editar');return}
@@ -617,8 +926,20 @@ function setTimeField(empId,day,field,val){
 }
 function setNote(empId,day,val){if(!semanaCerrada&&schedule[empId])schedule[empId][day].note=val}
 
+// Activa/quita un segundo tramo de horario (turno partido) en el día. Al
+// quitarlo se limpian in2/out2 para que no queden horas "fantasma" sumando
+// al total si se reactiva después sin llenarlas de nuevo.
+function toggleSplit(empId,day){
+  if(semanaCerrada){toast('Semana cerrada — reabrila para editar');return}
+  const s=schedule[empId]?.[day];
+  if(!s)return;
+  s.split=!s.split;
+  if(!s.split){s.in2='';s.out2='';}
+  renderSched();
+}
+
 function updateTotals(){
-  const emps=employees.filter(e=>e.restoId===activeResto);
+  const emps=employees.filter(e=>e.restoId===activeResto||e.restoId===ROTATIVO);
   emps.forEach(emp=>{
     const el=document.getElementById('tot-'+emp.id);
     if(el){let t=0;DAYS.forEach((_,i)=>{t+=calcH(emp.id,i)});el.textContent=t.toFixed(1)+'h'}
@@ -643,7 +964,7 @@ function showBanner(type,html){
 function renderAll(){renderFilterAreas();renderSched()}
 
 function renderFilterAreas(){
-  const emps=employees.filter(e=>e.restoId===activeResto);
+  const emps=employees.filter(e=>e.restoId===activeResto||e.restoId===ROTATIVO);
   const areas=[...new Set(emps.map(e=>e.area).filter(Boolean))].sort();
   const sel=document.getElementById('filter-area'),cur=sel.value;
   sel.innerHTML='<option value="">Todos los departamentos</option>'+areas.map(a=>'<option value="'+esc(a)+'"'+(cur===a?' selected':'')+'>'+esc(a)+'</option>').join('');
@@ -666,9 +987,16 @@ function buildDayCell(empId,i){
       return '<td class="'+info.bgCls+'"><div class="special-td">'+selEl+'<div class="sp-icon">'+info.icon+'</div><div class="sp-lbl">'+info.label+'</div>'+extraBtn+noteEl+'</div></td>';
     }
     const h=calcH(empId,i);
+    const splitRow=s.split
+      ? '<div style="font-size:9px;color:var(--text3);margin-top:2px">Tramo 2</div>'+
+        '<input type="time" value="'+esc(s.in2)+'" onchange="setTimeField(\''+empId+'\','+i+',\'in2\',this.value)"'+dis+'/>'+
+        '<input type="time" value="'+esc(s.out2)+'" onchange="setTimeField(\''+empId+'\','+i+',\'out2\',this.value)"'+dis+'/>'+
+        (dis?'':'<button type="button" class="btn-quitar" onclick="toggleSplit(\''+empId+'\','+i+')">Quitar tramo 2</button>')
+      : (dis?'':'<button type="button" class="btn-quitar" onclick="toggleSplit(\''+empId+'\','+i+')">&#8646; Partir turno</button>');
     return '<td><div class="day-cell">'+selEl+
       '<input type="time" value="'+esc(s.in)+'" onchange="setTimeField(\''+empId+'\','+i+',\'in\',this.value)"'+dis+'/>'+
       '<input type="time" value="'+esc(s.out)+'" onchange="setTimeField(\''+empId+'\','+i+',\'out\',this.value)"'+dis+'/>'+
+      splitRow+
       '<div class="hours-lbl" id="h-'+empId+'-'+i+'">'+(h>0?h.toFixed(1)+'h':'—')+'</div>'+
       extraBtn+noteEl+'</div></td>';
   }
@@ -692,19 +1020,24 @@ function renderSched(){
   if(!restos.length){container.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3)">Cargando...</div>';return}
 
   const filterVal=document.getElementById('filter-area').value;
-  const allEmps=employees.filter(e=>e.restoId===activeResto);
+  const allEmps=employees.filter(e=>e.restoId===activeResto||e.restoId===ROTATIVO);
   const emps=filterVal?allEmps.filter(e=>e.area===filterVal):allEmps;
   const dates=getWeekDates();
 
-  if(!emps.length){container.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3)">Sin colaboradores activos. Hacé clic en "Actualizar planilla".</div>';renderMetrics();return}
+  if(!emps.length){container.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3)">Sin colaboradores activos. Hacé clic en "Actualizar planilla".</div>';renderMetrics();renderCoverageChart();return}
 
   let html='<div class="tbl-wrap"><table><thead><tr><th class="ec">Empleado</th>';
-  dates.forEach(d=>{html+='<th>'+d.label+'<br><span style="font-weight:400;font-size:10px;color:var(--text3)">'+d.date+'</span></th>'});
+  dates.forEach((d,i)=>{
+    const copyTitle=i>0?('Copiar horario de '+dates[i-1].label+' a este día'):'Copiar horario del domingo anterior a este día';
+    const copyBtn='<br><button type="button" class="th-copy-btn" onclick="copiarDiaAnterior('+i+')" title="'+esc(copyTitle)+'"'+(semanaCerrada?' disabled':'')+'>&#8630; copiar anterior</button>';
+    html+='<th>'+d.label+'<br><span style="font-weight:400;font-size:10px;color:var(--text3)">'+d.date+'</span>'+copyBtn+'</th>';
+  });
   html+='<th>Total hrs</th></tr></thead><tbody>';
 
   emps.forEach(emp=>{
     let tot=0;DAYS.forEach((_,i)=>{tot+=calcH(emp.id,i)});
-    html+='<tr><td class="ec"><div class="emp-name">'+esc(emp.name)+'</div><div class="emp-meta">'+esc([emp.area,emp.puesto].filter(Boolean).join(' · '))+'</div>'+((emp.extra&&!semanaCerrada)?'<button class="btn btn-danger" onclick="removeEmployee(\''+emp.id+'\')">&#x2715; quitar</button>':'')+'</td>';
+    const coverTag=emp.cubre?'<div class="cover-tag">&#8644; Cubre desde '+esc(emp.origenKiosko)+'</div>':'';
+    html+='<tr><td class="ec"><div class="emp-name">'+esc(emp.name)+'</div><div class="emp-meta">'+esc([emp.area,emp.puesto].filter(Boolean).join(' · '))+'</div>'+coverTag+((emp.extra&&!semanaCerrada)?'<button class="btn btn-danger" onclick="removeEmployee(\''+emp.id+'\')">&#x2715; quitar</button>':'')+'</td>';
     DAYS.forEach((_,i)=>{html+=buildDayCell(emp.id,i)});
     html+='<td class="hours-lbl" id="tot-'+emp.id+'" style="font-size:13px;vertical-align:middle">'+tot.toFixed(1)+'h</td></tr>';
   });
@@ -715,12 +1048,140 @@ function renderSched(){
   html+='<td class="grand" id="grand-tot">'+grand.toFixed(1)+'h</td></tr></tbody></table></div>';
   container.innerHTML=html;
   renderMetrics();
+  renderCoverageChart();
+}
+
+/* ── Gráfico de cobertura semanal (Gantt por día + franja de cobertura) ──
+   Muestra, para el kiosko/departamento visible, una barra de color por
+   persona con su turno del día y una fila "Cobertura" que cuenta cuántas
+   personas están trabajando en cada franja horaria (para detectar huecos). */
+const empColorCache={};
+function empColor(name){
+  const key=(name||'').trim().toLowerCase();
+  if(empColorCache[key])return empColorCache[key];
+  let h=0;for(let i=0;i<key.length;i++)h=(h*31+key.charCodeAt(i))>>>0;
+  const hue=h%360;
+  const color='hsl('+hue+',60%,42%)';
+  empColorCache[key]=color;
+  return color;
+}
+function covColor(count){
+  if(count<=0)return '#f1f5f9';
+  if(count===1)return '#cfead9';
+  if(count===2)return '#8fd1ae';
+  if(count===3)return '#4fae7c';
+  return '#2d6a4f';
+}
+function addRangeToCounts(counts,ini,fin,rangeStart,stepMin){
+  if(!ini||!fin)return;
+  const[ih,im]=ini.split(':').map(Number),[oh,om]=fin.split(':').map(Number);
+  const startMin=(ih*60+im)-(rangeStart*60), endMin=(oh*60+om)-(rangeStart*60);
+  if(!(endMin>startMin))return;
+  const startIdx=Math.max(0,Math.floor(startMin/stepMin));
+  const endIdx=Math.min(counts.length,Math.ceil(endMin/stepMin));
+  for(let i=startIdx;i<endIdx;i++)counts[i]++;
+}
+function buildCoverageSegments(day,dayEmps,rangeStart,rangeEnd){
+  const stepMin=15;
+  const totalMin=(rangeEnd-rangeStart)*60;
+  const slots=Math.max(1,Math.ceil(totalMin/stepMin));
+  const counts=new Array(slots).fill(0);
+  dayEmps.forEach(emp=>{
+    const s=schedule[emp.id]?.[day];
+    if(!s||s.status!=='trabajo')return;
+    addRangeToCounts(counts,s.in,s.out,rangeStart,stepMin);
+    if(s.split)addRangeToCounts(counts,s.in2,s.out2,rangeStart,stepMin);
+  });
+  const segments=[];let cur=null;
+  counts.forEach((c,idx)=>{
+    if(!cur||cur.count!==c){if(cur)segments.push(cur);cur={count:c,startIdx:idx,endIdx:idx+1};}
+    else cur.endIdx=idx+1;
+  });
+  if(cur)segments.push(cur);
+  return segments.map(seg=>({
+    count:seg.count,
+    leftPct:(seg.startIdx*stepMin)/totalMin*100,
+    widthPct:(seg.endIdx-seg.startIdx)*stepMin/totalMin*100
+  }));
+}
+function renderCoverageChart(){
+  const section=document.getElementById('coverage-section');
+  const legendEl=document.getElementById('coverage-legend');
+  const daysEl=document.getElementById('coverage-days');
+  if(!section||!activeResto){if(section)section.style.display='none';return}
+
+  const filterVal=document.getElementById('filter-area').value;
+  const allEmps=employees.filter(e=>e.restoId===activeResto||e.restoId===ROTATIVO);
+  const emps=filterVal?allEmps.filter(e=>e.area===filterVal):allEmps;
+  if(!emps.length){section.style.display='none';return}
+  section.style.display='block';
+
+  const working=new Set();
+  emps.forEach(emp=>{DAYS.forEach((_,i)=>{const s=schedule[emp.id]?.[i];if(s&&s.status==='trabajo'&&s.in&&s.out)working.add(emp.name)})});
+  legendEl.innerHTML=working.size
+    ? [...working].sort((a,b)=>a.localeCompare(b,'es')).map(n=>
+        '<span class="coverage-legend-item"><span class="coverage-legend-dot" style="background:'+empColor(n)+'"></span>'+esc(n)+'</span>'
+      ).join('')
+    : '<span style="font-size:11px;color:var(--text3)">Sin turnos con horario definido esta semana</span>';
+
+  // Rango horario común para los 7 días (según los turnos reales cargados).
+  let minMin=Infinity,maxMin=-Infinity;
+  emps.forEach(emp=>{DAYS.forEach((_,i)=>{
+    const s=schedule[emp.id]?.[i];if(!s||s.status!=='trabajo')return;
+    [[s.in,s.out],(s.split?[s.in2,s.out2]:null)].forEach(pair=>{
+      if(!pair)return;const[ini,fin]=pair;if(!ini||!fin)return;
+      const[ih,im]=ini.split(':').map(Number),[oh,om]=fin.split(':').map(Number);
+      const a=ih*60+im,b=oh*60+om;if(!(b>a))return;
+      if(a<minMin)minMin=a;if(b>maxMin)maxMin=b;
+    });
+  })});
+  if(!isFinite(minMin)||!isFinite(maxMin)){minMin=6*60;maxMin=22*60;}
+  let rangeStart=Math.max(0,Math.floor(minMin/60)-1);
+  let rangeEnd=Math.min(24,Math.ceil(maxMin/60)+1);
+  if(rangeEnd<=rangeStart)rangeEnd=rangeStart+1;
+
+  const dates=getWeekDates();
+  let html='';
+  DAYS.forEach((_,i)=>{
+    const dayEmps=emps.filter(e=>{const s=schedule[e.id]?.[i];return s&&s.status==='trabajo'&&s.in&&s.out}).sort((a,b)=>a.name.localeCompare(b.name,'es'));
+    html+='<div class="cov-day"><div class="cov-day-title">'+dates[i].label+' &middot; '+dates[i].date+'</div>';
+    html+='<div class="cov-ruler">';
+    for(let h=rangeStart;h<=rangeEnd;h+=2){
+      const pct=(h-rangeStart)/(rangeEnd-rangeStart)*100;
+      html+='<span style="left:'+pct.toFixed(2)+'%">'+String(h).padStart(2,'0')+':00</span>';
+    }
+    html+='</div>';
+    if(!dayEmps.length){
+      html+='<div class="cov-empty">Sin turnos con horario definido este d&iacute;a</div></div>';
+      return;
+    }
+    dayEmps.forEach(emp=>{
+      const s=schedule[emp.id][i];
+      const color=empColor(emp.name);
+      let bars='';
+      const mk=(ini,fin)=>{
+        const[ih,im]=ini.split(':').map(Number),[oh,om]=fin.split(':').map(Number);
+        const a=ih*60+im,b=oh*60+om;if(!(b>a))return;
+        const left=(a/60-rangeStart)/(rangeEnd-rangeStart)*100;
+        const width=(b-a)/60/(rangeEnd-rangeStart)*100;
+        bars+='<div class="cov-bar" style="left:'+left.toFixed(2)+'%;width:'+width.toFixed(2)+'%;background:'+color+'" title="'+esc(emp.name)+' &middot; '+ini+'&ndash;'+fin+'">'+ini+'-'+fin+'</div>';
+      };
+      if(s.in&&s.out)mk(s.in,s.out);
+      if(s.split&&s.in2&&s.out2)mk(s.in2,s.out2);
+      html+='<div class="cov-row"><div class="cov-row-label" title="'+esc(emp.name)+'">'+esc(emp.name)+'</div><div class="cov-row-track">'+bars+'</div></div>';
+    });
+    const segs=buildCoverageSegments(i,dayEmps,rangeStart,rangeEnd);
+    const segHtml=segs.map(seg=>'<div class="cov-bar" style="left:'+seg.leftPct.toFixed(2)+'%;width:'+seg.widthPct.toFixed(2)+'%;background:'+covColor(seg.count)+';color:'+(seg.count>=3?'#fff':'var(--text2)')+'" title="'+seg.count+' persona(s) cubriendo"></div>').join('');
+    html+='<div class="cov-row cov-total"><div class="cov-row-label">Cobertura</div><div class="cov-row-track">'+segHtml+'</div></div>';
+    html+='</div>';
+  });
+  daysEl.innerHTML=html;
 }
 
 function renderMetrics(){
   const el=document.getElementById('metrics');
   if(!activeResto){el.style.display='none';return}
-  const emps=employees.filter(e=>e.restoId===activeResto);
+  const emps=employees.filter(e=>e.restoId===activeResto||e.restoId===ROTATIVO);
   if(!emps.length){el.innerHTML='';return}
   let tot=0,lib=0,vac=0,inc=0,perm=0;
   emps.forEach(e=>{DAYS.forEach((_,i)=>{
@@ -743,7 +1204,7 @@ function addExtraEmp(){
   const name=document.getElementById('extra-name').value.trim();
   if(!name||!activeResto){toast('Escribí un nombre');return}
   const id=uid();
-  const emp={id,name,restoId:activeResto,area:document.getElementById('extra-area').value.trim(),puesto:document.getElementById('extra-puesto').value.trim(),extra:true};
+  const emp={id,name,restoId:activeResto,kiosko:activeResto,area:document.getElementById('extra-area').value.trim(),puesto:document.getElementById('extra-puesto').value.trim(),extra:true};
   employees.push(emp);
   initSchedule(emp);
   document.getElementById('extra-name').value='';document.getElementById('extra-area').value='';document.getElementById('extra-puesto').value='';
@@ -757,6 +1218,61 @@ function removeEmployee(id){
   renderAll();if(emp)toast(emp.name+' removido');
 }
 
+/* ── Cubrir turno con colaborador de otro kiosko ──
+   Trae a un colaborador que ya existe en RRHH (activo en otro kiosko) y lo
+   agrega a la pestaña del kiosko activo como cobertura de turno, sin
+   quitarlo de su kiosko de origen. Reutiliza el mecanismo de "empleado
+   extra" (mismo id-espacio de schedule, mismo botón "quitar", se conserva
+   al refrescar la planilla) pero marcado con cubre:true/origenKiosko para
+   poder distinguirlo visualmente y evitar ofrecerlo dos veces. */
+function toggleCoverPanel(){
+  if(semanaCerrada){toast('Semana cerrada — reabrila para editar');return}
+  const panel=document.getElementById('cover-panel');
+  const abriendo=!panel.classList.contains('open');
+  if(abriendo) populateCoverSelect();
+  panel.classList.toggle('open');
+}
+function populateCoverSelect(){
+  const sel=document.getElementById('cover-emp-select');
+  if(!sel)return;
+  // Candidatos: colaboradores reales (no extras, no coberturas ya puestas)
+  // de cualquier OTRO kiosko, que todavía no estén cubriendo en el activo.
+  const candidatos=employees.filter(e=>
+    !e.extra && !e.cubre &&
+    e.restoId!==activeResto &&
+    !employees.some(x=>x.cubre && x.origenEmpId===e.id && x.restoId===activeResto)
+  ).sort((a,b)=>a.name.localeCompare(b.name,'es'));
+
+  if(!candidatos.length){
+    sel.innerHTML='<option value="">No hay colaboradores disponibles en otros kioskos</option>';
+    return;
+  }
+  sel.innerHTML='<option value="">Seleccioná un colaborador…</option>'+
+    candidatos.map(e=>'<option value="'+esc(e.id)+'">'+esc(e.name)+' — '+esc(e.kiosko)+(e.puesto?' · '+esc(e.puesto):'')+'</option>').join('');
+}
+function addCoverEmp(){
+  if(semanaCerrada){toast('Semana cerrada — reabrila para editar');return}
+  if(!activeResto){toast('Elegí primero un kiosko');return}
+  const sel=document.getElementById('cover-emp-select');
+  const origId=sel&&sel.value;
+  if(!origId){toast('Seleccioná un colaborador');return}
+  const orig=employees.find(e=>e.id===origId);
+  if(!orig){toast('Colaborador no encontrado');return}
+
+  const id='COVER-'+orig.id+'-'+activeResto+'-'+uid();
+  const emp={
+    id, name:orig.name,
+    restoId:activeResto, kiosko:activeResto,
+    area:orig.area, puesto:orig.puesto,
+    extra:true, cubre:true, origenKiosko:orig.kiosko, origenEmpId:orig.id
+  };
+  employees.push(emp);
+  initSchedule(emp);
+  document.getElementById('cover-panel').classList.remove('open');
+  renderAll();
+  toast(orig.name+' agregado para cubrir turno en '+activeResto);
+}
+
 /* ── Exports ── */
 function buildPDVHtml(resto,dates){
   const STINFO={
@@ -766,7 +1282,7 @@ function buildPDVHtml(resto,dates){
     libre:{bg:'#f1f5f9',text:'#334155',icon:'🌙',label:'Día libre'},
     otro:{bg:'#f1f5f9',text:'#334155',icon:'📌',label:'Otro'},
   };
-  const emps=employees.filter(e=>e.restoId===resto.id);
+  const emps=employees.filter(e=>e.restoId===resto.id||e.restoId===ROTATIVO);
   let tbl='<table><thead><tr><th>Empleado</th>';
   dates.forEach(d=>{tbl+='<th>'+d.label+'<br><small>'+d.date+'</small></th>'});
   tbl+='</tr></thead><tbody>';
@@ -779,7 +1295,9 @@ function buildPDVHtml(resto,dates){
         const lbl=info.label+(st==='otro'&&s?.otroLabel?': '+esc(s.otroLabel):'');
         tbl+='<td style="background:'+info.bg+';color:'+info.text+';font-size:11px;text-align:center">'+info.icon+' '+lbl+(s?.note?'<br><em style="font-size:10px;opacity:.7">'+esc(s.note)+'</em>':'')+'</td>';
       }else{
-        tbl+='<td>'+(s?.in&&s?.out?s.in+'–'+s.out:'')+(s?.note?'<br><em style="font-size:10px;color:#888">'+esc(s.note)+'</em>':'')+'</td>';
+        const tramo1=(s?.in&&s?.out)?s.in+'–'+s.out:'';
+        const tramo2=(s?.split&&s?.in2&&s?.out2)?s.in2+'–'+s.out2:'';
+        tbl+='<td>'+tramo1+(tramo2?'<br>'+tramo2:'')+(s?.note?'<br><em style="font-size:10px;color:#888">'+esc(s.note)+'</em>':'')+'</td>';
       }
     });
     tbl+='</tr>';
@@ -805,7 +1323,8 @@ function buildPDVHtml(resto,dates){
 /* ── Generación de PDF (html2canvas + jsPDF) ── */
 async function generarPDF(){
   if(!window.html2canvas||!window.jspdf){toast('Cargando librería de PDF, esperá un segundo…');return null}
-  const resto=restos.find(r=>employees.some(e=>e.restoId===r.id));
+  // Genera el PDF del kiosko actualmente seleccionado (pestaña activa).
+  const resto=restos.find(r=>r.id===activeResto)||restos.find(r=>employees.some(e=>e.restoId===r.id));
   if(!resto){toast('Sin datos para exportar');return null}
 
   const dates=getWeekDates();
@@ -844,8 +1363,8 @@ async function generarPDF(){
     heightLeft-=pageH;
   }
 
-  const filename='horario_'+document.getElementById('week-start').value+'.pdf';
-  return {pdf,filename};
+  const filename='horario_'+resto.name.replace(/\s+/g,'_')+'_'+document.getElementById('week-start').value+'.pdf';
+  return {pdf,filename,kiosko:resto.name};
 }
 
 function pdfABase64(pdf){
@@ -875,7 +1394,7 @@ async function enviarWhatsApp(){
 }
 
 initWeek();
-loadSheet();
+cargarKioskos().then(loadSheet);
 </script>
 </body>
 </html>
