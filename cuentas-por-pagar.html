@@ -493,6 +493,11 @@
         <label for="pago-nota-credito">Nota de crédito asociada</label>
         <input type="text" id="pago-nota-credito" placeholder="Número de la nota de crédito">
       </div>
+      <div class="field" id="pago-campo-fondo" style="display:none;">
+        <label for="pago-fecha-venta-fondo">Fecha de la venta de la que se tomó el dinero</label>
+        <input type="date" id="pago-fecha-venta-fondo">
+        <div class="field-hint">Se usa para reflejar esta salida en la Revisión de Efectivo del cierre de ese día.</div>
+      </div>
       <div class="field">
         <label for="pago-referencia">Referencia bancaria</label>
         <input type="text" id="pago-referencia" placeholder="Nº de transferencia / comprobante">
@@ -546,6 +551,11 @@
       <div class="field" id="abono-campo-notacredito" style="display:none;">
         <label for="abono-nota-credito">Nota de crédito asociada</label>
         <input type="text" id="abono-nota-credito" placeholder="Número de la nota de crédito">
+      </div>
+      <div class="field" id="abono-campo-fondo" style="display:none;">
+        <label for="abono-fecha-venta-fondo">Fecha de la venta de la que se tomó el dinero</label>
+        <input type="date" id="abono-fecha-venta-fondo">
+        <div class="field-hint">Se usa para reflejar esta salida en la Revisión de Efectivo del cierre de ese día.</div>
       </div>
       <div class="field">
         <label for="abono-referencia">Referencia bancaria</label>
@@ -2289,11 +2299,14 @@ async function guardarNotaFactura(numero, ordinal, valor, rowId) {
 }
 
 // Muestra/oculta los campos condicionales según el medio de pago elegido
-// (Reembolso → nombre a reembolsar; Nota de crédito → nota asociada).
+// (Reembolso → nombre a reembolsar; Nota de crédito → nota asociada;
+// Fondo de caja → fecha de la venta de la que se tomó el dinero, para
+// poder reflejar la salida en la Revisión de Efectivo del cierre de ese día).
 function actualizarCamposMedioPago(prefix) {
   const medio = document.getElementById(prefix + '-medio').value;
   document.getElementById(prefix + '-campo-reembolso').style.display = medio === 'Reembolso' ? '' : 'none';
   document.getElementById(prefix + '-campo-notacredito').style.display = medio === 'Nota de crédito' ? '' : 'none';
+  document.getElementById(prefix + '-campo-fondo').style.display = medio === 'Fondo de caja' ? '' : 'none';
 }
 
 // ── MODAL PAGO TOTAL ───────────────────────────────────────────────
@@ -2306,6 +2319,7 @@ function abrirModalPago(numero) {
   document.getElementById('pago-medio').value = 'Transferencia';
   document.getElementById('pago-reembolso-a').value = '';
   document.getElementById('pago-nota-credito').value = '';
+  document.getElementById('pago-fecha-venta-fondo').value = hoyISO;
   document.getElementById('pago-referencia').value = '';
   actualizarCamposMedioPago('pago');
   document.getElementById('modal-pago').classList.add('open');
@@ -2317,10 +2331,12 @@ async function guardarPago() {
   const medio  = document.getElementById('pago-medio').value;
   const reembolsoA  = document.getElementById('pago-reembolso-a').value.trim();
   const notaCredito = document.getElementById('pago-nota-credito').value.trim();
+  const fechaVentaFondo = document.getElementById('pago-fecha-venta-fondo').value;
   const referencia = document.getElementById('pago-referencia').value.trim();
   if (!fecha) { showToast('Ingresá la fecha de pago.', 'error'); return; }
   if (medio === 'Reembolso' && !reembolsoA) { showToast('Ingresá a quién se reembolsa.', 'error'); return; }
   if (medio === 'Nota de crédito' && !notaCredito) { showToast('Ingresá la nota de crédito asociada.', 'error'); return; }
+  if (medio === 'Fondo de caja' && !fechaVentaFondo) { showToast('Ingresá la fecha de la venta de la que se tomó el dinero.', 'error'); return; }
   const f = facturaPorNumero(numero);
   if (!f) return;
   try {
@@ -2328,7 +2344,8 @@ async function guardarPago() {
       modulo: 'registrar_pago',
       numero_factura: numero, ordinal: f.ordinal, proveedor: f.proveedor, fecha_factura: f.fechaFactura,
       monto: f.monto, fecha_pago: fecha, medio_pago: medio, referencia: referencia,
-      reembolso_a: reembolsoA, nota_credito: notaCredito
+      reembolso_a: reembolsoA, nota_credito: notaCredito,
+      fecha_venta_fondo: medio === 'Fondo de caja' ? fechaVentaFondo : ''
     });
     f.fechaRealPago = fecha;
     f.medioPago = medio;
@@ -2355,6 +2372,7 @@ function abrirModalAbono(numero) {
   document.getElementById('abono-medio').value = 'Transferencia';
   document.getElementById('abono-reembolso-a').value = '';
   document.getElementById('abono-nota-credito').value = '';
+  document.getElementById('abono-fecha-venta-fondo').value = hoyISO;
   document.getElementById('abono-referencia').value = '';
   document.getElementById('abono-saldo-hint').textContent = `Saldo pendiente: ${fmt(f.saldoPendiente)}`;
   actualizarCamposMedioPago('abono');
@@ -2368,11 +2386,13 @@ async function guardarAbono() {
   const medio  = document.getElementById('abono-medio').value;
   const reembolsoA  = document.getElementById('abono-reembolso-a').value.trim();
   const notaCredito = document.getElementById('abono-nota-credito').value.trim();
+  const fechaVentaFondo = document.getElementById('abono-fecha-venta-fondo').value;
   const referencia = document.getElementById('abono-referencia').value.trim();
   if (!fecha) { showToast('Ingresá la fecha del abono.', 'error'); return; }
   if (!monto || monto <= 0) { showToast('Ingresá un monto de abono válido.', 'error'); return; }
   if (medio === 'Reembolso' && !reembolsoA) { showToast('Ingresá a quién se reembolsa.', 'error'); return; }
   if (medio === 'Nota de crédito' && !notaCredito) { showToast('Ingresá la nota de crédito asociada.', 'error'); return; }
+  if (medio === 'Fondo de caja' && !fechaVentaFondo) { showToast('Ingresá la fecha de la venta de la que se tomó el dinero.', 'error'); return; }
 
   const f = facturaPorNumero(numero);
   if (!f) return;
@@ -2381,7 +2401,8 @@ async function guardarAbono() {
       modulo: 'registrar_abono',
       numero_factura: numero, ordinal: f.ordinal, fecha_factura: f.fechaFactura,
       fecha_abono: fecha, monto_abono: monto, medio_pago: medio, referencia: referencia,
-      reembolso_a: reembolsoA, nota_credito: notaCredito
+      reembolso_a: reembolsoA, nota_credito: notaCredito,
+      fecha_venta_fondo: medio === 'Fondo de caja' ? fechaVentaFondo : ''
     });
     dataAbonos.push({ 'Factura': numero, 'Fecha de abono': fecha, 'Monto abonado': monto, 'Medio de pago': medio, 'Referencia': referencia });
     f.totalAbonado = result.total_abonado != null ? result.total_abonado : (f.totalAbonado||0) + monto;

@@ -265,7 +265,7 @@ input[readonly]{opacity:.7;cursor:default;background:var(--surface)}
         </div>
         <div class="field">
           <label for="f-fecha">Fecha de cierre <span class="req">*</span></label>
-          <input type="date" id="f-fecha"/>
+          <input type="date" id="f-fecha" onchange="calcCuadre()"/>
         </div>
         <div class="field">
           <label for="f-tc">Tipo de cambio del día (₡ por $1)</label>
@@ -521,6 +521,10 @@ const SHEETS_URL      = 'https://script.google.com/macros/s/AKfycbwp-pTaJAeZ2PPl
 const APPS_SCRIPT_RRHH = 'https://script.google.com/macros/s/AKfycbz0Awt-S-Kl9p0WtH9z9nnMkDhbLlPwxv7-p8wG4fM6hKJex3HAV_eAsbz-Qpot_OAY/exec';
 const EXTRACTOR_URL   = 'https://script.google.com/a/macros/casaaguizotes.com/s/AKfycbz9ZitIaHQJ6U5wPBGH8NsHyvgugCr_2IyAjdwJv6PmxAbmvFtAxewCWWOFyXN65nzV/exec';
 const PUNTO_VENTA     = 'Lorito'; // valor fijo, sin selección en UI
+// Sheet "Registro compras LORITO_Brewhouse - IA" (mismo que usa cuentas-por-pagar.html
+// y caja-chica.html) — se lee en modo solo-lectura vía gviz para traer los pagos a
+// proveedores hechos con "Fondo de caja" y reflejarlos en la Revisión de Efectivo.
+const COMPRAS_SHEET_ID = '1sxXDALDGotE1hoSMuTROZw33oAlE1ci7wXyVMnPe4xw';
 
 // ── DENOMINACIONES ────────────────────────────────────────────────
 const DENOMS_CRC = [50000,20000,10000,5000,2000,1000,500,100,50,25,10,5];
@@ -531,6 +535,100 @@ const DENOMS_USD = [
 
 // ── HISTORIAL LOCAL ───────────────────────────────────────────────
 let historialData = [];
+
+// ── PAGOS CON FONDO DE CAJA (Cuentas por Pagar) ─────────────────────
+// Pagos y abonos a proveedores registrados en cuentas-por-pagar.html con
+// medio de pago "Fondo de caja", agrupados por la fecha de la venta de la
+// que se tomó el dinero. Se leen directamente del Sheet de compras (gviz,
+// solo lectura) porque cierres.html vive en un Spreadsheet/Apps Script
+// distinto al de Cuentas por Pagar.
+let dataPagosFondoCaja = [];
+
+function gvizLoad(hoja, expectedCol) {
+  return new Promise(function(resolve) {
+    var cb    = '_ci_' + Math.random().toString(36).slice(2,10);
+    var url   = 'https://docs.google.com/spreadsheets/d/' + COMPRAS_SHEET_ID
+              + '/gviz/tq?tqx=responseHandler:' + cb
+              + '&sheet=' + encodeURIComponent(hoja);
+    var timer = setTimeout(function() { cleanup(); resolve([]); }, 15000);
+    function cleanup() {
+      clearTimeout(timer);
+      try { delete window[cb]; } catch(e) {}
+      try { if (s && s.parentNode) document.body.removeChild(s); } catch(e) {}
+    }
+    window[cb] = function(data) {
+      cleanup();
+      try {
+        var cols = (data.table.cols||[]).map(function(c){ return c.label||c.id||''; });
+        if (expectedCol && cols.indexOf(expectedCol) === -1) { resolve([]); return; }
+        var rows = (data.table.rows||[]).filter(function(r){ return r&&r.c; }).map(function(row){
+          var obj = {};
+          cols.forEach(function(col,i){
+            var cell = row.c[i];
+            obj[col] = cell ? (cell.f!=null?cell.f:(cell.v!=null?cell.v:'')) : '';
+          });
+          return obj;
+        });
+        resolve(rows);
+      } catch(e2) { resolve([]); }
+    };
+    var s = document.createElement('script');
+    s.onerror = function(){ cleanup(); resolve([]); };
+    s.src = url;
+    document.body.appendChild(s);
+  });
+}
+
+function limpiarMonto(v) { return parseFloat(String(v||'0').replace(/[,₡\s]/g,'')) || 0; }
+
+function isoDate(str) {
+  const m = String(str||'').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return '';
+  const [, d, mo, y] = m;
+  return y + '-' + mo.padStart(2,'0') + '-' + d.padStart(2,'0');
+}
+
+async function cargarPagosFondoCaja() {
+  try {
+    const [dF, dA] = await Promise.all([
+      gvizLoad('Registro Facturas', 'Factura'),
+      gvizLoad('Abonos', 'Factura').catch(() => [])
+    ]);
+    const deFacturas = dF
+      .filter(r => (r['Medio de pago']||'').trim().toLowerCase() === 'fondo de caja')
+      .map(r => ({
+        fecha: isoDate(r['Fecha venta fondo de caja']),
+        monto: limpiarMonto(r['TOTAL']),
+        moneda: (r['Moneda']||'CRC').trim().toUpperCase() === 'USD' ? 'USD' : 'CRC',
+        proveedor: r['Proveedor'] || '', factura: r['Factura'] || ''
+      }));
+    const deAbonos = dA
+      .filter(r => (r['Medio de pago']||'').trim().toLowerCase() === 'fondo de caja')
+      .map(r => ({
+        fecha: isoDate(r['Fecha venta fondo de caja']),
+        monto: limpiarMonto(r['Monto abonado']),
+        moneda: 'CRC', // los abonos no tienen columna de moneda propia
+        proveedor: '', factura: r['Factura'] || ''
+      }));
+    dataPagosFondoCaja = deFacturas.concat(deAbonos).filter(p => p.fecha && p.monto);
+  } catch(e) {
+    console.error('Error cargando pagos de fondo de caja:', e.message);
+  }
+}
+
+// Pagos con fondo de caja asociados a una fecha de venta puntual (ISO yyyy-mm-dd).
+function salidasFondoCajaDelDia(fechaISO) {
+  return dataPagosFondoCaja.filter(p => p.fecha === fechaISO);
+}
+
+// Total en colones de esas salidas (los pagos en USD se convierten al tipo de
+// cambio del cierre correspondiente, igual que el resto del efectivo contado).
+function totalSalidasFondoCajaColones(fechaISO, tc) {
+  const lista = salidasFondoCajaDelDia(fechaISO);
+  let crc = 0, usd = 0;
+  lista.forEach(p => { if (p.moneda === 'USD') usd += p.monto; else crc += p.monto; });
+  return crc + Math.round(usd * (tc||0));
+}
 
 // ── FOTOS DE RESPALDO ────────────────────────────────────────────
 const fotos = { sistema: null }; // {base64, mime, nombre} — una sola foto con ambos documentos
@@ -839,9 +937,12 @@ function actualizarBalanceFinal() {
   const efectivo = parseFloat(document.getElementById('f-efectivo')?.value) || 0;
   const propinaEfectivo = parseFloat(document.getElementById('f-propina-efectivo')?.value) || 0;
   const fondo = parseFloat(document.getElementById('f-fondo')?.value) || 0;
+  const fechaCierre = document.getElementById('f-fecha')?.value || hoy();
+  const salidasFondo = totalSalidasFondoCajaColones(fechaCierre, tc);
   // Misma fórmula que calcCuadre(): el efectivo contado incluye los billetes en
-  // dólares convertidos a colones con el tipo de cambio ingresado.
-  const diffEfectivo = (totalCaja + totalUsdEnColones) - (efectivo + propinaEfectivo + fondo);
+  // dólares convertidos a colones con el tipo de cambio ingresado, y se restan
+  // los pagos a proveedores hechos con fondo de caja tomando el dinero de este día.
+  const diffEfectivo = (totalCaja + totalUsdEnColones) - (efectivo + propinaEfectivo + fondo - salidasFondo);
 
   const balance = diffTarjeta + diffEfectivo;
 
@@ -897,12 +998,17 @@ function calcCuadre() {
   const propinaEfectivo = parseFloat(document.getElementById('f-propina-efectivo')?.value) || 0;
   const fondo    = parseFloat(document.getElementById('f-fondo')?.value) || 0;
   const tc = getTC();
+  const fechaCierre = document.getElementById('f-fecha')?.value || hoy();
+  // Pagos a proveedores hechos con "Fondo de caja" tomando el dinero de la venta de
+  // este día: ese efectivo salió de la caja antes del cierre, así que se resta del
+  // efectivo esperado (si no, se vería como un faltante).
+  const salidasFondo = totalSalidasFondoCajaColones(fechaCierre, tc);
   // Ventas/Propina en Efectivo ya incluyen la línea "DOLARES" convertida a ₡ por el sistema.
   // Los billetes en dólares contados físicamente se convierten a ₡ con el tipo de cambio
   // y se suman al total contado, para comparar todo en una sola cifra combinada.
   const totalUsdEnColones = Math.round(totalUsd * tc);
   const totalContado = total + totalUsdEnColones;
-  const esperado = efectivo + propinaEfectivo + fondo;
+  const esperado = efectivo + propinaEfectivo + fondo - salidasFondo;
   const diff     = totalContado - esperado;
 
   document.getElementById('cuadre-total-crc').textContent = fmtCRC(total);
@@ -946,6 +1052,12 @@ function actualizarDetalleEfectivo() {
   const fondo = parseFloat(document.getElementById('f-fondo')?.value) || 0;
   const efectivoVentas = parseFloat(document.getElementById('f-efectivo')?.value) || 0;
   const propinaEfectivo = parseFloat(document.getElementById('f-propina-efectivo')?.value) || 0;
+  const fechaCierre = document.getElementById('f-fecha')?.value || hoy();
+  const pagosFondo = salidasFondoCajaDelDia(fechaCierre);
+  const salidasFondo = totalSalidasFondoCajaColones(fechaCierre, tc);
+  const salidasLinea = salidasFondo
+    ? `<div class="hist-detail-item"><span>− Pagos a proveedores con fondo de caja (${pagosFondo.length})</span><span class="v">${fmtCRC(salidasFondo)}</span></div>`
+    : '';
   el.innerHTML = `
     <div class="hist-detail-item"><span>Billetes ₡</span><span class="v">${fmtCRC(totalBilletesCRC)}</span></div>
     <div class="hist-detail-item"><span>Monedas ₡</span><span class="v">${fmtCRC(totalMonedasCRC)}</span></div>
@@ -954,7 +1066,8 @@ function actualizarDetalleEfectivo() {
     <div class="hist-detail-item" style="margin-top:6px"><span>Ventas en efectivo</span><span class="v">${fmtCRC(efectivoVentas)}</span></div>
     <div class="hist-detail-item"><span>+ 10% Servicio en efectivo</span><span class="v">${fmtCRC(propinaEfectivo)}</span></div>
     <div class="hist-detail-item"><span>+ Fondo de caja inicial</span><span class="v">${fmtCRC(fondo)}</span></div>
-    <div class="hist-detail-item" style="border-top:1px solid var(--border);padding-top:5px;font-weight:600"><span>= Efectivo esperado</span><span class="v">${fmtCRC(efectivoVentas+propinaEfectivo+fondo)}</span></div>
+    ${salidasLinea}
+    <div class="hist-detail-item" style="border-top:1px solid var(--border);padding-top:5px;font-weight:600"><span>= Efectivo esperado</span><span class="v">${fmtCRC(efectivoVentas+propinaEfectivo+fondo-salidasFondo)}</span></div>
   `;
 }
 
@@ -994,6 +1107,9 @@ function construirPayload() {
   const obs   = document.getElementById('f-obs').value.trim();
   const plataformasDesc = document.getElementById('f-plataformas-desc').value.trim();
   const fecha = document.getElementById('f-fecha').value || hoy();
+  // Pagos a proveedores con "Fondo de caja" asociados a la venta de esta fecha —
+  // se restan del efectivo esperado (ver salidasFondoCajaDelDia / calcCuadre()).
+  const salidasFondo = totalSalidasFondoCajaColones(fecha, tc);
 
   const denomDetalle = {};
   let caja = 0;
@@ -1009,7 +1125,7 @@ function construirPayload() {
   // "DOLARES" del recibo convertida a ₡ por el sistema.
   const usdCajaEnColones = Math.round(usdCajaTotalContado * tc);
   const cajaTotalConUsd = caja + usdCajaEnColones;
-  const diferencia = cajaTotalConUsd - (efectivo + propinaEfectivo + fondo);
+  const diferencia = cajaTotalConUsd - (efectivo + propinaEfectivo + fondo - salidasFondo);
   const balanceFinal = diferenciaTarjeta + diferencia;
   const balanceCuadra = Math.abs(balanceFinal) <= 500;
 
@@ -1034,7 +1150,8 @@ function construirPayload() {
     usdD5:   usdDenomDetalle.usd5||0,   usdD1:  usdDenomDetalle.usd1||0,
     usdCajaTotalContado,
     cajaTotalContada: cajaTotalConUsd, fondoCajaInicial: fondo,
-    efectivoEsperado: efectivo + propinaEfectivo + fondo, diferenciaColones: diferencia,
+    salidasFondoCaja: salidasFondo,
+    efectivoEsperado: efectivo + propinaEfectivo + fondo - salidasFondo, diferenciaColones: diferencia,
     usdTotalContado: usdCajaTotalContado, usdReportadoVentas: 0,
     diferenciaUsd: 0,
     fotoSistema: fotos.sistema ? fotos.sistema.base64 : '',
@@ -1130,7 +1247,10 @@ async function cargarHistorial() {
   document.getElementById('hist-lista').innerHTML = '<div class="empty-state">Cargando…</div>';
   document.getElementById('hist-count').textContent = '';
   try {
-    const resp = await fetch(SHEETS_URL + '?action=read');
+    const [resp] = await Promise.all([
+      fetch(SHEETS_URL + '?action=read'),
+      cargarPagosFondoCaja()
+    ]);
     const data = await resp.json();
     historialData = (data.records || []).map(r => {
       const fecha = soloFecha(r[1]);
@@ -1194,7 +1314,7 @@ function renderDashboardMensual() {
     if (!r.anio || !r.mes) return;
     const key = r.anio + '-' + String(r.mes).padStart(2,'0');
     if (!grupos[key]) grupos[key] = { balance: 0, count: 0, anio: r.anio, mes: r.mes };
-    grupos[key].balance += (r.diferenciaTarjeta || 0) + (r.diferencia || 0);
+    grupos[key].balance += (r.diferenciaTarjeta || 0) + diferenciaAjustadaCierre(r).diferencia;
     grupos[key].count += 1;
   });
   const keys = Object.keys(grupos).sort((a,b) => b.localeCompare(a));
@@ -1208,6 +1328,17 @@ function renderDashboardMensual() {
       <div class="dm-count">${g.count} cierre${g.count===1?'':'s'}</div>
     </div>`;
   }).join('');
+}
+
+// Recalcula, en el momento, la Revisión de Efectivo de un cierre ya guardado,
+// restando los pagos a proveedores con "Fondo de caja" que estén asociados a esa
+// fecha de venta — aunque se hayan registrado en Cuentas por Pagar después de
+// haber cerrado la caja de ese día. Así el historial siempre queda al día.
+function diferenciaAjustadaCierre(r) {
+  const salidasFondo = totalSalidasFondoCajaColones(r.fecha, r.tc);
+  const efectivoEsperado = (r.efectivo||0) + (r.propinaEfectivo||0) + (r.fondo||0) - salidasFondo;
+  const diferencia = (r.caja||0) - efectivoEsperado;
+  return { salidasFondo, efectivoEsperado, diferencia };
 }
 
 function renderHistorial() {
@@ -1230,9 +1361,10 @@ function renderHistorial() {
     return;
   }
   document.getElementById('hist-lista').innerHTML = lista.map((r, i) => {
-    const efectivoCuadra = Math.abs(r.diferencia || 0) <= 500;
+    const { diferencia: diferenciaAjustada } = diferenciaAjustadaCierre(r);
+    const efectivoCuadra = Math.abs(diferenciaAjustada || 0) <= 500;
     const tieneTarjetaRev = !!(r.datafonoTotal || r.tarjeta || r.propinaTarjeta);
-    const balanceFinal = (r.diferenciaTarjeta || 0) + (r.diferencia || 0);
+    const balanceFinal = (r.diferenciaTarjeta || 0) + (diferenciaAjustada || 0);
     const balanceCuadra = Math.abs(balanceFinal) <= 500;
     const fechaLbl = r.fecha
       ? new Date(r.fecha+'T12:00:00').toLocaleDateString('es-CR',{weekday:'short',day:'2-digit',month:'short'})
@@ -1266,8 +1398,9 @@ function toggleDetalle(i) {
 function renderDetalleCierre(r) {
   const item = (label, val) => `<div class="hist-detail-item"><span>${label}</span><span class="v">${val}</span></div>`;
   const tarjetaReportada = (r.tarjeta||0) + (r.propinaTarjeta||0);
-  const efectivoEsperado = (r.efectivo||0) + (r.propinaEfectivo||0) + (r.fondo||0);
-  const balanceFinal = (r.diferenciaTarjeta||0) + (r.diferencia||0);
+  const { salidasFondo, efectivoEsperado, diferencia } = diferenciaAjustadaCierre(r);
+  const pagosFondo = salidasFondoCajaDelDia(r.fecha);
+  const balanceFinal = (r.diferenciaTarjeta||0) + diferencia;
   const balanceCuadra = Math.abs(balanceFinal) <= 500;
   return `
     <div class="hist-detail-section">
@@ -1305,16 +1438,18 @@ function renderDetalleCierre(r) {
       <div class="hist-detail-title">Revisión de Efectivo</div>
       <div class="hist-detail-grid">
         ${item('Caja contada', fmtCRC(r.caja))}
+        ${item('Fondo de caja inicial', fmtCRC(r.fondo))}
+        ${salidasFondo ? item('− Pagos a proveedores con fondo de caja (' + pagosFondo.length + ')', fmtCRC(salidasFondo)) : ''}
         ${item('Efectivo esperado', fmtCRC(efectivoEsperado))}
-        ${item('Diferencia', (r.diferencia>=0?'+':'')+fmtCRC(r.diferencia))}
-        ${item('Cuadra', Math.abs(r.diferencia||0)<=500 ? '✅ Sí' : '⚠️ No')}
+        ${item('Diferencia', (diferencia>=0?'+':'')+fmtCRC(diferencia))}
+        ${item('Cuadra', Math.abs(diferencia||0)<=500 ? '✅ Sí' : '⚠️ No')}
       </div>
     </div>
     <div class="hist-detail-section">
       <div class="hist-detail-title">Balance Final</div>
       <div class="hist-detail-grid">
         ${item('Diferencia Tarjeta', (r.diferenciaTarjeta>=0?'+':'')+fmtCRC(r.diferenciaTarjeta))}
-        ${item('Diferencia Efectivo', (r.diferencia>=0?'+':'')+fmtCRC(r.diferencia))}
+        ${item('Diferencia Efectivo', (diferencia>=0?'+':'')+fmtCRC(diferencia))}
         <div class="hist-detail-item"><span>Balance Final</span><span class="v" style="color:${balanceFinal>=0?'var(--green)':'var(--red)'}">${(balanceFinal>=0?'+':'')+fmtCRC(balanceFinal)}</span></div>
         ${item('Cuadra', balanceCuadra ? '✅ Sí' : '⚠️ No')}
       </div>
@@ -1365,6 +1500,7 @@ cargarEncargados();
 actualizarResumen();
 calcRevisionTarjeta();
 calcCuadre();
+cargarPagosFondoCaja().then(calcCuadre);
 document.getElementById('input-foto').addEventListener('change', e => handleFotoSelect(e.target.files[0]));
 
 </script>

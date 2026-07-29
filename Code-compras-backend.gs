@@ -267,6 +267,9 @@ function doPost(e) {
       case 'eliminar_area_negocio':
         result = eliminarAreaNegocio(payload);
         break;
+      case 'asociar_pago_identificado':
+        result = asociarPagoIdentificado(payload);
+        break;
       default:
         throw new Error('Módulo no reconocido: ' + payload.modulo);
     }
@@ -977,6 +980,13 @@ function registrarPago(p) {
   if (p.nota_credito) {
     hoja.getRange(fila, columnaPorNombre(hoja, 'Nota de crédito asociada')).setValue(p.nota_credito);
   }
+  // Cuando el medio de pago es "Fondo de caja", el dinero salió físicamente de la
+  // caja de un día de venta puntual (no necesariamente el mismo día en que se
+  // registra el pago). Esta fecha permite que cierres.html reste ese monto del
+  // "Efectivo esperado" en la Revisión de Efectivo de ese día.
+  if (p.fecha_venta_fondo) {
+    hoja.getRange(fila, columnaPorNombre(hoja, 'Fecha venta fondo de caja')).setValue(p.fecha_venta_fondo);
+  }
   return { fila: fila };
 }
 
@@ -1028,10 +1038,18 @@ function registrarAbono(p) {
   if (!p.fecha_abono)    throw new Error('Falta la fecha del abono.');
   if (!p.monto_abono)    throw new Error('Falta el monto del abono.');
 
-  getHojaAbonos().appendRow([
+  const hojaAbonos = getHojaAbonos();
+  hojaAbonos.appendRow([
     p.numero_factura, p.fecha_abono, Number(p.monto_abono), p.medio_pago || '', p.referencia || '',
     p.reembolso_a || '', p.nota_credito || '', new Date()
   ]);
+  // Igual que en registrarPago(): si el abono se pagó con "Fondo de caja", se guarda
+  // la fecha de la venta de la que se tomó el dinero (columna dinámica, mismo patrón
+  // que columnaPorNombre en Registro Facturas) para reflejarlo en cierres.html.
+  if (p.fecha_venta_fondo) {
+    const filaAbono = hojaAbonos.getLastRow();
+    hojaAbonos.getRange(filaAbono, columnaPorNombre(hojaAbonos, 'Fecha venta fondo de caja')).setValue(p.fecha_venta_fondo);
+  }
 
   const hoja = getHoja();
   const fila = filaFacturaPorOrdinal(hoja, p.numero_factura, p.ordinal);
@@ -1923,4 +1941,590 @@ function inicializarListasCompartidas() {
   getHojaAreas();
   Logger.log(yaExistiaCat ? 'Categorias_Productos ya existía.' : 'Categorias_Productos creada y sembrada con ' + CATEGORIAS_DEFAULT.length + ' valores.');
   Logger.log(yaExistiaArea ? 'Areas_Negocio ya existía.' : 'Areas_Negocio creada y sembrada con ' + AREAS_DEFAULT.length + ' valores.');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// === COMPROBANTES DE PAGO — concilia comprobantes ya extraídos (por
+// Code-extractor.gs, en la cuenta de Gmail donde llegan las notificaciones
+// bancarias) contra Registro Facturas. Reutiliza getHoja(), COL,
+// columnaPorNombre() y getHojaProveedores() de arriba en vez de duplicar el
+// acceso a esas hojas.
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Este script YA NO lee Gmail directamente — eso lo hace Code-extractor.gs,
+// que vive en un Sheet aparte dentro de la cuenta de Gmail que recibe los
+// comprobantes (puede ser otra cuenta distinta de la dueña de este Sheet).
+// Ese script deja cada comprobante identificado en su pestaña
+// "Comprobantes_Extraidos"; este backend la lee vía Drive compartido, hace el
+// match contra Registro Facturas, y marca cada fila leída como "Procesada"
+// para no releerla. Ver Code-extractor.gs para el detalle de esa parte.
+//
+// CONFIGURACIÓN ADICIONAL (además de los pasos ya documentados arriba):
+// 1. Pegá Code-extractor.gs + Code-extractor-appsscript.json en el Sheet
+//    https://docs.google.com/spreadsheets/d/1Oog4jc9-qxkFBzomJQNOD6uE5rVpVVAag4eCnuKTYGk
+//    (vive en facturaslorito@gmail.com) — seguí los pasos del encabezado de
+//    ese archivo (incluye su propia ANTHROPIC_API_KEY, y autorizar Gmail en
+//    ESA cuenta).
+// 2. Compartí ese Sheet extractor con la cuenta que corre este backend, con
+//    permiso de EDITOR (necesita poder marcar "Procesado").
+// 3. STAGING_SPREADSHEET_ID ya apunta a ese Sheet, no hace falta tocarlo.
+// 4. Guardá y recargá este Sheet: aparece el menú "Comprobantes de Pago".
+// 5. "Comprobantes de Pago > Procesar ahora" para probarlo. Como este script
+//    ya no usa GmailApp, no hace falta agregar ningún scope de Gmail acá —
+//    solo necesita el acceso a Sheets que ya tenías.
+// 6. "Comprobantes de Pago > Activar revisión automática" para que corra
+//    sola cada 30 min (además de la revisión automática del extractor).
+//
+// ORDEN DE CADA COMPROBANTE LEÍDO DEL STAGING:
+// 1. Se guarda tal cual llegó en Comprobantes_Recibidos (histórico crudo, se
+//    crea solo, nunca se modifica después) — esto pasa ANTES de cualquier
+//    intento de match, así que queda registrado incluso si el análisis
+//    falla o el resultado es "sin match".
+// 2. Recién ahí se intenta conciliar contra Registro Facturas:
+//    a. Por número de factura: si el comprobante trae el número de factura
+//       (Descripción/Concepto de la transferencia) que coincide con una
+//       factura sin pagar de Registro Facturas, y el monto cuadra → match
+//       directo.
+//    b. Por cuenta destino: si no trae número de factura (pasa seguido), se
+//       busca la cuenta destino (aunque venga enmascarada) en la columna
+//       "Cuenta" de la hoja "proveedores" (PROV_COL.CUENTA) para saber a qué
+//       proveedor corresponde, y entre sus facturas sin pagar se busca una
+//       con el mismo monto → match.
+// Cada transacción (matcheada o no) queda además en Pagos_Identificados (se
+// crea sola). Cuando hay match, en Registro Facturas se agrega la columna
+// dinámica "Conciliación" = "Automática" (vía columnaPorNombre, igual que
+// "Detalle"/"Origen"/"Notas").
+//
+// ASOCIACIÓN MANUAL (pestaña Pagos_Identificados):
+// Para las filas "Pendiente de asociar": columna con desplegable de facturas
+// sin pagar (se refresca en cada corrida), o columna de texto libre para
+// escribir el número de factura a mano si no aparece en el desplegable.
+// Cualquiera de las dos dispara la asociación sola (onEdit) y deja
+// "Conciliación" = "Manual". Si la factura ya tenía fecha de pago, pide
+// confirmación antes de sobrescribir.
+
+const SHEET_HISTORICO = 'Comprobantes_Recibidos';
+const SHEET_LOG = 'Log_Comprobantes';
+const SHEET_PAGOS = 'Pagos_Identificados';
+
+// Columnas fijas de Comprobantes_Recibidos (histórico crudo, se escribe antes
+// de intentar ningún match — nunca se edita después).
+const HISTORICO_COL = {
+  fechaRegistrado: 1, de: 2, asunto: 3, metodo: 4, fechaComprobante: 5, banco: 6,
+  cuentaDestino: 7, nombreCuentaDestino: 8, monto: 9, moneda: 10, concepto: 11,
+  referencia: 12, facturaDetectada: 13, link: 14
+};
+
+const MONTO_TOLERANCIA = 1; // diferencia máxima aceptada entre el monto del comprobante y el TOTAL de la factura
+const TRIGGER_HANDLER = 'procesarComprobantesPago';
+
+// ID del Sheet "extractor" (Code-extractor.gs, en facturaslorito@gmail.com —
+// la cuenta donde llegan las notificaciones bancarias), que escribe la
+// pestaña Comprobantes_Extraidos. Ese Sheet debe estar compartido con esta
+// cuenta como Editor.
+const STAGING_SPREADSHEET_ID = '1Oog4jc9-qxkFBzomJQNOD6uE5rVpVVAag4eCnuKTYGk';
+const STAGING_SHEET_NAME = 'Comprobantes_Extraidos';
+const STAGING_COL = {
+  fechaExtraido: 1, de: 2, asunto: 3, metodo: 4, fechaComprobante: 5, banco: 6,
+  cuentaDestino: 7, nombreCuentaDestino: 8, monto: 9, moneda: 10, concepto: 11,
+  referencia: 12, facturaDetectada: 13, procesado: 14, link: 15
+};
+
+// Columnas fijas de Pagos_Identificados (la crea y ordena este script, así que
+// no hace falta buscarlas por texto de encabezado como con COL/columnaPorNombre).
+const PAGOS_COL = {
+  fechaProcesado: 1, de: 2, asunto: 3, metodo: 4, fechaComprobante: 5, banco: 6,
+  cuentaDestino: 7, nombreCuentaDestino: 8, monto: 9, moneda: 10, concepto: 11,
+  referencia: 12, facturaDetectada: 13, estado: 14, facturaAsociada: 15,
+  dropdown: 16, manual: 17, link: 18
+};
+
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('Comprobantes de Pago')
+    .addItem('Procesar ahora', 'procesarComprobantesPago')
+    .addItem('Actualizar lista de facturas pendientes (desplegable)', 'actualizarDropdownDesdeMenu_')
+    .addSeparator()
+    .addItem('Activar revisión automática (cada 30 min)', 'activarRevisionAutomatica')
+    .addItem('Desactivar revisión automática', 'desactivarRevisionAutomatica')
+    .addToUi();
+}
+
+function activarRevisionAutomatica() {
+  desactivarRevisionAutomatica();
+  ScriptApp.newTrigger(TRIGGER_HANDLER).timeBased().everyMinutes(30).create();
+  SpreadsheetApp.getUi().alert('Listo. Se revisarán comprobantes nuevos cada 30 minutos.');
+}
+
+function desactivarRevisionAutomatica() {
+  ScriptApp.getProjectTriggers().forEach(t => {
+    if (t.getHandlerFunction() === TRIGGER_HANDLER) ScriptApp.deleteTrigger(t);
+  });
+}
+
+function actualizarDropdownDesdeMenu_() {
+  refrescarDropdownPagos_();
+  SpreadsheetApp.getUi().alert('Desplegable de facturas pendientes actualizado.');
+}
+
+// === PROCESO PRINCIPAL ===
+// Lee las filas nuevas (Procesado = false) de Comprobantes_Extraidos en el
+// Sheet extractor, intenta conciliarlas contra Registro Facturas, y marca
+// cada una como Procesada para no volver a leerla en la próxima corrida.
+function procesarComprobantesPago() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) {
+    console.log('Ya hay una ejecución en curso, se omite esta corrida.');
+    return;
+  }
+
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const registro = getHoja();
+    const cuentasProveedores = getCuentasProveedores_();
+
+    const staging = SpreadsheetApp.openById(STAGING_SPREADSHEET_ID).getSheetByName(STAGING_SHEET_NAME);
+    if (!staging) {
+      throw new Error(`No se encontró la hoja "${STAGING_SHEET_NAME}" en el Sheet extractor — revisá STAGING_SPREADSHEET_ID.`);
+    }
+
+    // Barrera adicional al flag "Procesado": si dos corridas se superponen (ej. un
+    // clic manual en "Procesar ahora" mientras el trigger automático también está
+    // corriendo), el flag por sí solo no alcanza a evitar que la misma fila se
+    // procese dos veces. Acá se arma un set con los links de mensaje ya registrados
+    // en Comprobantes_Recibidos, así ninguna escritura se duplica aunque el mismo
+    // comprobante se intente procesar más de una vez.
+    const linksYaRegistrados = obtenerLinksRegistrados_(ss);
+
+    let procesados = 0, matches = 0, revisar = 0, errores = 0, duplicados = 0;
+    const lastRow = staging.getLastRow();
+
+    if (lastRow >= 2) {
+      const filas = staging.getRange(2, 1, lastRow - 1, STAGING_COL.link).getValues();
+
+      filas.forEach((valores, idx) => {
+        if (valores[STAGING_COL.procesado - 1]) return; // ya se procesó antes
+        const filaStaging = idx + 2;
+
+        const origen = {
+          de: valores[STAGING_COL.de - 1],
+          asunto: valores[STAGING_COL.asunto - 1],
+          link: valores[STAGING_COL.link - 1]
+        };
+
+        if (origen.link && linksYaRegistrados.has(origen.link)) {
+          // Ya está en Comprobantes_Recibidos de una corrida anterior/superpuesta —
+          // solo marcamos procesado, no volvemos a escribir nada.
+          staging.getRange(filaStaging, STAGING_COL.procesado).setValue(true);
+          duplicados++;
+          return;
+        }
+
+        const dato = {
+          __metodo: valores[STAGING_COL.metodo - 1],
+          fecha: valores[STAGING_COL.fechaComprobante - 1],
+          banco: valores[STAGING_COL.banco - 1],
+          cuentaDestino: valores[STAGING_COL.cuentaDestino - 1],
+          nombreCuentaDestino: valores[STAGING_COL.nombreCuentaDestino - 1],
+          monto: valores[STAGING_COL.monto - 1],
+          moneda: valores[STAGING_COL.moneda - 1],
+          descripcion: valores[STAGING_COL.concepto - 1],
+          referencia: valores[STAGING_COL.referencia - 1],
+          numeroFacturaDetectado: valores[STAGING_COL.facturaDetectada - 1] || null
+        };
+
+        try {
+          registrarHistoricoComprobante_(ss, origen, dato); // guarda el crudo primero, antes de cualquier análisis
+          if (origen.link) linksYaRegistrados.add(origen.link);
+          procesados++;
+          const resultado = buscarFacturaParaComprobante_(dato, registro, cuentasProveedores);
+
+          if (resultado.match) {
+            escribirMatchComprobante_(registro, resultado.match.fila, dato, 'Automática');
+            const facturaAsociada = registro.getRange(resultado.match.fila, COL.FACTURA).getValue();
+            registrarLogComprobante_(ss, origen, dato, 'Match automático', 'Fila ' + resultado.match.fila);
+            registrarPagoIdentificado_(ss, origen, dato, { estado: 'Asociado automáticamente', factura: facturaAsociada });
+            matches++;
+          } else {
+            registrarLogComprobante_(ss, origen, dato, 'Revisar manual', resultado.motivo);
+            registrarPagoIdentificado_(ss, origen, dato, { estado: 'Pendiente de asociar' });
+            revisar++;
+          }
+        } catch (e) {
+          registrarLogComprobante_(ss, origen, dato, 'Error', e.message);
+          errores++;
+        } finally {
+          staging.getRange(filaStaging, STAGING_COL.procesado).setValue(true);
+        }
+      });
+    }
+
+    refrescarDropdownPagos_();
+    console.log(`Comprobantes leídos del extractor: ${procesados} | Match: ${matches} | Revisar: ${revisar} | Errores: ${errores} | Duplicados evitados: ${duplicados}`);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// === MATCHING AUTOMÁTICO ===
+
+function normalizarTexto_(str) {
+  return String(str || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+// Reutiliza la hoja "proveedores" que ya existe (columna PROV_COL.CUENTA) en vez
+// de mantener una tabla aparte — así ya arranca con los proveedores que estén
+// cargados ahí, sin duplicar datos. Un proveedor puede tener nombre jurídico y
+// comercial distintos: se guardan ambos, porque Registro Facturas puede usar
+// cualquiera de los dos en su columna Proveedor.
+function getCuentasProveedores_() {
+  const hoja = getHojaProveedores();
+  const nFilas = hoja.getLastRow() - 1;
+  if (nFilas <= 0) return [];
+
+  const datos = hoja.getRange(2, 1, nFilas, PROV_ENCABEZADOS.length).getValues();
+  const lista = [];
+  datos.forEach(fila => {
+    const cuentaNorm = normalizarTexto_(fila[PROV_COL.CUENTA - 1]);
+    if (!cuentaNorm) return;
+    const juridico = String(fila[PROV_COL.NOMBRE_JURIDICO - 1] || '').trim();
+    const comercial = String(fila[PROV_COL.NOMBRE_COMERCIAL - 1] || '').trim();
+    const nombres = [...new Set([juridico, comercial].filter(Boolean))];
+    if (nombres.length) lista.push({ nombres, cuentaNorm });
+  });
+  return lista;
+}
+
+// Muchas notificaciones (ej. SINPE a otro banco) enmascaran la cuenta destino y solo
+// muestran los últimos dígitos (ej. "****************1789"). Si la cuenta extraída del
+// comprobante viene enmascarada o es corta, se busca por sufijo contra las cuentas completas
+// guardadas en la hoja proveedores en vez de exigir una coincidencia exacta.
+function resolverProveedorPorCuenta_(cuentaOriginal, cuentaNorm, cuentasProveedores) {
+  let candidatos = cuentasProveedores.filter(c => c.cuentaNorm === cuentaNorm);
+
+  const pareceEnmascarada = /\*/.test(String(cuentaOriginal || '')) || cuentaNorm.length <= 6;
+  if (!candidatos.length && pareceEnmascarada && cuentaNorm.length >= 3) {
+    candidatos = cuentasProveedores.filter(c => c.cuentaNorm.endsWith(cuentaNorm));
+  }
+
+  if (candidatos.length === 1) return { nombres: candidatos[0].nombres };
+  if (candidatos.length > 1) {
+    const todos = candidatos.map(c => c.nombres.join('/')).join(', ');
+    return { motivo: `La cuenta destino (${cuentaOriginal}) coincide por los últimos dígitos con más de un proveedor en la hoja "proveedores" (${todos}) — no se puede distinguir con esa información.` };
+  }
+  return { nombres: null };
+}
+
+function contiene_(a, b) {
+  if (!a || !b) return false;
+  const na = String(a).replace(/\s/g, '');
+  const nb = String(b).replace(/\s/g, '');
+  return na.includes(nb) || nb.includes(na);
+}
+
+function facturasPendientes_(registro) {
+  const lastRow = registro.getLastRow();
+  if (lastRow < 2) return [];
+  const numFilas = lastRow - 1;
+  const numCols = registro.getLastColumn();
+  const datos = registro.getRange(2, 1, numFilas, numCols).getValues();
+  return datos
+    .map((fila, idx) => ({ fila: idx + 2, valores: fila }))
+    .filter(r => !r.valores[COL.FECHA_PAGO - 1]);
+}
+
+// Devuelve { match: { fila } } o { motivo: "..." }
+function buscarFacturaParaComprobante_(dato, registro, cuentasProveedores) {
+  if (registro.getLastRow() < 2) return { motivo: 'Registro Facturas está vacío.' };
+
+  const pendientes = facturasPendientes_(registro);
+
+  const montoOk = valores => dato.monto != null && Math.abs(Number(valores[COL.TOTAL - 1]) - Number(dato.monto)) <= MONTO_TOLERANCIA;
+  const monedaOk = valores => !dato.moneda || String(valores[COL.MONEDA - 1]).toUpperCase() === String(dato.moneda).toUpperCase();
+
+  // Intento A: por número de factura (en numeroFacturaDetectado o descripcion)
+  const posiblesFactura = [dato.numeroFacturaDetectado, dato.descripcion].filter(Boolean);
+  if (posiblesFactura.length) {
+    let candA = pendientes.filter(r => {
+      const factura = r.valores[COL.FACTURA - 1];
+      return factura && posiblesFactura.some(pf => contiene_(pf, factura));
+    });
+    if (candA.length > 1) candA = candA.filter(r => montoOk(r.valores) && monedaOk(r.valores));
+    if (candA.length === 1) return { match: { fila: candA[0].fila } };
+    if (candA.length > 1) return { motivo: `Varias facturas coinciden con el número detectado (${posiblesFactura.join(' / ')}): filas ${candA.map(c => c.fila).join(', ')}.` };
+  }
+
+  // Intento B: por cuenta destino -> proveedor + monto
+  const cuentaNorm = normalizarTexto_(dato.cuentaDestino);
+  if (!cuentaNorm) {
+    return { motivo: 'El comprobante no trae número de factura reconocible ni cuenta destino — no se puede conciliar automáticamente.' };
+  }
+
+  const resuelto = resolverProveedorPorCuenta_(dato.cuentaDestino, cuentaNorm, cuentasProveedores);
+  if (resuelto.motivo) return { motivo: resuelto.motivo };
+  const nombresProveedor = resuelto.nombres;
+  if (!nombresProveedor) {
+    return { motivo: `Cuenta destino no registrada en la columna "Cuenta" de la hoja proveedores: ${dato.cuentaDestino} (${dato.nombreCuentaDestino || 'sin nombre'}). Agregala ahí para que el próximo pago a este proveedor se concilie solo.` };
+  }
+
+  const nombresNorm = nombresProveedor.map(n => n.toLowerCase());
+  const candB = pendientes.filter(r =>
+    nombresNorm.includes(String(r.valores[COL.PROVEEDOR - 1]).trim().toLowerCase()) &&
+    montoOk(r.valores) && monedaOk(r.valores)
+  );
+
+  if (candB.length === 1) return { match: { fila: candB[0].fila } };
+  if (candB.length > 1) return { motivo: `Varias facturas sin pagar de "${nombresProveedor.join('/')}" coinciden en monto (${dato.monto} ${dato.moneda}): filas ${candB.map(c => c.fila).join(', ')}.` };
+  return { motivo: `No se encontró ninguna factura sin pagar de "${nombresProveedor.join('/')}" por ${dato.monto} ${dato.moneda}.` };
+}
+
+// Reutiliza columnaPorNombre() de arriba para crear/ubicar "Conciliación",
+// igual que el resto del código lo hace con "Detalle"/"Origen"/"Notas".
+function escribirMatchComprobante_(registro, fila, dato, metodoAsociacion) {
+  const medioPago = 'Transferencia' + (dato.banco ? ' ' + dato.banco : '');
+  registro.getRange(fila, COL.FECHA_PAGO).setValue(dato.fecha || '');
+  registro.getRange(fila, COL.MEDIO_PAGO).setValue(medioPago);
+  registro.getRange(fila, COL.REFERENCIA).setValue(dato.referencia || '');
+  registro.getRange(fila, columnaPorNombre(registro, 'Conciliación')).setValue(metodoAsociacion || '');
+}
+
+// === COMPROBANTES_RECIBIDOS — histórico crudo, se escribe primero (antes de
+// intentar el match) y nunca se modifica después. Sirve como registro
+// permanente de todo lo que llegó, independiente de cómo haya terminado el
+// análisis. ===
+
+// Set con todos los "Link mensaje" ya presentes en Comprobantes_Recibidos —
+// usado como barrera anti-duplicados en procesarComprobantesPago() (ver
+// comentario ahí) para que dos corridas superpuestas nunca terminen
+// escribiendo el mismo comprobante dos veces.
+function obtenerLinksRegistrados_(ss) {
+  const links = new Set();
+  const sheet = ss.getSheetByName(SHEET_HISTORICO);
+  if (!sheet || sheet.getLastRow() < 2) return links;
+  sheet.getRange(2, HISTORICO_COL.link, sheet.getLastRow() - 1, 1).getValues()
+    .forEach(r => { if (r[0]) links.add(r[0]); });
+  return links;
+}
+
+function registrarHistoricoComprobante_(ss, origen, dato) {
+  let sheet = ss.getSheetByName(SHEET_HISTORICO);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_HISTORICO);
+    sheet.getRange(1, 1, 1, HISTORICO_COL.link).setValues([[
+      'Fecha registrado', 'De', 'Asunto', 'Método', 'Fecha comprobante', 'Banco',
+      'Cuenta destino', 'Nombre cuenta destino', 'Monto', 'Moneda', 'Concepto', 'Referencia',
+      'Número factura detectado', 'Link mensaje'
+    ]]);
+    sheet.getRange(1, 1, 1, HISTORICO_COL.link).setFontWeight('bold').setBackground('#e8eaed');
+    sheet.setFrozenRows(1);
+  }
+
+  sheet.appendRow([
+    new Date(), origen.de || '', origen.asunto || '', dato.__metodo || 'Claude (IA)',
+    dato.fecha || '', dato.banco || '', dato.cuentaDestino || '', dato.nombreCuentaDestino || '',
+    dato.monto || '', dato.moneda || '', dato.descripcion || '', dato.referencia || '',
+    dato.numeroFacturaDetectado || '', origen.link || ''
+  ]);
+}
+
+// === LOG TÉCNICO (todo intento, incluidos errores) ===
+
+function registrarLogComprobante_(ss, origen, dato, resultado, detalle) {
+  let sheet = ss.getSheetByName(SHEET_LOG);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_LOG);
+    sheet.appendRow([
+      'Fecha procesado', 'De', 'Asunto', 'Método', 'Fecha comprobante', 'Banco',
+      'Cuenta destino', 'Nombre cuenta destino', 'Monto', 'Moneda', 'Descripción', 'Referencia',
+      'Número factura detectado', 'Resultado', 'Detalle', 'Link mensaje'
+    ]);
+  }
+  sheet.appendRow([
+    new Date(), origen.de || '', origen.asunto || '', dato.__metodo || 'Claude (IA)',
+    dato.fecha || '', dato.banco || '', dato.cuentaDestino || '', dato.nombreCuentaDestino || '',
+    dato.monto || '', dato.moneda || '', dato.descripcion || '', dato.referencia || '',
+    dato.numeroFacturaDetectado || '', resultado, detalle || '',
+    origen.link || ''
+  ]);
+}
+
+// === PAGOS_IDENTIFICADOS — todas las transacciones leídas del extractor, con
+// asociación manual para las que quedaron pendientes ===
+
+function registrarPagoIdentificado_(ss, origen, dato, resultadoInfo) {
+  let sheet = ss.getSheetByName(SHEET_PAGOS);
+  if (!sheet) sheet = crearHojaPagos_(ss);
+
+  const fila = sheet.getLastRow() + 1;
+  sheet.getRange(fila, 1, 1, PAGOS_COL.link).setValues([[
+    new Date(), origen.de || '', origen.asunto || '', dato.__metodo || 'Claude (IA)',
+    dato.fecha || '', dato.banco || '', dato.cuentaDestino || '', dato.nombreCuentaDestino || '',
+    dato.monto || '', dato.moneda || '', dato.descripcion || '', dato.referencia || '',
+    dato.numeroFacturaDetectado || '', resultadoInfo.estado, resultadoInfo.factura || '',
+    '', '', origen.link || ''
+  ]]);
+
+  colorearFilaPagos_(sheet, fila, resultadoInfo.estado);
+}
+
+function crearHojaPagos_(ss) {
+  const sheet = ss.insertSheet(SHEET_PAGOS);
+  sheet.getRange(1, 1, 1, PAGOS_COL.link).setValues([[
+    'Fecha procesado', 'De', 'Asunto', 'Método', 'Fecha comprobante', 'Banco',
+    'Cuenta destino', 'Nombre cuenta destino', 'Monto', 'Moneda', 'Concepto', 'Referencia',
+    'Número factura detectado', 'Estado', 'Factura asociada',
+    'Asociar con factura pendiente ▼', 'O escribir número de factura manualmente', 'Link mensaje'
+  ]]);
+  sheet.getRange(1, 1, 1, PAGOS_COL.link).setFontWeight('bold').setBackground('#e8eaed');
+  sheet.setFrozenRows(1);
+  sheet.setColumnWidth(PAGOS_COL.dropdown, 260);
+  sheet.setColumnWidth(PAGOS_COL.manual, 260);
+  return sheet;
+}
+
+function colorearFilaPagos_(sheet, fila, estado) {
+  const colores = {
+    'Asociado automáticamente': '#d9ead3',
+    'Asociado manualmente': '#d9ead3',
+    'Pendiente de asociar': '#fff2cc'
+  };
+  const color = colores[estado] || '#f4cccc'; // rojo suave para "Factura no encontrada: ..." u otros
+  sheet.getRange(fila, 1, 1, PAGOS_COL.link).setBackground(color);
+}
+
+// Refresca el desplegable de "Asociar con factura pendiente" en toda la hoja Pagos_Identificados
+// con las facturas sin pagar actuales de Registro Facturas.
+function refrescarDropdownPagos_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_PAGOS);
+  if (!sheet || sheet.getLastRow() < 2) return;
+
+  const registro = getHoja();
+  const opciones = facturasPendientes_(registro).map(r =>
+    `${r.valores[COL.FACTURA - 1]} | ${r.valores[COL.PROVEEDOR - 1]} | ${r.valores[COL.TOTAL - 1]} ${r.valores[COL.MONEDA - 1]}`
+  );
+
+  const rango = sheet.getRange(2, PAGOS_COL.dropdown, sheet.getLastRow() - 1, 1);
+  if (!opciones.length) { rango.clearDataValidations(); return; }
+
+  const regla = SpreadsheetApp.newDataValidation().requireValueInList(opciones, true).setAllowInvalid(true).build();
+  rango.setDataValidation(regla);
+}
+
+// === ASOCIACIÓN MANUAL (dropdown o texto libre en Pagos_Identificados) ===
+// Trigger simple — corre automáticamente al editar la hoja, sin necesidad de activarlo aparte,
+// una vez que el script ya fue autorizado (ej. corriendo "Procesar ahora" una vez).
+function onEdit(e) {
+  try {
+    const sheet = e.range.getSheet();
+    if (sheet.getName() !== SHEET_PAGOS) return;
+    if (e.range.getRow() === 1) return;
+    const col = e.range.getColumn();
+    if (col !== PAGOS_COL.dropdown && col !== PAGOS_COL.manual) return;
+
+    const valor = String(e.value || '').trim();
+    if (!valor) return;
+
+    const facturaBuscada = col === PAGOS_COL.dropdown ? valor.split('|')[0].trim() : valor;
+    asociarPagoManualmente_(sheet, e.range.getRow(), facturaBuscada);
+  } catch (err) {
+    console.error('onEdit error: ' + err.message);
+    SpreadsheetApp.getUi().alert('No se pudo asociar el pago: ' + err.message);
+  }
+}
+
+function asociarPagoManualmente_(sheetPagos, fila, facturaBuscada) {
+  const registro = getHoja();
+  const ui = SpreadsheetApp.getUi();
+
+  const facturaNorm = normalizarTexto_(facturaBuscada);
+  const lastRow = registro.getLastRow();
+  const datos = registro.getRange(2, 1, lastRow - 1, registro.getLastColumn()).getValues();
+  const idx = datos.findIndex(f => normalizarTexto_(f[COL.FACTURA - 1]) === facturaNorm);
+
+  if (idx === -1) {
+    sheetPagos.getRange(fila, PAGOS_COL.estado).setValue(`Factura no encontrada: ${facturaBuscada}`);
+    colorearFilaPagos_(sheetPagos, fila, `Factura no encontrada: ${facturaBuscada}`);
+    ui.alert(`No se encontró la factura "${facturaBuscada}" en ${HOJA_FACTURAS}.`);
+    return;
+  }
+
+  const filaFactura = idx + 2;
+  const yaPagada = datos[idx][COL.FECHA_PAGO - 1];
+  if (yaPagada) {
+    const resp = ui.alert(
+      'Factura ya tiene fecha de pago',
+      `La factura ${facturaBuscada} ya tiene fecha de pago (${yaPagada}). ¿Sobrescribir con los datos de este comprobante?`,
+      ui.ButtonSet.YES_NO
+    );
+    if (resp !== ui.Button.YES) return;
+  }
+
+  const filaPagosValores = sheetPagos.getRange(fila, 1, 1, PAGOS_COL.link).getValues()[0];
+  const dato = {
+    fecha: filaPagosValores[PAGOS_COL.fechaComprobante - 1],
+    banco: filaPagosValores[PAGOS_COL.banco - 1],
+    referencia: filaPagosValores[PAGOS_COL.referencia - 1]
+  };
+
+  escribirMatchComprobante_(registro, filaFactura, dato, 'Manual');
+
+  sheetPagos.getRange(fila, PAGOS_COL.estado).setValue('Asociado manualmente');
+  sheetPagos.getRange(fila, PAGOS_COL.facturaAsociada).setValue(datos[idx][COL.FACTURA - 1]);
+  colorearFilaPagos_(sheetPagos, fila, 'Asociado manualmente');
+}
+
+// === ASOCIACIÓN MANUAL DESDE LA WEB (cuentas-por-pagar.html, pestaña
+// "Pagos identificados") — misma idea que asociarPagoManualmente_() de
+// arriba (usada por el onEdit de la hoja), pero: (a) sin ui.alert porque acá
+// no hay UI de Sheets, así que una factura que ya tenga fecha de pago se
+// omite en vez de preguntar; (b) acepta varias facturas a la vez, para el
+// caso de una transferencia que cubre más de una factura del mismo proveedor.
+// Identifica la fila de Pagos_Identificados por "Link mensaje" (columna que
+// ya se usa como llave anti-duplicados en procesarComprobantesPago()) en vez
+// de por número de fila, porque gviz no expone el número de fila real.
+function asociarPagoIdentificado(p) {
+  if (!p.link) throw new Error('Falta identificar el pago (sin link de mensaje).');
+  if (!p.facturas || !p.facturas.length) throw new Error('Seleccioná al menos una factura.');
+
+  const sheetPagos = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PAGOS);
+  if (!sheetPagos) throw new Error('No existe la hoja ' + SHEET_PAGOS + '.');
+
+  const lastRowPagos = sheetPagos.getLastRow();
+  if (lastRowPagos < 2) throw new Error('La hoja ' + SHEET_PAGOS + ' está vacía.');
+  const links = sheetPagos.getRange(2, PAGOS_COL.link, lastRowPagos - 1, 1).getValues();
+  const idxPago = links.findIndex(r => String(r[0]) === String(p.link));
+  if (idxPago === -1) throw new Error('No se encontró el pago identificado — recargá la página, puede que ya se haya actualizado.');
+  const filaPago = idxPago + 2;
+
+  const filaPagosValores = sheetPagos.getRange(filaPago, 1, 1, PAGOS_COL.link).getValues()[0];
+  if (String(filaPagosValores[PAGOS_COL.estado - 1]).indexOf('Asociado') === 0) {
+    throw new Error('Este pago ya está asociado — recargá la página para ver el estado actual.');
+  }
+  const dato = {
+    fecha: filaPagosValores[PAGOS_COL.fechaComprobante - 1],
+    banco: filaPagosValores[PAGOS_COL.banco - 1],
+    referencia: filaPagosValores[PAGOS_COL.referencia - 1]
+  };
+
+  const registro = getHoja();
+  const asociadas = [];
+  const omitidas = [];
+  p.facturas.forEach(function(sel) {
+    const fila = filaFacturaPorOrdinal(registro, sel.numero, sel.ordinal);
+    if (fila === -1 || registro.getRange(fila, COL.FECHA_PAGO).getValue()) { omitidas.push(sel.numero); return; }
+    escribirMatchComprobante_(registro, fila, dato, 'Manual');
+    asociadas.push(sel.numero);
+  });
+
+  if (!asociadas.length) {
+    throw new Error('Ninguna de las facturas seleccionadas se pudo asociar (puede que ya tengan fecha de pago o se hayan eliminado) — recargá la página.');
+  }
+
+  sheetPagos.getRange(filaPago, PAGOS_COL.estado).setValue('Asociado manualmente');
+  sheetPagos.getRange(filaPago, PAGOS_COL.facturaAsociada).setValue(asociadas.join(', '));
+  colorearFilaPagos_(sheetPagos, filaPago, 'Asociado manualmente');
+  refrescarDropdownPagos_();
+
+  return { facturas_asociadas: asociadas, facturas_omitidas: omitidas };
 }
