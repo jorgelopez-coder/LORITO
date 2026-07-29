@@ -1123,7 +1123,12 @@ function toggleFechasFaltantes() {
 }
 
 /* ── KPI: CASH EN CAJA SIN DEPÓSITO ASIGNADO ─────────────────────── */
-const COL_FECHA_CAJA = 1, COL_FONDO_CAJA = 15, COL_CAJA_CAJA = 16, COL_USD_TOTAL_CAJA = 41;
+// NOTA: "Total Caja Contada ₡" (COL_CAJA_CAJA) ya incluye el equivalente en ₡ de
+// los dólares contados (ver cierres.html: cajaTotalConUsd = caja + usdCajaEnColones).
+// Por eso hay que restar "USD Total en ₡" (COL_USD_TOTAL_CRC) al calcular el monto
+// en colones puro; si no, el dólar queda sumado dos veces (una convertido dentro
+// del ₡ y otra como monto en $).
+const COL_FECHA_CAJA = 1, COL_FONDO_CAJA = 15, COL_CAJA_CAJA = 16, COL_USD_TOTAL_CRC = 34, COL_USD_TOTAL_CAJA = 41;
 
 let cashPendientesGlobal = [];
 
@@ -1144,7 +1149,8 @@ async function cargarKPICash() {
       if (!fecha) return;
       if (!porFecha[fecha]) porFecha[fecha] = { crc: 0, usd: 0 };
       const caja = +r[COL_CAJA_CAJA]||0, fondo = +r[COL_FONDO_CAJA]||0, usd = +r[COL_USD_TOTAL_CAJA]||0;
-      porFecha[fecha].crc += (caja - fondo);
+      const usdEnColones = +r[COL_USD_TOTAL_CRC]||0;
+      porFecha[fecha].crc += (caja - fondo - usdEnColones);
       porFecha[fecha].usd += usd;
     });
 
